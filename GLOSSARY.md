@@ -9,8 +9,12 @@ One of Sweden's municipalities, the unit the whole game is played in.
 _Avoid_: Municipality, county, region
 
 **Neighbor**:
-A kommun connected to another for gameplay purposes, so a route may pass directly between them.
+A kommun connected to another for gameplay purposes, so a route may pass directly between them: by a land border, by a fixed link, or by ferry when a kommun has no other link.
 _Avoid_: Adjacent, bordering
+
+**Fixed link**:
+A public bridge, tunnel or causeway running directly between two kommuner across water, whatever traffic it carries.
+_Avoid_: Crossing, connection
 
 **Daily puzzle**:
 The single start/destination pair that every player gets on a given day.
