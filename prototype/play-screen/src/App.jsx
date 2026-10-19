@@ -131,7 +131,7 @@ function GameMap({ geojson, puzzle, guesses, connected, look }) {
     map.on("load", () => {
       map.addSource("drawn", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       map.addLayer({ id: "drawn-fill", type: "fill", source: "drawn", paint: { "fill-color": ["get", "color"], "fill-opacity": 0.55 } });
-      map.addLayer({ id: "drawn-line", type: "line", source: "drawn", paint: { "line-color": "#fff", "line-width": 1.5 } });
+      map.addLayer({ id: "drawn-line", type: "line", source: "drawn", paint: { "line-color": ["get", "color"], "line-width": 1, "line-opacity": 1 } });
       const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
       map.on("mousemove", "drawn-fill", (e) => popup.setLngLat(e.lngLat).setText(e.features[0].properties.name).addTo(map));
       map.on("mouseleave", "drawn-fill", () => popup.remove());
