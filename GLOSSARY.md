@@ -64,6 +64,10 @@ _Avoid_: Penalty, over par
 A win whose every guess lay on a shortest route connected to the start, with no hints used.
 _Avoid_: Flawless, optimal
 
+**Hint**:
+One of three optional reveals a player can take during a daily puzzle (in the UI: *ledtråd*); it never costs a guess but rules out Perfect.
+_Avoid_: Clue, help, tip
+
 **Streak**:
 The number of daily puzzles won on consecutive puzzle numbers; a loss or a puzzle not finished ends it.
 _Avoid_: Run, chain, combo
