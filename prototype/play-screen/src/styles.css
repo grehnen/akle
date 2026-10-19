@@ -1,0 +1,27 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #f4f4f5; color: #18181b; }
+.loading { text-align: center; margin-top: 4rem; }
+.page { max-width: 720px; margin: 0 auto; padding: 1rem 1rem 6rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+header { text-align: center; }
+h1 { margin: 0; font-size: 2.25rem; letter-spacing: 0.02em; }
+.subtitle { margin: 0; color: #71717a; font-size: 0.9rem; }
+.prompt { margin: 0; font-size: 1.15rem; text-align: center; }
+.endpoint { background: #facc15; padding: 0 0.3em; border-radius: 4px; }
+.map { width: 100%; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgb(0 0 0 / 0.15); }
+.counter { margin: 0; font-weight: 600; }
+.guess-input { position: relative; display: flex; gap: 0.5rem; width: 100%; max-width: 420px; }
+.guess-input input { flex: 1; font-size: 1.05rem; padding: 0.6rem 0.8rem; border: 1px solid #d4d4d8; border-radius: 8px; }
+.guess-input button { padding: 0 1rem; border: 0; border-radius: 8px; background: #18181b; color: white; font-weight: 600; cursor: pointer; }
+.suggestions { position: absolute; top: 100%; left: 0; right: 0; margin: 4px 0 0; padding: 0; list-style: none; background: white; border: 1px solid #d4d4d8; border-radius: 8px; z-index: 10; overflow: hidden; }
+.suggestions li { padding: 0.5rem 0.8rem; cursor: pointer; }
+.suggestions li.active, .suggestions li:hover { background: #e4e4e7; }
+.message { margin: 0; color: #b91c1c; }
+.guesses { list-style: none; padding: 0; margin: 0; width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 0.25rem; }
+.guesses li { background: white; border-radius: 6px; padding: 0.4rem 0.7rem; }
+.guesses span { margin-right: 0.4rem; }
+.prototype-panel { position: fixed; bottom: 12px; right: 12px; width: 260px; background: #111827; color: #f9fafb; border-radius: 10px; padding: 0.6rem 0.8rem; font-size: 0.8rem; box-shadow: 0 4px 20px rgb(0 0 0 / 0.35); display: flex; flex-direction: column; gap: 0.4rem; z-index: 20; }
+.prototype-panel .toggle { background: #f59e0b; color: #111827; border: 0; border-radius: 6px; font-weight: 700; cursor: pointer; }
+.prototype-panel label { display: flex; flex-direction: column; }
+.prototype-panel pre { margin: 0; max-height: 140px; overflow: auto; font-size: 0.7rem; background: #1f2937; padding: 0.4rem; border-radius: 6px; }
+.prototype-panel .hint { margin: 0; color: #9ca3af; }
+.maplibregl-popup-content { padding: 4px 8px; font-weight: 600; }
