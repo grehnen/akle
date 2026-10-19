@@ -40,6 +40,10 @@ _Avoid_: Step, move, attempt
 A chain of neighbors connecting the start kommun to the destination kommun.
 _Avoid_: Path, chain, journey
 
+**Connected**:
+Said of a guess linked to the start kommun through an unbroken chain of neighbors that are all guesses; a guess can become connected later, when another guess links it up.
+_Avoid_: Reached, linked, on the route
+
 **Shortest route**:
 A route with the fewest intermediate kommuner; a daily puzzle may have several.
 _Avoid_: Optimal path, solution
