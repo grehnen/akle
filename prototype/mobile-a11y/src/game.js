@@ -56,3 +56,55 @@ export function guessLimit(n) {
   if (n <= 12) return n + 7;
   return n + 8;
 }
+
+// --- Added for the mobile/a11y prototype (#15) ---
+
+export function fuzzyScore(query, name) {
+  const target = normalize(name);
+  let position = 0;
+  let score = 0;
+  for (const char of query) {
+    const found = target.indexOf(char, position);
+    if (found === -1) return -Infinity;
+    score -= found - position;
+    position = found + 1;
+  }
+  return score + (target.startsWith(query) ? 100 : 0) - target.length * 0.01;
+}
+
+// First unguessed kommun on a shortest route (hint 1).
+export function nextKommunHint(puzzle, guesses, neighbors) {
+  const free = new Set([puzzle.start, puzzle.destination, ...guesses]);
+  const dist = { [puzzle.start]: 0 };
+  const previous = {};
+  const queue = [[0, puzzle.start]];
+  while (queue.length) {
+    queue.sort((a, b) => a[0] - b[0] || a[1].localeCompare(b[1]));
+    const [d, node] = queue.shift();
+    if (d > dist[node]) continue;
+    for (const next of neighbors[node]) {
+      const nd = d + (free.has(next) ? 0 : 1);
+      if (nd < (dist[next] ?? Infinity)) {
+        dist[next] = nd;
+        previous[next] = node;
+        queue.push([nd, next]);
+      }
+    }
+  }
+  const route = [];
+  for (let node = puzzle.destination; node; node = previous[node]) route.unshift(node);
+  return route.find((code) => !free.has(code)) ?? null;
+}
+
+export const initials = (name) =>
+  name
+    .split(/[\s-]+/)
+    .map((word) => `${word[0].toUpperCase()}…`)
+    .join(" ");
+
+export const FEEDBACK_TEXT = {
+  "✅": "på kortaste vägen och ansluten",
+  "🟩": "på en kortaste väg",
+  "🟧": "nära en kortaste väg",
+  "🟥": "långt från en kortaste väg",
+};
