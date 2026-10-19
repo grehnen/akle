@@ -63,3 +63,11 @@ _Avoid_: Penalty, over par
 **Perfect**:
 A win whose every guess lay on a shortest route connected to the start, with no hints used.
 _Avoid_: Flawless, optimal
+
+**Streak**:
+The number of daily puzzles won on consecutive puzzle numbers; a loss or a puzzle not finished ends it.
+_Avoid_: Run, chain, combo
+
+**Share text**:
+The short, spoiler-free summary of a finished daily puzzle that a player copies to post elsewhere.
+_Avoid_: Score card, result string
