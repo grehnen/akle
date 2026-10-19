@@ -16,9 +16,21 @@ _Avoid_: Adjacent, bordering
 A public bridge, tunnel or causeway running directly between two kommuner across water, whatever traffic it carries.
 _Avoid_: Crossing, connection
 
+**Dead end**:
+A kommun linked to others only by ferry; a route may begin or end there but never pass through it.
+_Avoid_: Island, leaf
+
 **Daily puzzle**:
 The single start/destination pair that every player gets on a given day.
 _Avoid_: Level, round, challenge
+
+**Puzzle number**:
+The sequential number of a daily puzzle, counting Åkle's launch day as #1.
+_Avoid_: Day, index, id
+
+**Schedule**:
+The predetermined list of daily puzzles, one per puzzle number.
+_Avoid_: Calendar, queue, rotation
 
 **Guess**:
 A kommun the player names during a daily puzzle; only valid, new kommuner other than the start and destination count.
