@@ -12,6 +12,10 @@ _Avoid_: Municipality, county, region
 A kommun connected to another for gameplay purposes, so a route may pass directly between them: by a land border, by a fixed link, or by ferry when a kommun has no other link.
 _Avoid_: Adjacent, bordering
 
+**Neighbor graph**:
+The set of all neighbor pairs between kommuner, the source every route, shortest route and daily puzzle is computed from.
+_Avoid_: Map, adjacency list, network
+
 **Fixed link**:
 A public bridge, tunnel or causeway running directly between two kommuner across water, whatever traffic it carries.
 _Avoid_: Crossing, connection
