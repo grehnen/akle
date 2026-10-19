@@ -3,9 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import { connectedToStart, feedbackFor, guessLimit, normalize, remainingDistance } from "./game.js";
 
-const FEEDBACK_COLORS = { "✅": "#16a34a", "🟩": "#4ade80", "🟧": "#f97316", "🟥": "#dc2626" };
-const ENDPOINT_COLOR = "#facc15";
-const UNCONNECTED_COLOR = "#9ca3af";
+const START_COLOR = "#fecc02";
+const DESTINATION_COLOR = "#006aa7";
 const EOX_2016_TILES = "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg";
 const EOX_ATTRIBUTION =
   '<a href="https://s2maps.eu">Sentinel-2 cloudless – https://s2maps.eu</a> by <a href="https://eox.at">EOX IT Services GmbH</a> (Contains modified Copernicus Sentinel data 2016)';
@@ -43,7 +42,7 @@ function Game({ geojson, neighbors }) {
 
   const [guesses, setGuesses] = useState([]);
   const [message, setMessage] = useState("");
-  const [look, setLook] = useState({ brightness: 0.85, saturation: -0.1, fillOpacity: 0.55, outlineWidth: 1.5 });
+  const [look, setLook] = useState({ brightness: 1, saturation: 0.5, fillOpacity: 0.25, outlineWidth: 1, connectedColor: "#4ade80", unconnectedColor: "#9ca3af" });
 
   const guessCodes = guesses.map((g) => g.code);
   const connected = connectedToStart(puzzle, guessCodes, neighbors);
@@ -69,8 +68,8 @@ function Game({ geojson, neighbors }) {
         <p className="subtitle">Dagens pussel #42</p>
       </header>
       <p className="prompt">
-        Res från <strong className="endpoint">{byCode[puzzle.start].properties.name}</strong> till{" "}
-        <strong className="endpoint">{byCode[puzzle.destination].properties.name}</strong>
+        Res från <strong className="endpoint start">{byCode[puzzle.start].properties.name}</strong> till{" "}
+        <strong className="endpoint destination">{byCode[puzzle.destination].properties.name}</strong>
       </p>
 
       <GameMap
@@ -81,15 +80,17 @@ function Game({ geojson, neighbors }) {
         look={look}
       />
 
-      <p className="counter">
-        {over ? (won ? (extra === 0 ? "Perfekt! 🎉" : `Du klarade det! +${extra}`) : `Slut på gissningar – ${remaining} kvar`) : `Gissningar kvar: ${limit - guesses.length} av ${limit}`}
-      </p>
+      {over && (
+        <p className="counter">{won ? (extra === 0 ? "Perfekt! 🎉" : `Du klarade det! +${extra}`) : `Slut på gissningar – ${remaining} kvar`}</p>
+      )}
 
-      {!over && <GuessInput names={geojson.features.map((f) => f.properties.name)} onSubmit={submit} />}
+      {!over && (
+        <GuessInput names={geojson.features.map((f) => f.properties.name)} onSubmit={submit} used={guesses.length} limit={limit} />
+      )}
       {message && <p className="message">{message}</p>}
 
       <ol className="guesses">
-        {[...guesses].reverse().map((g) => (
+        {guesses.map((g) => (
           <li key={g.code}>
             <span>{g.feedback}</span> {byCode[g.code].properties.name}
           </li>
@@ -147,12 +148,12 @@ function GameMap({ geojson, puzzle, guesses, connected, look }) {
     return {
       type: "FeatureCollection",
       features: [
-        feature(puzzle.start, ENDPOINT_COLOR),
-        feature(puzzle.destination, ENDPOINT_COLOR),
-        ...guesses.map((g) => feature(g.code, connected.has(g.code) ? FEEDBACK_COLORS[g.feedback] : UNCONNECTED_COLOR)),
+        feature(puzzle.start, START_COLOR),
+        feature(puzzle.destination, DESTINATION_COLOR),
+        ...guesses.map((g) => feature(g.code, connected.has(g.code) ? look.connectedColor : look.unconnectedColor)),
       ],
     };
-  }, [geojson, puzzle, guesses, connected]);
+  }, [geojson, puzzle, guesses, connected, look.connectedColor, look.unconnectedColor]);
 
   useEffect(() => {
     if (!ready) return;
@@ -181,7 +182,7 @@ function GameMap({ geojson, puzzle, guesses, connected, look }) {
   return <div ref={container} className="map" />;
 }
 
-function GuessInput({ names, onSubmit }) {
+function GuessInput({ names, onSubmit, used, limit }) {
   const [text, setText] = useState("");
   const [active, setActive] = useState(0);
   const query = normalize(text);
@@ -216,7 +217,7 @@ function GuessInput({ names, onSubmit }) {
           if (e.key === "ArrowUp") (e.preventDefault(), setActive((a) => Math.max(a - 1, 0)));
         }}
       />
-      <button type="submit">Gissa</button>
+      <button type="submit">Gissa ({used}/{limit})</button>
       {suggestions.length > 0 && (
         <ul className="suggestions">
           {suggestions.map((n, i) => (
@@ -238,6 +239,11 @@ function PrototypePanel({ look, setLook, state, onReset }) {
       <input type="range" min={min} max={max} step={step} value={look[key]} onChange={(e) => setLook({ ...look, [key]: Number(e.target.value) })} />
     </label>
   );
+  const colorPicker = (key, label) => (
+    <label className="color">
+      <input type="color" value={look[key]} onChange={(e) => setLook({ ...look, [key]: e.target.value })} /> {label} <code>{look[key]}</code>
+    </label>
+  );
   return (
     <aside className="prototype-panel">
       <button className="toggle" onClick={() => setOpen(!open)}>
@@ -249,6 +255,8 @@ function PrototypePanel({ look, setLook, state, onReset }) {
           {slider("saturation", "Satellite saturation", -1, 0.5, 0.05)}
           {slider("fillOpacity", "Kommun fill opacity", 0.1, 1, 0.05)}
           {slider("outlineWidth", "Outline width", 0, 4, 0.5)}
+          {colorPicker("connectedColor", "Guess connected to start")}
+          {colorPicker("unconnectedColor", "Guess not connected")}
           <p className="hint">Puzzle via URL: <code>?from=Kiruna&amp;to=Umeå</code></p>
           <button onClick={onReset}>Reset guesses</button>
           <pre>{JSON.stringify(state, null, 1)}</pre>
