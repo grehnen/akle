@@ -58,7 +58,7 @@ function useKeyboard() {
 export function App() {
   const data = useData();
   const [variant, setVariant] = useState(VARIANTS[params.get("variant")] ? params.get("variant") : "A");
-  const [settings, setSettings] = useState({ cooperativeGestures: false, nonColorCues: true, showScreenReaderText: false });
+  const [settings, setSettings] = useState({ cooperativeGestures: true, nonColorCues: true, showScreenReaderText: false });
   const keyboardOpen = useKeyboard();
 
   function switchTo(key) {
@@ -529,8 +529,8 @@ function GameMap({ game, settings, className, fitPadding = 40 }) {
     const drawnCodes = new Set([puzzle.start, puzzle.destination, ...guesses.map((g) => g.code)]);
     const cue = settings.nonColorCues;
     const drawn = [
-      feature(puzzle.start, { color: START_COLOR, tooltip: `${game.nameOf(puzzle.start)} (start)`, ...(cue && { badge: "S" }) }),
-      feature(puzzle.destination, { color: DESTINATION_COLOR, tooltip: `${game.nameOf(puzzle.destination)} (mål)`, ...(cue && { badge: "M" }) }),
+      feature(puzzle.start, { color: START_COLOR, tooltip: `${game.nameOf(puzzle.start)} (start)` }),
+      feature(puzzle.destination, { color: DESTINATION_COLOR, tooltip: `${game.nameOf(puzzle.destination)} (mål)` }),
       ...guesses.map((g) => {
         const isConnected = connected.has(g.code);
         return feature(g.code, {
@@ -616,7 +616,7 @@ function PrototypePanel({ settings, setSettings, keyboardOpen }) {
       {open && (
         <>
           {toggle("cooperativeGestures", "Two-finger map pan (cooperative gestures)")}
-          {toggle("nonColorCues", "Non-colour cues (S/M badges, dashed = not connected)")}
+          {toggle("nonColorCues", "Non-colour cue (dashed = not connected)")}
           {toggle("showScreenReaderText", "Reveal screen-reader-only text")}
           <p className="hint">
             Puzzle: <code>?from=Kiruna&amp;to=Umeå</code>

@@ -8,6 +8,8 @@ Three layouts on one route, switched with `?variant=A|B|C` (orange pill at the t
 - **B, Full-screen map + sheet:** the map fills the screen. The input, hint button and guesses are in a bottom sheet (tap or drag the handle).
 - **C, List first:** the input, a guess table and the connected chain come first. The map is a panel you can collapse.
 
+Verdict (#15): **A** wins, with two-finger map panning and dashed outlines for guesses that are not connected (no S/M badges).
+
 The **PROTO** panel (top left) toggles two-finger map panning, non-colour cues, and showing the screen-reader-only text.
 
 ```sh
