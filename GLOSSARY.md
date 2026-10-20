@@ -16,6 +16,10 @@ _Avoid_: Adjacent, bordering
 The set of all neighbor pairs between kommuner, the source every route, shortest route and daily puzzle is computed from.
 _Avoid_: Map, adjacency list, network
 
+**Graph version**:
+The neighbor graph, kommun names and kommun shapes that apply from a given puzzle number onward; it never changes once a daily puzzle has used it.
+_Avoid_: Snapshot, release, map version
+
 **Fixed link**:
 A public bridge, tunnel or causeway running directly between two kommuner across water, whatever traffic it carries.
 _Avoid_: Crossing, connection

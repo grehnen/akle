@@ -1,6 +1,6 @@
 # Daily puzzles come from a pre-generated, committed schedule
 
-Åkle is a static, client-only app, so unlike Travle there is no server to pick each day's start/destination pair. Instead of deriving the pair in the browser from a date-seeded PRNG, a seeded script generates an append-only schedule from the neighbor graph. Each entry is keyed by puzzle number and records the start, the destination and the shortest-route length N. The schedule is committed, reviewed and bundled with the app. We chose this so the puzzles can be reviewed and curated, and so a change to the neighbor graph can't silently rewrite past or upcoming puzzles. The build fails if the current graph gives a different N for any entry from today onward.
+Åkle is a static, client-only app, so unlike Travle there is no server to pick each day's start/destination pair. Instead of deriving the pair in the browser from a date-seeded PRNG, a seeded script generates an append-only schedule from the neighbor graph. Each entry is keyed by puzzle number and records the start, the destination and the shortest-route length N. The schedule is committed, reviewed and bundled with the app. We chose this so the puzzles can be reviewed and curated, and so a change to the neighbor graph can't silently rewrite past or upcoming puzzles. The build fails if the graph gives a different N for any entry from today onward. Each entry is checked against the graph version for its puzzle number ([ADR 0004](./0004-versioned-graphs-keyed-by-puzzle-number.md)).
 
 ## Consequences
 
