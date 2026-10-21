@@ -1,7 +1,9 @@
-import { type FormEvent, useState } from "react";
-import { type Game, newGame, type Puzzle, reviewGame, submitGuess } from "../engine/game";
+import { useState } from "react";
+import { newGame, type Puzzle, reviewGame } from "../engine/game";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
-import { outcomeMessage, rejectionMessage } from "./messages";
+import { GuessInput } from "./GuessInput";
+import { applyGuessInput, type GuessSession, suggestKommuner } from "./guessSession";
+import { outcomeMessage } from "./messages";
 
 type PlayScreenProps = {
   graph: GraphVersion;
@@ -9,26 +11,15 @@ type PlayScreenProps = {
 };
 
 export function PlayScreen({ graph, puzzle }: PlayScreenProps) {
-  const [game, setGame] = useState<Game>(() => newGame(puzzle));
-  const [input, setInput] = useState("");
-  const [toast, setToast] = useState<string>();
+  const [session, setSession] = useState<GuessSession>(() => ({
+    game: newGame(puzzle),
+    text: "",
+  }));
+  const { game, toast } = session;
 
   const review = reviewGame(graph, game);
   const nameOf = (code: string) => kommunName(graph, code);
   const outcome = outcomeMessage(review, review.missing.map(nameOf));
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const result = submitGuess(graph, game, input);
-    if (result.kind === "accepted") {
-      setGame(result.game);
-      setInput("");
-      setToast(undefined);
-      return;
-    }
-    setToast(rejectionMessage(result.reason, input.trim()));
-    if (result.reason !== "unknown") setInput("");
-  }
 
   return (
     <section aria-labelledby="puzzle-heading">
@@ -38,20 +29,14 @@ export function PlayScreen({ graph, puzzle }: PlayScreenProps) {
       </h2>
       <p>Dagens pussel #{puzzle.number}</p>
 
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="guess-input">Kommun</label>{" "}
-        <input
-          id="guess-input"
-          type="text"
-          autoComplete="off"
-          value={input}
-          disabled={review.status !== "playing"}
-          onChange={(event) => setInput(event.target.value)}
-        />{" "}
-        <button type="submit" disabled={review.status !== "playing"}>
-          Gissa ({review.cards.length}/{review.limit})
-        </button>
-      </form>
+      <GuessInput
+        text={session.text}
+        suggestions={suggestKommuner(graph, game, session.text)}
+        highlighted={session.highlighted}
+        counter={`Gissa (${review.cards.length}/${review.limit})`}
+        disabled={review.status !== "playing"}
+        onEvent={(event) => setSession((current) => applyGuessInput(graph, current, event))}
+      />
 
       <p role="status" aria-live="polite">
         {toast}

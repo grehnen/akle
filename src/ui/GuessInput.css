@@ -1,0 +1,61 @@
+.guess-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.guess-input__field {
+  position: relative;
+  flex: 1 1 14rem;
+}
+
+.guess-input__field input {
+  box-sizing: border-box;
+  width: 100%;
+  font: inherit;
+  padding: 0.4rem 0.6rem;
+}
+
+.guess-input__list {
+  position: absolute;
+  z-index: 1;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: Canvas;
+  color: CanvasText;
+  border: 1px solid color-mix(in srgb, CanvasText 30%, transparent);
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.guess-input__option {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0.6rem;
+  border-left: 4px solid transparent;
+  cursor: pointer;
+}
+
+.guess-input__option:hover,
+.guess-input__option[aria-selected="true"] {
+  border-left-color: #006aa7;
+  background: color-mix(in srgb, #006aa7 12%, Canvas);
+}
+
+.guess-input__option[aria-disabled="true"] {
+  cursor: default;
+  color: color-mix(in srgb, CanvasText 50%, Canvas);
+  background: none;
+  border-left-color: transparent;
+}
+
+.guess-input__tag {
+  font-size: 0.85em;
+  font-style: italic;
+}
