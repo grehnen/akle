@@ -1,11 +1,8 @@
 import { readCsv } from "../data/csv";
-import type { KommunCode } from "../graph/graphVersion";
+import type { Puzzle } from "../engine/game";
 
 /** One schedule row (ADR 0001): the daily puzzle for a puzzle number. */
-export type ScheduledPuzzle = {
-  number: number;
-  start: KommunCode;
-  destination: KommunCode;
+export type ScheduledPuzzle = Puzzle & {
   /** Shortest-route length when the row was generated. */
   n: number;
 };
