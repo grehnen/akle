@@ -27,6 +27,20 @@ export function latestPlayedPuzzleNumber(now: Date, epoch: string): number {
   );
 }
 
+/**
+ * The played puzzle number the checks compare with a base revision at: a puzzle only counts as
+ * played if the base scheduled it, so this is capped by the base's last scheduled puzzle, and is
+ * 0 when the base has no schedule (bootstrapping the data).
+ */
+export function playedThroughAtBase(
+  now: Date,
+  epoch: string,
+  baseRows: readonly { number: number }[],
+): number {
+  const lastScheduledAtBase = baseRows.reduce((last, row) => Math.max(last, row.number), 0);
+  return Math.min(latestPlayedPuzzleNumber(now, epoch), lastScheduledAtBase);
+}
+
 /** The puzzle number of a calendar day; `month` is 0-based, as in `Date`. */
 function puzzleNumberOnDay(year: number, month: number, day: number, epoch: string): number {
   const [epochYear, epochMonth, epochDay] = parseIsoDate(epoch);

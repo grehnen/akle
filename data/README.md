@@ -111,7 +111,7 @@ The app picks the version by puzzle number, never by the clock, and fetches only
 
 ### Checking: `bun run graph-versions:check [--base <git revision>]`
 
-The required frozen graph versions check, run in CI against the PR's base (`HEAD` by default): every version a played puzzle has used is byte for byte unchanged from the base, keeps its `startsAtPuzzle` and isn't removed, and no new or moved version starts at a played puzzle.
+The required frozen graph versions check, run in CI against the PR's base (`HEAD` by default): every version a played puzzle has used is byte for byte unchanged from the base, keeps its `startsAtPuzzle` and isn't removed, and no new or moved version starts at a played puzzle. A puzzle only counts as played if the base scheduled it, so a base with no schedule (bootstrapping the data) has nothing played and nothing frozen.
 
 ## Schedule: `schedule/`
 

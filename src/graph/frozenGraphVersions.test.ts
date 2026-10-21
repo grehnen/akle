@@ -75,4 +75,10 @@ describe("frozenGraphVersionViolations", () => {
       "Graph version new starts at #25, but puzzles up to #30 are already played",
     ]);
   });
+
+  test("accepts bootstrapping versions from a base with no versions and no schedule", () => {
+    expect(
+      frozenGraphVersionViolations({ previous: [], current: [fixture, osm], playedThrough: 0 }),
+    ).toEqual([]);
+  });
 });
