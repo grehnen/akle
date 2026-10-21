@@ -1,10 +1,9 @@
 import type { Kommun, KommunCode, NeighborLink } from "../../src/graph/graphVersion";
+import { type Pair, pairKey, sortedPair } from "../../src/graph/kommunPair";
 
 /** The kinds of flag a pair can get, each needing a human verdict (ADR 0003). */
 export const pairFlagKinds = ["scb-mismatch", "short-border", "point-touch", "fixed-only"] as const;
 export type PairFlagKind = (typeof pairFlagKinds)[number];
-
-export type Pair = readonly [KommunCode, KommunCode];
 
 /** An `add` or `remove` correction to the generated graph, backed by a reason and evidence. */
 export type NeighborOverride = {
@@ -117,16 +116,6 @@ export function readNeighborOverrides(
   });
 
   return { ferries, overrides, reviewed };
-}
-
-/** The pair's codes in ascending order, joined by a dash: `0125-0180`. */
-export function pairKey(between: readonly KommunCode[]): string {
-  return sortedPair(between).join("-");
-}
-
-export function sortedPair(between: readonly KommunCode[]): Pair {
-  const [a, b] = between;
-  return a < b ? [a, b] : [b, a];
 }
 
 function isPair(value: unknown): value is [KommunCode, KommunCode] {

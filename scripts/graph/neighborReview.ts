@@ -1,13 +1,7 @@
 import type { Kommun, KommunCode, NeighborLink } from "../../src/graph/graphVersion";
 import type { FixedLink } from "./fixedLinks";
-import {
-  pairFlagKinds,
-  pairKey,
-  sortedPair,
-  type NeighborOverrides,
-  type Pair,
-  type PairFlagKind,
-} from "./neighborOverrides";
+import { type Pair, pairKey, sortedPair } from "../../src/graph/kommunPair";
+import { pairFlagKinds, type NeighborOverrides, type PairFlagKind } from "./neighborOverrides";
 
 /** A WGS 84 `[lon, lat]` point. */
 export type Point = readonly [number, number];

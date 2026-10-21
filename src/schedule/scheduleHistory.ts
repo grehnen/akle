@@ -1,20 +1,10 @@
 import type { GraphVersion, KommunCode } from "../graph/graphVersion";
+import { type PairKey, pairKey } from "../graph/kommunPair";
 import { shortestRouteLengthsFrom } from "../graph/routes";
 import { type Cooldown, cooldownDaysOn, type ScheduledPuzzle } from "./schedule";
 
 export const minimumN = 3;
 export const maximumN = 8;
-
-/** An unordered start/destination pair, as "a-b" with a < b. */
-export type PairKey = string;
-
-export function pairKey(a: KommunCode, b: KommunCode): PairKey {
-  return a < b ? `${a}-${b}` : `${b}-${a}`;
-}
-
-export function pairEndpoints(key: PairKey): [KommunCode, KommunCode] {
-  return key.split("-") as [KommunCode, KommunCode];
-}
 
 const pairGroupCache = new WeakMap<GraphVersion, ReadonlyMap<number, readonly PairKey[]>>();
 
@@ -26,7 +16,7 @@ export function pairsByN(graph: GraphVersion): ReadonlyMap<number, readonly Pair
   for (let n = minimumN; n <= maximumN; n++) groups.set(n, []);
   for (const from of graph.kommuner.keys()) {
     for (const [to, n] of shortestRouteLengthsFrom(graph, from)) {
-      if (from < to && n >= minimumN && n <= maximumN) groups.get(n)?.push(pairKey(from, to));
+      if (from < to && n >= minimumN && n <= maximumN) groups.get(n)?.push(pairKey([from, to]));
     }
   }
   for (const pairs of groups.values()) pairs.sort();
@@ -46,7 +36,7 @@ export class ScheduleHistory {
   constructor(private readonly cooldown: Cooldown) {}
 
   add(row: ScheduledPuzzle): void {
-    const key = pairKey(row.start, row.destination);
+    const key = pairKey([row.start, row.destination]);
     this.pairUses.set(key, this.uses(key) + 1);
     this.endpointsByPuzzle.set(row.number, [row.start, row.destination]);
   }
@@ -90,7 +80,7 @@ export class ScheduleHistory {
       return [`${where}: N is ${n}, outside ${minimumN}–${maximumN}`];
     }
     const problems: string[] = [];
-    const key = pairKey(row.start, row.destination);
+    const key = pairKey([row.start, row.destination]);
     const group = pairsByN(graph).get(n) ?? [];
     if (!this.leastUsed(group).includes(key)) {
       problems.push(

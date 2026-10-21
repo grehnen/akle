@@ -1,6 +1,6 @@
 import type { Kommun, KommunCode, NeighborLink } from "../../src/graph/graphVersion";
 import type { GraphVersionHeader } from "../../src/graph/graphVersionFiles";
-import { pairKey } from "./neighborOverrides";
+import { pairKey } from "../../src/graph/kommunPair";
 import type { NeighborReview, PairFlag, Point } from "./neighborReview";
 
 export type GraphReportInput = {

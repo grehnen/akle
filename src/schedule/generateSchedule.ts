@@ -3,7 +3,8 @@ import type { GraphVersion } from "../graph/graphVersion";
 import { graphVersionFor } from "../graph/graphVersionFiles";
 import { shortestRouteLengthsFrom } from "../graph/routes";
 import { type Cooldown, puzzlesPerChunk, type ScheduledPuzzle } from "./schedule";
-import { maximumN, minimumN, pairEndpoints, pairsByN, ScheduleHistory } from "./scheduleHistory";
+import { pairEndpoints } from "../graph/kommunPair";
+import { maximumN, minimumN, pairsByN, ScheduleHistory } from "./scheduleHistory";
 
 export type GenerateScheduleInput = Cooldown & {
   /** The committed schedule, in puzzle order. */

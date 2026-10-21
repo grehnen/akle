@@ -1,5 +1,5 @@
 import type { KommunShapes } from "../../src/graph/graphVersion";
-import type { Pair } from "./neighborOverrides";
+import type { Pair } from "../../src/graph/kommunPair";
 import type { BuildEvidence, Point } from "./neighborReview";
 
 /**

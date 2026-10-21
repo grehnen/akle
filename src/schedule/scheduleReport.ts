@@ -2,7 +2,8 @@ import { type GraphVersion, type KommunCode } from "../graph/graphVersion";
 import { graphVersionFor } from "../graph/graphVersionFiles";
 import type { GeneratedSchedule } from "./generateSchedule";
 import type { ScheduledPuzzle } from "./schedule";
-import { maximumN, minimumN, pairKey, pairsByN } from "./scheduleHistory";
+import { pairKey } from "../graph/kommunPair";
+import { maximumN, minimumN, pairsByN } from "./scheduleHistory";
 
 /** The Markdown report for a schedule PR body: what was added and reconciled, and what is left. */
 export function scheduleReport(
@@ -49,7 +50,7 @@ export function scheduleReport(
     ),
   );
 
-  const usedPairs = new Set(rows.map((row) => pairKey(row.start, row.destination)));
+  const usedPairs = new Set(rows.map((row) => pairKey([row.start, row.destination])));
   const groups = pairsByN(newest);
   sections.push(
     table(

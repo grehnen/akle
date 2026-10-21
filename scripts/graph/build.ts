@@ -3,6 +3,7 @@ import mapshaper from "mapshaper";
 import { mkdir } from "node:fs/promises";
 import type { KommunShapes, NeighborLink } from "../../src/graph/graphVersion";
 import { foldedNameCollisions } from "../../src/engine/kommunNames";
+import { pairKey } from "../../src/graph/kommunPair";
 import buildConfig from "./build-config.json";
 import { findFixedLinks, type LinkWay } from "./fixedLinks";
 import { graphVersionFileContents } from "./graphVersionWriter";
@@ -84,9 +85,9 @@ if (collisions.length > 0) {
 
 log("Finding shared borders");
 const borders = sharedBorders(areas);
-const borderPairs = new Set(borders.map((border) => border.between.join("-")));
+const borderPairs = new Set(borders.map((border) => pairKey(border.between)));
 const touchCandidates = sharedVertices(areas).filter(
-  (pair) => !borderPairs.has(pair.between.join("-")),
+  (pair) => !borderPairs.has(pairKey(pair.between)),
 );
 const nearBorders = borderProximity([
   ...borders,

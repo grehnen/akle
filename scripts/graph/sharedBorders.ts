@@ -1,4 +1,5 @@
 import type { KommunCode } from "../../src/graph/graphVersion";
+import { compareCodes, pairKey } from "../../src/graph/kommunPair";
 
 export type Position = number[];
 export type Line = Position[];
@@ -91,7 +92,7 @@ export function sharedVertices(
     for (let first = 0; first < sorted.length; first++) {
       for (let second = first + 1; second < sorted.length; second++) {
         const between: [KommunCode, KommunCode] = [sorted[first], sorted[second]];
-        const key = between.join("-");
+        const key = pairKey(between);
         const pair = pairs.get(key) ?? { between, points: [] };
         pair.points.push(point);
         pairs.set(key, pair);
@@ -131,8 +132,4 @@ function edgeKey(a: Position, b: Position): string {
 
 function samePosition(a: Position, b: Position): boolean {
   return a[0] === b[0] && a[1] === b[1];
-}
-
-function compareCodes(a: KommunCode, b: KommunCode): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
