@@ -23,7 +23,6 @@ export type GeneratedSchedule = {
   rows: ScheduledPuzzle[];
   /** Unplayed rows whose N was updated or whose pair was replaced. */
   reconciled: ReconciledRow[];
-  /** Rows appended after the previous last row. */
   added: ScheduledPuzzle[];
 };
 

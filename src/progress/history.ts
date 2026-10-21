@@ -15,7 +15,6 @@ export type HistoryEntry = {
   emojiLine: string;
 };
 
-/** Finished games keyed by puzzle number. */
 export type History = Record<number, HistoryEntry>;
 
 export function emojiLine(cards: readonly Pick<GuessCard, "feedback">[]): string {

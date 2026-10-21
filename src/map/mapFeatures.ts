@@ -101,7 +101,6 @@ export function endpointBounds(
   return routeBounds(graph, [puzzle.start, puzzle.destination]);
 }
 
-/** The box around the shapes of every kommun on a route. */
 export function routeBounds(graph: GraphVersion, route: readonly KommunCode[]): Bounds | undefined {
   const shapes = shapesByCode(graph);
   const bounds: Bounds = [Infinity, Infinity, -Infinity, -Infinity];

@@ -16,7 +16,6 @@ export type BuildEvidence = {
   landBorders: readonly { between: Pair; landLength: number; at: Point }[];
   /** Pairs whose OSM boundaries meet only at single points, one of them on land. */
   pointTouches: readonly { between: Pair; at: Point }[];
-  /** Detected fixed links. */
   fixedLinks: readonly FixedLink[];
   /** Pairs whose SCB boundaries touch, the cross-check. */
   scbPairs: readonly { between: Pair; at: Point }[];
