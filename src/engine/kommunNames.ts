@@ -30,3 +30,24 @@ export function resolveKommunName(graph: GraphVersion, input: string): KommunCod
   }
   return foldedMatch;
 }
+
+/** Habo and Håbo fold to the same name; a literal match tells them apart (#12). */
+const allowedFoldedCollisions = [["Habo", "Håbo"]];
+
+/**
+ * Groups of names that fold to the same text, so a typed name couldn't tell them apart.
+ * The known Habo/Håbo pair is allowed. Each group and the list are sorted.
+ */
+export function foldedNameCollisions(names: readonly string[]): string[][] {
+  const byFolded = new Map<string, string[]>();
+  for (const name of names) {
+    const folded = foldKommunName(name);
+    byFolded.set(folded, [...(byFolded.get(folded) ?? []), name]);
+  }
+  const allowed = new Set(allowedFoldedCollisions.map((group) => group.join("|")));
+  return [...byFolded.values()]
+    .filter((group) => group.length > 1)
+    .map((group) => [...group].sort((a, b) => a.localeCompare(b, "sv")))
+    .filter((group) => !allowed.has(group.join("|")))
+    .sort((a, b) => a[0].localeCompare(b[0], "sv"));
+}

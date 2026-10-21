@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildGraphVersion } from "../graph/graphVersion";
-import { resolveKommunName } from "./kommunNames";
+import { foldedNameCollisions, resolveKommunName } from "./kommunNames";
 
 const graph = buildGraphVersion({
   id: "test",
@@ -35,5 +35,18 @@ describe("resolveKommunName", () => {
   test("returns undefined for unknown names", () => {
     expect(resolveKommunName(graph, "Bålsta")).toBeUndefined();
     expect(resolveKommunName(graph, "")).toBeUndefined();
+  });
+});
+
+describe("foldedNameCollisions", () => {
+  test("allows the known Habo/Håbo pair", () => {
+    expect(foldedNameCollisions(["Habo", "Håbo", "Örebro", "Upplands-Bro"])).toEqual([]);
+  });
+
+  test("reports names that collide after accent folding", () => {
+    expect(foldedNameCollisions(["Ale", "Åle", "Upplands Bro", "Upplands-Bro", "Örebro"])).toEqual([
+      ["Ale", "Åle"],
+      ["Upplands Bro", "Upplands-Bro"],
+    ]);
   });
 });
