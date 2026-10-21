@@ -9,10 +9,19 @@ export type Puzzle = {
   destination: KommunCode;
 };
 
-/** A daily puzzle in progress: only the accepted guesses, in order. Everything else is derived. */
+/** A daily puzzle in progress: the accepted guesses, in order, and any hints taken. Everything else is derived. */
 export type Game = {
   puzzle: Puzzle;
   guesses: readonly KommunCode[];
+  /** Absent until the first hint is taken. */
+  hints?: TakenHints;
+};
+
+export type TakenHints = {
+  /** 1 to 3. */
+  taken: number;
+  /** Hint 1's kommun, fixed when it was taken. */
+  nextKommun: KommunCode;
 };
 
 export type Feedback = "✅" | "🟩" | "🟧" | "🟥";
@@ -38,8 +47,9 @@ export type GameReview = {
   missing: KommunCode[];
   /** On a win, guesses beyond N. */
   extra?: number;
-  /** A win where every guess was ✅. Hints are not part of the engine yet. */
+  /** A win where every guess was ✅ and no hint was taken. */
   perfect: boolean;
+  hintsUsed: number;
 };
 
 export type GuessResult =
@@ -90,6 +100,7 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
   const away = routeCost(graph, start, destination, known);
   const status: GameStatus = away === 0 ? "won" : cards.length >= limit ? "lost" : "playing";
 
+  const hintsUsed = game.hints?.taken ?? 0;
   const missing =
     status === "lost"
       ? (cheapestRoute(graph, start, destination, known) ?? []).filter((code) => !known.has(code))
@@ -103,7 +114,8 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
     away,
     missing,
     extra: status === "won" ? cards.length - n : undefined,
-    perfect: status === "won" && cards.every((card) => card.feedback === "✅"),
+    perfect: status === "won" && hintsUsed === 0 && cards.every((card) => card.feedback === "✅"),
+    hintsUsed,
   };
 }
 
