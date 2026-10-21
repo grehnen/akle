@@ -13,3 +13,22 @@ ferries:
   - between: ["1407", "1480"]
     names: [Öckerö, Göteborg]
     reason: Västtrafik's Öckeröleden car ferry Hönö–Lilla Varholmen (Hisingen).
+
+# Verdicts on the pairs the build flags (scb-mismatch, short-border, point-touch, fixed-only); see
+# data/graph-report.md and "Reviewing flagged pairs" in data/README.md. Every flagged pair needs
+# exactly one, and bun run graph:check fails on stale ones. Run bun run graph:review after editing.
+#
+# overrides change the generated graph, with a reason and an http(s) evidence link:
+#   - between: ["<code>", "<code>"]
+#     names: [<name>, <name>]
+#     remove: land        # or add: land | fixed
+#     reason: ...
+#     evidence: https://...
+overrides: []
+
+# reviewed keeps what the build decided for the listed flags:
+#   - between: ["<code>", "<code>"]
+#     names: [<name>, <name>]
+#     keep: [short-border]
+#     reason: ...
+reviewed: []

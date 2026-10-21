@@ -66,6 +66,49 @@ export function sharedBorders(areas: readonly KommunArea[]): SharedBorder[] {
   );
 }
 
+/**
+ * The pairs of kommuner whose boundaries share at least one vertex, whether along a border or at
+ * a single point, with the shared points sorted by longitude, then latitude.
+ */
+export function sharedVertices(
+  areas: readonly KommunArea[],
+): { between: [KommunCode, KommunCode]; points: Position[] }[] {
+  const owners = new Map<string, { point: Position; codes: Set<KommunCode> }>();
+  for (const area of areas) {
+    for (const ring of ringsOf(area.geometry)) {
+      for (const point of ring) {
+        const key = `${point[0]},${point[1]}`;
+        const entry = owners.get(key) ?? { point, codes: new Set() };
+        entry.codes.add(area.code);
+        owners.set(key, entry);
+      }
+    }
+  }
+  const pairs = new Map<string, { between: [KommunCode, KommunCode]; points: Position[] }>();
+  for (const { point, codes } of owners.values()) {
+    if (codes.size < 2) continue;
+    const sorted = [...codes].sort(compareCodes);
+    for (let first = 0; first < sorted.length; first++) {
+      for (let second = first + 1; second < sorted.length; second++) {
+        const between: [KommunCode, KommunCode] = [sorted[first], sorted[second]];
+        const key = between.join("-");
+        const pair = pairs.get(key) ?? { between, points: [] };
+        pair.points.push(point);
+        pairs.set(key, pair);
+      }
+    }
+  }
+  return [...pairs.values()]
+    .map((pair) => ({
+      between: pair.between,
+      points: pair.points.sort((a, b) => a[0] - b[0] || a[1] - b[1]),
+    }))
+    .sort(
+      (a, b) =>
+        compareCodes(a.between[0], b.between[0]) || compareCodes(a.between[1], b.between[1]),
+    );
+}
+
 /** A run that wraps past the ring's start point is one line, not two. */
 function joinAcrossRingStart(lines: Line[]): void {
   if (lines.length < 2) return;

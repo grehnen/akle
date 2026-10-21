@@ -41,7 +41,7 @@ describe("graphVersionFileContents", () => {
     ).toEqual(["0114", "0180"]);
   });
 
-  test("writes fixed links as neighbors and records their OSM way ids", () => {
+  test("records the OSM way ids of the detected fixed links", () => {
     const withFixedLinks = graphVersionFileContents({
       version: { id: "osm-test", startsAtPuzzle: 3 },
       kommuner: [
@@ -49,16 +49,41 @@ describe("graphVersionFileContents", () => {
         { code: "0186", name: "Lidingö" },
         { code: "0125", name: "Ekerö" },
       ],
-      links: [],
+      links: [
+        { between: ["0186", "0180"], kind: "fixed" },
+        { between: ["0180", "0125"], kind: "land" },
+      ],
       fixedLinks: [
         { between: ["0186", "0180"], ways: [4054906, 23353186] },
         { between: ["0125", "0180"], ways: [30961374] },
       ],
       shapes: { type: "FeatureCollection", features: [] },
     });
-    expect(withFixedLinks["neighbors.csv"]).toBe("a,b,link\n0125,0180,fixed\n0180,0186,fixed\n");
+    expect(withFixedLinks["neighbors.csv"]).toBe("a,b,link\n0125,0180,land\n0180,0186,fixed\n");
     expect(withFixedLinks["fixed-links.csv"]).toBe(
       "a,b,ways\n0125,0180,30961374\n0180,0186,4054906 23353186\n",
     );
+  });
+
+  test("writes the evidence the review of flagged pairs reads", () => {
+    const withEvidence = graphVersionFileContents({
+      version: { id: "osm-test", startsAtPuzzle: 3 },
+      kommuner: [],
+      links: [],
+      shapes: { type: "FeatureCollection", features: [] },
+      evidence: {
+        landBorders: [
+          { between: ["0180", "0125"], landLength: 42, at: [17.83261, 59.3684] },
+          { between: ["0114", "0115"], landLength: 0, at: [18, 59.5] },
+        ],
+        pointTouches: [{ between: ["1440", "1407"], at: [11.8, 57.7] }],
+        scbPairs: [{ between: ["0125", "0180"], at: [17.8, 59.4] }],
+      },
+    });
+    expect(withEvidence["land-borders.csv"]).toBe(
+      "a,b,land,at\n0114,0115,0,18 59.5\n0125,0180,42,17.83261 59.3684\n",
+    );
+    expect(withEvidence["point-touches.csv"]).toBe("a,b,at\n1407,1440,11.8 57.7\n");
+    expect(withEvidence["scb-pairs.csv"]).toBe("a,b,at\n0125,0180,17.8 59.4\n");
   });
 });

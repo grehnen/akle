@@ -27,15 +27,15 @@ const border: SharedBorder = {
 };
 
 describe("measureLandBorders", () => {
-  test("counts only the parts of a border on land and outside lakes", () => {
+  test("counts only the parts of a border on land and outside lakes, and points at the longest", () => {
     const measured = measureLandBorders([border], {
       land: [box(-1, -1, 0.6, 1)],
       lakes: [box(0.25, -1, 0.5, 1)],
     });
-    expect(measured).toEqual([{ between: ["0001", "0002"], landLength: 38918 }]);
+    expect(measured).toEqual([{ between: ["0001", "0002"], landLength: 38918, at: [0.125, 0] }]);
   });
 
-  test("a border running only through a lake or the sea has no length on land", () => {
+  test("a border running only through a lake or the sea has no length on land; it points at its longest segment", () => {
     const measured = measureLandBorders([border], {
       land: [box(-1, -1, 0.5, 1), box(0.7, -1, 2, 1)],
       lakes: [
@@ -54,7 +54,7 @@ describe("measureLandBorders", () => {
         box(0.65, -1, 1.5, 1),
       ],
     });
-    expect(measured).toEqual([{ between: ["0001", "0002"], landLength: 0 }]);
+    expect(measured).toEqual([{ between: ["0001", "0002"], landLength: 0, at: [0.5, 0] }]);
   });
 
   test("an island inside a lake is land", () => {
@@ -81,6 +81,6 @@ describe("measureLandBorders", () => {
       land: [box(-1, -1, 2, 1)],
       lakes: [lakeWithIsland],
     });
-    expect(measured).toEqual([{ between: ["0001", "0002"], landLength: 55598 }]);
+    expect(measured).toEqual([{ between: ["0001", "0002"], landLength: 55598, at: [0.1, 0] }]);
   });
 });

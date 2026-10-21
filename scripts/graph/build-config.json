@@ -9,6 +9,10 @@
     "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkopplingar_2026.xlsx",
     "sha256": "893b45248dd6bd243843ba829ae62514aaf082c2ec7a9e9bbfa0a73b1f56e2c5"
   },
+  "scbBoundaries": {
+    "url": "https://www.scb.se/contentassets/3443fea3fa6640f7a57ea15d9a372d33/shape_svenska_260225.zip",
+    "sha256": "26a7030a23648ad25a69acee16f08974148eafd076bfa8dd76013060693f51f4"
+  },
   "mainlandCoastlineClosure": {
     "comment": "The extract cuts the mainland coastline at Torne älv and Idefjorden. This route closes it around the outside of Sweden, via Finland, the far north and Norway, keeping Sweden on its left. The last leg comes straight down to Idefjorden so it doesn't cross the Norwegian shore.",
     "route": [

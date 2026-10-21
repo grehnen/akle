@@ -1,37 +1,132 @@
 import type { Kommun, KommunCode, NeighborLink } from "../../src/graph/graphVersion";
 
-type FerryEntry = { between?: unknown; names?: unknown; reason?: unknown };
+/** The kinds of flag a pair can get, each needing a human verdict (ADR 0003). */
+export const pairFlagKinds = ["scb-mismatch", "short-border", "point-touch", "fixed-only"] as const;
+export type PairFlagKind = (typeof pairFlagKinds)[number];
+
+export type Pair = readonly [KommunCode, KommunCode];
+
+/** An `add` or `remove` correction to the generated graph, backed by a reason and evidence. */
+export type NeighborOverride = {
+  between: Pair;
+  action: "add" | "remove";
+  /** How an added pair is linked. */
+  link?: "land" | "fixed";
+  reason: string;
+  evidence: string;
+};
+
+/** A `keep` verdict: the generated graph is right about this pair despite its flags. */
+export type ReviewedPair = { between: Pair; kinds: PairFlagKind[]; reason: string };
+
+export type NeighborOverrides = {
+  ferries: NeighborLink[];
+  overrides: NeighborOverride[];
+  reviewed: ReviewedPair[];
+};
+
+type Entry = Record<string, unknown>;
 
 /**
- * The hand-kept ferry links from `data/neighbor-overrides.yaml` (ADR 0003). Each is keyed by
- * an unordered pair of SCB codes; the names are for readers and must match the codes.
+ * Reads `data/neighbor-overrides.yaml` (ADR 0003): the hand-kept `ferries`, the `overrides`
+ * and the `reviewed` keep verdicts. Every entry is keyed by an unordered pair of SCB codes;
+ * the names are for readers and must match the codes. A pair may appear only once.
  */
-export function readFerries(yaml: string, kommuner: readonly Kommun[]): NeighborLink[] {
+export function readNeighborOverrides(
+  yaml: string,
+  kommuner: readonly Kommun[],
+): NeighborOverrides {
   const names = new Map(kommuner.map((kommun) => [kommun.code, kommun.name]));
-  const document = Bun.YAML.parse(yaml) as { ferries?: unknown } | null;
-  const entries = document?.ferries ?? [];
-  if (!Array.isArray(entries)) throw new Error("ferries must be a list");
+  const document = (Bun.YAML.parse(yaml) ?? {}) as Record<string, unknown>;
+  const listed = new Map<string, string>();
 
-  const seen = new Set<string>();
-  return entries.map((entry: FerryEntry, index) => {
-    const where = `ferries[${index}]`;
-    const between = entry.between;
-    if (!isPair(between)) throw new Error(`${where}: between needs two SCB codes`);
+  const entries = (section: string): { entry: Entry; where: string }[] => {
+    const list = document[section] ?? [];
+    if (!Array.isArray(list)) throw new Error(`${section} must be a list`);
+    return list.map((entry: unknown, index) => {
+      const where = `${section}[${index}]`;
+      if (typeof entry !== "object" || entry === null) throw new Error(`${where}: not an entry`);
+      return { entry: entry as Entry, where };
+    });
+  };
+
+  const readPair = (entry: Entry, where: string, key: string): [KommunCode, KommunCode] => {
+    const between = entry[key];
+    if (!isPair(between)) throw new Error(`${where}: ${key} needs two SCB codes`);
     if (!isPair(entry.names)) throw new Error(`${where}: names needs two kommun names`);
     between.forEach((code, side) => {
       const name = names.get(code);
       if (name === undefined) throw new Error(`${where}: unknown kommun code ${code}`);
-      const listed = (entry.names as string[])[side];
-      if (listed !== name) throw new Error(`${where}: ${code} is ${name}, not ${listed}`);
+      const listedName = (entry.names as string[])[side];
+      if (listedName !== name) throw new Error(`${where}: ${code} is ${name}, not ${listedName}`);
     });
     if (typeof entry.reason !== "string" || entry.reason.trim() === "") {
       throw new Error(`${where}: needs a reason`);
     }
-    const key = [...between].sort().join("-");
-    if (seen.has(key)) throw new Error(`${where}: listed twice: ${key}`);
-    seen.add(key);
+    const listedPair = pairKey(between);
+    const earlier = listed.get(listedPair);
+    if (earlier !== undefined)
+      throw new Error(`${where}: ${listedPair} is already listed in ${earlier}`);
+    listed.set(listedPair, where);
+    return between;
+  };
+
+  const ferries = entries("ferries").map(({ entry, where }): NeighborLink => {
+    const between = readPair(entry, where, "between");
     return { between: [between[0], between[1]], kind: "ferry" };
   });
+
+  const overrides = entries("overrides").map(({ entry, where }): NeighborOverride => {
+    const action = "add" in entry ? "add" : "remove" in entry ? "remove" : undefined;
+    if (action === undefined || ("add" in entry && "remove" in entry)) {
+      throw new Error(`${where}: needs either add or remove`);
+    }
+    const between = sortedPair(readPair(entry, where, action));
+    if (typeof entry.evidence !== "string" || !/^https?:\/\/\S+$/.test(entry.evidence)) {
+      throw new Error(`${where}: needs an evidence link`);
+    }
+    const override: NeighborOverride = {
+      between,
+      action,
+      reason: entry.reason as string,
+      evidence: entry.evidence,
+    };
+    if (action === "add") {
+      if (entry.link !== "land" && entry.link !== "fixed") {
+        throw new Error(`${where}: link must be land or fixed`);
+      }
+      override.link = entry.link;
+    }
+    return override;
+  });
+
+  const reviewed = entries("reviewed").map(({ entry, where }): ReviewedPair => {
+    const between = sortedPair(readPair(entry, where, "keep"));
+    const kinds = entry.kinds;
+    if (
+      !Array.isArray(kinds) ||
+      kinds.length === 0 ||
+      !kinds.every((kind) => pairFlagKinds.includes(kind)) ||
+      new Set(kinds).size !== kinds.length
+    ) {
+      throw new Error(
+        `${where}: kinds must list flag kinds from ${pairFlagKinds.join(", ")}, each once`,
+      );
+    }
+    return { between, kinds: kinds as PairFlagKind[], reason: entry.reason as string };
+  });
+
+  return { ferries, overrides, reviewed };
+}
+
+/** The pair's codes in ascending order, joined by a dash: `0125-0180`. */
+export function pairKey(between: readonly KommunCode[]): string {
+  return sortedPair(between).join("-");
+}
+
+export function sortedPair(between: readonly KommunCode[]): Pair {
+  const [a, b] = between;
+  return a < b ? [a, b] : [b, a];
 }
 
 function isPair(value: unknown): value is [KommunCode, KommunCode] {

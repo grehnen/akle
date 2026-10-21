@@ -1,0 +1,110 @@
+import type { Kommun, KommunCode, NeighborLink } from "../../src/graph/graphVersion";
+import type { GraphVersionHeader } from "../../src/graph/graphVersionFiles";
+import { pairKey } from "./neighborOverrides";
+import type { NeighborReview, PairFlag, Point } from "./neighborReview";
+
+export type GraphReportInput = {
+  version: GraphVersionHeader;
+  kommuner: readonly Kommun[];
+  review: NeighborReview;
+  /** The graph version before this one, for the changes since. */
+  previous?: { id: string; kommuner: readonly Kommun[]; links: readonly NeighborLink[] };
+};
+
+/**
+ * `data/graph-report.md` (ADR 0003): every flagged pair with its measurements, map link and
+ * verdict, the problems that fail the check, and the pairs added or removed since the previous
+ * graph version.
+ */
+export function graphReport({ version, kommuner, review, previous }: GraphReportInput): string {
+  const names = new Map(kommuner.map((kommun) => [kommun.code, kommun.name]));
+  const previousNames = new Map(previous?.kommuner.map((kommun) => [kommun.code, kommun.name]));
+  const pairName = (between: readonly KommunCode[]) =>
+    between.map((code) => names.get(code) ?? previousNames.get(code) ?? code).join("–");
+  const count = (kind: NeighborLink["kind"]) =>
+    review.links.filter((link) => link.kind === kind).length;
+  const unreviewed = review.flags.filter((flag) => flag.verdict === undefined).length;
+  const problems = [...review.problems, ...review.graphProblems];
+
+  const lines = [
+    `# Neighbor graph report: ${version.id}`,
+    "",
+    "Written by `bun run graph:build` from the graph version and `data/neighbor-overrides.yaml` (ADR 0003). Don't edit it by hand: `bun run graph:check` fails when it's out of date.",
+    "",
+    `Graph version \`${version.id}\` starts at puzzle #${version.startsAtPuzzle}. ${kommuner.length} kommuner, ${new Set(review.links.map((link) => pairKey(link.between))).size} neighbor pairs: ${count("land")} land, ${count("fixed")} fixed, ${count("ferry")} ferry links.`,
+    "",
+    "## Problems",
+    "",
+    ...(problems.length === 0 ? ["None."] : problems.map((problem) => `- ${problem}`)),
+    "",
+    "## Flagged pairs",
+    "",
+    `${review.flags.length} flagged pairs, ${unreviewed} without a verdict.`,
+    "",
+    "| Pair | Codes | Flags | Measurements | Map | Verdict |",
+    "| --- | --- | --- | --- | --- | --- |",
+    ...review.flags.map(
+      (flag) =>
+        `| ${pairName(flag.between)} | ${pairKey(flag.between)} | ${flag.kinds.join(", ")} | ${measurements(flag)} | [map](${mapLink(flag.at)}) | ${verdictText(flag)} |`,
+    ),
+    "",
+    `## Changes since the previous graph version${previous ? ` (${previous.id})` : ""}`,
+    "",
+  ];
+  if (previous === undefined) {
+    lines.push("No previous graph version.");
+  } else {
+    const kindsByPair = (links: readonly NeighborLink[]) => {
+      const byPair = new Map<string, { between: readonly KommunCode[]; kinds: string[] }>();
+      for (const link of links) {
+        const key = pairKey(link.between);
+        const entry = byPair.get(key) ?? { between: key.split("-"), kinds: [] };
+        entry.kinds.push(link.kind);
+        byPair.set(key, entry);
+      }
+      return byPair;
+    };
+    const now = kindsByPair(review.links);
+    const before = kindsByPair(previous.links);
+    const listed = (pairs: Map<string, { between: readonly KommunCode[]; kinds: string[] }>) =>
+      [...pairs]
+        .sort(([a], [b]) => (a < b ? -1 : 1))
+        .map(
+          ([key, pair]) => `${pairName(pair.between)} (${key}, ${pair.kinds.sort().join(", ")})`,
+        );
+    const added = listed(new Map([...now].filter(([key]) => !before.has(key))));
+    const removed = listed(new Map([...before].filter(([key]) => !now.has(key))));
+    for (const [title, pairs] of [
+      ["Added", added],
+      ["Removed", removed],
+    ] as const) {
+      lines.push(`### ${title} (${pairs.length})`, "");
+      lines.push(...(pairs.length === 0 ? ["None."] : pairs.map((pair) => `- ${pair}`)), "");
+    }
+    lines.pop();
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function measurements(flag: PairFlag): string {
+  const parts: string[] = [];
+  if (flag.scb) parts.push(flag.scb);
+  if (flag.landLength !== undefined) parts.push(`land border ${flag.landLength} m`);
+  if (flag.ways) {
+    parts.push(
+      `ways ${flag.ways.map((way) => `[${way}](https://www.openstreetmap.org/way/${way})`).join(" ")}`,
+    );
+  }
+  if (flag.kinds.includes("point-touch")) parts.push("touches at one point");
+  return parts.join("; ");
+}
+
+function mapLink([lon, lat]: Point): string {
+  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}`;
+}
+
+function verdictText({ verdict }: PairFlag): string {
+  if (verdict === undefined) return "**none**";
+  const evidence = verdict.action === "keep" ? "" : ` ([evidence](${verdict.evidence}))`;
+  return `${verdict.action}: ${verdict.reason.replaceAll(/\s+/g, " ").trim().replaceAll("|", "\\|")}${evidence}`;
+}

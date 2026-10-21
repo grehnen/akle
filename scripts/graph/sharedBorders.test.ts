@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { sharedBorders, type KommunArea } from "./sharedBorders";
+import { sharedBorders, sharedVertices, type KommunArea } from "./sharedBorders";
 
 const square = (x: number, y: number): number[][][] => [
   [
@@ -78,6 +78,34 @@ describe("sharedBorders", () => {
             [1, 5],
             [1, 6],
           ],
+        ],
+      },
+    ]);
+  });
+});
+
+describe("sharedVertices", () => {
+  test("lists the pairs whose boundaries share a vertex, with the shared points in order", () => {
+    const areas: KommunArea[] = [
+      { code: "0003", geometry: { type: "Polygon", coordinates: square(1, 1) } },
+      { code: "0001", geometry: { type: "Polygon", coordinates: square(0, 0) } },
+      { code: "0002", geometry: { type: "MultiPolygon", coordinates: [square(1, 0)] } },
+      { code: "0004", geometry: { type: "Polygon", coordinates: square(5, 5) } },
+    ];
+    expect(sharedVertices(areas)).toEqual([
+      {
+        between: ["0001", "0002"],
+        points: [
+          [1, 0],
+          [1, 1],
+        ],
+      },
+      { between: ["0001", "0003"], points: [[1, 1]] },
+      {
+        between: ["0002", "0003"],
+        points: [
+          [1, 1],
+          [2, 1],
         ],
       },
     ]);

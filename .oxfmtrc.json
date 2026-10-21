@@ -1,4 +1,10 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": [".agents/", "skills-lock.json", "bun.lock", "data/graphs/*/shapes.geojson"]
+  "ignorePatterns": [
+    ".agents/",
+    "skills-lock.json",
+    "bun.lock",
+    "data/graphs/*/shapes.geojson",
+    "data/graph-report.md"
+  ]
 }

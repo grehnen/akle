@@ -12,6 +12,11 @@ export type LandBorder = {
   between: readonly [KommunCode, KommunCode];
   /** Length of the shared border on land, in whole metres. */
   landLength: number;
+  /**
+   * Where to look, rounded to 5 decimals: the middle of the longest piece on land, or of the
+   * longest segment when none is on land.
+   */
+  at: Position;
 };
 
 const earthRadius = 6_371_008.8;
@@ -24,13 +29,24 @@ export function measureLandBorders(
   const land = new PolygonIndex(mask.land);
   const lakes = new PolygonIndex(mask.lakes);
   const isOnLand = landTest(land, lakes);
-  return borders.map((border) => ({
-    between: border.between,
-    landLength: Math.round(
-      border.lines.reduce((sum, line) => sum + lineLengthOnLand(line, [land, lakes], isOnLand), 0),
-    ),
-  }));
+  return borders.map((border) => {
+    const longest: Longest = { land: undefined, any: undefined };
+    const length = border.lines.reduce(
+      (sum, line) => sum + lineLengthOnLand(line, [land, lakes], isOnLand, longest),
+      0,
+    );
+    const piece = longest.land ?? longest.any;
+    const middle = piece ? interpolate(piece.from, piece.to, 0.5) : [0, 0];
+    return {
+      between: border.between,
+      landLength: Math.round(length),
+      at: middle.map((value) => Math.round(value * 1e5) / 1e5),
+    };
+  });
 }
+
+type Piece = { from: Position; to: Position; length: number };
+type Longest = { land: Piece | undefined; any: Piece | undefined };
 
 /** Whether a point is on land: inside the land mask, outside every lake. */
 export function pointOnLand(mask: LandWaterMask): (point: Position) => boolean {
@@ -50,11 +66,16 @@ function lineLengthOnLand(
   line: Line,
   indexes: readonly PolygonIndex[],
   isOnLand: (point: Position) => boolean,
+  longest: Longest,
 ): number {
   let total = 0;
   let status: boolean | undefined;
   for (let index = 0; index + 1 < line.length; index++) {
     const [from, to] = [line[index], line[index + 1]];
+    const segmentLength = haversine(from, to);
+    if (segmentLength > (longest.any?.length ?? -1)) {
+      longest.any = { from, to, length: segmentLength };
+    }
     const contacts = indexes.flatMap((polygons) => polygons.crossings(from, to));
     const cuts = [...new Set(contacts)].filter((t) => t > 0 && t < 1).sort((a, b) => a - b);
     const stops = [0, ...cuts, 1];
@@ -68,7 +89,13 @@ function lineLengthOnLand(
       if (status === undefined || piece > 0) {
         status = isOnLand(interpolate(start, end, 0.5));
       }
-      if (status) total += haversine(start, end);
+      if (status) {
+        const pieceLength = haversine(start, end);
+        total += pieceLength;
+        if (pieceLength > (longest.land?.length ?? -1)) {
+          longest.land = { from: start, to: end, length: pieceLength };
+        }
+      }
     }
     if (contacts.length > 0) status = undefined;
   }

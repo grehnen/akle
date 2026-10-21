@@ -6,12 +6,15 @@ import { foldedNameCollisions } from "../../src/engine/kommunNames";
 import buildConfig from "./build-config.json";
 import { findFixedLinks, type LinkWay } from "./fixedLinks";
 import { graphVersionFileContents } from "./graphVersionWriter";
-import { measureLandBorders } from "./landBorders";
-import { readFerries } from "./neighborOverrides";
+import { measureLandBorders, pointOnLand } from "./landBorders";
+import { readNeighborOverrides } from "./neighborOverrides";
+import { reviewNeighborGraph, type BuildEvidence, type Point } from "./neighborReview";
+import { readScbBoundaries } from "./scbBoundaries";
 import { readScbKommunWorkbook } from "./scbKommuner";
 import { closeMainlandCoastline } from "./coastlineClosure";
 import {
   sharedBorders,
+  sharedVertices,
   type AreaGeometry,
   type KommunArea,
   type Line,
@@ -21,8 +24,9 @@ import {
 
 /**
  * Rebuilds the graph version described in `build-config.json` from its pinned OSM extract:
- * land-border and fixed-link neighbors, the hand-kept ferries, official SCB names and
- * simplified shapes. See `data/README.md`.
+ * land-border and fixed-link neighbors, the hand-kept ferries and overrides, official SCB names,
+ * simplified shapes, and the evidence and report for the review of flagged pairs (ADR 0003).
+ * See `data/README.md`.
  */
 
 const root = new URL("../../", import.meta.url).pathname;
@@ -60,6 +64,8 @@ await mkdir(cacheDirectory, { recursive: true });
 await download(buildConfig.extract.url, extractFile, buildConfig.extract.sha256);
 const scbFile = `${cacheDirectory}/${fileName(buildConfig.scbKommuner.url)}`;
 await download(buildConfig.scbKommuner.url, scbFile, buildConfig.scbKommuner.sha256);
+const scbBoundariesFile = `${cacheDirectory}/${fileName(buildConfig.scbBoundaries.url)}`;
+await download(buildConfig.scbBoundaries.url, scbBoundariesFile, buildConfig.scbBoundaries.sha256);
 await extractLayers();
 
 const fileInfo = await Bun.file(`${layersDirectory}/fileinfo.json`).json();
@@ -78,7 +84,17 @@ if (collisions.length > 0) {
 
 log("Finding shared borders");
 const borders = sharedBorders(areas);
-const nearBorders = borderProximity(borders);
+const borderPairs = new Set(borders.map((border) => border.between.join("-")));
+const touchCandidates = sharedVertices(areas).filter(
+  (pair) => !borderPairs.has(pair.between.join("-")),
+);
+const nearBorders = borderProximity([
+  ...borders,
+  ...touchCandidates.map((pair) => ({
+    between: pair.between,
+    lines: pair.points.map((point) => [point, point]),
+  })),
+]);
 
 log("Reading land and lakes");
 const land = await readFeatures(`${layersDirectory}/land.geojsonseq`);
@@ -96,6 +112,11 @@ await Bun.write(
   `${layersDirectory}/land-borders.csv`,
   `a,b,landLength\n${measured.map((border) => `${border.between.join(",")},${border.landLength}`).join("\n")}\n`,
 );
+const isOnLand = pointOnLand(mask);
+const pointTouches = touchCandidates.flatMap((pair) => {
+  const onLand = pair.points.find(isOnLand);
+  return onLand ? [{ between: pair.between, at: roundedPoint(onLand) }] : [];
+});
 const landLinks: NeighborLink[] = measured
   .filter((border) => border.landLength > 0)
   .map((border) => ({ between: border.between, kind: "land" }));
@@ -113,8 +134,24 @@ const linkWays: LinkWay[] = (
 }));
 const fixedLinks = findFixedLinks(borders, linkWays, mask);
 
-const ferryLinks = readFerries(await Bun.file(overridesFile).text(), scbKommuner);
-const links = [...landLinks, ...ferryLinks];
+log("Cross-checking with SCB's boundaries");
+const scbPairs = sharedVertices(
+  await readScbBoundaries(new Uint8Array(await Bun.file(scbBoundariesFile).arrayBuffer())),
+).map((pair) => ({ between: pair.between, at: roundedPoint(pair.points[0]) }));
+
+const overrides = readNeighborOverrides(await Bun.file(overridesFile).text(), scbKommuner);
+const ferryLinks = overrides.ferries;
+const evidence: Omit<BuildEvidence, "shapeCodes"> = {
+  kommuner: scbKommuner,
+  landBorders: measured.map((border) => ({
+    between: border.between,
+    landLength: border.landLength,
+    at: [border.at[0], border.at[1]],
+  })),
+  pointTouches,
+  fixedLinks,
+  scbPairs,
+};
 
 log("Drawing shapes");
 const shapes = await drawShapes(
@@ -123,6 +160,10 @@ const shapes = await drawShapes(
   lakes.filter((lake) => sphericalArea(lake.geometry) >= bigLakeArea),
 );
 
+const review = reviewNeighborGraph(
+  { ...evidence, shapeCodes: shapes.features.map((feature) => feature.properties.code) },
+  overrides,
+);
 const files = graphVersionFileContents({
   version: {
     id: buildConfig.id,
@@ -130,19 +171,26 @@ const files = graphVersionFileContents({
     source: {
       extract: { url: buildConfig.extract.url, sha256: buildConfig.extract.sha256, timestamp },
       names: { url: buildConfig.scbKommuner.url, sha256: buildConfig.scbKommuner.sha256 },
+      crossCheck: {
+        url: buildConfig.scbBoundaries.url,
+        sha256: buildConfig.scbBoundaries.sha256,
+      },
       license: "Borders and shapes © OpenStreetMap contributors, ODbL 1.0",
     },
   },
   kommuner: scbKommuner,
-  links,
+  links: review.links,
   fixedLinks,
   shapes,
+  evidence,
 });
 await mkdir(outputDirectory, { recursive: true });
 for (const [name, content] of Object.entries(files)) {
   await Bun.write(`${outputDirectory}/${name}`, content);
 }
 reportSummary();
+log("Reviewing flagged pairs");
+await Bun.$`bun ${root}scripts/graph/review.ts`.cwd(root).nothrow();
 
 async function download(url: string, path: string, sha256: string): Promise<void> {
   if (!(await Bun.file(path).exists())) {
@@ -399,6 +447,10 @@ function reportSummary(): void {
   const waterOnly = measured.filter((border) => border.landLength === 0);
   log(`Water-only borders: ${waterOnly.map((border) => pairName(border.between)).join(", ")}`);
   log(`Shapes: ${(files["shapes.geojson"].length / 1024).toFixed(0)} KB`);
+}
+
+function roundedPoint(point: Position): Point {
+  return [Math.round(point[0] * 1e5) / 1e5, Math.round(point[1] * 1e5) / 1e5];
 }
 
 function fileName(url: string): string {
