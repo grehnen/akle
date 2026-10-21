@@ -13,7 +13,11 @@ export type ScheduleConfig = {
   /** Launch day, puzzle #1, as "YYYY-MM-DD". */
   epoch: string;
   seed: string;
+  /** Days a kommun must wait before it can be an endpoint again; 30 unless set. */
+  cooldownDays?: number;
 };
+
+export const defaultCooldownDays = 30;
 
 export const puzzlesPerChunk = 1000;
 export const scheduleHeader = "puzzle,start,destination,n";
@@ -52,6 +56,23 @@ export function parseScheduleChunk(csv: string): ScheduledPuzzle[] {
   return rows;
 }
 
+export type ScheduleChunkFile = { fileName: string; csv: string };
+
+/** Writes rows, sorted by puzzle number, as one CSV per chunk that holds any of them. */
+export function formatScheduleChunks(rows: readonly ScheduledPuzzle[]): ScheduleChunkFile[] {
+  const chunks = new Map<number, string[]>();
+  for (const row of [...rows].sort((a, b) => a.number - b.number)) {
+    const chunk = scheduleChunkFor(row.number);
+    const lines = chunks.get(chunk) ?? [scheduleHeader];
+    lines.push(`${row.number},${row.start},${row.destination},${row.n}`);
+    chunks.set(chunk, lines);
+  }
+  return [...chunks].map(([chunk, lines]) => ({
+    fileName: scheduleChunkFileName(chunk),
+    csv: `${lines.join("\n")}\n`,
+  }));
+}
+
 export function findScheduledPuzzle(
   rows: readonly ScheduledPuzzle[],
   puzzleNumber: number,
@@ -67,5 +88,9 @@ export function parseScheduleConfig(json: unknown): ScheduleConfig {
   if (typeof config.seed !== "string") {
     throw new Error("Schedule config needs a seed string");
   }
-  return { epoch: config.epoch, seed: config.seed };
+  const cooldownDays = config.cooldownDays ?? defaultCooldownDays;
+  if (!Number.isInteger(cooldownDays) || cooldownDays < 0) {
+    throw new Error("Schedule config cooldownDays must be a whole number of days");
+  }
+  return { epoch: config.epoch, seed: config.seed, cooldownDays };
 }

@@ -11,6 +11,24 @@ export function puzzleNumberOn(now: Date, epoch: string): number {
   return Math.round((localDay - epochDayUtc) / millisecondsPerDay) + 1;
 }
 
+const earliestTimeZoneOffsetMilliseconds = 14 * 60 * 60 * 1000;
+
+/**
+ * The highest puzzle number anyone could have opened: today's number in UTC+14, the earliest
+ * time zone. Rows up to this number count as played and never change. 0 before the epoch.
+ */
+export function latestPlayedPuzzleNumber(now: Date, epoch: string): number {
+  const [epochYear, epochMonth, epochDay] = parseIsoDate(epoch);
+  const earliest = new Date(now.getTime() + earliestTimeZoneOffsetMilliseconds);
+  const earliestDay = Date.UTC(
+    earliest.getUTCFullYear(),
+    earliest.getUTCMonth(),
+    earliest.getUTCDate(),
+  );
+  const epochDayUtc = Date.UTC(epochYear, epochMonth - 1, epochDay);
+  return Math.max(0, Math.round((earliestDay - epochDayUtc) / millisecondsPerDay) + 1);
+}
+
 function parseIsoDate(date: string): [number, number, number] {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   if (!match) throw new Error(`Expected a YYYY-MM-DD date, got "${date}"`);

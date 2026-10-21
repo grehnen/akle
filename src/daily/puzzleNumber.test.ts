@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { puzzleNumberOn } from "./puzzleNumber";
+import { latestPlayedPuzzleNumber, puzzleNumberOn } from "./puzzleNumber";
 
 const epoch = "2026-10-01";
 
@@ -23,5 +23,18 @@ describe("puzzleNumberOn", () => {
     expect(puzzleNumberOn(new Date(2026, 9, 25, 12, 0), epoch)).toBe(25);
     expect(puzzleNumberOn(new Date(2027, 2, 28, 12, 0), epoch)).toBe(179);
     expect(puzzleNumberOn(new Date(2027, 9, 1, 0, 0), epoch)).toBe(366);
+  });
+});
+
+describe("latestPlayedPuzzleNumber", () => {
+  test("is today's puzzle number in UTC+14, the earliest time zone", () => {
+    // 09:59 UTC is 23:59 in UTC+14; 10:00 UTC is already the next day there.
+    expect(latestPlayedPuzzleNumber(new Date("2026-10-21T09:59:59Z"), epoch)).toBe(21);
+    expect(latestPlayedPuzzleNumber(new Date("2026-10-21T10:00:00Z"), epoch)).toBe(22);
+  });
+
+  test("is 0 before anyone anywhere has reached the epoch", () => {
+    expect(latestPlayedPuzzleNumber(new Date("2026-09-30T09:00:00Z"), epoch)).toBe(0);
+    expect(latestPlayedPuzzleNumber(new Date("2026-01-01T00:00:00Z"), epoch)).toBe(0);
   });
 });
