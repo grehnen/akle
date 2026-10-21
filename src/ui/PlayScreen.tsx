@@ -96,23 +96,24 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
         onEvent={(event) => setSession((current) => applyGuessInput(graph, current, event))}
       />
 
-      {!finished && (
-        <div className="hint-row">
-          <button
-            type="button"
-            className="hint-button"
-            disabled={review.hintsUsed >= HINT_COUNT}
-            onClick={() => setSession((current) => takeSessionHint(graph, current))}
-          >
-            <UsedCounter label="Ledtråd" used={review.hintsUsed} limit={HINT_COUNT} />
-          </button>
-          <p className="hint-note">{hintRevealed(review.hintsUsed)}</p>
-        </div>
-      )}
-
-      <p role="alert" className="toast">
-        {toast}
-      </p>
+      <div className="hint-row">
+        <p role="alert" className="toast">
+          {toast}
+        </p>
+        {!finished && (
+          <>
+            <button
+              type="button"
+              className="hint-button"
+              disabled={review.hintsUsed >= HINT_COUNT}
+              onClick={() => setSession((current) => takeSessionHint(graph, current))}
+            >
+              <UsedCounter label="Ledtråd" used={review.hintsUsed} limit={HINT_COUNT} />
+            </button>
+            <p className="hint-note">{hintRevealed(review.hintsUsed)}</p>
+          </>
+        )}
+      </div>
       <p className="visually-hidden" aria-live="polite">
         {announcement}
       </p>

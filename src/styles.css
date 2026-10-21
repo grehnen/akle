@@ -219,13 +219,18 @@ a {
   border-left-color: var(--night);
 }
 
-/* The Ledtråd button is drawn like a hint outline: unfilled, with a thin white edge. */
+/* The toast and the Ledtråd button share a row, as on phones (#35). */
 .hint-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 0.25rem 0.75rem;
+}
+
+/* The Ledtråd button is drawn like a hint outline: unfilled, with a thin white edge. */
+.hint-row:has(> .toast:empty):not(:has(> .hint-button)) {
+  display: none;
 }
 
 .hint-button {

@@ -123,6 +123,12 @@ describe("DailyPuzzleView", () => {
       expect(markup).toMatch(/<button type="submit"(?![^>]*disabled)[^>]*>/);
     });
 
+    test("shows the toast in the Ledtråd row, also once the game has ended", () => {
+      for (const guesses of [[], ["0181"]]) {
+        expect(renderWith(guesses)).toMatch(/<div class="hint-row"><p role="alert" class="toast">/);
+      }
+    });
+
     test("offers Ledtråd (0/3) before the first guess", () => {
       expect(renderWith([])).toMatch(
         /<button[^>]*class="hint-button"[^>]*>Ledtråd <span aria-hidden="true">\(0\/3\)<\/span>/,
