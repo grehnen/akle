@@ -1,0 +1,179 @@
+:root {
+  --night: #0d1620;
+  --surface: #16222e;
+  --rule: #2a3a4a;
+  --text: #e6ecf1;
+  --muted: #8fa0b1;
+  --start: #fecc02;
+  --destination: #006aa7;
+  --focus: #fecc02;
+
+  color-scheme: dark;
+  font-family:
+    Seravek, "Gill Sans Nova", Ubuntu, Calibri, "DejaVu Sans", source-sans-pro, sans-serif;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--night);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.play-screen {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.puzzle-number {
+  order: -1;
+  margin: -0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+#puzzle-heading {
+  margin: 0.25rem 0 0;
+  font-size: 1.2rem;
+  font-weight: 400;
+}
+
+#puzzle-heading strong {
+  padding: 0.05em 0.35em;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+#puzzle-heading strong:first-of-type {
+  background: var(--start);
+  color: var(--night);
+}
+
+#puzzle-heading strong:last-of-type {
+  background: var(--destination);
+  color: #fff;
+}
+
+.satellite-map {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--rule);
+}
+
+.satellite-map .maplibregl-ctrl-attrib {
+  font-family: inherit;
+}
+
+form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+input,
+button {
+  font: inherit;
+}
+
+input {
+  flex: 1 1 12rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+button {
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--night);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+[role="status"]:empty {
+  display: none;
+}
+
+[role="status"],
+[role="alert"] {
+  margin: 0;
+}
+
+ol[aria-label="Gissningar"] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+ol[aria-label="Gissningar"] li {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.credits {
+  margin-top: 1.5rem;
+  max-width: 34rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.credits p {
+  margin: 0.4rem 0 0;
+}

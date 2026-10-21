@@ -46,4 +46,32 @@ describe("DailyPuzzleView", () => {
     expect(markup).toContain("#21");
     expect(markup).toContain("Gissa (0/5)");
   });
+
+  describe("on the play screen", () => {
+    const markup = renderToStaticMarkup(
+      <DailyPuzzleView
+        daily={{
+          kind: "puzzle",
+          puzzle: { number: 21, start: "0192", destination: "0488", n: 1 },
+          graph,
+        }}
+      />,
+    );
+
+    test("shows the satellite map", () => {
+      expect(markup).toContain('aria-label="Karta över Nynäshamn och Trosa"');
+    });
+
+    test("notes that the graph and shape data are under ODbL", () => {
+      expect(markup).toContain("OpenStreetMap");
+      expect(markup).toContain("ODbL");
+    });
+
+    test("links Rapportera fel to a prefilled issue for this puzzle", () => {
+      const link = markup.match(/<a href="([^"]+)"[^>]*>Rapportera fel<\/a>/);
+      const href = new URL((link?.[1] ?? "").replaceAll("&amp;", "&"));
+      expect(href.pathname).toBe("/grehnen/akle/issues/new");
+      expect(href.searchParams.get("title")).toBe("Fel i pussel #21");
+    });
+  });
 });

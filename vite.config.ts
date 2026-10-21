@@ -3,4 +3,8 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
+  // MapLibre ships a prebuilt bundle with its own web worker; pre-bundling it breaks the worker.
+  optimizeDeps: { exclude: ["maplibre-gl"] },
+  // MapLibre (~1.1 MB) is code-split and loaded only when the map mounts.
+  build: { chunkSizeWarningLimit: 1200 },
 });

@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { newGame, type Puzzle, reviewGame } from "../engine/game";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
+import { SatelliteMap } from "../map/SatelliteMap";
 import { GuessInput } from "./GuessInput";
 import { applyGuessInput, type GuessSession, suggestKommuner } from "./guessSession";
 import { outcomeMessage } from "./messages";
+import { reportIssueUrl } from "./reportIssue";
 
 type PlayScreenProps = {
   graph: GraphVersion;
@@ -17,17 +19,19 @@ export function PlayScreen({ graph, puzzle }: PlayScreenProps) {
   }));
   const { game, toast } = session;
 
-  const review = reviewGame(graph, game);
+  const review = useMemo(() => reviewGame(graph, game), [graph, game]);
   const nameOf = (code: string) => kommunName(graph, code);
   const outcome = outcomeMessage(review, review.missing.map(nameOf));
 
   return (
-    <section aria-labelledby="puzzle-heading">
+    <section className="play-screen" aria-labelledby="puzzle-heading">
+      <p className="puzzle-number">Dagens pussel #{puzzle.number}</p>
       <h2 id="puzzle-heading">
         Res från <strong>{nameOf(puzzle.start)}</strong> till{" "}
         <strong>{nameOf(puzzle.destination)}</strong>
       </h2>
-      <p>Dagens pussel #{puzzle.number}</p>
+
+      <SatelliteMap graph={graph} puzzle={puzzle} cards={review.cards} />
 
       <GuessInput
         text={session.text}
@@ -51,6 +55,16 @@ export function PlayScreen({ graph, puzzle }: PlayScreenProps) {
       </ol>
 
       {outcome && <p role="alert">{outcome}</p>}
+
+      <footer className="credits">
+        <a href={reportIssueUrl({ puzzleNumber: puzzle.number, graphVersion: graph.id })}>
+          Rapportera fel
+        </a>
+        <p>
+          Satellitbild: EOxCloudless 2016 av EOX IT Services GmbH (CC BY 4.0). Kommungränser och
+          grannar bygger på data från © OpenStreetMap-bidragsgivare och är licensierade under ODbL.
+        </p>
+      </footer>
     </section>
   );
 }
