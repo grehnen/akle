@@ -80,9 +80,10 @@ describe("DailyPuzzleView", () => {
 
   describe("with a saved game", () => {
     const puzzle = { number: 21, start: "0192", destination: "0488", n: 1 };
-    const renderWith = (guesses: string[], savedFor = puzzle) => {
+    const renderWith = (guesses: string[], savedFor = puzzle, hintsTaken = 0) => {
       const storage = memoryStorage();
-      saveGame(storage, { puzzle: savedFor, guesses });
+      const hints = hintsTaken > 0 ? { taken: hintsTaken, nextKommun: "0181" } : undefined;
+      saveGame(storage, { puzzle: savedFor, guesses, hints });
       return renderToStaticMarkup(
         <DailyPuzzleView
           daily={{ kind: "puzzle", puzzle, graph }}
@@ -110,6 +111,29 @@ describe("DailyPuzzleView", () => {
       expect(markup).toContain('aria-labelledby="result-heading"');
       expect(markup).toContain(">Perfekt<");
       expect(markup).toContain("10:54:51");
+    });
+
+    test("offers Ledtråd (0/3) before the first guess", () => {
+      expect(renderWith([])).toMatch(/<button[^>]*>Ledtråd \(0\/3\)<\/button>/);
+    });
+
+    test("restores the hints taken, and says what the last one revealed", () => {
+      const markup = renderWith(["0136"], puzzle, 2);
+      expect(markup).toContain("Ledtråd (2/3)");
+      expect(markup).toContain("Alla kommuner syns nu på kartan.");
+    });
+
+    test("disables Ledtråd once all three are taken", () => {
+      expect(renderWith([], puzzle, 3)).toMatch(/<button[^>]*disabled=""[^>]*>Ledtråd \(3\/3\)/);
+    });
+
+    test("hides Ledtråd once the game has ended", () => {
+      expect(renderWith(["0181"], puzzle, 1)).not.toContain("Ledtråd (");
+    });
+
+    test("a win with a hint is not Perfekt", () => {
+      const markup = renderWith(["0181"], puzzle, 1);
+      expect(markup).toContain('<p class="result-score">+0 (1 ledtråd)</p>');
     });
   });
 });

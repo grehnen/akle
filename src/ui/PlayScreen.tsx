@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { resolveKommunName } from "../engine/kommunNames";
 import { type Puzzle, reviewGame } from "../engine/game";
+import { HINT_COUNT, hintReveals, takeHint } from "../engine/hints";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SatelliteMap } from "../map/SatelliteMap";
 import { readHistory, recordFinishedGame, withFinishedGame } from "../progress/history";
@@ -10,6 +11,7 @@ import { deriveStats } from "../progress/stats";
 import type { KeyValueStorage } from "../progress/storage";
 import { GuessInput } from "./GuessInput";
 import { applyGuessInput, type GuessSession, suggestKommuner } from "./guessSession";
+import { hintRevealed } from "./messages";
 import { reportIssueUrl } from "./reportIssue";
 import { ResultView } from "./ResultView";
 
@@ -28,6 +30,7 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
   const { game, toast } = session;
 
   const review = useMemo(() => reviewGame(graph, game), [graph, game]);
+  const reveals = useMemo(() => hintReveals(graph, game), [graph, game]);
   const finished = review.status !== "playing";
   const [resultClosed, setResultClosed] = useState(false);
   const resultOpen = finished && !resultClosed;
@@ -63,7 +66,13 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
         />
       )}
 
-      <SatelliteMap graph={graph} puzzle={puzzle} cards={review.cards} />
+      <SatelliteMap
+        graph={graph}
+        puzzle={puzzle}
+        cards={review.cards}
+        hintOutlines={reveals.outlines}
+        initials={reveals.initials}
+      />
 
       <GuessInput
         text={session.text}
@@ -74,6 +83,24 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
         disabled={review.status !== "playing"}
         onEvent={(event) => setSession((current) => applyGuessInput(graph, current, event))}
       />
+
+      {!finished && (
+        <div className="hint-row">
+          <button
+            type="button"
+            className="hint-button"
+            disabled={review.hintsUsed >= HINT_COUNT}
+            onClick={() =>
+              setSession((current) => ({ ...current, game: takeHint(graph, current.game) }))
+            }
+          >
+            Ledtråd ({review.hintsUsed}/{HINT_COUNT})
+          </button>
+          <p className="hint-note" aria-live="polite">
+            {hintRevealed(review.hintsUsed)}
+          </p>
+        </div>
+      )}
 
       <p role="status" aria-live="polite">
         {toast}

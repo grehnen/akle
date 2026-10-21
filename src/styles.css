@@ -167,6 +167,65 @@ a {
   }
 }
 
+/* Tooltips on the map: a small dark label, outside MapLibre's default white bubble. */
+.kommun-tooltip .maplibregl-popup-content {
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  background: var(--night);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  box-shadow: 0 0 0 1px var(--rule);
+}
+
+.kommun-tooltip.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+  border-top-color: var(--night);
+}
+
+.kommun-tooltip.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+  border-bottom-color: var(--night);
+}
+
+.kommun-tooltip.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--night);
+}
+
+.kommun-tooltip.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--night);
+}
+
+/* The Ledtråd button is drawn like a hint outline: unfilled, with a thin white edge. */
+.hint-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 0.75rem;
+}
+
+.hint-button {
+  min-width: 2.75rem;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--hint-outline);
+  color: var(--text);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.hint-button:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1px var(--text);
+}
+
+.hint-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.hint-note:empty {
+  display: none;
+}
+
 form {
   display: flex;
   flex-wrap: wrap;

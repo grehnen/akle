@@ -30,3 +30,17 @@ export function resultOutcome(
   }
   return undefined;
 }
+
+/** What the latest hint revealed, under the Ledtråd button. */
+export function hintRevealed(hintsUsed: number): string {
+  switch (hintsUsed) {
+    case 0:
+      return "";
+    case 1:
+      return "Nästa kommun är markerad på kartan.";
+    case 2:
+      return "Alla kommuner syns nu på kartan.";
+    default:
+      return "Peka på eller tryck på en kommun för att se dess initialer.";
+  }
+}

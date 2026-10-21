@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
+import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent, Popup } from "maplibre-gl";
 import type { GuessCard, Puzzle } from "../engine/game";
 import { type GraphVersion, type KommunCode, kommunName } from "../graph/graphVersion";
-import { endpointBounds, mapFeatures, routeBounds, routeFeatures } from "./mapFeatures";
-import { mapOptions, satelliteMapStyle, TOUCH_SCREEN_QUERY } from "./mapStyle";
+import {
+  type DrawnKommun,
+  endpointBounds,
+  mapFeatures,
+  routeBounds,
+  routeFeatures,
+} from "./mapFeatures";
+import { mapOptions, satelliteMapStyle, TOOLTIP_LAYER, TOUCH_SCREEN_QUERY } from "./mapStyle";
+import { tooltipText } from "./tooltip";
 
 type SatelliteMapProps = {
   graph: GraphVersion;
@@ -11,19 +18,37 @@ type SatelliteMapProps = {
   cards: readonly Pick<GuessCard, "code" | "connected">[];
   /** Draws this route instead, with the guessed and missed kommuner on it marked. */
   route?: readonly KommunCode[];
+  /** Kommuner revealed by hints, drawn as unfilled outlines. */
+  hintOutlines?: readonly KommunCode[];
+  /** Hint 3: hint-outline tooltips show initials instead of `?`. */
+  initials?: boolean;
 };
 
-/** Satellite map of the endpoints and guesses. Display only: clicking it never guesses. */
-export function SatelliteMap({ graph, puzzle, cards, route }: SatelliteMapProps) {
+/**
+ * Satellite map of the endpoints, guesses and hint outlines. Hovering or tapping a drawn kommun
+ * shows its tooltip. Display only: clicking or tapping it never guesses.
+ */
+export function SatelliteMap({
+  graph,
+  puzzle,
+  cards,
+  route,
+  hintOutlines,
+  initials = false,
+}: SatelliteMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap>();
   const drawn = useMemo(
     () =>
       route
         ? routeFeatures(graph, puzzle, route, new Set(cards.map((card) => card.code)))
-        : mapFeatures(graph, puzzle, cards),
-    [graph, puzzle, cards, route],
+        : mapFeatures(graph, puzzle, cards, hintOutlines),
+    [graph, puzzle, cards, route, hintOutlines],
   );
+  const tooltipFor = useRef<(kommun: DrawnKommun) => string | undefined>(undefined);
+  useEffect(() => {
+    tooltipFor.current = (kommun) => tooltipText(graph, kommun, { initials });
+  }, [graph, initials]);
   const bounds = useMemo(
     () => (route ? routeBounds(graph, route) : endpointBounds(graph, puzzle)),
     [graph, puzzle, route],
@@ -52,6 +77,16 @@ export function SatelliteMap({ graph, puzzle, cards, route }: SatelliteMapProps)
         created.addControl(
           new maplibre.NavigationControl({ showCompass: false, visualizePitch: false }),
           "top-right",
+        );
+        showTooltips(
+          created,
+          new maplibre.Popup({
+            closeButton: false,
+            closeOnClick: false,
+            className: "kommun-tooltip",
+            offset: 10,
+          }),
+          (kommun) => tooltipFor.current?.(kommun),
         );
         const loaded = created;
         loaded.once("load", () => {
@@ -88,4 +123,28 @@ export function SatelliteMap({ graph, puzzle, cards, route }: SatelliteMapProps)
       }
     />
   );
+}
+
+/**
+ * Shows a drawn kommun's tooltip while the mouse is over it, or after a tap on touch screens;
+ * a tap anywhere else hides it.
+ */
+function showTooltips(
+  map: MapLibreMap,
+  popup: Popup,
+  textFor: (kommun: DrawnKommun) => string | undefined,
+): void {
+  const show = (event: MapMouseEvent) => {
+    const [feature] = map.queryRenderedFeatures(event.point, { layers: [TOOLTIP_LAYER] });
+    const text = feature && textFor(feature.properties as DrawnKommun);
+    if (text === undefined) {
+      popup.remove();
+      return;
+    }
+    popup.setLngLat(event.lngLat).setText(text);
+    if (!popup.isOpen()) popup.addTo(map);
+  };
+  map.on("mousemove", show);
+  map.on("click", show);
+  map.on("mouseout", () => popup.remove());
 }
