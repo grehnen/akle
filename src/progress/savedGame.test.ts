@@ -49,4 +49,24 @@ describe("the saved game", () => {
     );
     expect(loadSavedGame(storage, graph, today).guesses).toEqual(["A", "B"]);
   });
+
+  test("a reload keeps the hints taken and hint 1's kommun", () => {
+    const storage = memoryStorage();
+    const game = { puzzle: today, guesses: ["B"], hints: { taken: 2, nextKommun: "A" } };
+    saveGame(storage, game);
+    expect(loadSavedGame(storage, graph, today)).toEqual(game);
+  });
+
+  test("drops hints that can't be read", () => {
+    for (const hints of [
+      { taken: 0, nextKommun: "A" },
+      { taken: 4, nextKommun: "A" },
+      { taken: 1, nextKommun: "nope" },
+      "3",
+    ]) {
+      const storage = memoryStorage();
+      storage.setItem("akle:game", JSON.stringify({ puzzleNumber: 7, guesses: ["B"], hints }));
+      expect(loadSavedGame(storage, graph, today).hints).toBeUndefined();
+    }
+  });
 });
