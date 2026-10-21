@@ -6,18 +6,19 @@ Committed data the app bundles and fetches on demand. Parsers live in `src/graph
 
 One directory per **graph version** ([ADR 0004](../docs/adr/0004-versioned-graphs-keyed-by-puzzle-number.md)), loaded as one unit:
 
-| File             | Content                                                                                     |
-| ---------------- | ------------------------------------------------------------------------------------------- |
-| `version.json`   | `{ "id": "<id>", "startsAtPuzzle": <puzzle number> }`; the id must match the directory name |
-| `kommuner.csv`   | `code,name`: SCB kommun code and official name without "kommun"                             |
-| `neighbors.csv`  | `a,b,link`: one neighbor pair per row; `link` is `land`, `fixed` or `ferry`                 |
-| `shapes.geojson` | A FeatureCollection with one feature per kommun, `properties.code` set to its SCB code      |
+| File              | Content                                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| `version.json`    | `{ "id": "<id>", "startsAtPuzzle": <puzzle number> }`; the id must match the directory name |
+| `kommuner.csv`    | `code,name`: SCB kommun code and official name without "kommun"                             |
+| `neighbors.csv`   | `a,b,link`: one neighbor pair per row; `link` is `land`, `fixed` or `ferry`                 |
+| `shapes.geojson`  | A FeatureCollection with one feature per kommun, `properties.code` set to its SCB code      |
+| `fixed-links.csv` | `a,b,ways`: the OSM way ids (space-separated) of each `fixed` pair; the app doesn't read it |
 
 A kommun whose links are all `ferry` is a **dead end**; this is derived, not stored.
 
 `graphs/fixture/` is a small hand-made version for development. Its borders and shapes are not real. It applies to puzzles #1–#30.
 
-`graphs/osm-2026-10-01/` is built from OpenStreetMap and starts at puzzle #31. It has all 290 kommuner, but only **land** neighbors so far: fixed links and ferries come later, so Gotland, Lidingö, Tjörn and Öckerö have no neighbors yet. Its `version.json` records the extract and the SCB names file it was built from. Borders and shapes © OpenStreetMap contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
+`graphs/osm-2026-10-01/` is built from OpenStreetMap and starts at puzzle #31. It has all 290 kommuner with land, fixed-link and ferry neighbors; Gotland and Öckerö are linked only by ferry, so they are dead ends. Its `version.json` records the extract and the SCB names file it was built from. Borders and shapes © OpenStreetMap contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
 
 ### Rebuilding a graph version from OSM
 
@@ -31,12 +32,16 @@ Needs Bun and Docker. The command reads `scripts/graph/build-config.json`, which
 - the version id and the puzzle it starts at;
 - the route that closes the mainland coastline, which the extract cuts at the borders with Norway and Finland.
 
+It also reads the hand-kept ferry list from `neighbor-overrides.yaml` ([ADR 0003](../docs/adr/0003-committed-human-reviewed-neighbor-graph.md)).
+
 It downloads both files to `.cache/osm/` (gitignored, about 1 GB with the layers), runs osmium, osmcoastline and GDAL in the pinned image from `scripts/osm/Dockerfile`, and writes `data/graphs/<id>/`. Running it twice gives identical files. CI never rebuilds; it only checks the committed files. After a rebuild, run `bun run schedule --chunks 0` so the unplayed rows match it.
 
 How the graph is built:
 
 - **Kommuner:** OSM `boundary=administrative` + `admin_level=7` relations keyed by `ref:scb`, named from SCB without "kommun". The build fails if the OSM and SCB codes differ, or if two names collide after accent folding (apart from Habo/Håbo).
 - **Neighbors:** two kommuner are `land` neighbors when their shared border is longer than 0 m on land. Land is the OSM coastline's land minus every lake (`natural=water`, except rivers, canals and similar); a border through the sea or a lake doesn't count. Borders shared with river water count as land. The build prints the pairs that share a border only through water.
+- **Fixed links:** two kommuner are `fixed` neighbors when a road, path or railway crosses their shared border where the border runs through water, so on a bridge, in a tunnel or over a causeway. The candidates are every `highway=*` or `railway=*` way tagged `bridge`, `tunnel`, `causeway`, `man_made=causeway` or `embankment`, plus the ways joined to them, since the way crossing the border isn't always tagged. Ways under construction, proposed, abandoned or disused, `access=private|no`, `tunnel=building_passage`, fords and ice or winter roads don't count. A pair can be both `land` and `fixed`. The build prints every fixed link with its way ids.
+- **Ferries:** the `ferries` in `neighbor-overrides.yaml`, keyed by SCB codes with names that must match: Gotland–Nynäshamn, Gotland–Oskarshamn and Öckerö–Göteborg.
 - **Shapes:** the boundaries clipped to land, with lakes of 10 km² or more cut out, simplified (Visvalingam, 250 m) and with islands under 1 km² dropped.
 
 Some land borders are very short and may be data noise, for example Ekerö–Stockholm (42 m, across Hässelby holme) and Orust–Uddevalla (38 m). They stay in the graph until the review of flagged pairs decides on them.

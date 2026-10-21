@@ -1,8 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { foldedNameCollisions } from "../engine/kommunNames";
-import type { GraphVersion } from "../graph/graphVersion";
+import { buildGraphVersion, type GraphVersion } from "../graph/graphVersion";
 import { graphVersionFor, parseGraphVersionFiles } from "../graph/graphVersionFiles";
-import { shortestRouteLength } from "../graph/routes";
+import {
+  preferredShortestRoute,
+  shortestRouteLength,
+  shortestRouteLengthsFrom,
+} from "../graph/routes";
 import { parseScheduleChunk, parseScheduleConfig } from "../schedule/schedule";
 
 const dataDirectory = new URL("../../data/", import.meta.url);
@@ -66,19 +70,104 @@ describe("committed data", () => {
     expect(graphVersionFor(graphVersions, 31)?.id).toBe("osm-2026-10-01");
   });
 
-  test("the OSM graph version links kommuner by land borders only", () => {
+  test("island kommuner reach the mainland by fixed links, with the OSM way ids recorded", async () => {
     const graph = osmGraph!;
-    expect(new Set(graph.links.map((link) => link.kind))).toEqual(new Set(["land"]));
-    for (const island of ["Gotland", "Lidingö", "Tjörn", "Öckerö"]) {
-      expect({ island, neighbors: graph.neighbors.get(codeOf(graph, island)!)?.size }).toEqual({
-        island,
-        neighbors: 0,
+    const fixedLinkWays = new Map(
+      (await readText("graphs/osm-2026-10-01/fixed-links.csv"))
+        .trim()
+        .split("\n")
+        .slice(1)
+        .map((row) => row.split(","))
+        .map(([a, b, ways]) => [`${a}-${b}`, ways.split(" ")]),
+    );
+    const fixedPair = (a: string, b: string) => {
+      const pair = [codeOf(graph, a)!, codeOf(graph, b)!].sort();
+      const linked = graph.links.some(
+        (link) => link.kind === "fixed" && [...link.between].sort().join() === pair.join(),
+      );
+      return { pair: `${a}–${b}`, linked, ways: fixedLinkWays.get(pair.join("-")) ?? [] };
+    };
+    // Lidingöbron, Nockebybron, Tjörnbron, Skåpesundsbron, Nötesundsbron, Skaftöbron, Ölandsbron.
+    const bridges: [string, string, string][] = [
+      ["Lidingö", "Stockholm", "23427017"],
+      ["Ekerö", "Stockholm", "5178953"],
+      ["Tjörn", "Stenungsund", "4796177"],
+      ["Tjörn", "Orust", "146272533"],
+      ["Orust", "Uddevalla", "146214179"],
+      ["Lysekil", "Uddevalla", "175706577"],
+      ["Mörbylånga", "Kalmar", "305792496"],
+    ];
+    for (const [a, b, bridgeWay] of bridges) {
+      const link = fixedPair(a, b);
+      expect({ ...link, hasBridgeWay: link.ways.includes(bridgeWay) }).toEqual({
+        pair: `${a}–${b}`,
+        linked: true,
+        ways: link.ways,
+        hasBridgeWay: true,
       });
     }
+    expect([...graph.neighbors.get(codeOf(graph, "Borgholm")!)!]).toEqual([
+      codeOf(graph, "Mörbylånga")!,
+    ]);
     const ekeroNeighbors = [...graph.neighbors.get(codeOf(graph, "Ekerö")!)!];
     for (const acrossMalaren of ["Upplands-Bro", "Järfälla", "Botkyrka", "Strängnäs"]) {
       expect(ekeroNeighbors).not.toContain(codeOf(graph, acrossMalaren));
     }
+  });
+
+  test("Gotland and Öckerö are linked only by the three ferries, so both are dead ends", () => {
+    const graph = osmGraph!;
+    const ferries = graph.ferryLinks.map((link) =>
+      link.between
+        .map((code) => graph.kommuner.get(code)!.name)
+        .sort()
+        .join("–"),
+    );
+    expect(ferries.sort()).toEqual(["Gotland–Nynäshamn", "Gotland–Oskarshamn", "Göteborg–Öckerö"]);
+    // Öckerö has a single link, so being a dead end changes no route.
+    expect([...graph.deadEnds].sort()).toEqual([
+      codeOf(graph, "Gotland")!,
+      codeOf(graph, "Öckerö")!,
+    ]);
+    expect(graph.neighbors.get(codeOf(graph, "Öckerö")!)!.size).toBe(1);
+  });
+
+  test("every kommun in the OSM graph version has a neighbor and every other is reachable", () => {
+    const graph = osmGraph!;
+    for (const code of graph.kommuner.keys()) {
+      expect({ code, hasNeighbor: graph.neighbors.get(code)!.size > 0 }).toEqual({
+        code,
+        hasNeighbor: true,
+      });
+    }
+    expect(shortestRouteLengthsFrom(graph, "0180").size).toBe(graph.kommuner.size - 1);
+  });
+
+  test("no shortest route on the OSM graph version passes through Gotland", () => {
+    const graph = osmGraph!;
+    const gotland = codeOf(graph, "Gotland")!;
+    const withoutGotland = buildGraphVersion({
+      id: graph.id,
+      startsAtPuzzle: graph.startsAtPuzzle,
+      kommuner: [...graph.kommuner.values()],
+      links: graph.links.filter((link) => !link.between.includes(gotland)),
+    });
+    for (const from of graph.kommuner.keys()) {
+      if (from === gotland) continue;
+      const lengths = shortestRouteLengthsFrom(graph, from);
+      lengths.delete(gotland);
+      expect({ from, lengths }).toEqual({
+        from,
+        lengths: shortestRouteLengthsFrom(withoutGotland, from),
+      });
+    }
+    const nynashamn = codeOf(graph, "Nynäshamn")!;
+    const oskarshamn = codeOf(graph, "Oskarshamn")!;
+    expect(shortestRouteLength(graph, nynashamn, oskarshamn)).toBeGreaterThan(1);
+    expect(preferredShortestRoute(graph, nynashamn, oskarshamn, new Set([gotland]))).not.toContain(
+      gotland,
+    );
+    expect(shortestRouteLength(graph, gotland, oskarshamn)).toBe(0);
   });
 
   test("schedule rows are numbered from 1 without gaps", () => {
