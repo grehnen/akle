@@ -80,8 +80,7 @@ function pressEnter(graph: GraphVersion, session: GuessSession): GuessSession {
   if (highlighted) return fill(session, highlighted);
   if (resolveKommunName(graph, session.text) !== undefined) return submit(graph, session);
 
-  const suggestions = suggestKommuner(graph, session.game, session.text);
-  const top = options[0] ?? suggestions[0];
+  const top = options[0];
   return top ? fill(session, top) : submit(graph, session);
 }
 

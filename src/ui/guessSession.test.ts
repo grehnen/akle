@@ -131,6 +131,21 @@ describe("applyGuessInput", () => {
     expect(play([type("håb"), enter]).text).toBe("Habo");
   });
 
+  test("Enter never fills in a disabled suggestion", () => {
+    const guessed = { game: { ...newGame(puzzle), guesses: ["1880"] }, text: "" };
+    const onlyGuessed = play([type("örebr"), enter], guessed);
+    expect(onlyGuessed.text).toBe("örebr");
+    expect(onlyGuessed.toast).toBe("Okänd kommun: örebr");
+    expect(onlyGuessed.game.guesses).toEqual(["1880"]);
+
+    expect(play([type("stockh"), enter]).text).toBe("stockh");
+  });
+
+  test("Enter on an exact match of a guessed kommun still submits it", () => {
+    const guessed = { game: { ...newGame(puzzle), guesses: ["1880"] }, text: "" };
+    expect(play([type("Örebro"), enter], guessed).toast).toBe("Redan gissad: Örebro");
+  });
+
   test("the arrow keys skip disabled suggestions and wrap around", () => {
     // "o" suggests Örebro, Habo, Håbo (start), Stockholm (mål), Upplands-Bro.
     const highlights = (events: GuessInputEvent[]) => play([type("o"), ...events]).highlighted;
