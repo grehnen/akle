@@ -25,6 +25,12 @@ describe("resultOutcome", () => {
     expect(resultOutcome({ status: "won", extra: 0, perfect: false, away: 0 })?.score).toBe("+0");
   });
 
+  test("a win with hints shows them, as the share text does", () => {
+    expect(
+      resultOutcome({ status: "won", extra: 0, perfect: false, away: 0, hintsUsed: 2 })?.score,
+    ).toBe("+0 (2 ledtrådar)");
+  });
+
   test("a loss counts the kommuner still missing", () => {
     expect(resultOutcome({ status: "lost", perfect: false, away: 3 })).toEqual({
       headline: "Slut på gissningar",
