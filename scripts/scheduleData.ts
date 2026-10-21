@@ -86,7 +86,7 @@ function rowsFromChunkFiles(files: { fileName: string; csv: string }[]): Schedul
   return rows;
 }
 
-function git(args: string[]): string {
+export function git(args: string[]): string {
   const result = Bun.spawnSync(["git", ...args], { stderr: "pipe" });
   if (result.exitCode !== 0) {
     throw new Error(`git ${args.join(" ")} failed: ${result.stderr.toString()}`);

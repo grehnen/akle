@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          # The schedule rules check compares played rows with the base revision.
+          # The schedule and frozen graph versions checks compare with the base revision.
           fetch-depth: 0
 
       - name: Set up Bun
@@ -48,6 +48,11 @@ jobs:
         env:
           BASE_REVISION: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: bun run schedule:check --base "$BASE_REVISION"
+
+      - name: Frozen graph versions check
+        env:
+          BASE_REVISION: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: bun run graph-versions:check --base "$BASE_REVISION"
 
       - name: Build
         run: bunx vite build

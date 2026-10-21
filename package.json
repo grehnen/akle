@@ -8,13 +8,14 @@
     "preview": "vite preview",
     "schedule": "bun scripts/schedule.ts",
     "schedule:check": "bun scripts/check-schedule.ts",
+    "graph-versions:check": "bun scripts/check-graph-versions.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint --deny-warnings",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "graph:build": "bun scripts/graph/build.ts",
-    "check": "oxfmt --check && oxlint --deny-warnings && tsc --noEmit && bun test && bun run schedule:check && vite build"
+    "check": "oxfmt --check && oxlint --deny-warnings && tsc --noEmit && bun test && bun run schedule:check && bun run graph-versions:check && vite build"
   },
   "dependencies": {
     "maplibre-gl": "^6.15.0",
