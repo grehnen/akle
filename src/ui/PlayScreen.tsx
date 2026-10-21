@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { resolveKommunName } from "../engine/kommunNames";
 import { type Puzzle, reviewGame } from "../engine/game";
-import { HINT_COUNT, hintReveals } from "../engine/hints";
+import { hintReveals } from "../engine/hints";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SatelliteMap } from "../map/SatelliteMap";
 import { readHistory, recordFinishedGame, withFinishedGame } from "../progress/history";
@@ -10,13 +10,14 @@ import { shareText } from "../progress/shareText";
 import { deriveStats } from "../progress/stats";
 import type { KeyValueStorage } from "../progress/storage";
 import { GuessInput } from "./GuessInput";
+import { HintRow } from "./HintRow";
 import {
   applyGuessInput,
   type GuessSession,
   suggestKommuner,
   takeSessionHint,
 } from "./guessSession";
-import { guessCardText, hintRevealed } from "./messages";
+import { guessCardText } from "./messages";
 import { reportIssueUrl } from "./reportIssue";
 import { ResultView } from "./ResultView";
 import { UsedCounter } from "./UsedCounter";
@@ -43,6 +44,7 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
   // Focus follows the result view when it opens or closes by the player's hand, not on reload.
   const [resultToggled, setResultToggled] = useState(false);
   const reopenButton = useRef<HTMLButtonElement>(null);
+  const guessInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (resultClosed) reopenButton.current?.focus();
   }, [resultClosed]);
@@ -94,26 +96,17 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
         highlighted={session.highlighted}
         counter={<UsedCounter label="Gissa" used={review.cards.length} limit={review.limit} />}
         onEvent={(event) => setSession((current) => applyGuessInput(graph, current, event))}
+        inputRef={guessInput}
       />
 
-      <div className="hint-row">
-        <p role="alert" className="toast">
-          {toast}
-        </p>
-        {!finished && (
-          <>
-            <button
-              type="button"
-              className="hint-button"
-              disabled={review.hintsUsed >= HINT_COUNT}
-              onClick={() => setSession((current) => takeSessionHint(graph, current))}
-            >
-              <UsedCounter label="Ledtråd" used={review.hintsUsed} limit={HINT_COUNT} />
-            </button>
-            <p className="hint-note">{hintRevealed(review.hintsUsed)}</p>
-          </>
-        )}
-      </div>
+      <HintRow
+        toast={toast}
+        finished={finished}
+        hintsUsed={review.hintsUsed}
+        onTakeHint={() => setSession((current) => takeSessionHint(graph, current))}
+        focusAfterLastHint={guessInput}
+      />
+
       <p className="visually-hidden" aria-live="polite">
         {announcement}
       </p>

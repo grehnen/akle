@@ -1,4 +1,4 @@
-import type { KeyboardEvent, ReactNode } from "react";
+import type { KeyboardEvent, ReactNode, Ref } from "react";
 import type { KommunCode } from "../graph/graphVersion";
 import "./GuessInput.css";
 import { arrowDirection, type GuessInputEvent, type Suggestion } from "./guessSession";
@@ -13,6 +13,7 @@ type GuessInputProps = {
   /** The Gissa button's label, with the guess counter. */
   counter: ReactNode;
   onEvent: (event: GuessInputEvent) => void;
+  inputRef?: Ref<HTMLInputElement>;
 };
 
 const LISTBOX_ID = "guess-suggestions";
@@ -25,6 +26,7 @@ export function GuessInput({
   highlighted,
   counter,
   onEvent,
+  inputRef,
 }: GuessInputProps) {
   const expanded = suggestions.length > 0;
   // While the on-screen keyboard is open, the suggestions open upward (see GuessInput.css).
@@ -51,6 +53,7 @@ export function GuessInput({
       <label htmlFor="guess-input">Kommun</label>
       <div className="guess-input__field">
         <input
+          ref={inputRef}
           id="guess-input"
           type="text"
           role="combobox"
