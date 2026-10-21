@@ -18,6 +18,35 @@ export type GraphVersionFiles = {
   shapes: unknown;
 };
 
+/** The file each part of a graph version is committed in. */
+export const graphVersionFileNames = {
+  version: "version.json",
+  kommuner: "kommuner.csv",
+  neighbors: "neighbors.csv",
+  shapes: "shapes.geojson",
+} as const satisfies Record<keyof GraphVersionFiles, string>;
+
+/** A graph version's directory, relative to `data/`. */
+export function graphVersionDirectory(id: string): string {
+  return `graphs/${id}/`;
+}
+
+/** Reads a graph version's files from `directory` with `readText`, parsing the JSON ones. */
+export async function readGraphVersionFiles(
+  directory: string,
+  readText: (path: string) => Promise<string>,
+): Promise<GraphVersionFiles> {
+  const [version, kommuner, neighbors, shapes] = await Promise.all(
+    [
+      graphVersionFileNames.version,
+      graphVersionFileNames.kommuner,
+      graphVersionFileNames.neighbors,
+      graphVersionFileNames.shapes,
+    ].map((name) => readText(`${directory}${name}`)),
+  );
+  return { version: JSON.parse(version), kommuner, neighbors, shapes: JSON.parse(shapes) };
+}
+
 export type GraphVersionHeader = {
   id: string;
   /** The first puzzle number this version applies to (ADR 0004). */

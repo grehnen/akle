@@ -1,5 +1,5 @@
 import type { Kommun, KommunShapes, NeighborLink } from "../../src/graph/graphVersion";
-import type { GraphVersionHeader } from "../../src/graph/graphVersionFiles";
+import { type GraphVersionHeader, graphVersionFileNames } from "../../src/graph/graphVersionFiles";
 import type { FixedLink } from "./fixedLinks";
 import type { BuildEvidence } from "./neighborReview";
 
@@ -26,19 +26,19 @@ export function graphVersionFileContents(output: GraphVersionOutput): Record<str
     compare(a.properties.code, b.properties.code),
   );
   return {
-    "version.json": `${JSON.stringify(output.version, null, 2)}\n`,
-    "kommuner.csv": csv(
+    [graphVersionFileNames.version]: `${JSON.stringify(output.version, null, 2)}\n`,
+    [graphVersionFileNames.kommuner]: csv(
       "code,name",
       kommuner.map((kommun) => [kommun.code, kommun.name]),
     ),
-    "neighbors.csv": neighborsFileContent(output.links),
+    [graphVersionFileNames.neighbors]: neighborsFileContent(output.links),
     "fixed-links.csv": csv(
       "a,b,ways",
       fixedLinks.map((link) => [...link.between, link.ways.join(" ")]),
     ),
     ...(output.evidence && evidenceFiles(output.evidence)),
     // One feature per line keeps the file diffable without bloating it.
-    "shapes.geojson": `{"type":"FeatureCollection","features":[\n${features
+    [graphVersionFileNames.shapes]: `{"type":"FeatureCollection","features":[\n${features
       .map((feature) => JSON.stringify(feature))
       .join(",\n")}\n]}\n`,
   };

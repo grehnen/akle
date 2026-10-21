@@ -1,5 +1,10 @@
 import type { DailyPuzzleSource } from "../daily/loadDailyPuzzle";
-import { parseGraphVersionHeader } from "../graph/graphVersionFiles";
+import {
+  graphVersionDirectory,
+  graphVersionFileNames,
+  parseGraphVersionHeader,
+  readGraphVersionFiles,
+} from "../graph/graphVersionFiles";
 import { parseScheduleConfig, scheduleChunkFileName } from "../schedule/schedule";
 
 const dataDirectory = new URL("../../data/", import.meta.url);
@@ -17,14 +22,12 @@ export const committedDataSource: DailyPuzzleSource = {
   },
   graphVersions: async () =>
     Promise.all(
-      [...new Bun.Glob("*/version.json").scanSync(new URL("graphs", dataDirectory).pathname)].map(
-        async (path) => parseGraphVersionHeader(await dataFile(`graphs/${path}`).json()),
-      ),
+      [
+        ...new Bun.Glob(`${graphVersionDirectory("*")}${graphVersionFileNames.version}`).scanSync(
+          dataDirectory.pathname,
+        ),
+      ].map(async (path) => parseGraphVersionHeader(await dataFile(path).json())),
     ),
-  graphVersionFiles: async (id) => ({
-    version: await dataFile(`graphs/${id}/version.json`).json(),
-    kommuner: await dataFile(`graphs/${id}/kommuner.csv`).text(),
-    neighbors: await dataFile(`graphs/${id}/neighbors.csv`).text(),
-    shapes: await dataFile(`graphs/${id}/shapes.geojson`).json(),
-  }),
+  graphVersionFiles: async (id) =>
+    readGraphVersionFiles(graphVersionDirectory(id), (path) => dataFile(path).text()),
 };

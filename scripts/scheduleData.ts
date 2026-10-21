@@ -1,5 +1,10 @@
 import type { GraphVersion } from "../src/graph/graphVersion";
-import { parseGraphVersionFiles } from "../src/graph/graphVersionFiles";
+import {
+  graphVersionDirectory,
+  graphVersionFileNames,
+  parseGraphVersionFiles,
+  readGraphVersionFiles,
+} from "../src/graph/graphVersionFiles";
 import {
   formatScheduleChunks,
   parseScheduleChunk,
@@ -18,16 +23,17 @@ export async function readScheduleConfig(): Promise<ScheduleConfig> {
 }
 
 export async function readGraphVersions(): Promise<GraphVersion[]> {
-  const versionFiles = [...new Bun.Glob("graphs/*/version.json").scanSync(dataDirectory)].sort();
+  const versionFiles = [
+    ...new Bun.Glob(`${graphVersionDirectory("*")}${graphVersionFileNames.version}`).scanSync(
+      dataDirectory,
+    ),
+  ].sort();
   return Promise.all(
     versionFiles.map(async (versionFile) => {
-      const directory = `${dataDirectory}${versionFile.replace(/version\.json$/, "")}`;
-      const graph = parseGraphVersionFiles({
-        version: await Bun.file(`${directory}version.json`).json(),
-        kommuner: await Bun.file(`${directory}kommuner.csv`).text(),
-        neighbors: await Bun.file(`${directory}neighbors.csv`).text(),
-        shapes: await Bun.file(`${directory}shapes.geojson`).json(),
-      });
+      const directory = `${dataDirectory}${versionFile.slice(0, -graphVersionFileNames.version.length)}`;
+      const graph = parseGraphVersionFiles(
+        await readGraphVersionFiles(directory, (path) => Bun.file(path).text()),
+      );
       if (!directory.endsWith(`/${graph.id}/`)) {
         throw new Error(`${versionFile}: id "${graph.id}" must match its directory name`);
       }

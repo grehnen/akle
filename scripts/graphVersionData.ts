@@ -1,4 +1,4 @@
-import { parseGraphVersionHeader } from "../src/graph/graphVersionFiles";
+import { graphVersionFileNames, parseGraphVersionHeader } from "../src/graph/graphVersionFiles";
 import type { CommittedGraphVersion } from "../src/graph/frozenGraphVersions";
 import { git } from "./scheduleData";
 
@@ -51,9 +51,11 @@ async function committedVersionsFrom(
   }
   return Promise.all(
     [...byDirectory]
-      .filter(([, directoryFiles]) => "version.json" in directoryFiles)
+      .filter(([, directoryFiles]) => graphVersionFileNames.version in directoryFiles)
       .map(async ([directory, directoryFiles]) => ({
-        ...parseGraphVersionHeader(await readJson(`${graphsPath}${directory}/version.json`)),
+        ...parseGraphVersionHeader(
+          await readJson(`${graphsPath}${directory}/${graphVersionFileNames.version}`),
+        ),
         id: directory,
         files: directoryFiles,
       })),

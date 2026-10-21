@@ -1,11 +1,16 @@
 import type { DailyPuzzleSource } from "../daily/loadDailyPuzzle";
-import { parseGraphVersionHeader } from "../graph/graphVersionFiles";
+import {
+  graphVersionDirectory,
+  graphVersionFileNames,
+  parseGraphVersionHeader,
+} from "../graph/graphVersionFiles";
 import { parseScheduleConfig, scheduleChunkFileName } from "../schedule/schedule";
 import scheduleConfig from "../../data/schedule/config.json";
 
 type LazyText = Record<string, () => Promise<string>>;
 
-// Vite splits each lazily globbed file into its own asset, fetched only when called.
+// Vite splits each lazily globbed file into its own asset, fetched only when called. Its globs
+// must be literals, so they spell out graphVersionFileNames.
 const scheduleChunks: LazyText = import.meta.glob<string>("/data/schedule/*.csv", {
   query: "?raw",
   import: "default",
@@ -42,14 +47,14 @@ export const bundledDataSource: DailyPuzzleSource = {
   },
   graphVersions: async () => Object.values(versionHeaders).map(parseGraphVersionHeader),
   graphVersionFiles: async (id) => {
-    const directory = `/data/graphs/${id}`;
+    const directory = `/data/${graphVersionDirectory(id)}`;
     const [kommuner, neighbors, shapes] = await Promise.all([
-      loadFile(kommunerFiles, `${directory}/kommuner.csv`),
-      loadFile(neighborFiles, `${directory}/neighbors.csv`),
-      loadFile(shapeFiles, `${directory}/shapes.geojson`),
+      loadFile(kommunerFiles, `${directory}${graphVersionFileNames.kommuner}`),
+      loadFile(neighborFiles, `${directory}${graphVersionFileNames.neighbors}`),
+      loadFile(shapeFiles, `${directory}${graphVersionFileNames.shapes}`),
     ]);
     return {
-      version: versionHeaders[`${directory}/version.json`],
+      version: versionHeaders[`${directory}${graphVersionFileNames.version}`],
       kommuner,
       neighbors,
       shapes: JSON.parse(shapes),

@@ -1,6 +1,7 @@
 // bun run graph:review   rewrites the newest graph version's neighbors.csv and data/graph-report.md
 // bun run graph:check    fails unless they're up to date and every flagged pair has a verdict
 // Both read only committed files: the build's evidence and data/neighbor-overrides.yaml (ADR 0003).
+import { graphVersionDirectory, graphVersionFileNames } from "../../src/graph/graphVersionFiles";
 import { readCommittedGraphVersions } from "../graphVersionData";
 import {
   checkNeighborGraphReview,
@@ -21,7 +22,7 @@ const readFiles = async (version: (typeof versions)[number]) =>
     await Promise.all(
       Object.keys(version.files).map(async (name) => [
         name,
-        await Bun.file(`data/graphs/${version.id}/${name}`).text(),
+        await Bun.file(`data/${graphVersionDirectory(version.id)}${name}`).text(),
       ]),
     ),
   ) as Record<string, string>;
@@ -47,11 +48,12 @@ if (check) {
   console.log(`Neighbor graph check passed for ${newest.id}.`);
 } else {
   const { neighbors, report, review, problems } = neighborGraphReview(input);
-  await Bun.write(`data/graphs/${newest.id}/neighbors.csv`, neighbors);
+  const neighborsPath = `data/${graphVersionDirectory(newest.id)}${graphVersionFileNames.neighbors}`;
+  await Bun.write(neighborsPath, neighbors);
   await Bun.write(reportPath, report);
   const unreviewed = review.flags.filter((flag) => flag.verdict === undefined).length;
   console.log(
-    `Wrote data/graphs/${newest.id}/neighbors.csv and ${reportPath}: ${review.flags.length} flagged pairs, ${unreviewed} without a verdict.`,
+    `Wrote ${neighborsPath} and ${reportPath}: ${review.flags.length} flagged pairs, ${unreviewed} without a verdict.`,
   );
   if (problems.length > 0) {
     console.error(`${problems.length} problems left; bun run graph:check will fail.`);

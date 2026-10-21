@@ -3,6 +3,7 @@ import mapshaper from "mapshaper";
 import { mkdir } from "node:fs/promises";
 import type { KommunShapes, NeighborLink } from "../../src/graph/graphVersion";
 import { foldedNameCollisions } from "../../src/engine/kommunNames";
+import { graphVersionDirectory } from "../../src/graph/graphVersionFiles";
 import { pairKey } from "../../src/graph/kommunPair";
 import buildConfig from "./build-config.json";
 import { findFixedLinks, type LinkWay } from "./fixedLinks";
@@ -58,7 +59,7 @@ type Feature<Geometry = AreaGeometry> = {
 
 const extractFile = `${cacheDirectory}/${fileName(buildConfig.extract.url)}`;
 const layersDirectory = `${cacheDirectory}/${buildConfig.id}`;
-const outputDirectory = `${root}data/graphs/${buildConfig.id}`;
+const outputDirectory = `${root}data/${graphVersionDirectory(buildConfig.id)}`;
 const overridesFile = `${root}data/neighbor-overrides.yaml`;
 
 await mkdir(cacheDirectory, { recursive: true });
@@ -187,7 +188,7 @@ const files = graphVersionFileContents({
 });
 await mkdir(outputDirectory, { recursive: true });
 for (const [name, content] of Object.entries(files)) {
-  await Bun.write(`${outputDirectory}/${name}`, content);
+  await Bun.write(`${outputDirectory}${name}`, content);
 }
 reportSummary();
 log("Reviewing flagged pairs");
