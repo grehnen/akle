@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { readNeighborOverrides } from "./neighborOverrides";
+import { committedDataSource } from "../../src/data/committedDataSource";
+import { parseGraphVersionFiles } from "../../src/graph/graphVersionFiles";
 
 const kommuner = [
   { code: "0125", name: "Ekerö" },
@@ -7,6 +10,12 @@ const kommuner = [
   { code: "0192", name: "Nynäshamn" },
   { code: "0882", name: "Oskarshamn" },
   { code: "0980", name: "Gotland" },
+];
+
+const osmKommuner = [
+  ...parseGraphVersionFiles(
+    await committedDataSource.graphVersionFiles("osm-2026-10-01"),
+  ).kommuner.values(),
 ];
 
 describe("readNeighborOverrides", () => {
@@ -179,5 +188,49 @@ reviewed:
     expect(() => readNeighborOverrides(yaml, kommuner)).toThrow(
       /reviewed\[0\]: 0192-0980 is already listed in ferries\[0\]/,
     );
+  });
+
+  describe("the documented format", () => {
+    test("parses the example in data/README.md", () => {
+      const readme = readFileSync("data/README.md", "utf8");
+      const section = readme.slice(readme.indexOf("### Reviewing flagged pairs"));
+      const example = /```yaml\n([\s\S]*?)```/.exec(section)?.[1] ?? "";
+      const read = readNeighborOverrides(example, osmKommuner);
+      expect(read.overrides).toEqual([
+        {
+          between: ["0114", "0139"],
+          action: "remove",
+          reason: "Why the generated graph is wrong.",
+          evidence: "https://example.org/evidence",
+        },
+      ]);
+      expect(read.reviewed).toEqual([
+        {
+          between: ["0123", "0139"],
+          kinds: ["fixed-only"],
+          reason: "Why the generated graph is right.",
+        },
+      ]);
+    });
+
+    test("parses the commented examples in data/neighbor-overrides.yaml", () => {
+      const header = readFileSync("data/neighbor-overrides.yaml", "utf8");
+      const entries = header
+        .split("\n")
+        .filter((line) => /^# {3}/.test(line))
+        .map((line) => line.slice(2))
+        .join("\n")
+        .replaceAll('"<code>", "<code>"', '"0123", "0139"')
+        .replaceAll("<name>, <name>", "Järfälla, Upplands-Bro")
+        .split(/\n(?= {2}- )/);
+      const [overrideExample, reviewedExample] = entries;
+      expect(entries).toHaveLength(2);
+      expect(
+        readNeighborOverrides(`overrides:\n${overrideExample}`, osmKommuner).overrides,
+      ).toMatchObject([{ between: ["0123", "0139"], action: "remove" }]);
+      expect(
+        readNeighborOverrides(`reviewed:\n${reviewedExample}`, osmKommuner).reviewed,
+      ).toMatchObject([{ between: ["0123", "0139"], kinds: ["short-border"] }]);
+    });
   });
 });

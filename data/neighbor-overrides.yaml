@@ -19,16 +19,15 @@ ferries:
 # exactly one, and bun run graph:check fails on stale ones. Run bun run graph:review after editing.
 #
 # overrides change the generated graph, with a reason and an http(s) evidence link:
-#   - between: ["<code>", "<code>"]
+#   - remove: ["<code>", "<code>"]   # or add: ["<code>", "<code>"] with link: land | fixed
 #     names: [<name>, <name>]
-#     remove: land        # or add: land | fixed
 #     reason: ...
 #     evidence: https://...
 overrides: []
 
 # reviewed keeps what the build decided for the listed flags:
-#   - between: ["<code>", "<code>"]
+#   - keep: ["<code>", "<code>"]
 #     names: [<name>, <name>]
-#     keep: [short-border]
+#     kinds: [short-border]       # the flags that were reviewed
 #     reason: ...
 reviewed: []

@@ -64,19 +64,18 @@ The build can't trust every pair on its own, so it **flags** them for a human ([
 | `point-touch`  | the OSM boundaries touch only at a point, on land; the pair is not a neighbor                     |
 | `fixed-only`   | the pair is linked only by a fixed link, with no land border                                      |
 
-Every flagged pair needs a **verdict** in `neighbor-overrides.yaml`. Each entry is keyed by SCB codes with names that must match, and needs a `reason`. A pair appears at most once in the file.
+Every flagged pair needs a **verdict** in `neighbor-overrides.yaml`. Each entry is keyed by its pair of SCB codes, under `add`, `remove` or `keep`, with `names` that must match, and needs a `reason`. A pair appears at most once in the file.
 
 ```yaml
 overrides: # change the generated graph
-  - between: ["<code>", "<code>"]
-    names: [<name>, <name>]
-    remove: land # or add: land | fixed
+  - remove: ["0114", "0139"] # or add: ["<code>", "<code>"] with link: land | fixed
+    names: [Upplands Väsby, Upplands-Bro]
     reason: Why the generated graph is wrong.
-    evidence: https://… # required, http(s)
+    evidence: https://example.org/evidence # required, http(s)
 reviewed: # keep what the build decided
-  - between: ["<code>", "<code>"]
-    names: [<name>, <name>]
-    keep: [fixed-only] # the flags that were reviewed
+  - keep: ["0123", "0139"]
+    names: [Järfälla, Upplands-Bro]
+    kinds: [fixed-only] # the flags that were reviewed
     reason: Why the generated graph is right.
 ```
 
@@ -100,7 +99,7 @@ Every change to the kommuner, their names, neighbors or shapes, whether a kommun
 A version is **frozen** once a puzzle has used it, that is once its `startsAtPuzzle` is played (today's puzzle number in UTC+14, the earliest time zone). Frozen versions are never edited, rebuilt or rechecked; a known error stays in the puzzles that already used it. Until its first puzzle is played, the newest version may still be rebuilt in place.
 
 1. Pick the starting puzzle number: the first puzzle that should use the change. It must be after every played puzzle; leave time for review. For a merger on 1 January, it is the puzzle number of 1 January.
-2. In `scripts/graph/build-config.json`, set a new `id` (for example `osm-YYYY-MM-DD` after the extract date) and `startsAtPuzzle`, and pin a newer extract or SCB names file if needed. The overrides in the config apply to the new version only; an older version's overrides live only in git history.
+2. In `scripts/graph/build-config.json`, set a new `id` (for example `osm-YYYY-MM-DD` after the extract date) and `startsAtPuzzle`, and pin a newer extract or SCB names file if needed. The overrides in `neighbor-overrides.yaml` apply to the new version only; an older version's overrides live only in git history.
 3. Run `bun run graph:build`. It writes `data/graphs/<new id>/` and leaves the older directories alone.
 4. Review the flagged pairs in `graph-report.md` as in [Reviewing flagged pairs](#reviewing-flagged-pairs). Only the newest version goes through these checks.
 5. Run `bun run schedule --chunks 0`. It reconciles every unplayed row from the new start onward against the new version, updating N or redrawing the pair when needed. Paste its report in the PR. The schedule must cover the new start: the version boundary test loads the puzzles on each side of it.
