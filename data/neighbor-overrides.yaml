@@ -1,0 +1,15 @@
+# Hand-kept corrections to the generated neighbor graph (ADR 0003). Pairs are keyed by SCB
+# kommun codes, quoted so YAML keeps the leading zero; the names are for readers and must match.
+
+# Ferry links, only for kommuner with no land border or fixed link (#6). A kommun linked only by
+# ferry is a dead end: a route may start or end there, but never pass through it.
+ferries:
+  - between: ["0980", "0192"]
+    names: [Gotland, Nynäshamn]
+    reason: Destination Gotland's year-round car ferry Visby–Nynäshamn.
+  - between: ["0980", "0882"]
+    names: [Gotland, Oskarshamn]
+    reason: Destination Gotland's year-round car ferry Visby–Oskarshamn.
+  - between: ["1407", "1480"]
+    names: [Öckerö, Göteborg]
+    reason: Västtrafik's Öckeröleden car ferry Hönö–Lilla Varholmen (Hisingen).

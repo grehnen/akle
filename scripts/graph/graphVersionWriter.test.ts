@@ -40,4 +40,25 @@ describe("graphVersionFileContents", () => {
       ),
     ).toEqual(["0114", "0180"]);
   });
+
+  test("writes fixed links as neighbors and records their OSM way ids", () => {
+    const withFixedLinks = graphVersionFileContents({
+      version: { id: "osm-test", startsAtPuzzle: 3 },
+      kommuner: [
+        { code: "0180", name: "Stockholm" },
+        { code: "0186", name: "Lidingö" },
+        { code: "0125", name: "Ekerö" },
+      ],
+      links: [],
+      fixedLinks: [
+        { between: ["0186", "0180"], ways: [4054906, 23353186] },
+        { between: ["0125", "0180"], ways: [30961374] },
+      ],
+      shapes: { type: "FeatureCollection", features: [] },
+    });
+    expect(withFixedLinks["neighbors.csv"]).toBe("a,b,link\n0125,0180,fixed\n0180,0186,fixed\n");
+    expect(withFixedLinks["fixed-links.csv"]).toBe(
+      "a,b,ways\n0125,0180,30961374\n0180,0186,4054906 23353186\n",
+    );
+  });
 });

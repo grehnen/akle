@@ -1,25 +1,30 @@
 import type { Kommun, KommunShapes, NeighborLink } from "../../src/graph/graphVersion";
 import type { GraphVersionHeader } from "../../src/graph/graphVersionFiles";
+import type { FixedLink } from "./fixedLinks";
 
 export type GraphVersionOutput = {
   /** `version.json`: the header plus anything else worth recording, such as the sources. */
   version: GraphVersionHeader & Record<string, unknown>;
   kommuner: readonly Kommun[];
+  /** Land and ferry links. */
   links: readonly NeighborLink[];
+  /** Written as `fixed` links, with their OSM way ids in `fixed-links.csv`. */
+  fixedLinks?: readonly FixedLink[];
   shapes: KommunShapes;
 };
 
 /** The files of a graph version (see `data/README.md`), sorted by SCB code so rebuilds diff cleanly. */
 export function graphVersionFileContents(output: GraphVersionOutput): Record<string, string> {
   const kommuner = [...output.kommuner].sort((a, b) => compare(a.code, b.code));
-  const pairs = output.links
+  const fixedLinks = (output.fixedLinks ?? [])
+    .map((link) => ({ between: [...link.between].sort(compare), ways: link.ways }))
+    .sort(comparePairs);
+  const pairs = [
+    ...output.links,
+    ...fixedLinks.map((link) => ({ between: link.between, kind: "fixed" as const })),
+  ]
     .map((link) => ({ between: [...link.between].sort(compare), kind: link.kind }))
-    .sort(
-      (a, b) =>
-        compare(a.between[0], b.between[0]) ||
-        compare(a.between[1], b.between[1]) ||
-        compare(a.kind, b.kind),
-    );
+    .sort((a, b) => comparePairs(a, b) || compare(a.kind, b.kind));
   const features = [...output.shapes.features].sort((a, b) =>
     compare(a.properties.code, b.properties.code),
   );
@@ -33,6 +38,10 @@ export function graphVersionFileContents(output: GraphVersionOutput): Record<str
       "a,b,link",
       pairs.map((pair) => [...pair.between, pair.kind]),
     ),
+    "fixed-links.csv": csv(
+      "a,b,ways",
+      fixedLinks.map((link) => [...link.between, link.ways.join(" ")]),
+    ),
     // One feature per line keeps the file diffable without bloating it.
     "shapes.geojson": `{"type":"FeatureCollection","features":[\n${features
       .map((feature) => JSON.stringify(feature))
@@ -45,6 +54,10 @@ function csv(header: string, rows: readonly string[][]): string {
     if (/[,\n"]/.test(field)) throw new Error(`CSV field can't hold "${field}"`);
   }
   return `${[header, ...rows.map((row) => row.join(","))].join("\n")}\n`;
+}
+
+function comparePairs(a: { between: string[] }, b: { between: string[] }): number {
+  return compare(a.between[0], b.between[0]) || compare(a.between[1], b.between[1]);
 }
 
 function compare(a: string, b: string): number {

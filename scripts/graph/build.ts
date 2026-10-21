@@ -4,21 +4,25 @@ import { mkdir } from "node:fs/promises";
 import type { KommunShapes, NeighborLink } from "../../src/graph/graphVersion";
 import { foldedNameCollisions } from "../../src/engine/kommunNames";
 import buildConfig from "./build-config.json";
+import { findFixedLinks, type LinkWay } from "./fixedLinks";
 import { graphVersionFileContents } from "./graphVersionWriter";
 import { measureLandBorders } from "./landBorders";
+import { readFerries } from "./neighborOverrides";
 import { readScbKommunWorkbook } from "./scbKommuner";
 import { closeMainlandCoastline } from "./coastlineClosure";
 import {
   sharedBorders,
   type AreaGeometry,
   type KommunArea,
+  type Line,
   type Position,
   type SharedBorder,
 } from "./sharedBorders";
 
 /**
  * Rebuilds the graph version described in `build-config.json` from its pinned OSM extract:
- * land-border neighbors, official SCB names and simplified shapes. See `data/README.md`.
+ * land-border and fixed-link neighbors, the hand-kept ferries, official SCB names and
+ * simplified shapes. See `data/README.md`.
  */
 
 const root = new URL("../../", import.meta.url).pathname;
@@ -41,15 +45,16 @@ const notLakes = new Set([
   "stream_pool",
 ]);
 
-type Feature = {
+type Feature<Geometry = AreaGeometry> = {
   type: "Feature";
   properties: Record<string, string | number | undefined>;
-  geometry: AreaGeometry;
+  geometry: Geometry;
 };
 
 const extractFile = `${cacheDirectory}/${fileName(buildConfig.extract.url)}`;
 const layersDirectory = `${cacheDirectory}/${buildConfig.id}`;
 const outputDirectory = `${root}data/graphs/${buildConfig.id}`;
+const overridesFile = `${root}data/neighbor-overrides.yaml`;
 
 await mkdir(cacheDirectory, { recursive: true });
 await download(buildConfig.extract.url, extractFile, buildConfig.extract.sha256);
@@ -80,19 +85,36 @@ const land = await readFeatures(`${layersDirectory}/land.geojsonseq`);
 const lakes = (await readFeatures(`${layersDirectory}/water.geojsonseq`)).filter(isLake);
 
 log("Measuring borders on land");
-const measured = measureLandBorders(borders, {
+const mask = {
   land: land.filter((feature) => nearBorders(feature.geometry)).map((feature) => feature.geometry),
   lakes: lakes
     .filter((feature) => nearBorders(feature.geometry))
     .map((feature) => feature.geometry),
-});
+};
+const measured = measureLandBorders(borders, mask);
 await Bun.write(
   `${layersDirectory}/land-borders.csv`,
   `a,b,landLength\n${measured.map((border) => `${border.between.join(",")},${border.landLength}`).join("\n")}\n`,
 );
-const links: NeighborLink[] = measured
+const landLinks: NeighborLink[] = measured
   .filter((border) => border.landLength > 0)
   .map((border) => ({ between: border.between, kind: "land" }));
+
+log("Finding fixed links");
+const linkWays: LinkWay[] = (
+  await readFeatures<{ type: "LineString"; coordinates: Line }>(
+    `${layersDirectory}/links.geojsonseq`,
+    ["LineString"],
+  )
+).map((feature) => ({
+  id: Number(feature.properties["@id"]),
+  tags: feature.properties,
+  line: feature.geometry.coordinates,
+}));
+const fixedLinks = findFixedLinks(borders, linkWays, mask);
+
+const ferryLinks = readFerries(await Bun.file(overridesFile).text(), scbKommuner);
+const links = [...landLinks, ...ferryLinks];
 
 log("Drawing shapes");
 const shapes = await drawShapes(
@@ -113,6 +135,7 @@ const files = graphVersionFileContents({
   },
   kommuner: scbKommuner,
   links,
+  fixedLinks,
   shapes,
 });
 await mkdir(outputDirectory, { recursive: true });
@@ -141,9 +164,16 @@ async function download(url: string, path: string, sha256: string): Promise<void
 
 /** Runs the native OSM tools in their pinned image; the layers are cached per graph version. */
 async function extractLayers(): Promise<void> {
-  if (await Bun.file(`${layersDirectory}/land.geojsonseq`).exists()) return;
+  const hasLand = await Bun.file(`${layersDirectory}/land.geojsonseq`).exists();
+  const hasLinks = await Bun.file(`${layersDirectory}/links.geojsonseq`).exists();
+  if (hasLand && hasLinks) return;
   log("Building the OSM tools image");
   await Bun.$`docker build --quiet --tag ${toolsImage} ${root}scripts/osm`.quiet();
+  if (!hasLinks) {
+    log("Extracting roads, paths and railways that may be fixed links");
+    await runTool("links.sh", `/work/${fileName(extractFile)}`, `/work/${buildConfig.id}`);
+  }
+  if (hasLand) return;
   log("Extracting kommuner, water and coastline");
   await runTool("extract.sh", `/work/${fileName(extractFile)}`, `/work/${buildConfig.id}`);
 
@@ -280,8 +310,12 @@ async function drawShapes(
   return drawnShapes;
 }
 
-async function readFeatures(path: string): Promise<Feature[]> {
-  const features: Feature[] = [];
+/** The features of a GeoJSON text sequence whose geometry is one of `geometryTypes`. */
+async function readFeatures<Geometry extends { type: string } = AreaGeometry>(
+  path: string,
+  geometryTypes: readonly Geometry["type"][] = ["Polygon", "MultiPolygon"],
+): Promise<Feature<Geometry>[]> {
+  const features: Feature<Geometry>[] = [];
   const recordSeparator = String.fromCharCode(0x1e);
   const decoder = new TextDecoder();
   let pending = "";
@@ -298,10 +332,8 @@ async function readFeatures(path: string): Promise<Feature[]> {
     // osmium writes GeoJSON text sequences, where each record may start with a record separator.
     const json = (line.startsWith(recordSeparator) ? line.slice(1) : line).trim();
     if (json === "") return;
-    const feature = JSON.parse(json) as Feature;
-    if (feature.geometry?.type === "Polygon" || feature.geometry?.type === "MultiPolygon") {
-      features.push(feature);
-    }
+    const feature = JSON.parse(json) as Feature<Geometry>;
+    if (geometryTypes.includes(feature.geometry?.type)) features.push(feature);
   }
 }
 
@@ -342,19 +374,30 @@ function sphericalArea(geometry: AreaGeometry): number {
 
 function reportSummary(): void {
   const names = new Map(scbKommuner.map((kommun) => [kommun.code, kommun.name]));
-  const linked = new Set(links.flatMap((link) => link.between));
+  const pairName = (between: readonly string[]) => between.map((code) => names.get(code)).join("–");
+  const linked = new Set(landLinks.flatMap((link) => link.between));
   const isolated = scbKommuner.filter((kommun) => !linked.has(kommun.code));
+  const withFixedLinks = new Set([...linked, ...fixedLinks.flatMap((link) => link.between)]);
   log(`Wrote ${outputDirectory}`);
   log(
-    `${scbKommuner.length} kommuner, ${borders.length} shared borders, ${links.length} land neighbors`,
+    `${scbKommuner.length} kommuner, ${borders.length} shared borders, ${landLinks.length} land neighbors, ${fixedLinks.length} fixed links, ${ferryLinks.length} ferries`,
   );
   log(`No land neighbor: ${isolated.map((kommun) => kommun.name).join(", ") || "none"}`);
-  const waterOnly = measured.filter((border) => border.landLength === 0);
+  log("Fixed links (OSM way ids):");
+  for (const link of fixedLinks) {
+    const alsoLand = landLinks.some((other) => other.between.join() === link.between.join());
+    log(`  ${pairName(link.between)}${alsoLand ? " (also land)" : ""}: ${link.ways.join(" ")}`);
+  }
   log(
-    `Water-only borders: ${waterOnly
-      .map((border) => border.between.map((code) => names.get(code)).join("–"))
-      .join(", ")}`,
+    `No land neighbor or fixed link: ${
+      scbKommuner
+        .filter((kommun) => !withFixedLinks.has(kommun.code))
+        .map((kommun) => kommun.name)
+        .join(", ") || "none"
+    }`,
   );
+  const waterOnly = measured.filter((border) => border.landLength === 0);
+  log(`Water-only borders: ${waterOnly.map((border) => pairName(border.between)).join(", ")}`);
   log(`Shapes: ${(files["shapes.geojson"].length / 1024).toFixed(0)} KB`);
 }
 

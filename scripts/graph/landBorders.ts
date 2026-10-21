@@ -23,13 +23,22 @@ export function measureLandBorders(
 ): LandBorder[] {
   const land = new PolygonIndex(mask.land);
   const lakes = new PolygonIndex(mask.lakes);
-  const isOnLand = (point: Position) => land.contains(point) && !lakes.contains(point);
+  const isOnLand = landTest(land, lakes);
   return borders.map((border) => ({
     between: border.between,
     landLength: Math.round(
       border.lines.reduce((sum, line) => sum + lineLengthOnLand(line, [land, lakes], isOnLand), 0),
     ),
   }));
+}
+
+/** Whether a point is on land: inside the land mask, outside every lake. */
+export function pointOnLand(mask: LandWaterMask): (point: Position) => boolean {
+  return landTest(new PolygonIndex(mask.land), new PolygonIndex(mask.lakes));
+}
+
+function landTest(land: PolygonIndex, lakes: PolygonIndex): (point: Position) => boolean {
+  return (point) => land.contains(point) && !lakes.contains(point);
 }
 
 /**
@@ -130,7 +139,8 @@ class PolygonIndex {
   }
 }
 
-function segmentIntersection(
+/** Where along a–b (0–1) it crosses c–d, if it does. */
+export function segmentIntersection(
   a: Position,
   b: Position,
   c: Position,
@@ -145,7 +155,7 @@ function segmentIntersection(
   return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? t : undefined;
 }
 
-function interpolate(from: Position, to: Position, t: number): Position {
+export function interpolate(from: Position, to: Position, t: number): Position {
   return [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
 }
 
