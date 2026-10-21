@@ -53,4 +53,14 @@ describe("the share text", () => {
       "#åkle #5 +1 (3 ledtrådar)\n🟥✅✅\nhttps://akle.grehn.net",
     );
   });
+
+  test("a loss with hints shows them after the kommuner still missing", () => {
+    const lost = { puzzleNumber: 40, won: false, extra: null, perfect: false, away: 2 };
+    expect(shareText({ ...lost, hintsUsed: 1, emojiLine: "🟥🟥" })).toBe(
+      "#åkle #40 (2 kvar) (1 ledtråd)\n🟥🟥\nhttps://akle.grehn.net",
+    );
+    expect(shareText({ ...lost, hintsUsed: 2, emojiLine: "🟥🟥" })).toBe(
+      "#åkle #40 (2 kvar) (2 ledtrådar)\n🟥🟥\nhttps://akle.grehn.net",
+    );
+  });
 });

@@ -20,7 +20,10 @@ export function shareText(result: ShareResult): string {
 }
 
 function resultLabel(result: ShareResult): string {
-  if (!result.won) return `(${result.away} kvar)`;
+  if (!result.won) {
+    const hints = result.hintsUsed > 0 ? ` (${hintCount(result.hintsUsed)})` : "";
+    return `(${result.away} kvar)${hints}`;
+  }
   if (result.hintsUsed > 0) return `+${result.extra} (${hintCount(result.hintsUsed)})`;
   return result.perfect ? `+${result.extra} (Perfekt)` : `+${result.extra}`;
 }
