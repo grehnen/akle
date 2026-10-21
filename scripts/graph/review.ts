@@ -51,9 +51,9 @@ if (check) {
   const neighborsPath = `data/${graphVersionDirectory(newest.id)}${graphVersionFileNames.neighbors}`;
   await Bun.write(neighborsPath, neighbors);
   await Bun.write(reportPath, report);
-  const unreviewed = review.flags.filter((flag) => flag.verdict === undefined).length;
+  const unreviewed = review.flaggedPairs.filter((flag) => flag.verdict === undefined).length;
   console.log(
-    `Wrote ${neighborsPath} and ${reportPath}: ${review.flags.length} flagged pairs, ${unreviewed} without a verdict.`,
+    `Wrote ${neighborsPath} and ${reportPath}: ${review.flaggedPairs.length} flagged pairs, ${unreviewed} without a verdict.`,
   );
   if (problems.length > 0) {
     console.error(`${problems.length} problems left; bun run graph:check will fail.`);

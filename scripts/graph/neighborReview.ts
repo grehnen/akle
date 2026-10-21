@@ -23,7 +23,7 @@ export type BuildEvidence = {
 };
 
 /** A pair the build can't trust on its own, with what it measured. */
-export type PairFlag = {
+export type FlaggedPair = {
   between: Pair;
   kinds: PairFlagKind[];
   /** Which side of the SCB cross-check has the pair. */
@@ -45,7 +45,7 @@ export type Verdict =
 export type NeighborReview = {
   /** The shipped neighbor graph: the generated links plus ferries, with overrides applied. */
   links: NeighborLink[];
-  flags: PairFlag[];
+  flaggedPairs: FlaggedPair[];
   /** Flags without a verdict, new flag kinds on reviewed pairs and stale entries. */
   problems: string[];
   /** Problems across the whole graph, which no verdict can accept. */
@@ -89,9 +89,9 @@ export function reviewNeighborGraph(
     if (!((borders.get(key)?.landLength ?? 0) > 0)) flag(key, "fixed-only");
   }
 
-  const flags = [...flagKinds]
+  const flaggedPairs = [...flagKinds]
     .sort(([a], [b]) => compare(a, b))
-    .map(([key, kinds]): PairFlag => {
+    .map(([key, kinds]): FlaggedPair => {
       const border = borders.get(key);
       const ways = fixed.get(key)?.ways;
       const at = (border ?? touches.get(key) ?? scb.get(key))?.at ?? [0, 0];
@@ -150,7 +150,7 @@ export function reviewNeighborGraph(
       links.push({ between: sortedPair(between), kind: link ?? "land" });
     }
   }
-  for (const flagged of flags) {
+  for (const flagged of flaggedPairs) {
     const verdict = verdicts.get(pairKey(flagged.between));
     if (verdict) flagged.verdict = verdict;
     else {
@@ -164,7 +164,7 @@ export function reviewNeighborGraph(
   );
   return {
     links: shipped,
-    flags,
+    flaggedPairs,
     graphProblems: wholeGraphProblems(evidence, shipped),
     problems: pairProblems.sort(([a], [b]) => compare(a, b)).map(([, message]) => message),
   };

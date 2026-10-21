@@ -15,7 +15,7 @@ const review: NeighborReview = {
     { between: ["0125", "0180"], kind: "land" },
     { between: ["0180", "0186"], kind: "fixed" },
   ],
-  flags: [
+  flaggedPairs: [
     { between: ["0125", "0180"], kinds: ["short-border"], landLength: 42, at: [17.83261, 59.3684] },
     {
       between: ["0180", "0186"],

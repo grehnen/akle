@@ -1,7 +1,7 @@
 import type { Kommun, KommunCode, NeighborLink } from "../../src/graph/graphVersion";
 import type { GraphVersionHeader } from "../../src/graph/graphVersionFiles";
 import { pairKey } from "../../src/graph/kommunPair";
-import type { NeighborReview, PairFlag, Point } from "./neighborReview";
+import type { NeighborReview, FlaggedPair, Point } from "./neighborReview";
 
 export type GraphReportInput = {
   version: GraphVersionHeader;
@@ -23,7 +23,7 @@ export function graphReport({ version, kommuner, review, previous }: GraphReport
     between.map((code) => names.get(code) ?? previousNames.get(code) ?? code).join("–");
   const count = (kind: NeighborLink["kind"]) =>
     review.links.filter((link) => link.kind === kind).length;
-  const unreviewed = review.flags.filter((flag) => flag.verdict === undefined).length;
+  const unreviewed = review.flaggedPairs.filter((flag) => flag.verdict === undefined).length;
   const problems = [...review.problems, ...review.graphProblems];
 
   const lines = [
@@ -39,11 +39,11 @@ export function graphReport({ version, kommuner, review, previous }: GraphReport
     "",
     "## Flagged pairs",
     "",
-    `${review.flags.length} flagged pairs, ${unreviewed} without a verdict.`,
+    `${review.flaggedPairs.length} flagged pairs, ${unreviewed} without a verdict.`,
     "",
     "| Pair | Codes | Flags | Measurements | Map | Verdict |",
     "| --- | --- | --- | --- | --- | --- |",
-    ...review.flags.map(
+    ...review.flaggedPairs.map(
       (flag) =>
         `| ${pairName(flag.between)} | ${pairKey(flag.between)} | ${flag.kinds.join(", ")} | ${measurements(flag)} | [map](${mapLink(flag.at)}) | ${verdictText(flag)} |`,
     ),
@@ -86,7 +86,7 @@ export function graphReport({ version, kommuner, review, previous }: GraphReport
   return `${lines.join("\n")}\n`;
 }
 
-function measurements(flag: PairFlag): string {
+function measurements(flag: FlaggedPair): string {
   const parts: string[] = [];
   if (flag.scb) parts.push(flag.scb);
   if (flag.landLength !== undefined) parts.push(`land border ${flag.landLength} m`);
@@ -103,7 +103,7 @@ function mapLink([lon, lat]: Point): string {
   return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}`;
 }
 
-function verdictText({ verdict }: PairFlag): string {
+function verdictText({ verdict }: FlaggedPair): string {
   if (verdict === undefined) return "**none**";
   const evidence = verdict.action === "keep" ? "" : ` ([evidence](${verdict.evidence}))`;
   return `${verdict.action}: ${verdict.reason.replaceAll(/\s+/g, " ").trim().replaceAll("|", "\\|")}${evidence}`;

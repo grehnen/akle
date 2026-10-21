@@ -40,7 +40,7 @@ describe("reviewNeighborGraph", () => {
       { between: ["0002", "0003"], kind: "land" },
       { between: ["0003", "0004"], kind: "land" },
     ]);
-    expect(review.flags).toEqual([]);
+    expect(review.flaggedPairs).toEqual([]);
     expect(review.problems).toEqual([]);
     expect(review.graphProblems).toEqual([]);
   });
@@ -56,7 +56,7 @@ describe("reviewNeighborGraph", () => {
       }),
       noOverrides,
     );
-    expect(review.flags).toEqual([
+    expect(review.flaggedPairs).toEqual([
       { between: ["0002", "0003"], kinds: ["short-border"], landLength: 42, at: [18.1, 59] },
     ]);
   });
@@ -66,7 +66,7 @@ describe("reviewNeighborGraph", () => {
       evidence({ pointTouches: [{ between: ["0004", "0001"], at: [18.3, 59] }] }),
       noOverrides,
     );
-    expect(review.flags).toEqual([
+    expect(review.flaggedPairs).toEqual([
       { between: ["0001", "0004"], kinds: ["point-touch"], at: [18.3, 59] },
     ]);
     expect(review.links).toHaveLength(3);
@@ -93,7 +93,7 @@ describe("reviewNeighborGraph", () => {
       { between: ["0003", "0004"], kind: "fixed" },
       { between: ["0003", "0004"], kind: "land" },
     ]);
-    expect(review.flags).toEqual([
+    expect(review.flaggedPairs).toEqual([
       {
         between: ["0002", "0003"],
         kinds: ["fixed-only"],
@@ -115,7 +115,7 @@ describe("reviewNeighborGraph", () => {
       }),
       noOverrides,
     );
-    expect(review.flags).toEqual([
+    expect(review.flaggedPairs).toEqual([
       { between: ["0001", "0003"], kinds: ["scb-mismatch"], scb: "only SCB", at: [18.05, 59.1] },
       {
         between: ["0003", "0004"],
@@ -142,7 +142,9 @@ describe("reviewNeighborGraph", () => {
       }),
       noOverrides,
     );
-    expect(review.flags.map((flag) => flag.kinds)).toEqual([["scb-mismatch", "short-border"]]);
+    expect(review.flaggedPairs.map((flag) => flag.kinds)).toEqual([
+      ["scb-mismatch", "short-border"],
+    ]);
   });
 
   const shortBo = evidence({
@@ -155,7 +157,7 @@ describe("reviewNeighborGraph", () => {
 
   test("fails on a flag without a verdict", () => {
     const review = reviewNeighborGraph(shortBo, noOverrides);
-    expect(review.flags[0].verdict).toBeUndefined();
+    expect(review.flaggedPairs[0].verdict).toBeUndefined();
     expect(review.problems).toEqual([
       "0002-0003 (Bo–Cil) is flagged short-border but has no verdict",
     ]);
@@ -166,7 +168,7 @@ describe("reviewNeighborGraph", () => {
       ...noOverrides,
       reviewed: [{ between: ["0002", "0003"], kinds: ["short-border"], reason: "Real." }],
     });
-    expect(review.flags[0].verdict).toEqual({ action: "keep", reason: "Real." });
+    expect(review.flaggedPairs[0].verdict).toEqual({ action: "keep", reason: "Real." });
     expect(review.problems).toEqual([]);
   });
 
@@ -210,7 +212,7 @@ describe("reviewNeighborGraph", () => {
       ],
     });
     expect(review.links.map((link) => link.between.join("-"))).toEqual(["0001-0002", "0003-0004"]);
-    expect(review.flags[0].verdict).toEqual({
+    expect(review.flaggedPairs[0].verdict).toEqual({
       action: "remove",
       reason: "Sliver.",
       evidence: "https://example.org/sliver",
@@ -235,7 +237,7 @@ describe("reviewNeighborGraph", () => {
       },
     );
     expect(review.links).toContainEqual({ between: ["0001", "0004"], kind: "land" });
-    expect(review.flags[0].verdict?.action).toBe("add");
+    expect(review.flaggedPairs[0].verdict?.action).toBe("add");
     expect(review.problems).toEqual([]);
   });
 

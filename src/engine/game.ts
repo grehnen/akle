@@ -146,7 +146,7 @@ function rateGuess(
   return detour <= distanceBefore + 1 ? "🟧" : "🟥";
 }
 
-/** Guesses linked to the start through an unbroken chain of guesses (dead ends link nothing). */
+/** Guesses connected to the start through an unbroken chain of guesses (dead ends link nothing). */
 function connectedToStart(
   graph: GraphVersion,
   start: KommunCode,
