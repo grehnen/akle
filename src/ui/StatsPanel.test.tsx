@@ -56,4 +56,23 @@ describe("the stats panel", () => {
       );
     expect(highlighted).toEqual(["+2"]);
   });
+
+  test("splits a row into games without and with hints, with a key", () => {
+    const hinted = { ...win, hintsUsed: 2 };
+    const split = renderToStaticMarkup(
+      <StatsPanel stats={deriveStats({ 1: win, 2: hinted, 3: hinted }, 3)} />,
+    );
+    const row = split
+      .match(/<li[^>]*>.*?<\/li>/g)
+      ?.map((li) =>
+        li
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim(),
+      )
+      .find((text) => text.startsWith("+2"));
+    expect(row).toBe("+2 3 , varav 2 med ledtrådar");
+    expect(split).toContain("Med ledtrådar");
+    expect(markup).not.toContain("Med ledtrådar");
+  });
 });

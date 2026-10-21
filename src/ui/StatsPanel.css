@@ -84,12 +84,15 @@
 }
 
 .row-bar {
+  --bar: #3a4d60;
+
   position: relative;
+  isolation: isolate;
   min-width: 1.6rem;
   width: calc(1.6rem + (100% - 1.6rem) * var(--share));
   padding: 0.05rem 0.5rem;
   border-radius: 999px;
-  background: #3a4d60;
+  background: var(--bar);
   font-size: 0.8rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -120,6 +123,50 @@
 }
 
 .stats-distribution [aria-current="true"] .row-bar {
-  background: var(--row-color);
+  --bar: var(--row-color);
+
   color: var(--night);
+}
+
+/*
+ * Games with hints are drawn like hint outlines on the map: unfilled, thin and white. They take
+ * the start of the bar, so the count always sits on the part without hints.
+ */
+.row-bar[data-hints="some"]::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 auto 0 0;
+  width: calc((100% - 1.6rem) * var(--hinted));
+  border-radius: 999px 0 0 999px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--hint-outline);
+}
+
+.row-bar[data-hints="all"],
+.stats-distribution [aria-current="true"] .row-bar[data-hints="all"] {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--hint-outline);
+  color: var(--text);
+}
+
+.stats-distribution [aria-current="true"] .row-bar[data-hints="all"] {
+  box-shadow: inset 0 0 0 1px var(--row-color);
+}
+
+.stats-key {
+  margin: -0.4rem 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.stats-key-swatch {
+  width: 1.2rem;
+  height: 0.8rem;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--hint-outline);
 }
