@@ -21,6 +21,11 @@ export function shareText(result: ShareResult): string {
 
 function resultLabel(result: ShareResult): string {
   if (!result.won) return `(${result.away} kvar)`;
-  // Hints will take the place of "(Perfekt)" here, as `(n ledtrådar)`.
+  if (result.hintsUsed > 0) return `+${result.extra} (${hintCount(result.hintsUsed)})`;
   return result.perfect ? `+${result.extra} (Perfekt)` : `+${result.extra}`;
+}
+
+/** `1 ledtråd`, `2 ledtrådar`. */
+export function hintCount(hints: number): string {
+  return hints === 1 ? "1 ledtråd" : `${hints} ledtrådar`;
 }

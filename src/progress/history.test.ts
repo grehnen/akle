@@ -59,6 +59,21 @@ describe("the history", () => {
     });
   });
 
+  test("records the hints used, which rule out Perfect", () => {
+    const storage = memoryStorage();
+    recordFinishedGame(storage, graph, {
+      ...game(4, "A", "B"),
+      hints: { taken: 2, nextKommun: "A" },
+    });
+    expect(readHistory(storage)[4]).toEqual({
+      won: true,
+      extra: 0,
+      perfect: false,
+      hintsUsed: 2,
+      emojiLine: "✅✅",
+    });
+  });
+
   test("an unfinished game is not recorded", () => {
     const storage = memoryStorage();
     recordFinishedGame(storage, graph, game(4, "A"));

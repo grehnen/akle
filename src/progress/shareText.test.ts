@@ -43,4 +43,14 @@ describe("the share text", () => {
       }),
     ).toBe("#åkle #40 (3 kvar)\n🟧🟥🟥🟥🟥\nhttps://akle.grehn.net");
   });
+
+  test("a win with hints shows them where (Perfekt) would go", () => {
+    const won = { puzzleNumber: 5, won: true, extra: 0, perfect: false, away: 0 };
+    expect(shareText({ ...won, hintsUsed: 1, emojiLine: "✅✅" })).toBe(
+      "#åkle #5 +0 (1 ledtråd)\n✅✅\nhttps://akle.grehn.net",
+    );
+    expect(shareText({ ...won, extra: 1, hintsUsed: 3, emojiLine: "🟥✅✅" })).toBe(
+      "#åkle #5 +1 (3 ledtrådar)\n🟥✅✅\nhttps://akle.grehn.net",
+    );
+  });
 });

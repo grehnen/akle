@@ -37,7 +37,7 @@ export function withFinishedGame(history: History, graph: GraphVersion, game: Ga
     won: review.status === "won",
     extra: review.extra ?? null,
     perfect: review.perfect,
-    hintsUsed: 0,
+    hintsUsed: review.hintsUsed,
     emojiLine: emojiLine(review.cards),
   };
   return { ...history, [game.puzzle.number]: entry };
