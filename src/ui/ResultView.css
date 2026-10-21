@@ -147,6 +147,52 @@
   background: var(--surface);
 }
 
+.result-view .stats {
+  margin-top: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+}
+
+.share {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.share-button {
+  padding-inline: 1.5rem;
+  background: var(--score);
+  color: var(--night);
+}
+
+.share-toast {
+  position: absolute;
+  bottom: calc(100% + 0.4rem);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--night);
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  animation: toast-pop 180ms ease-out;
+}
+
+@keyframes toast-pop {
+  from {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .share-toast {
+    animation: none;
+  }
+}
+
 .result-countdown {
   margin: 0.25rem 0 0;
   color: var(--muted);

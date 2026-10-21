@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { type DailyPuzzle, type DailyPuzzleSource, loadDailyPuzzle } from "./daily/loadDailyPuzzle";
+import { readHistory } from "./progress/history";
+import { deriveStats } from "./progress/stats";
 import { browserStorage, type KeyValueStorage } from "./progress/storage";
 import { DailyPuzzleView } from "./ui/DailyPuzzleView";
+import { StatsDialog, StatsIcon } from "./ui/StatsDialog";
 
 type AppProps = {
   source: DailyPuzzleSource;
@@ -15,6 +18,9 @@ export function App({ source, now = () => new Date(), storage }: AppProps) {
   const [failed, setFailed] = useState(false);
   const [openedAt] = useState(now);
   const [progressStorage] = useState(() => storage ?? browserStorage());
+  const [statsOpen, setStatsOpen] = useState(false);
+  // Without today's puzzle (still loading, or no puzzle today) there is no streak to keep alive.
+  const today = daily?.kind === "puzzle" ? daily.puzzle.number : Number.POSITIVE_INFINITY;
 
   useEffect(() => {
     let cancelled = false;
@@ -31,7 +37,23 @@ export function App({ source, now = () => new Date(), storage }: AppProps) {
 
   return (
     <main>
-      <h1>Åkle</h1>
+      <header className="site-header">
+        <h1>Åkle</h1>
+        <button
+          type="button"
+          className="stats-open"
+          aria-label="Visa statistik"
+          onClick={() => setStatsOpen(true)}
+        >
+          <StatsIcon />
+        </button>
+      </header>
+      {statsOpen && (
+        <StatsDialog
+          stats={deriveStats(readHistory(progressStorage), today)}
+          onClose={() => setStatsOpen(false)}
+        />
+      )}
       {failed ? (
         <p role="alert">Kunde inte ladda dagens pussel. Försök igen senare.</p>
       ) : (

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { type Game, reviewGame } from "../engine/game";
 import { buildGraphVersion } from "../graph/graphVersion";
+import { deriveStats } from "../progress/stats";
 import { ResultView } from "./ResultView";
 
 // Nynäshamn ── Södertälje ── Trosa, or Nynäshamn ── Haninge ── Salem ── Trosa; the rest far away.
@@ -43,7 +44,17 @@ function routeItems(markup: string): string[] {
 function render(...guesses: string[]) {
   const game: Game = { puzzle, guesses };
   return renderToStaticMarkup(
-    <ResultView graph={graph} game={game} review={reviewGame(graph, game)} now={now} />,
+    <ResultView
+      graph={graph}
+      game={game}
+      review={reviewGame(graph, game)}
+      now={now}
+      stats={deriveStats(
+        { 20: { won: true, extra: 0, perfect: true, hintsUsed: 0, emojiLine: "✅" } },
+        21,
+      )}
+      shareText="#åkle #21 +1"
+    />,
   );
 }
 
@@ -66,6 +77,15 @@ describe("the result view", () => {
 
     test("lists the shortest route with the player's guess on it marked", () => {
       expect(routeItems(markup)).toEqual(["Nynäshamn", "Södertälje (gissad)", "Trosa"]);
+    });
+
+    test("embeds the stats", () => {
+      expect(markup).toContain("Statistik");
+      expect(markup).toContain("<dt>Spelade</dt><dd>1</dd>");
+    });
+
+    test("offers to copy the share text", () => {
+      expect(markup).toMatch(/<button[^>]*>Kopiera resultat<\/button>/);
     });
 
     test("counts down to the next puzzle at midnight", () => {

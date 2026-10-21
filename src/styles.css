@@ -46,6 +46,29 @@ h1 {
   line-height: 1.1;
 }
 
+.site-header {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.stats-open {
+  position: absolute;
+  right: 0;
+  width: 2.75rem;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--text);
+}
+
+.stats-open:hover {
+  color: var(--start);
+}
+
 a {
   color: inherit;
 }

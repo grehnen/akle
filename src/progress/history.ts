@@ -29,16 +29,10 @@ export function readHistory(storage: KeyValueStorage): History {
     : {};
 }
 
-/** Writes a finished game's entry once; an unfinished game or an already recorded puzzle is left alone. */
-export function recordFinishedGame(
-  storage: KeyValueStorage,
-  graph: GraphVersion,
-  game: Game,
-): void {
+/** The history with a finished game's entry added once; an unfinished game or an already recorded puzzle is left alone. */
+export function withFinishedGame(history: History, graph: GraphVersion, game: Game): History {
   const review = reviewGame(graph, game);
-  if (review.status === "playing") return;
-  const history = readHistory(storage);
-  if (history[game.puzzle.number] !== undefined) return;
+  if (review.status === "playing" || history[game.puzzle.number] !== undefined) return history;
   const entry: HistoryEntry = {
     won: review.status === "won",
     extra: review.extra ?? null,
@@ -46,5 +40,16 @@ export function recordFinishedGame(
     hintsUsed: 0,
     emojiLine: emojiLine(review.cards),
   };
-  writeJson(storage, HISTORY_KEY, { ...history, [game.puzzle.number]: entry });
+  return { ...history, [game.puzzle.number]: entry };
+}
+
+/** Writes a finished game's entry once; an unfinished game or an already recorded puzzle is left alone. */
+export function recordFinishedGame(
+  storage: KeyValueStorage,
+  graph: GraphVersion,
+  game: Game,
+): void {
+  const history = readHistory(storage);
+  const updated = withFinishedGame(history, graph, game);
+  if (updated !== history) writeJson(storage, HISTORY_KEY, updated);
 }

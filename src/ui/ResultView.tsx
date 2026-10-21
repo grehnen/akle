@@ -4,8 +4,11 @@ import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { preferredShortestRoute } from "../graph/routes";
 import { SatelliteMap } from "../map/SatelliteMap";
 import { emojiLine } from "../progress/history";
+import type { Stats } from "../progress/stats";
 import { countdownToMidnight } from "./countdown";
 import { resultOutcome } from "./messages";
+import { ShareButton } from "./ShareButton";
+import { StatsPanel } from "./StatsPanel";
 import "./ResultView.css";
 
 type ResultViewProps = {
@@ -13,11 +16,21 @@ type ResultViewProps = {
   game: Game;
   review: GameReview;
   now: Date;
+  stats: Stats;
+  shareText: string;
   onClose?: () => void;
 };
 
-/** Opens when the game ends: the outcome, the emoji line, a shortest route and the countdown. */
-export function ResultView({ graph, game, review, now, onClose }: ResultViewProps) {
+/** Opens when the game ends: the outcome, the emoji line, a shortest route, the stats, sharing and the countdown. */
+export function ResultView({
+  graph,
+  game,
+  review,
+  now,
+  stats,
+  shareText,
+  onClose,
+}: ResultViewProps) {
   const { start, destination } = game.puzzle;
   const nameOf = (code: string) => kommunName(graph, code);
   const outcome = resultOutcome(review);
@@ -68,6 +81,10 @@ export function ResultView({ graph, game, review, now, onClose }: ResultViewProp
           </ol>
         </>
       )}
+
+      <StatsPanel stats={stats} />
+
+      <ShareButton text={shareText} />
 
       <p className="result-countdown">
         Nästa pussel om <Countdown from={now} />

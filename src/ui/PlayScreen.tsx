@@ -3,8 +3,10 @@ import { resolveKommunName } from "../engine/kommunNames";
 import { type Puzzle, reviewGame } from "../engine/game";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SatelliteMap } from "../map/SatelliteMap";
-import { recordFinishedGame } from "../progress/history";
+import { readHistory, recordFinishedGame, withFinishedGame } from "../progress/history";
 import { loadSavedGame, saveGame } from "../progress/savedGame";
+import { shareText } from "../progress/shareText";
+import { deriveStats } from "../progress/stats";
 import type { KeyValueStorage } from "../progress/storage";
 import { GuessInput } from "./GuessInput";
 import { applyGuessInput, type GuessSession, suggestKommuner } from "./guessSession";
@@ -30,6 +32,11 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
   const [resultClosed, setResultClosed] = useState(false);
   const resultOpen = finished && !resultClosed;
   const nameOf = (code: string) => kommunName(graph, code);
+  const history = useMemo(
+    () => withFinishedGame(readHistory(storage), graph, game),
+    [storage, graph, game],
+  );
+  const todayEntry = history[puzzle.number];
 
   useEffect(() => {
     saveGame(storage, game);
@@ -44,12 +51,14 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
         <strong>{nameOf(puzzle.destination)}</strong>
       </h2>
 
-      {resultOpen && (
+      {resultOpen && todayEntry && (
         <ResultView
           graph={graph}
           game={game}
           review={review}
           now={now}
+          stats={deriveStats(history, puzzle.number)}
+          shareText={shareText({ ...todayEntry, puzzleNumber: puzzle.number, away: review.away })}
           onClose={() => setResultClosed(true)}
         />
       )}
