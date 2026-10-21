@@ -79,6 +79,35 @@ describe("the stats", () => {
       ]);
     });
 
+    test("splits each row into games without and with hints; totals and streaks combine both", () => {
+      const hinted = (entry: HistoryEntry, hintsUsed: number) => ({ ...entry, hintsUsed });
+      const history: History = {
+        1: perfect,
+        2: win(2),
+        3: hinted(win(2), 1),
+        4: hinted(win(0), 3),
+        5: hinted(loss, 2),
+        6: loss,
+        7: hinted(win(1), 1),
+      };
+      const stats = deriveStats(history, 7);
+      expect(
+        stats.distribution
+          .filter((row) => row.games > 0)
+          .map(({ label, games, withHints }) => [label, games - withHints, withHints]),
+      ).toEqual([
+        ["Perfekt", 1, 0],
+        ["+0", 0, 1],
+        ["+1", 0, 1],
+        ["+2", 1, 1],
+        ["Förlust", 1, 1],
+      ]);
+      expect(stats.played).toBe(7);
+      expect(stats.winPercent).toBe(71);
+      expect(stats.currentStreak).toBe(1);
+      expect(stats.longestStreak).toBe(4);
+    });
+
     const todayRows = (history: History, today: number) =>
       deriveStats(history, today)
         .distribution.filter((row) => row.today)

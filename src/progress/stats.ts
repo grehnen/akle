@@ -6,7 +6,10 @@ export const MAX_EXTRA = 8;
 /** One row of the distribution: Perfekt, +0 … +8 or Förlust. */
 export type DistributionRow = {
   label: string;
+  /** All games in the row, with and without hints. */
   games: number;
+  /** The games in the row that used hints; always 0 for Perfekt. */
+  withHints: number;
   /** Today's finished game landed in this row. */
   today: boolean;
 };
@@ -45,11 +48,15 @@ function rowLabel(entry: HistoryEntry): string {
 
 function distribution(entries: HistoryEntry[], todayEntry: HistoryEntry | undefined) {
   const todayLabel = todayEntry && rowLabel(todayEntry);
-  return ROW_LABELS.map((label) => ({
-    label,
-    games: entries.filter((entry) => rowLabel(entry) === label).length,
-    today: label === todayLabel,
-  }));
+  return ROW_LABELS.map((label) => {
+    const games = entries.filter((entry) => rowLabel(entry) === label);
+    return {
+      label,
+      games: games.length,
+      withHints: games.filter((entry) => entry.hintsUsed > 0).length,
+      today: label === todayLabel,
+    };
+  });
 }
 
 const wonPuzzle = (history: History, puzzleNumber: number) => history[puzzleNumber]?.won === true;
