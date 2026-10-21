@@ -1,5 +1,5 @@
 import type { KommunCode } from "../../src/graph/graphVersion";
-import { compareCodes, pairKey } from "../../src/graph/kommunPair";
+import { compareCodes, comparePairs, pairKey } from "../../src/graph/kommunPair";
 
 export type Position = number[];
 export type Line = Position[];
@@ -62,9 +62,7 @@ export function sharedBorders(areas: readonly KommunArea[]): SharedBorder[] {
       }
     }
   }
-  return [...borders.values()].sort(
-    (a, b) => compareCodes(a.between[0], b.between[0]) || compareCodes(a.between[1], b.between[1]),
-  );
+  return [...borders.values()].sort(comparePairs);
 }
 
 /**
@@ -104,10 +102,7 @@ export function sharedVertices(
       between: pair.between,
       points: pair.points.sort((a, b) => a[0] - b[0] || a[1] - b[1]),
     }))
-    .sort(
-      (a, b) =>
-        compareCodes(a.between[0], b.between[0]) || compareCodes(a.between[1], b.between[1]),
-    );
+    .sort(comparePairs);
 }
 
 /** A run that wraps past the ring's start point is one line, not two. */

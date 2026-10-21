@@ -11,6 +11,14 @@ export function compareCodes(a: KommunCode, b: KommunCode): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+/** Orders pairs by their first code, then their second. */
+export function comparePairs(
+  a: { between: readonly KommunCode[] },
+  b: { between: readonly KommunCode[] },
+): number {
+  return compareCodes(a.between[0], b.between[0]) || compareCodes(a.between[1], b.between[1]);
+}
+
 export function sortedPair(between: readonly KommunCode[]): [KommunCode, KommunCode] {
   const [a, b] = between;
   return compareCodes(a, b) <= 0 ? [a, b] : [b, a];
