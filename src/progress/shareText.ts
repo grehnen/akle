@@ -1,4 +1,5 @@
 import type { HistoryEntry } from "./history";
+import { classifyOutcome, hintsNote } from "./outcome";
 
 export const SITE_URL = "https://akle.grehn.net";
 
@@ -20,15 +21,13 @@ export function shareText(result: ShareResult): string {
 }
 
 function resultLabel(result: ShareResult): string {
-  if (!result.won) {
-    const hints = result.hintsUsed > 0 ? ` (${hintCount(result.hintsUsed)})` : "";
-    return `(${result.away} kvar)${hints}`;
+  const outcome = classifyOutcome(result);
+  switch (outcome.kind) {
+    case "perfect":
+      return `+${outcome.extra} (Perfekt)`;
+    case "won":
+      return `+${outcome.extra}${hintsNote(outcome.hintsUsed)}`;
+    case "lost":
+      return `(${result.away} kvar)${hintsNote(outcome.hintsUsed)}`;
   }
-  if (result.hintsUsed > 0) return `+${result.extra} (${hintCount(result.hintsUsed)})`;
-  return result.perfect ? `+${result.extra} (Perfekt)` : `+${result.extra}`;
-}
-
-/** `1 ledtråd`, `2 ledtrådar`. */
-export function hintCount(hints: number): string {
-  return hints === 1 ? "1 ledtråd" : `${hints} ledtrådar`;
 }

@@ -1,5 +1,5 @@
 import type { Feedback, GameReview, GameStatus, GuessCard, GuessResult } from "../engine/game";
-import { hintCount } from "../progress/shareText";
+import { classifyOutcome, hintsNote } from "../progress/outcome";
 
 type RejectionReason = Extract<GuessResult, { kind: "rejected" }>["reason"];
 
@@ -21,14 +21,21 @@ export function resultOutcome(
   review: Pick<GameReview, "status" | "extra" | "perfect" | "away"> &
     Partial<Pick<GameReview, "hintsUsed">>,
 ): { headline: string; score: string } | undefined {
-  if (review.status === "won") {
-    const hints = review.hintsUsed ? ` (${hintCount(review.hintsUsed)})` : "";
-    return { headline: "Framme!", score: review.perfect ? "Perfekt" : `+${review.extra}${hints}` };
+  if (review.status === "playing") return undefined;
+  const outcome = classifyOutcome({
+    won: review.status === "won",
+    extra: review.extra ?? null,
+    perfect: review.perfect,
+    hintsUsed: review.hintsUsed ?? 0,
+  });
+  switch (outcome.kind) {
+    case "perfect":
+      return { headline: "Framme!", score: "Perfekt" };
+    case "won":
+      return { headline: "Framme!", score: `+${outcome.extra}${hintsNote(outcome.hintsUsed)}` };
+    case "lost":
+      return { headline: "Slut på gissningar", score: `${review.away} kvar` };
   }
-  if (review.status === "lost") {
-    return { headline: "Slut på gissningar", score: `${review.away} kvar` };
-  }
-  return undefined;
 }
 
 /** What the latest hint revealed, under the Ledtråd button. */

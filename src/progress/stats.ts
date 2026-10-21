@@ -1,4 +1,5 @@
 import type { History, HistoryEntry } from "./history";
+import { classifyOutcome } from "./outcome";
 
 /** The largest possible extra: a win on the last guess of the longest guess limit. */
 export const MAX_EXTRA = 8;
@@ -42,8 +43,15 @@ const ROW_LABELS = [
 ];
 
 function rowLabel(entry: HistoryEntry): string {
-  if (!entry.won) return "Förlust";
-  return entry.perfect ? "Perfekt" : `+${entry.extra}`;
+  const outcome = classifyOutcome(entry);
+  switch (outcome.kind) {
+    case "perfect":
+      return "Perfekt";
+    case "won":
+      return `+${outcome.extra}`;
+    case "lost":
+      return "Förlust";
+  }
 }
 
 function distribution(entries: HistoryEntry[], todayEntry: HistoryEntry | undefined) {
