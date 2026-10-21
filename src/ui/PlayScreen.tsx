@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { resolveKommunName } from "../engine/kommunNames";
 import { type Puzzle, reviewGame } from "../engine/game";
-import { HINT_COUNT, hintReveals, takeHint } from "../engine/hints";
+import { HINT_COUNT, hintReveals } from "../engine/hints";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SatelliteMap } from "../map/SatelliteMap";
 import { readHistory, recordFinishedGame, withFinishedGame } from "../progress/history";
@@ -10,10 +10,16 @@ import { shareText } from "../progress/shareText";
 import { deriveStats } from "../progress/stats";
 import type { KeyValueStorage } from "../progress/storage";
 import { GuessInput } from "./GuessInput";
-import { applyGuessInput, type GuessSession, suggestKommuner } from "./guessSession";
-import { hintRevealed } from "./messages";
+import {
+  applyGuessInput,
+  type GuessSession,
+  suggestKommuner,
+  takeSessionHint,
+} from "./guessSession";
+import { guessCardText, hintRevealed } from "./messages";
 import { reportIssueUrl } from "./reportIssue";
 import { ResultView } from "./ResultView";
+import { UsedCounter } from "./UsedCounter";
 
 type PlayScreenProps = {
   graph: GraphVersion;
@@ -27,13 +33,19 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
     game: loadSavedGame(storage, graph, puzzle),
     text: "",
   }));
-  const { game, toast } = session;
+  const { game, toast, announcement } = session;
 
   const review = useMemo(() => reviewGame(graph, game), [graph, game]);
   const reveals = useMemo(() => hintReveals(graph, game), [graph, game]);
   const finished = review.status !== "playing";
   const [resultClosed, setResultClosed] = useState(false);
   const resultOpen = finished && !resultClosed;
+  // Focus follows the result view when it opens or closes by the player's hand, not on reload.
+  const [resultToggled, setResultToggled] = useState(false);
+  const reopenButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (resultClosed) reopenButton.current?.focus();
+  }, [resultClosed]);
   const nameOf = (code: string) => kommunName(graph, code);
   const history = useMemo(
     () => withFinishedGame(readHistory(storage), graph, game),
@@ -63,6 +75,7 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
           stats={deriveStats(history, puzzle.number)}
           shareText={shareText({ ...todayEntry, puzzleNumber: puzzle.number, away: review.away })}
           onClose={() => setResultClosed(true)}
+          focusOnOpen={resultToggled || announcement !== undefined}
         />
       )}
 
@@ -79,7 +92,7 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
         exactMatch={resolveKommunName(graph, session.text) !== undefined}
         suggestions={suggestKommuner(graph, game, session.text)}
         highlighted={session.highlighted}
-        counter={`Gissa (${review.cards.length}/${review.limit})`}
+        counter={<UsedCounter label="Gissa" used={review.cards.length} limit={review.limit} />}
         disabled={review.status !== "playing"}
         onEvent={(event) => setSession((current) => applyGuessInput(graph, current, event))}
       />
@@ -90,32 +103,44 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
             type="button"
             className="hint-button"
             disabled={review.hintsUsed >= HINT_COUNT}
-            onClick={() =>
-              setSession((current) => ({ ...current, game: takeHint(graph, current.game) }))
-            }
+            onClick={() => setSession((current) => takeSessionHint(graph, current))}
           >
-            Ledtråd ({review.hintsUsed}/{HINT_COUNT})
+            <UsedCounter label="Ledtråd" used={review.hintsUsed} limit={HINT_COUNT} />
           </button>
-          <p className="hint-note" aria-live="polite">
-            {hintRevealed(review.hintsUsed)}
-          </p>
+          <p className="hint-note">{hintRevealed(review.hintsUsed)}</p>
         </div>
       )}
 
-      <p role="status" aria-live="polite">
+      <p role="alert" className="toast">
         {toast}
+      </p>
+      <p className="visually-hidden" aria-live="polite">
+        {announcement}
       </p>
 
       <ol aria-label="Gissningar">
-        {review.cards.map((card) => (
+        {review.cards.map((card, index) => (
           <li key={card.code}>
-            <span aria-hidden="true">{card.feedback}</span> {nameOf(card.code)}
+            <span aria-hidden="true">
+              {card.feedback} {nameOf(card.code)}
+            </span>
+            <span className="visually-hidden">
+              {guessCardText(card, { number: index + 1, name: nameOf(card.code) })}
+            </span>
           </li>
         ))}
       </ol>
 
       {finished && !resultOpen && (
-        <button type="button" className="result-reopen" onClick={() => setResultClosed(false)}>
+        <button
+          ref={reopenButton}
+          type="button"
+          className="result-reopen"
+          onClick={() => {
+            setResultToggled(true);
+            setResultClosed(false);
+          }}
+        >
           Visa resultat
         </button>
       )}

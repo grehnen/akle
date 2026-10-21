@@ -90,6 +90,16 @@ a {
   outline-offset: 2px;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .play-screen {
   width: 100%;
   display: flex;
@@ -134,6 +144,21 @@ a {
   overflow: hidden;
   background: var(--surface);
   box-shadow: 0 0 0 1px var(--rule);
+}
+
+.satellite-map__canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* The map clips its corners, so its focus ring is drawn on the frame instead of the canvas. */
+.satellite-map:has(.maplibregl-canvas:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.satellite-map .maplibregl-canvas:focus-visible {
+  outline: none;
 }
 
 /* While the on-screen keyboard is open, the map shrinks so the prompt stays in view. */
@@ -267,7 +292,8 @@ input:disabled {
   cursor: default;
 }
 
-[role="status"]:empty {
+[role="status"]:empty,
+.toast:empty {
   display: none;
 }
 

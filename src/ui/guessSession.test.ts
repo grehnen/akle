@@ -3,9 +3,11 @@ import { newGame } from "../engine/game";
 import { buildGraphVersion } from "../graph/graphVersion";
 import {
   applyGuessInput,
+  arrowDirection,
   type GuessInputEvent,
   type GuessSession,
   suggestKommuner,
+  takeSessionHint,
 } from "./guessSession";
 
 const graph = buildGraphVersion({
@@ -180,5 +182,116 @@ describe("applyGuessInput", () => {
     const from = { game: newGame(puzzle), text: " " };
     expect(play([enter], from)).toEqual(from);
     expect(play([gissa], from)).toEqual(from);
+  });
+});
+
+describe("announcements", () => {
+  test("an accepted guess is announced with its number, name and feedback", () => {
+    expect(play([type("Örebro"), enter]).announcement).toBe(
+      "Gissning 1 av 5: Örebro, långt från en kortaste väg.",
+    );
+  });
+
+  test("a winning guess says the destination was reached", () => {
+    expect(play([type("Örebro"), enter, type("Upplands-Bro"), enter]).announcement).toBe(
+      "Gissning 2 av 5: Upplands-Bro, på kortaste vägen och ansluten. Du nådde målet!",
+    );
+  });
+
+  test("a guess off the shortest route that borders the start says it's connected", () => {
+    const haboBordersStart = buildGraphVersion({
+      id: "habo",
+      startsAtPuzzle: 1,
+      kommuner: [...graph.kommuner.values()],
+      links: [
+        { between: ["0305", "0139"], kind: "land" },
+        { between: ["0139", "0180"], kind: "land" },
+        { between: ["0305", "0643"], kind: "land" },
+      ],
+    });
+    const session = [type("Habo"), enter].reduce(
+      (current, event) => applyGuessInput(haboBordersStart, current, event),
+      { game: newGame(puzzle), text: "" } as GuessSession,
+    );
+    expect(session.announcement).toBe(
+      "Gissning 1 av 5: Habo, nära en kortaste väg, ansluten till start.",
+    );
+  });
+
+  test("the last guess of a lost game says the guesses ran out", () => {
+    const far = ["Ale", "Bjuv", "Dals-Ed", "Eda", "Falun"];
+    const lossGraph = buildGraphVersion({
+      id: "loss",
+      startsAtPuzzle: 1,
+      kommuner: [
+        ...graph.kommuner.values(),
+        ...far.map((name, index) => ({ code: `990${index}`, name })),
+      ],
+      links: [
+        { between: ["0305", "0139"], kind: "land" },
+        { between: ["0139", "0180"], kind: "land" },
+      ],
+    });
+    const lost = far.reduce(
+      (session, name) =>
+        applyGuessInput(lossGraph, applyGuessInput(lossGraph, session, type(name)), enter),
+      { game: newGame(puzzle), text: "" } as GuessSession,
+    );
+    expect(lost.announcement).toBe(
+      "Gissning 5 av 5: Falun, långt från en kortaste väg. Slut på gissningar.",
+    );
+  });
+
+  test("a rejected guess is not announced, only shown as a toast", () => {
+    const session = play([type("Örebro"), enter, type("Bålsta x"), enter]);
+    expect(session.announcement).toBeUndefined();
+    expect(session.toast).toBe("Okänd kommun: Bålsta x");
+  });
+});
+
+describe("takeSessionHint", () => {
+  const hints = (count: number) =>
+    Array.from({ length: count }).reduce<GuessSession>(
+      (session) => takeSessionHint(graph, session),
+      { game: newGame(puzzle), text: "" },
+    );
+
+  test("takes the next hint and announces what it shows", () => {
+    expect(hints(1).game.hints?.taken).toBe(1);
+    expect(hints(1).announcement).toBe(
+      "Ledtråd 1: nästa kommun på en kortaste väg visas som kontur på kartan.",
+    );
+    expect(hints(2).announcement).toBe("Ledtråd 2: alla kommuner visas som konturer på kartan.");
+    expect(hints(3).announcement).toBe(
+      "Ledtråd 3: kommunernas initialer visas när du pekar på konturerna.",
+    );
+  });
+
+  test("announces nothing new once the hints are used up", () => {
+    expect(hints(4)).toEqual(hints(3));
+  });
+});
+
+describe("arrowDirection", () => {
+  test("follows the list down the screen when it opens below the input", () => {
+    expect(arrowDirection("ArrowDown", { listOpensUpward: false })).toBe("down");
+    expect(arrowDirection("ArrowUp", { listOpensUpward: false })).toBe("up");
+  });
+
+  test("moves the highlight the way the arrow points when the list opens upward", () => {
+    // Upward, the best match sits nearest the input, at the bottom of the list.
+    const fromInput = (key: "ArrowDown" | "ArrowUp") =>
+      play([
+        type("o"),
+        { type: "arrow", direction: arrowDirection(key, { listOpensUpward: true }) },
+      ]);
+    expect(fromInput("ArrowUp").highlighted).toBe("1880");
+    const nextUp = play([
+      type("o"),
+      { type: "arrow", direction: arrowDirection("ArrowUp", { listOpensUpward: true }) },
+      { type: "arrow", direction: arrowDirection("ArrowUp", { listOpensUpward: true }) },
+      { type: "arrow", direction: arrowDirection("ArrowDown", { listOpensUpward: true }) },
+    ]);
+    expect(nextUp.highlighted).toBe("1880");
   });
 });

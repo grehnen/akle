@@ -1,7 +1,8 @@
-import { type Game, submitGuess } from "../engine/game";
+import { type Game, reviewGame, submitGuess } from "../engine/game";
+import { takeHint } from "../engine/hints";
 import { foldKommunName, normalizeKommunName, resolveKommunName } from "../engine/kommunNames";
-import type { GraphVersion, KommunCode } from "../graph/graphVersion";
-import { rejectionMessage } from "./messages";
+import { type GraphVersion, type KommunCode, kommunName } from "../graph/graphVersion";
+import { guessAnnouncement, hintAnnouncement, rejectionMessage } from "./messages";
 
 /** Why a suggestion can't be picked, shown as its tag. */
 export type SuggestionTag = "redan gissad" | "start" | "mål";
@@ -14,12 +15,17 @@ export type Suggestion = {
 
 const MAX_SUGGESTIONS = 8;
 
-/** The play screen's input state: the game, the typed text, the arrow highlight and the toast. */
+/**
+ * The play screen's input state: the game, the typed text, the arrow highlight, the toast and
+ * what the live region last announced.
+ */
 export type GuessSession = {
   game: Game;
   text: string;
   highlighted?: KommunCode;
   toast?: string;
+  /** Set by accepted guesses and hints only, so nothing is announced after a reload. */
+  announcement?: string;
 };
 
 export type GuessInputEvent =
@@ -30,6 +36,18 @@ export type GuessInputEvent =
   | { type: "enter" }
   /** The Gissa button. */
   | { type: "gissa" };
+
+/**
+ * Which way an arrow key moves the highlight through the suggestions. A list that opens upward is
+ * drawn bottom to top, so the keys swap to keep the highlight moving the way the arrow points.
+ */
+export function arrowDirection(
+  key: "ArrowDown" | "ArrowUp",
+  { listOpensUpward }: { listOpensUpward: boolean },
+): "down" | "up" {
+  const down = key === "ArrowDown";
+  return down !== listOpensUpward ? "down" : "up";
+}
 
 /**
  * The two-step guess input: picking a suggestion only fills the field, and only an exact
@@ -95,12 +113,28 @@ function pickable(graph: GraphVersion, session: GuessSession): Suggestion[] {
 function submit(graph: GraphVersion, session: GuessSession): GuessSession {
   if (session.text.trim() === "") return session;
   const result = submitGuess(graph, session.game, session.text);
-  if (result.kind === "accepted") return { game: result.game, text: "" };
+  if (result.kind === "accepted") {
+    const review = reviewGame(graph, result.game);
+    const announcement = guessAnnouncement(result.card, {
+      number: result.game.guesses.length,
+      limit: review.limit,
+      name: kommunName(graph, result.card.code),
+      status: review.status,
+    });
+    return { game: result.game, text: "", announcement };
+  }
   return {
     game: session.game,
     text: result.reason === "unknown" ? session.text : "",
     toast: rejectionMessage(result.reason, session.text.trim()),
   };
+}
+
+/** The Ledtråd button: takes the next hint, if any is left, and announces it. */
+export function takeSessionHint(graph: GraphVersion, session: GuessSession): GuessSession {
+  const game = takeHint(graph, session.game);
+  if (game === session.game) return session;
+  return { ...session, game, announcement: hintAnnouncement(game.hints?.taken ?? 0) };
 }
 
 /** Autocomplete for the guess input: fuzzysort-style subsequence matching over folded names. */

@@ -1,7 +1,7 @@
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import type { KommunCode } from "../graph/graphVersion";
 import "./GuessInput.css";
-import type { GuessInputEvent, Suggestion } from "./guessSession";
+import { arrowDirection, type GuessInputEvent, type Suggestion } from "./guessSession";
 import { useOnScreenKeyboard } from "./onScreenKeyboard";
 
 type GuessInputProps = {
@@ -11,7 +11,7 @@ type GuessInputProps = {
   suggestions: readonly Suggestion[];
   highlighted?: KommunCode;
   /** The Gissa button's label, with the guess counter. */
-  counter: string;
+  counter: ReactNode;
   disabled: boolean;
   onEvent: (event: GuessInputEvent) => void;
 };
@@ -29,12 +29,13 @@ export function GuessInput({
   onEvent,
 }: GuessInputProps) {
   const expanded = !disabled && suggestions.length > 0;
-  useOnScreenKeyboard();
+  // While the on-screen keyboard is open, the suggestions open upward (see GuessInput.css).
+  const listOpensUpward = useOnScreenKeyboard();
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
-      onEvent({ type: "arrow", direction: event.key === "ArrowDown" ? "down" : "up" });
+      onEvent({ type: "arrow", direction: arrowDirection(event.key, { listOpensUpward }) });
     } else if (event.key === "Enter") {
       event.preventDefault();
       onEvent({ type: "enter" });
