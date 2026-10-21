@@ -5,10 +5,12 @@ export const START_COLOR = "#fecc02";
 export const DESTINATION_COLOR = "#006aa7";
 export const CONNECTED_COLOR = "#4ade80";
 export const UNCONNECTED_COLOR = "#9ca3af";
+export const MISSED_COLOR = "#f87171";
 
 export type DrawnKommun = {
   code: KommunCode;
-  kind: "start" | "destination" | "guess";
+  /** "missed" marks a kommun on the result view's route that the player didn't guess. */
+  kind: "start" | "destination" | "guess" | "missed";
   color: string;
   /** Unconnected guesses get a dashed outline; endpoints are always drawn solid. */
   connected: boolean;
@@ -44,6 +46,31 @@ export function mapFeatures(
       connected: card.connected,
     })),
   ];
+  return withShapes(graph, drawn);
+}
+
+/** The result view's map: the endpoints, then the route's kommuner, guessed or missed. */
+export function routeFeatures(
+  graph: GraphVersion,
+  puzzle: Pick<Puzzle, "start" | "destination">,
+  route: readonly KommunCode[],
+  guesses: ReadonlySet<KommunCode>,
+): DrawnFeatures {
+  const drawn: DrawnKommun[] = [
+    { code: puzzle.start, kind: "start", color: START_COLOR, connected: true },
+    { code: puzzle.destination, kind: "destination", color: DESTINATION_COLOR, connected: true },
+    ...route
+      .filter((code) => code !== puzzle.start && code !== puzzle.destination)
+      .map((code) =>
+        guesses.has(code)
+          ? { code, kind: "guess" as const, color: CONNECTED_COLOR, connected: true }
+          : { code, kind: "missed" as const, color: MISSED_COLOR, connected: false },
+      ),
+  ];
+  return withShapes(graph, drawn);
+}
+
+function withShapes(graph: GraphVersion, drawn: readonly DrawnKommun[]): DrawnFeatures {
   const shapes = shapesByCode(graph);
   const features: DrawnFeature[] = [];
   for (const kommun of drawn) {
@@ -58,9 +85,14 @@ export function endpointBounds(
   graph: GraphVersion,
   puzzle: Pick<Puzzle, "start" | "destination">,
 ): Bounds | undefined {
+  return routeBounds(graph, [puzzle.start, puzzle.destination]);
+}
+
+/** The box around the shapes of every kommun on a route. */
+export function routeBounds(graph: GraphVersion, route: readonly KommunCode[]): Bounds | undefined {
   const shapes = shapesByCode(graph);
   const bounds: Bounds = [Infinity, Infinity, -Infinity, -Infinity];
-  for (const code of [puzzle.start, puzzle.destination]) {
+  for (const code of route) {
     const geometry = shapes.get(code) as { coordinates?: unknown } | undefined;
     extend(bounds, geometry?.coordinates);
   }

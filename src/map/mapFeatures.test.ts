@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { newGame, reviewGame, submitGuess, type Game } from "../engine/game";
 import { buildGraphVersion, type KommunCode } from "../graph/graphVersion";
-import { endpointBounds, mapFeatures } from "./mapFeatures";
+import { endpointBounds, mapFeatures, routeBounds, routeFeatures } from "./mapFeatures";
 
 function square(code: KommunCode, west: number, south: number) {
   return {
@@ -109,5 +109,28 @@ describe("endpointBounds", () => {
 
   test("is undefined when the endpoints have no shapes", () => {
     expect(endpointBounds(shapeless, puzzle)).toBeUndefined();
+  });
+});
+
+describe("routeFeatures", () => {
+  const route = ["A", "B", "C", "D", "E"];
+
+  test("draws the endpoints, then the route's guessed kommuner green and missed ones red", () => {
+    const properties = routeFeatures(graph, puzzle, route, new Set(["C", "F"])).features.map(
+      (feature) => feature.properties,
+    );
+    expect(properties).toEqual([
+      { code: "A", kind: "start", color: "#fecc02", connected: true },
+      { code: "E", kind: "destination", color: "#006aa7", connected: true },
+      { code: "B", kind: "missed", color: "#f87171", connected: false },
+      { code: "C", kind: "guess", color: "#4ade80", connected: true },
+      { code: "D", kind: "missed", color: "#f87171", connected: false },
+    ]);
+  });
+});
+
+describe("routeBounds", () => {
+  test("spans every kommun on the route", () => {
+    expect(routeBounds(graph, ["A", "B", "F"])).toEqual([12, 56, 21, 66]);
   });
 });
