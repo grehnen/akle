@@ -40,7 +40,7 @@ export function measureLandBorders(
     return {
       between: border.between,
       landLength: Math.round(length),
-      at: middle.map((value) => Math.round(value * 1e5) / 1e5),
+      at: roundedPoint(middle),
     };
   });
 }
@@ -180,6 +180,11 @@ export function segmentIntersection(
   const t = ((c[0] - a[0]) * sy - (c[1] - a[1]) * sx) / denominator;
   const u = ((c[0] - a[0]) * ry - (c[1] - a[1]) * rx) / denominator;
   return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? t : undefined;
+}
+
+/** A point rounded to 5 decimals, about a metre: enough to find the spot on a map. */
+export function roundedPoint(point: Position): [number, number] {
+  return [Math.round(point[0] * 1e5) / 1e5, Math.round(point[1] * 1e5) / 1e5];
 }
 
 export function interpolate(from: Position, to: Position, t: number): Position {

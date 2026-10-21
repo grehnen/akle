@@ -100,6 +100,16 @@ export function git(args: string[]): string {
   return result.stdout.toString();
 }
 
+/**
+ * The `--base` revision the checks compare with, HEAD by default, and the `--now` they check at.
+ * A push that creates a branch has no previous revision: GitHub sends all zeros.
+ */
+export function checkArguments(): { base: string; now: Date } {
+  const requestedBase = argument("base") ?? "";
+  const base = requestedBase === "" || /^0+$/.test(requestedBase) ? "HEAD" : requestedBase;
+  return { base, now: new Date(argument("now") ?? Date.now()) };
+}
+
 /** The value after `--name` on the command line, if given. */
 export function argument(name: string): string | undefined {
   const index = Bun.argv.indexOf(`--${name}`);

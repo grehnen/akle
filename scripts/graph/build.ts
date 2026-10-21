@@ -8,9 +8,9 @@ import { pairKey } from "../../src/graph/kommunPair";
 import buildConfig from "./build-config.json";
 import { findFixedLinks, type LinkWay } from "./fixedLinks";
 import { graphVersionFileContents } from "./graphVersionWriter";
-import { measureLandBorders, pointOnLand } from "./landBorders";
+import { measureLandBorders, pointOnLand, roundedPoint } from "./landBorders";
 import { readNeighborOverrides } from "./neighborOverrides";
-import { reviewNeighborGraph, type BuildEvidence, type Point } from "./neighborReview";
+import { reviewNeighborGraph, type BuildEvidence } from "./neighborReview";
 import { readScbBoundaries } from "./scbBoundaries";
 import { readScbKommunWorkbook } from "./scbKommuner";
 import { closeMainlandCoastline } from "./coastlineClosure";
@@ -449,10 +449,6 @@ function reportSummary(): void {
   const waterOnly = measured.filter((border) => border.landLength === 0);
   log(`Water-only borders: ${waterOnly.map((border) => pairName(border.between)).join(", ")}`);
   log(`Shapes: ${(files["shapes.geojson"].length / 1024).toFixed(0)} KB`);
-}
-
-function roundedPoint(point: Position): Point {
-  return [Math.round(point[0] * 1e5) / 1e5, Math.round(point[1] * 1e5) / 1e5];
 }
 
 function fileName(url: string): string {

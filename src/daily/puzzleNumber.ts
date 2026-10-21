@@ -5,10 +5,7 @@ const millisecondsPerDay = 24 * 60 * 60 * 1000;
  * `epoch` is the launch day as "YYYY-MM-DD". Results below 1 mean the clock is before launch.
  */
 export function puzzleNumberOn(now: Date, epoch: string): number {
-  const [epochYear, epochMonth, epochDay] = parseIsoDate(epoch);
-  const localDay = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  const epochDayUtc = Date.UTC(epochYear, epochMonth - 1, epochDay);
-  return Math.round((localDay - epochDayUtc) / millisecondsPerDay) + 1;
+  return puzzleNumberOnDay(now.getFullYear(), now.getMonth(), now.getDate(), epoch);
 }
 
 const earliestTimeZoneOffsetMilliseconds = 14 * 60 * 60 * 1000;
@@ -18,15 +15,23 @@ const earliestTimeZoneOffsetMilliseconds = 14 * 60 * 60 * 1000;
  * time zone. Rows up to this number count as played and never change. 0 before the epoch.
  */
 export function latestPlayedPuzzleNumber(now: Date, epoch: string): number {
-  const [epochYear, epochMonth, epochDay] = parseIsoDate(epoch);
   const earliest = new Date(now.getTime() + earliestTimeZoneOffsetMilliseconds);
-  const earliestDay = Date.UTC(
-    earliest.getUTCFullYear(),
-    earliest.getUTCMonth(),
-    earliest.getUTCDate(),
+  return Math.max(
+    0,
+    puzzleNumberOnDay(
+      earliest.getUTCFullYear(),
+      earliest.getUTCMonth(),
+      earliest.getUTCDate(),
+      epoch,
+    ),
   );
-  const epochDayUtc = Date.UTC(epochYear, epochMonth - 1, epochDay);
-  return Math.max(0, Math.round((earliestDay - epochDayUtc) / millisecondsPerDay) + 1);
+}
+
+/** The puzzle number of a calendar day; `month` is 0-based, as in `Date`. */
+function puzzleNumberOnDay(year: number, month: number, day: number, epoch: string): number {
+  const [epochYear, epochMonth, epochDay] = parseIsoDate(epoch);
+  const days = Date.UTC(year, month, day) - Date.UTC(epochYear, epochMonth - 1, epochDay);
+  return Math.round(days / millisecondsPerDay) + 1;
 }
 
 function parseIsoDate(date: string): [number, number, number] {

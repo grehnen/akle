@@ -4,12 +4,9 @@
 import { latestPlayedPuzzleNumber } from "../src/daily/puzzleNumber";
 import { frozenGraphVersionViolations } from "../src/graph/frozenGraphVersions";
 import { readCommittedGraphVersions, readCommittedGraphVersionsAt } from "./graphVersionData";
-import { argument, readScheduleConfig } from "./scheduleData";
+import { checkArguments, readScheduleConfig } from "./scheduleData";
 
-// A push that creates a branch has no previous revision: GitHub sends all zeros.
-const requestedBase = argument("base") ?? "";
-const base = requestedBase === "" || /^0+$/.test(requestedBase) ? "HEAD" : requestedBase;
-const now = new Date(argument("now") ?? Date.now());
+const { base, now } = checkArguments();
 
 const config = await readScheduleConfig();
 const playedThrough = latestPlayedPuzzleNumber(now, config.epoch);
