@@ -45,8 +45,11 @@ describe("committed data", () => {
     },
   );
 
-  test.each(versionIds)("graph version %s has no names that collide after folding", (id) => {
-    const graph = graphVersions[versionIds.indexOf(id)];
+  // ADR 0004: only the newest version goes through the ADR 0003 checks; older ones are frozen.
+  test("the newest graph version has no names that collide after folding", () => {
+    const graph = graphVersions.reduce((newest, version) =>
+      version.startsAtPuzzle > newest.startsAtPuzzle ? version : newest,
+    );
     const names = [...graph.kommuner.values()].map((kommun) => kommun.name);
     expect(foldedNameCollisions(names)).toEqual([]);
   });
