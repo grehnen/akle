@@ -2,15 +2,14 @@ import { createHash } from "node:crypto";
 import type { GraphVersion } from "../graph/graphVersion";
 import { graphVersionFor } from "../graph/graphVersionFiles";
 import { shortestRouteLengthsFrom } from "../graph/routes";
-import { puzzlesPerChunk, type ScheduledPuzzle } from "./schedule";
+import { type Cooldown, puzzlesPerChunk, type ScheduledPuzzle } from "./schedule";
 import { maximumN, minimumN, pairEndpoints, pairsByN, ScheduleHistory } from "./scheduleHistory";
 
-export type GenerateScheduleInput = {
+export type GenerateScheduleInput = Cooldown & {
   /** The committed schedule, in puzzle order. */
   rows: readonly ScheduledPuzzle[];
   graphs: readonly GraphVersion[];
   seed: string;
-  cooldownDays: number;
   /** Rows up to this puzzle number are played and copied unchanged. */
   playedThrough: number;
   /** How many chunks to complete or add after the last row; 0 only reconciles. */
@@ -35,7 +34,7 @@ const maximumAttempts = 1000;
  * from hash(seed, puzzle number, attempt), so the same inputs always give the same output.
  */
 export function generateSchedule(input: GenerateScheduleInput): GeneratedSchedule {
-  const history = new ScheduleHistory(input.cooldownDays);
+  const history = new ScheduleHistory(input);
   const rows: ScheduledPuzzle[] = [];
   const reconciled: ReconciledRow[] = [];
   const added: ScheduledPuzzle[] = [];
@@ -107,7 +106,9 @@ function drawRow(
     const n = minimumN + Number(random.next() % BigInt(maximumN - minimumN + 1));
     const candidates = history
       .leastUsed(groups.get(n) ?? [])
-      .filter((key) => pairEndpoints(key).every((code) => !history.inCooldown(code, puzzleNumber)));
+      .filter((key) =>
+        pairEndpoints(key).every((code) => !history.inCooldown(code, puzzleNumber, graph)),
+      );
     if (candidates.length === 0) continue;
     const [a, b] = pairEndpoints(candidates[Number(random.next() % BigInt(candidates.length))]);
     const swap = random.next() % 2n === 1n;

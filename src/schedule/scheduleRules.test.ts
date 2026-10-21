@@ -67,6 +67,20 @@ describe("checkScheduleRules", () => {
     expect(check([...validRows, row(4, "k04", "k08", 3)])).toEqual([]);
   });
 
+  test("holds each row to the cooldown of its own graph version", () => {
+    const rows = [row(1, "k00", "k04", 3), row(2, "k00", "k05", 4), row(3, "k00", "k06", 5)];
+    expect(
+      checkScheduleRules({
+        rows,
+        previousRows: [],
+        graphs: [pathGraph(14, "fixture", 1), pathGraph(14, "real", 3)],
+        cooldownDays: 2,
+        cooldownDaysByGraphVersion: { fixture: 0 },
+        playedThrough: 0,
+      }),
+    ).toEqual(["Puzzle #3: k00 was an endpoint within the last 2 puzzles"]);
+  });
+
   test("rejects a pair that repeats before every pair with its N is used", () => {
     expect(check([...validRows, row(4, "k04", "k00", 3)])).toEqual([
       "Puzzle #4: k00-k04 repeats (used 1 times) before every N 3 pair is used as often",

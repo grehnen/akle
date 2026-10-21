@@ -141,6 +141,30 @@ describe("generateSchedule", () => {
     });
   });
 
+  test("draws each row within the cooldown of its own graph version", () => {
+    // Six kommuner can't meet a 2-puzzle cooldown, so the first version waives it.
+    const fixture = pathGraph(6, "fixture", 1);
+    const real = pathGraph(14, "real", 21);
+    const cooldown = { cooldownDays: 2, cooldownDaysByGraphVersion: { fixture: 0 } };
+    const { rows } = generateSchedule({
+      rows: [],
+      graphs: [fixture, real],
+      seed: "test",
+      ...cooldown,
+      playedThrough: 0,
+      chunks: 1,
+    });
+    expect(
+      checkScheduleRules({
+        rows,
+        previousRows: [],
+        graphs: [fixture, real],
+        ...cooldown,
+        playedThrough: 0,
+      }),
+    ).toEqual([]);
+  });
+
   describe("least-used refilling", () => {
     // On a line of six kommuner: N 3 has k00–k04 and k01–k05; N 4 has only k00–k05.
     const short = pathGraph(6, "short", 1);

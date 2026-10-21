@@ -1,6 +1,6 @@
 import type { GraphVersion, KommunCode } from "../graph/graphVersion";
 import { shortestRouteLengthsFrom } from "../graph/routes";
-import type { ScheduledPuzzle } from "./schedule";
+import { type Cooldown, cooldownDaysOn, type ScheduledPuzzle } from "./schedule";
 
 export const minimumN = 3;
 export const maximumN = 8;
@@ -43,7 +43,7 @@ export class ScheduleHistory {
   private readonly pairUses = new Map<PairKey, number>();
   private readonly endpointsByPuzzle = new Map<number, readonly KommunCode[]>();
 
-  constructor(private readonly cooldownDays: number) {}
+  constructor(private readonly cooldown: Cooldown) {}
 
   add(row: ScheduledPuzzle): void {
     const key = pairKey(row.start, row.destination);
@@ -61,9 +61,10 @@ export class ScheduleHistory {
     return pairs.filter((key) => this.uses(key) === fewestUses);
   }
 
-  /** The kommun was an endpoint within `cooldownDays` puzzles before this puzzle number. */
-  inCooldown(code: KommunCode, puzzleNumber: number): boolean {
-    for (let earlier = puzzleNumber - this.cooldownDays; earlier < puzzleNumber; earlier++) {
+  /** The kommun was an endpoint within the cooldown of `graph` before this puzzle number. */
+  inCooldown(code: KommunCode, puzzleNumber: number, graph: GraphVersion): boolean {
+    const cooldownDays = cooldownDaysOn(this.cooldown, graph.id);
+    for (let earlier = puzzleNumber - cooldownDays; earlier < puzzleNumber; earlier++) {
       if (this.endpointsByPuzzle.get(earlier)?.includes(code)) return true;
     }
     return false;
@@ -97,9 +98,9 @@ export class ScheduleHistory {
       );
     }
     for (const code of [row.start, row.destination]) {
-      if (this.inCooldown(code, row.number)) {
+      if (this.inCooldown(code, row.number, graph)) {
         problems.push(
-          `${where}: ${code} was an endpoint within the last ${this.cooldownDays} puzzles`,
+          `${where}: ${code} was an endpoint within the last ${cooldownDaysOn(this.cooldown, graph.id)} puzzles`,
         );
       }
     }

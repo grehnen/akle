@@ -20,7 +20,12 @@ function fakeSource() {
   };
   const versions = { old: graphFiles("old", 1), new: graphFiles("new", 1200) };
   const source: DailyPuzzleSource = {
-    scheduleConfig: async () => ({ epoch: "2026-10-01", seed: "test" }),
+    scheduleConfig: async () => ({
+      epoch: "2026-10-01",
+      seed: "test",
+      cooldownDays: 30,
+      cooldownDaysByGraphVersion: {},
+    }),
     graphVersions: async () => [
       { id: "old", startsAtPuzzle: 1 },
       { id: "new", startsAtPuzzle: 1200 },

@@ -9,12 +9,19 @@ export type ScheduledPuzzle = {
   n: number;
 };
 
-export type ScheduleConfig = {
+/**
+ * Puzzles a kommun must wait before it can be an endpoint again: `cooldownDays` (30 unless
+ * set), or the graph version's own entry in `cooldownDaysByGraphVersion`.
+ */
+export type Cooldown = {
+  cooldownDays: number;
+  cooldownDaysByGraphVersion?: Readonly<Record<string, number>>;
+};
+
+export type ScheduleConfig = Required<Cooldown> & {
   /** Launch day, puzzle #1, as "YYYY-MM-DD". */
   epoch: string;
   seed: string;
-  /** Days a kommun must wait before it can be an endpoint again; 30 unless set. */
-  cooldownDays?: number;
 };
 
 export const defaultCooldownDays = 30;
@@ -80,6 +87,10 @@ export function findScheduledPuzzle(
   return rows.find((row) => row.number === puzzleNumber);
 }
 
+export function cooldownDaysOn(cooldown: Cooldown, graphVersionId: string): number {
+  return cooldown.cooldownDaysByGraphVersion?.[graphVersionId] ?? cooldown.cooldownDays;
+}
+
 export function parseScheduleConfig(json: unknown): ScheduleConfig {
   const config = json as Partial<ScheduleConfig>;
   if (typeof config?.epoch !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(config.epoch)) {
@@ -89,8 +100,21 @@ export function parseScheduleConfig(json: unknown): ScheduleConfig {
     throw new Error("Schedule config needs a seed string");
   }
   const cooldownDays = config.cooldownDays ?? defaultCooldownDays;
-  if (!Number.isInteger(cooldownDays) || cooldownDays < 0) {
+  if (!isWholeDays(cooldownDays)) {
     throw new Error("Schedule config cooldownDays must be a whole number of days");
   }
-  return { epoch: config.epoch, seed: config.seed, cooldownDays };
+  const cooldownDaysByGraphVersion = config.cooldownDaysByGraphVersion ?? {};
+  if (
+    typeof cooldownDaysByGraphVersion !== "object" ||
+    !Object.values(cooldownDaysByGraphVersion).every(isWholeDays)
+  ) {
+    throw new Error(
+      "Schedule config cooldownDaysByGraphVersion must map graph version ids to whole numbers of days",
+    );
+  }
+  return { epoch: config.epoch, seed: config.seed, cooldownDays, cooldownDaysByGraphVersion };
+}
+
+function isWholeDays(days: unknown): boolean {
+  return Number.isInteger(days) && (days as number) >= 0;
 }

@@ -1,7 +1,6 @@
 // bun run schedule:check [--base <git revision>] [--now <ISO date>]
 // The schedule rules check (ADR 0001). Played rows are compared with the base revision (HEAD by default).
 import { latestPlayedPuzzleNumber } from "../src/daily/puzzleNumber";
-import { defaultCooldownDays } from "../src/schedule/schedule";
 import { checkScheduleRules } from "../src/schedule/scheduleRules";
 import {
   argument,
@@ -23,7 +22,8 @@ const violations = checkScheduleRules({
   rows,
   previousRows: readScheduleRowsAt(base),
   graphs: await readGraphVersions(),
-  cooldownDays: config.cooldownDays ?? defaultCooldownDays,
+  cooldownDays: config.cooldownDays,
+  cooldownDaysByGraphVersion: config.cooldownDaysByGraphVersion,
   playedThrough,
 });
 

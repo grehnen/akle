@@ -1,15 +1,14 @@
 import type { GraphVersion } from "../graph/graphVersion";
 import { graphVersionFor } from "../graph/graphVersionFiles";
-import type { ScheduledPuzzle } from "./schedule";
+import type { Cooldown, ScheduledPuzzle } from "./schedule";
 import { ScheduleHistory } from "./scheduleHistory";
 
-export type ScheduleRulesInput = {
+export type ScheduleRulesInput = Cooldown & {
   /** The whole schedule as it would be committed. */
   rows: readonly ScheduledPuzzle[];
   /** The schedule before the change, to protect played rows. */
   previousRows: readonly ScheduledPuzzle[];
   graphs: readonly GraphVersion[];
-  cooldownDays: number;
   /** Rows up to this puzzle number are played: frozen, and exempt from the other rules. */
   playedThrough: number;
 };
@@ -20,7 +19,7 @@ export function checkScheduleRules(input: ScheduleRulesInput): string[] {
     ...sequenceViolations(input.rows),
     ...playedRowViolations(input.rows, input.previousRows, input.playedThrough),
   ];
-  const history = new ScheduleHistory(input.cooldownDays);
+  const history = new ScheduleHistory(input);
   for (const row of input.rows) {
     if (row.number > input.playedThrough) {
       const graph = graphVersionFor(input.graphs, row.number);

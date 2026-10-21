@@ -2,7 +2,6 @@
 // Reconciles unplayed rows, appends k chunks (default 1) and prints the PR report.
 import { latestPlayedPuzzleNumber } from "../src/daily/puzzleNumber";
 import { generateSchedule } from "../src/schedule/generateSchedule";
-import { defaultCooldownDays } from "../src/schedule/schedule";
 import { scheduleReport } from "../src/schedule/scheduleReport";
 import {
   argument,
@@ -24,7 +23,8 @@ const schedule = generateSchedule({
   rows: await readScheduleRows(),
   graphs,
   seed: config.seed,
-  cooldownDays: config.cooldownDays ?? defaultCooldownDays,
+  cooldownDays: config.cooldownDays,
+  cooldownDaysByGraphVersion: config.cooldownDaysByGraphVersion,
   playedThrough: latestPlayedPuzzleNumber(now, config.epoch),
   chunks,
 });

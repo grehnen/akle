@@ -91,9 +91,31 @@ describe("parseScheduleConfig", () => {
     ).toBe(4);
   });
 
+  test("reads a cooldown per graph version, for small development graphs", () => {
+    expect(
+      parseScheduleConfig({
+        epoch: "2026-10-01",
+        seed: "s",
+        cooldownDaysByGraphVersion: { fixture: 3 },
+      }),
+    ).toEqual({
+      epoch: "2026-10-01",
+      seed: "s",
+      cooldownDays: 30,
+      cooldownDaysByGraphVersion: { fixture: 3 },
+    });
+  });
+
   test("rejects a cooldown that is not a whole number of days", () => {
     expect(() => parseScheduleConfig({ epoch: "2026-10-01", seed: "s", cooldownDays: -1 })).toThrow(
       /cooldownDays/,
     );
+    expect(() =>
+      parseScheduleConfig({
+        epoch: "2026-10-01",
+        seed: "s",
+        cooldownDaysByGraphVersion: { fixture: 1.5 },
+      }),
+    ).toThrow(/cooldownDaysByGraphVersion/);
   });
 });
