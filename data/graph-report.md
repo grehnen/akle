@@ -1,6 +1,6 @@
 # Neighbor graph report: osm-2026-10-01
 
-Written by `bun run graph:build` from the graph version and `data/neighbor-overrides.yaml` (ADR 0003). Don't edit it by hand: `bun run graph:check` fails when it's out of date.
+Written by `bun run graph:build` and `bun run graph:review` from the graph version and `data/neighbor-overrides.yaml` (ADR 0003). Don't edit it by hand: `bun run graph:check` fails when it's out of date.
 
 Graph version `osm-2026-10-01` starts at puzzle #31. 290 kommuner, 718 neighbor pairs: 707 land, 53 fixed, 3 ferry links.
 
