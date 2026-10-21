@@ -53,6 +53,43 @@ export function pointOnLand(mask: LandWaterMask): (point: Position) => boolean {
   return landTest(new PolygonIndex(mask.land), new PolygonIndex(mask.lakes));
 }
 
+/** Whether a geometry's bounding box overlaps any shared-border segment's. */
+export function borderProximity(
+  shared: readonly SharedBorder[],
+): (geometry: AreaGeometry) => boolean {
+  const segments = shared.flatMap((border) =>
+    border.lines.flatMap((line) => line.slice(1).map((to, index) => [line[index], to])),
+  );
+  const index = new Flatbush(segments.length);
+  for (const [from, to] of segments) {
+    index.add(
+      Math.min(from[0], to[0]),
+      Math.min(from[1], to[1]),
+      Math.max(from[0], to[0]),
+      Math.max(from[1], to[1]),
+    );
+  }
+  index.finish();
+  return (geometry) => {
+    const [west, south, east, north] = bounds(geometry);
+    return index.search(west, south, east, north).length > 0;
+  };
+}
+
+function bounds(geometry: AreaGeometry): [number, number, number, number] {
+  const box: [number, number, number, number] = [Infinity, Infinity, -Infinity, -Infinity];
+  const rings = geometry.type === "Polygon" ? geometry.coordinates : geometry.coordinates.flat();
+  for (const ring of rings) {
+    for (const [x, y] of ring) {
+      box[0] = Math.min(box[0], x);
+      box[1] = Math.min(box[1], y);
+      box[2] = Math.max(box[2], x);
+      box[3] = Math.max(box[3], y);
+    }
+  }
+  return box;
+}
+
 function landTest(land: PolygonIndex, lakes: PolygonIndex): (point: Position) => boolean {
   return (point) => land.contains(point) && !lakes.contains(point);
 }
