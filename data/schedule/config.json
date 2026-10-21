@@ -1,4 +1,5 @@
 {
   "epoch": "2026-10-01",
-  "seed": "fixture"
+  "seed": "fixture",
+  "cooldownDays": 3
 }

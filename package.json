@@ -6,12 +6,14 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "schedule": "bun scripts/schedule.ts",
+    "schedule:check": "bun scripts/check-schedule.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint --deny-warnings",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "check": "oxfmt --check && oxlint --deny-warnings && tsc --noEmit && bun test && vite build"
+    "check": "oxfmt --check && oxlint --deny-warnings && tsc --noEmit && bun test && bun run schedule:check && vite build"
   },
   "dependencies": {
     "maplibre-gl": "^6.15.0",
