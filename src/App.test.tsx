@@ -1,12 +1,20 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { App } from "./App";
+import type { DailyPuzzleSource } from "./daily/loadDailyPuzzle";
+
+const neverLoads: DailyPuzzleSource = {
+  scheduleConfig: () => new Promise(() => {}),
+  scheduleChunk: () => new Promise(() => {}),
+  graphVersions: () => new Promise(() => {}),
+  graphVersionFiles: () => new Promise(() => {}),
+};
 
 describe("App", () => {
-  test("shows the Åkle name with Swedish placeholder text", () => {
-    const markup = renderToStaticMarkup(<App />);
+  test("shows the Åkle name while today's puzzle loads", () => {
+    const markup = renderToStaticMarkup(<App source={neverLoads} />);
 
     expect(markup).toContain("<h1>Åkle</h1>");
-    expect(markup).toContain("Kommer snart");
+    expect(markup).toContain("Laddar");
   });
 });
