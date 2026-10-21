@@ -77,7 +77,7 @@ export function guessAnnouncement(
     status,
   }: { number: number; limit: number; name: string; status: GameStatus },
 ): string {
-  const connected = card.connected && card.feedback !== "✅" ? ", ansluten till start" : "";
+  const connected = card.connected ? connectionText(card) : "";
   const ending =
     status === "won" ? " Du nådde målet!" : status === "lost" ? " Slut på gissningar." : "";
   return `Gissning ${number} av ${limit}: ${name}, ${feedbackText(card.feedback)}${connected}.${ending}`;
@@ -100,11 +100,11 @@ export function guessCardText(
   card: GuessCard,
   { number, name }: { number: number; name: string },
 ): string {
-  const connection =
-    card.feedback === "✅"
-      ? ""
-      : card.connected
-        ? ", ansluten till start"
-        : ", inte ansluten till start";
-  return `Gissning ${number}: ${name}, ${feedbackText(card.feedback)}${connection}.`;
+  return `Gissning ${number}: ${name}, ${feedbackText(card.feedback)}${connectionText(card)}.`;
+}
+
+/** Whether a guess off the route is connected to the start; a ✅ guess always is, so it says nothing. */
+function connectionText(card: GuessCard): string {
+  if (card.feedback === "✅") return "";
+  return card.connected ? ", ansluten till start" : ", inte ansluten till start";
 }
