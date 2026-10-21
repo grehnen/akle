@@ -1,3 +1,4 @@
+import { readCsv } from "../../src/data/csv";
 import type { NeighborLink } from "../../src/graph/graphVersion";
 import { parseGraphVersionHeader } from "../../src/graph/graphVersionFiles";
 import { readBuildEvidence } from "./buildEvidenceFiles";
@@ -42,8 +43,10 @@ export function neighborGraphReview({ files, overridesYaml, previous }: Neighbor
     review,
     previous: previous && {
       id: parseGraphVersionHeader(JSON.parse(previous["version.json"])).id,
-      kommuner: csvRows(previous["kommuner.csv"]).map(([code, name]) => ({ code, name })),
-      links: csvRows(previous["neighbors.csv"]).map(
+      kommuner: readCsv(previous["kommuner.csv"], "code,name", "kommuner.csv").map(
+        ([code, name]) => ({ code, name }),
+      ),
+      links: readCsv(previous["neighbors.csv"], "a,b,link", "neighbors.csv").map(
         ([a, b, kind]) => ({ between: [a, b], kind }) as NeighborLink,
       ),
     },
@@ -77,12 +80,4 @@ export function checkNeighborGraphReview(
     problems.push(`${reportPath} is out of date; run bun run graph:review`);
   }
   return problems;
-}
-
-function csvRows(text = ""): string[][] {
-  return text
-    .split(/\r?\n/)
-    .slice(1)
-    .filter((line) => line !== "")
-    .map((line) => line.split(","));
 }

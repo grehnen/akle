@@ -1,3 +1,4 @@
+import { readCsv } from "../data/csv";
 import type { KommunCode } from "../graph/graphVersion";
 
 /** One schedule row (ADR 0001): the daily puzzle for a puzzle number. */
@@ -39,28 +40,13 @@ export function scheduleChunkFileName(chunk: number): string {
 }
 
 export function parseScheduleChunk(csv: string): ScheduledPuzzle[] {
-  const lines = csv.split(/\r?\n/);
-  if (lines[0] !== scheduleHeader) {
-    throw new Error(`Schedule chunk header must be "${scheduleHeader}", got "${lines[0]}"`);
-  }
-  const rows: ScheduledPuzzle[] = [];
-  lines.slice(1).forEach((line, index) => {
-    if (line === "") return;
-    const fields = line.split(",");
-    const [number, start, destination, n] = fields;
+  return readCsv(csv, scheduleHeader, "Schedule chunk", ([number, start, destination, n]) => {
     const row = { number: Number(number), start, destination, n: Number(n) };
-    if (
-      fields.length !== 4 ||
-      !Number.isInteger(row.number) ||
-      !Number.isInteger(row.n) ||
-      !start ||
-      !destination
-    ) {
-      throw new Error(`Malformed schedule row on line ${index + 2}: "${line}"`);
+    if (!Number.isInteger(row.number) || !Number.isInteger(row.n)) {
+      throw new Error("puzzle and n must be whole numbers");
     }
-    rows.push(row as ScheduledPuzzle);
+    return row;
   });
-  return rows;
 }
 
 export type ScheduleChunkFile = { fileName: string; csv: string };

@@ -1,3 +1,4 @@
+import { readCsv } from "../../src/data/csv";
 import type { KommunShapes } from "../../src/graph/graphVersion";
 import type { Pair } from "../../src/graph/kommunPair";
 import type { BuildEvidence, Point } from "./neighborReview";
@@ -10,18 +11,7 @@ export function readBuildEvidence(files: Record<string, string>): BuildEvidence 
   const rows = (name: string, header: string): string[][] => {
     const text = files[name];
     if (text === undefined) throw new Error(`${name} is missing; rebuild with bun run graph:build`);
-    const [first, ...lines] = text.split(/\r?\n/);
-    if (first !== header) throw new Error(`${name} header must be "${header}", got "${first}"`);
-    const columns = header.split(",").length;
-    return lines
-      .filter((line) => line !== "")
-      .map((line, index) => {
-        const fields = line.split(",");
-        if (fields.length !== columns || fields.some((field) => field === "")) {
-          throw new Error(`${name} line ${index + 2}: expected ${columns} fields, got "${line}"`);
-        }
-        return fields;
-      });
+    return readCsv(text, header, name);
   };
   const pair = (a: string, b: string): Pair => [a, b];
   const point = (text: string): Point => {

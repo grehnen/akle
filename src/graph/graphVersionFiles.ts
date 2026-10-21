@@ -6,6 +6,7 @@ import {
   type LinkKind,
   type NeighborLink,
 } from "./graphVersion";
+import { readCsv } from "../data/csv";
 
 /**
  * The files of one graph version, as committed under `data/graphs/<id>/`:
@@ -57,14 +58,21 @@ const linkKinds: readonly LinkKind[] = ["land", "fixed", "ferry"];
 
 export function parseGraphVersionFiles(files: GraphVersionFiles): GraphVersion {
   const header = parseGraphVersionHeader(files.version);
-  const kommuner: Kommun[] = readCsv(files.kommuner, "code,name", "kommuner.csv").map(
-    ([code, name]) => ({ code, name }),
+  const kommuner: Kommun[] = readCsv(
+    files.kommuner,
+    "code,name",
+    "kommuner.csv",
+    ([code, name]) => ({
+      code,
+      name,
+    }),
   );
-  const links: NeighborLink[] = readCsv(files.neighbors, "a,b,link", "neighbors.csv").map(
-    ([a, b, kind], index) => {
-      if (!linkKinds.includes(kind as LinkKind)) {
-        throw new Error(`neighbors.csv line ${index + 2}: unknown link kind "${kind}"`);
-      }
+  const links: NeighborLink[] = readCsv(
+    files.neighbors,
+    "a,b,link",
+    "neighbors.csv",
+    ([a, b, kind]) => {
+      if (!linkKinds.includes(kind as LinkKind)) throw new Error(`unknown link kind "${kind}"`);
       return { between: [a, b], kind: kind as LinkKind };
     },
   );
@@ -99,20 +107,4 @@ export function graphVersionFor<Header extends GraphVersionHeader>(
         newest === undefined || version.startsAtPuzzle > newest.startsAtPuzzle ? version : newest,
       undefined,
     );
-}
-
-function readCsv(csv: string, header: string, fileName: string): string[][] {
-  const lines = csv.split(/\r?\n/);
-  if (lines[0] !== header) {
-    throw new Error(`${fileName} header must be "${header}", got "${lines[0]}"`);
-  }
-  const columns = header.split(",").length;
-  return lines.slice(1).flatMap((line, index) => {
-    if (line === "") return [];
-    const fields = line.split(",");
-    if (fields.length !== columns || fields.some((field) => field === "")) {
-      throw new Error(`${fileName} line ${index + 2}: expected ${columns} fields, got "${line}"`);
-    }
-    return [fields];
-  });
 }
