@@ -14,6 +14,8 @@
   box-sizing: border-box;
   width: 100%;
   font: inherit;
+  /* 16 px or more stops iOS from zooming in when the input is focused. */
+  font-size: max(16px, 1em);
   padding: 0.4rem 0.6rem;
 }
 
@@ -35,6 +37,8 @@
 
 .guess-input__option {
   display: flex;
+  align-items: center;
+  min-height: 2.75rem;
   justify-content: space-between;
   gap: 1rem;
   padding: 0.35rem 0.6rem;
@@ -58,4 +62,51 @@
 .guess-input__tag {
   font-size: 0.85em;
   font-style: italic;
+}
+
+/* Phones: the label gets its own line so the input and Gissa share one row. */
+@media (max-width: 30rem) {
+  .guess-input label {
+    flex-basis: 100%;
+    text-align: start;
+  }
+
+  .guess-input__field {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+/*
+ * While the on-screen keyboard is open, the input and Gissa are pinned just above it and the
+ * suggestions open upward, best match nearest the input.
+ */
+[data-keyboard="open"] .guess-input {
+  position: fixed;
+  z-index: 10;
+  left: 0;
+  right: 0;
+  bottom: var(--keyboard-inset, 0px);
+  flex-wrap: nowrap;
+  padding: 0.5rem max(0.75rem, env(safe-area-inset-right)) 0.5rem
+    max(0.75rem, env(safe-area-inset-left));
+  background: var(--night, Canvas);
+  box-shadow: 0 -1px 0 var(--rule, transparent);
+}
+
+[data-keyboard="open"] .guess-input label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+[data-keyboard="open"] .guess-input__list {
+  top: auto;
+  bottom: calc(100% + 2px);
+  display: flex;
+  flex-direction: column-reverse;
+  max-height: min(16rem, calc(var(--visible-height, 100dvh) - 5rem));
 }

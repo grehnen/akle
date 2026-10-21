@@ -22,12 +22,15 @@
 
 body {
   margin: 0;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 main {
   max-width: 40rem;
   margin: 0 auto;
-  padding: 1.25rem 1rem 3rem;
+  padding: max(1.25rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(3rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -98,8 +101,35 @@ a {
   box-shadow: 0 0 0 1px var(--rule);
 }
 
+/* While the on-screen keyboard is open, the map shrinks so the prompt stays in view. */
+[data-keyboard="open"] .satellite-map {
+  aspect-ratio: auto;
+  height: calc(var(--visible-height, 100dvh) * 0.3);
+}
+
 .satellite-map .maplibregl-ctrl-attrib {
   font-family: inherit;
+}
+
+.satellite-map .maplibregl-ctrl button {
+  min-height: 0;
+}
+
+@media (pointer: coarse) {
+  .satellite-map .maplibregl-ctrl-group button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  /* Grows the ⓘ button's tap area to 44 px around its 24 px icon. */
+  .satellite-map .maplibregl-ctrl-attrib-button {
+    box-sizing: content-box;
+    padding: 10px;
+    margin: -10px;
+    border-radius: 50%;
+    background-clip: content-box;
+    background-origin: content-box;
+  }
 }
 
 form {
@@ -118,6 +148,7 @@ button {
 
 input {
   flex: 1 1 12rem;
+  min-height: 2.75rem;
   padding: 0.55rem 0.75rem;
   border: 1px solid var(--rule);
   border-radius: 8px;
@@ -126,6 +157,7 @@ input {
 }
 
 button {
+  min-height: 2.75rem;
   padding: 0.55rem 1rem;
   border: 0;
   border-radius: 8px;
@@ -172,6 +204,13 @@ ol[aria-label="Gissningar"] li {
   max-width: 34rem;
   color: var(--muted);
   font-size: 0.8rem;
+}
+
+.credits a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 0.5rem;
 }
 
 .credits p {

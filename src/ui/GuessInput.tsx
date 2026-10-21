@@ -2,9 +2,12 @@ import type { KeyboardEvent } from "react";
 import type { KommunCode } from "../graph/graphVersion";
 import "./GuessInput.css";
 import type { GuessInputEvent, Suggestion } from "./guessSession";
+import { useOnScreenKeyboard } from "./onScreenKeyboard";
 
 type GuessInputProps = {
   text: string;
+  /** Whether the text names a kommun exactly, so Enter submits it. */
+  exactMatch?: boolean;
   suggestions: readonly Suggestion[];
   highlighted?: KommunCode;
   /** The Gissa button's label, with the guess counter. */
@@ -18,6 +21,7 @@ const optionId = (code: KommunCode) => `suggestion-${code}`;
 
 export function GuessInput({
   text,
+  exactMatch = false,
   suggestions,
   highlighted,
   counter,
@@ -25,6 +29,7 @@ export function GuessInput({
   onEvent,
 }: GuessInputProps) {
   const expanded = !disabled && suggestions.length > 0;
+  useOnScreenKeyboard();
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -51,7 +56,9 @@ export function GuessInput({
           type="text"
           role="combobox"
           autoComplete="off"
+          autoCorrect="off"
           spellCheck={false}
+          enterKeyHint={exactMatch ? "send" : "next"}
           aria-autocomplete="list"
           aria-controls={LISTBOX_ID}
           aria-expanded={expanded}

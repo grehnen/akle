@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { resolveKommunName } from "../engine/kommunNames";
 import { newGame, type Puzzle, reviewGame } from "../engine/game";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SatelliteMap } from "../map/SatelliteMap";
@@ -35,6 +36,7 @@ export function PlayScreen({ graph, puzzle }: PlayScreenProps) {
 
       <GuessInput
         text={session.text}
+        exactMatch={resolveKommunName(graph, session.text) !== undefined}
         suggestions={suggestKommuner(graph, game, session.text)}
         highlighted={session.highlighted}
         counter={`Gissa (${review.cards.length}/${review.limit})`}

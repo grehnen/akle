@@ -44,4 +44,28 @@ describe("GuessInput", () => {
     expect(markup).not.toContain('role="listbox"');
     expect(markup).toContain('aria-expanded="false"');
   });
+
+  test("the keyboard's Enter key says send for an exact match and next otherwise", () => {
+    const render = (exactMatch: boolean) =>
+      renderToStaticMarkup(
+        <GuessInput
+          text="Örebro"
+          exactMatch={exactMatch}
+          suggestions={[]}
+          counter="Gissa (0/5)"
+          disabled={false}
+          onEvent={noop}
+        />,
+      );
+    expect(render(true)).toContain('enterKeyHint="send"');
+    expect(render(false)).toContain('enterKeyHint="next"');
+  });
+
+  test("the keyboard doesn't autocorrect or spellcheck kommun names", () => {
+    const markup = renderToStaticMarkup(
+      <GuessInput text="" suggestions={[]} counter="Gissa (0/5)" disabled={false} onEvent={noop} />,
+    );
+    expect(markup).toContain('autoCorrect="off"');
+    expect(markup).toContain('spellCheck="false"');
+  });
 });
