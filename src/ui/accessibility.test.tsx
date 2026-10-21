@@ -88,7 +88,6 @@ describe("automated accessibility check", () => {
         ]}
         highlighted="0181"
         counter="Gissa"
-        disabled={false}
         onEvent={() => {}}
       />
     );

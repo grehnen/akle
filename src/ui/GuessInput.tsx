@@ -12,7 +12,6 @@ type GuessInputProps = {
   highlighted?: KommunCode;
   /** The Gissa button's label, with the guess counter. */
   counter: ReactNode;
-  disabled: boolean;
   onEvent: (event: GuessInputEvent) => void;
 };
 
@@ -25,10 +24,9 @@ export function GuessInput({
   suggestions,
   highlighted,
   counter,
-  disabled,
   onEvent,
 }: GuessInputProps) {
-  const expanded = !disabled && suggestions.length > 0;
+  const expanded = suggestions.length > 0;
   // While the on-screen keyboard is open, the suggestions open upward (see GuessInput.css).
   const listOpensUpward = useOnScreenKeyboard();
 
@@ -65,7 +63,6 @@ export function GuessInput({
           aria-expanded={expanded}
           aria-activedescendant={expanded && highlighted ? optionId(highlighted) : undefined}
           value={text}
-          disabled={disabled}
           onChange={(event) => onEvent({ type: "type", text: event.target.value })}
           onKeyDown={handleKeyDown}
         />
@@ -92,9 +89,7 @@ export function GuessInput({
           </ul>
         )}
       </div>
-      <button type="submit" disabled={disabled}>
-        {counter}
-      </button>
+      <button type="submit">{counter}</button>
     </form>
   );
 }

@@ -17,7 +17,6 @@ describe("GuessInput", () => {
         ]}
         highlighted="1880"
         counter="Gissa (1/5)"
-        disabled={false}
         onEvent={noop}
       />,
     );
@@ -39,7 +38,7 @@ describe("GuessInput", () => {
 
   test("shows no list without suggestions", () => {
     const markup = renderToStaticMarkup(
-      <GuessInput text="" suggestions={[]} counter="Gissa (0/5)" disabled={false} onEvent={noop} />,
+      <GuessInput text="" suggestions={[]} counter="Gissa (0/5)" onEvent={noop} />,
     );
     expect(markup).not.toContain('role="listbox"');
     expect(markup).toContain('aria-expanded="false"');
@@ -53,7 +52,6 @@ describe("GuessInput", () => {
           exactMatch={exactMatch}
           suggestions={[]}
           counter="Gissa (0/5)"
-          disabled={false}
           onEvent={noop}
         />,
       );
@@ -63,7 +61,7 @@ describe("GuessInput", () => {
 
   test("the keyboard doesn't autocorrect or spellcheck kommun names", () => {
     const markup = renderToStaticMarkup(
-      <GuessInput text="" suggestions={[]} counter="Gissa (0/5)" disabled={false} onEvent={noop} />,
+      <GuessInput text="" suggestions={[]} counter="Gissa (0/5)" onEvent={noop} />,
     );
     expect(markup).toContain('autoCorrect="off"');
     expect(markup).toContain('spellCheck="false"');

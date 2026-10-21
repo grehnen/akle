@@ -93,7 +93,6 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
         suggestions={suggestKommuner(graph, game, session.text)}
         highlighted={session.highlighted}
         counter={<UsedCounter label="Gissa" used={review.cards.length} limit={review.limit} />}
-        disabled={review.status !== "playing"}
         onEvent={(event) => setSession((current) => applyGuessInput(graph, current, event))}
       />
 

@@ -117,6 +117,12 @@ describe("DailyPuzzleView", () => {
       expect(markup).toContain("10:54:51");
     });
 
+    test("a finished game keeps the guess input usable, so a guess shows Spelet är slut", () => {
+      const markup = renderWith(["0181"]);
+      expect(markup).toMatch(/<input id="guess-input"(?![^>]*disabled)[^>]*>/);
+      expect(markup).toMatch(/<button type="submit"(?![^>]*disabled)[^>]*>/);
+    });
+
     test("offers Ledtråd (0/3) before the first guess", () => {
       expect(renderWith([])).toMatch(
         /<button[^>]*class="hint-button"[^>]*>Ledtråd <span aria-hidden="true">\(0\/3\)<\/span>/,
