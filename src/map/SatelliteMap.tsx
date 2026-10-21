@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent, Popup } from "maplibre-gl";
 import type { GuessCard, Puzzle } from "../engine/game";
 import { type GraphVersion, type KommunCode, kommunName } from "../graph/graphVersion";
@@ -9,6 +9,7 @@ import {
   routeBounds,
   routeFeatures,
 } from "./mapFeatures";
+import { mapDescription } from "./mapDescription";
 import { mapOptions, satelliteMapStyle, TOOLTIP_LAYER, TOUCH_SCREEN_QUERY } from "./mapStyle";
 import { tooltipText } from "./tooltip";
 
@@ -49,6 +50,9 @@ export function SatelliteMap({
   useEffect(() => {
     tooltipFor.current = (kommun) => tooltipText(graph, kommun, { initials });
   }, [graph, initials]);
+  const descriptionId = useId();
+  const description = route ? undefined : mapDescription(graph, puzzle, cards, hintOutlines);
+  const described = description !== undefined;
   const bounds = useMemo(
     () => (route ? routeBounds(graph, route) : endpointBounds(graph, puzzle)),
     [graph, puzzle, route],
@@ -72,6 +76,7 @@ export function SatelliteMap({
           style: satelliteMapStyle({ type: "FeatureCollection", features: [] }),
           ...mapOptions(bounds, { touchScreen: touchScreen.matches }),
         });
+        if (described) created.getCanvas().setAttribute("aria-describedby", descriptionId);
         created.touchZoomRotate.disableRotation();
         created.keyboard.disableRotation();
         created.addControl(
@@ -104,7 +109,7 @@ export function SatelliteMap({
       touchScreen.removeEventListener("change", followTouchScreen);
       created?.remove();
     };
-  }, [bounds]);
+  }, [bounds, described, descriptionId]);
 
   useEffect(() => {
     const source = map?.getSource<GeoJSONSource>("kommuner");
@@ -113,7 +118,6 @@ export function SatelliteMap({
 
   return (
     <div
-      ref={container}
       className="satellite-map"
       role="region"
       aria-label={
@@ -121,7 +125,15 @@ export function SatelliteMap({
           ? `Kortaste vägen från ${kommunName(graph, puzzle.start)} till ${kommunName(graph, puzzle.destination)}`
           : `Karta över ${kommunName(graph, puzzle.start)} och ${kommunName(graph, puzzle.destination)}`
       }
-    />
+    >
+      {/* MapLibre owns this element's children, so the description sits beside it. */}
+      <div ref={container} className="satellite-map__canvas" />
+      {description && (
+        <p id={descriptionId} className="visually-hidden">
+          {description}
+        </p>
+      )}
+    </div>
   );
 }
 

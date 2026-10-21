@@ -105,6 +105,14 @@ describe("mapOptions", () => {
     });
   });
 
+  test("the focusable map and its zoom buttons are named in Swedish, with the keys that move it", () => {
+    expect(options.locale).toMatchObject({
+      "Map.Title": "Karta. Piltangenterna flyttar kartan, plus och minus zoomar.",
+      "NavigationControl.ZoomIn": "Zooma in",
+      "NavigationControl.ZoomOut": "Zooma ut",
+    });
+  });
+
   test("with a mouse, the wheel zooms the map as usual", () => {
     expect(options.cooperativeGestures).toBe(false);
   });

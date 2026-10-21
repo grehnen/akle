@@ -93,6 +93,10 @@ export const TOUCH_SCREEN_QUERY = "(hover: none), (pointer: coarse)";
 
 /** MapLibre's on-map texts, in Swedish. */
 const MAP_LOCALE = {
+  "Map.Title": "Karta. Piltangenterna flyttar kartan, plus och minus zoomar.",
+  "NavigationControl.ZoomIn": "Zooma in",
+  "NavigationControl.ZoomOut": "Zooma ut",
+  "AttributionControl.ToggleAttribution": "Visa eller dölj källor",
   "CooperativeGesturesHandler.MobileHelpText": "Använd två fingrar för att flytta kartan",
   "CooperativeGesturesHandler.WindowsHelpText": "Håll Ctrl och scrolla för att zooma kartan",
   "CooperativeGesturesHandler.MacHelpText": "Håll ⌘ och scrolla för att zooma kartan",
