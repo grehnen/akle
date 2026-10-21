@@ -41,6 +41,27 @@ How the graph is built:
 
 Some land borders are very short and may be data noise, for example Ekerö–Stockholm (42 m, across Hässelby holme) and Orust–Uddevalla (38 m). They stay in the graph until the review of flagged pairs decides on them.
 
+### Adding a graph version
+
+Every change to the kommuner, their names, neighbors or shapes, whether a kommun merger, a new bridge or ferry, or an error fix, goes into a **new graph version** that starts at a future puzzle number ([ADR 0004](../docs/adr/0004-versioned-graphs-keyed-by-puzzle-number.md)). It can be reviewed and merged well ahead of time: no deploy needs to be timed, and games in progress are never rescored.
+
+A version is **frozen** once a puzzle has used it, that is once its `startsAtPuzzle` is played (today's puzzle number in UTC+14, the earliest time zone). Frozen versions are never edited, rebuilt or rechecked; a known error stays in the puzzles that already used it. Until its first puzzle is played, the newest version may still be rebuilt in place.
+
+1. Pick the starting puzzle number: the first puzzle that should use the change. It must be after every played puzzle; leave time for review. For a merger on 1 January, it is the puzzle number of 1 January.
+2. In `scripts/graph/build-config.json`, set a new `id` (for example `osm-YYYY-MM-DD` after the extract date) and `startsAtPuzzle`, and pin a newer extract or SCB names file if needed. The overrides in the config apply to the new version only; an older version's overrides live only in git history.
+3. Run `bun run graph:build`. It writes `data/graphs/<new id>/` and leaves the older directories alone.
+4. Review the new version as in [ADR 0003](../docs/adr/0003-committed-human-reviewed-neighbor-graph.md). Only the newest version goes through these checks.
+5. Run `bun run schedule --chunks 0`. It reconciles every unplayed row from the new start onward against the new version, updating N or redrawing the pair when needed. Paste its report in the PR. The schedule must cover the new start: the version boundary test loads the puzzles on each side of it.
+6. Run `bun run check`.
+
+A **rename** is data only: the new version's `kommuner.csv` has the new name, and there is no alias for the old one.
+
+The app picks the version by puzzle number, never by the clock, and fetches only that version's files, on demand.
+
+### Checking: `bun run graph-versions:check [--base <git revision>]`
+
+The required frozen graph versions check, run in CI against the PR's base (`HEAD` by default): every version a played puzzle has used is byte for byte unchanged from the base, keeps its `startsAtPuzzle` and isn't removed, and no new or moved version starts at a played puzzle.
+
 ## Schedule: `schedule/`
 
 - `config.json`: `{ "epoch": "YYYY-MM-DD", "seed": "…", "cooldownDays": 30 }`. The epoch is puzzle #1. `cooldownDays` defaults to 30; the fixture sets 3 because a 30-day cooldown can't be met with its 21 kommuner.
