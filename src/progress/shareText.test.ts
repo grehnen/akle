@@ -1,0 +1,46 @@
+import { describe, expect, test } from "bun:test";
+import { shareText } from "./shareText";
+
+describe("the share text", () => {
+  test("a win shows +extra and the emoji line, then the site", () => {
+    expect(
+      shareText({
+        puzzleNumber: 12,
+        won: true,
+        extra: 2,
+        perfect: false,
+        away: 0,
+        hintsUsed: 0,
+        emojiLine: "🟧✅🟥✅",
+      }),
+    ).toBe("#åkle #12 +2\n🟧✅🟥✅\nhttps://akle.grehn.net");
+  });
+
+  test("a Perfect win shows +0 (Perfekt)", () => {
+    expect(
+      shareText({
+        puzzleNumber: 3,
+        won: true,
+        extra: 0,
+        perfect: true,
+        away: 0,
+        hintsUsed: 0,
+        emojiLine: "✅✅✅",
+      }),
+    ).toBe("#åkle #3 +0 (Perfekt)\n✅✅✅\nhttps://akle.grehn.net");
+  });
+
+  test("a loss shows how many kommuner were still missing", () => {
+    expect(
+      shareText({
+        puzzleNumber: 40,
+        won: false,
+        extra: null,
+        perfect: false,
+        away: 3,
+        hintsUsed: 0,
+        emojiLine: "🟧🟥🟥🟥🟥",
+      }),
+    ).toBe("#åkle #40 (3 kvar)\n🟧🟥🟥🟥🟥\nhttps://akle.grehn.net");
+  });
+});
