@@ -19,6 +19,26 @@ export function shortestRouteLength(graph: GraphVersion, from: KommunCode, to: K
   return routeCost(graph, from, to, new Set());
 }
 
+/** N from `from` to every other kommun it can reach, as one breadth-first search. */
+export function shortestRouteLengthsFrom(
+  graph: GraphVersion,
+  from: KommunCode,
+): Map<KommunCode, number> {
+  const steps = new Map<KommunCode, number>([[from, 0]]);
+  const queue: KommunCode[] = [from];
+  for (let index = 0; index < queue.length; index++) {
+    const current = queue[index];
+    if (current !== from && graph.deadEnds.has(current)) continue;
+    for (const next of graph.neighbors.get(current) ?? []) {
+      if (steps.has(next)) continue;
+      steps.set(next, (steps.get(current) as number) + 1);
+      queue.push(next);
+    }
+  }
+  steps.delete(from);
+  return new Map([...steps].map(([code, step]) => [code, step - 1]));
+}
+
 /**
  * One cheapest route under `routeCost`, as the list of kommuner from `from` to `to`.
  * Ties go to the route found first when neighbors are visited in kommun-code order.

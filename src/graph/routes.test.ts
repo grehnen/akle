@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildGraphVersion } from "./graphVersion";
-import { shortestRouteLength } from "./routes";
+import { shortestRouteLength, shortestRouteLengthsFrom } from "./routes";
 
 // A ── B ── C ── D, with ferry-only dead end F linking A and D.
 const graph = buildGraphVersion({
@@ -35,5 +35,25 @@ describe("shortestRouteLength", () => {
   test("lets a route start or end at a dead end", () => {
     expect(shortestRouteLength(graph, "F", "C")).toBe(1);
     expect(shortestRouteLength(graph, "B", "F")).toBe(1);
+  });
+});
+
+describe("shortestRouteLengthsFrom", () => {
+  test("gives N to every reachable kommun, never passing through a dead end", () => {
+    expect(Object.fromEntries(shortestRouteLengthsFrom(graph, "A"))).toEqual({
+      B: 0,
+      C: 1,
+      D: 2,
+      F: 0,
+    });
+  });
+
+  test("lets a route start at a dead end", () => {
+    expect(Object.fromEntries(shortestRouteLengthsFrom(graph, "F"))).toEqual({
+      A: 0,
+      B: 1,
+      C: 1,
+      D: 0,
+    });
   });
 });
