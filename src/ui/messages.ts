@@ -15,15 +15,15 @@ export function rejectionMessage(reason: RejectionReason, input: string): string
   }
 }
 
-export function outcomeMessage(
+/** The result view's outcome: `+2`, `Perfekt` or `3 kvar`, under a short headline. */
+export function resultOutcome(
   review: Pick<GameReview, "status" | "extra" | "perfect" | "away">,
-  missingNames: readonly string[],
-): string | undefined {
+): { headline: string; score: string } | undefined {
   if (review.status === "won") {
-    return review.perfect ? "Framme! Perfekt" : `Framme! +${review.extra}`;
+    return { headline: "Framme!", score: review.perfect ? "Perfekt" : `+${review.extra}` };
   }
   if (review.status === "lost") {
-    return `Slut på gissningar. ${review.away} kvar: ${missingNames.join(", ")}`;
+    return { headline: "Slut på gissningar", score: `${review.away} kvar` };
   }
   return undefined;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { outcomeMessage, rejectionMessage } from "./messages";
+import { rejectionMessage, resultOutcome } from "./messages";
 
 describe("rejectionMessage", () => {
   test.each([
@@ -12,29 +12,27 @@ describe("rejectionMessage", () => {
   });
 });
 
-describe("outcomeMessage", () => {
+describe("resultOutcome", () => {
   test("a Perfect win", () => {
-    expect(outcomeMessage({ status: "won", extra: 0, perfect: true, away: 0 }, [])).toBe(
-      "Framme! Perfekt",
-    );
+    expect(resultOutcome({ status: "won", extra: 0, perfect: true, away: 0 })).toEqual({
+      headline: "Framme!",
+      score: "Perfekt",
+    });
   });
 
   test("a win with extra guesses", () => {
-    expect(outcomeMessage({ status: "won", extra: 2, perfect: false, away: 0 }, [])).toBe(
-      "Framme! +2",
-    );
-    expect(outcomeMessage({ status: "won", extra: 0, perfect: false, away: 0 }, [])).toBe(
-      "Framme! +0",
-    );
+    expect(resultOutcome({ status: "won", extra: 2, perfect: false, away: 0 })?.score).toBe("+2");
+    expect(resultOutcome({ status: "won", extra: 0, perfect: false, away: 0 })?.score).toBe("+0");
   });
 
-  test("a loss names the missing kommuner", () => {
-    expect(outcomeMessage({ status: "lost", perfect: false, away: 2 }, ["Botkyrka", "Salem"])).toBe(
-      "Slut på gissningar. 2 kvar: Botkyrka, Salem",
-    );
+  test("a loss counts the kommuner still missing", () => {
+    expect(resultOutcome({ status: "lost", perfect: false, away: 3 })).toEqual({
+      headline: "Slut på gissningar",
+      score: "3 kvar",
+    });
   });
 
   test("nothing while playing", () => {
-    expect(outcomeMessage({ status: "playing", perfect: false, away: 3 }, [])).toBeUndefined();
+    expect(resultOutcome({ status: "playing", perfect: false, away: 3 })).toBeUndefined();
   });
 });

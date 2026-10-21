@@ -1,21 +1,33 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import type { GuessCard, Puzzle } from "../engine/game";
-import { type GraphVersion, kommunName } from "../graph/graphVersion";
-import { endpointBounds, mapFeatures } from "./mapFeatures";
+import { type GraphVersion, type KommunCode, kommunName } from "../graph/graphVersion";
+import { endpointBounds, mapFeatures, routeBounds, routeFeatures } from "./mapFeatures";
 import { mapOptions, satelliteMapStyle, TOUCH_SCREEN_QUERY } from "./mapStyle";
 
 type SatelliteMapProps = {
   graph: GraphVersion;
   puzzle: Pick<Puzzle, "start" | "destination">;
   cards: readonly Pick<GuessCard, "code" | "connected">[];
+  /** Draws this route instead, with the guessed and missed kommuner on it marked. */
+  route?: readonly KommunCode[];
 };
 
 /** Satellite map of the endpoints and guesses. Display only: clicking it never guesses. */
-export function SatelliteMap({ graph, puzzle, cards }: SatelliteMapProps) {
+export function SatelliteMap({ graph, puzzle, cards, route }: SatelliteMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap>();
-  const drawn = useMemo(() => mapFeatures(graph, puzzle, cards), [graph, puzzle, cards]);
+  const drawn = useMemo(
+    () =>
+      route
+        ? routeFeatures(graph, puzzle, route, new Set(cards.map((card) => card.code)))
+        : mapFeatures(graph, puzzle, cards),
+    [graph, puzzle, cards, route],
+  );
+  const bounds = useMemo(
+    () => (route ? routeBounds(graph, route) : endpointBounds(graph, puzzle)),
+    [graph, puzzle, route],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -33,7 +45,7 @@ export function SatelliteMap({ graph, puzzle, cards }: SatelliteMapProps) {
         created = new maplibre.Map({
           container: container.current,
           style: satelliteMapStyle({ type: "FeatureCollection", features: [] }),
-          ...mapOptions(endpointBounds(graph, puzzle), { touchScreen: touchScreen.matches }),
+          ...mapOptions(bounds, { touchScreen: touchScreen.matches }),
         });
         created.touchZoomRotate.disableRotation();
         created.keyboard.disableRotation();
@@ -57,7 +69,7 @@ export function SatelliteMap({ graph, puzzle, cards }: SatelliteMapProps) {
       touchScreen.removeEventListener("change", followTouchScreen);
       created?.remove();
     };
-  }, [graph, puzzle]);
+  }, [bounds]);
 
   useEffect(() => {
     const source = map?.getSource<GeoJSONSource>("kommuner");
@@ -69,7 +81,11 @@ export function SatelliteMap({ graph, puzzle, cards }: SatelliteMapProps) {
       ref={container}
       className="satellite-map"
       role="region"
-      aria-label={`Karta över ${kommunName(graph, puzzle.start)} och ${kommunName(graph, puzzle.destination)}`}
+      aria-label={
+        route
+          ? `Kortaste vägen från ${kommunName(graph, puzzle.start)} till ${kommunName(graph, puzzle.destination)}`
+          : `Karta över ${kommunName(graph, puzzle.start)} och ${kommunName(graph, puzzle.destination)}`
+      }
     />
   );
 }

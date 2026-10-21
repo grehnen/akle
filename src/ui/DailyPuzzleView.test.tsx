@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { buildGraphVersion } from "../graph/graphVersion";
+import { saveGame } from "../progress/savedGame";
+import { memoryStorage } from "../progress/storage";
 import { DailyPuzzleView } from "./DailyPuzzleView";
 
 const graph = buildGraphVersion({
@@ -10,6 +12,7 @@ const graph = buildGraphVersion({
     { code: "0192", name: "Nynäshamn" },
     { code: "0181", name: "Södertälje" },
     { code: "0488", name: "Trosa" },
+    { code: "0136", name: "Haninge" },
   ],
   links: [
     { between: ["0192", "0181"], kind: "land" },
@@ -72,6 +75,41 @@ describe("DailyPuzzleView", () => {
       const href = new URL((link?.[1] ?? "").replaceAll("&amp;", "&"));
       expect(href.pathname).toBe("/grehnen/akle/issues/new");
       expect(href.searchParams.get("title")).toBe("Fel i pussel #21");
+    });
+  });
+
+  describe("with a saved game", () => {
+    const puzzle = { number: 21, start: "0192", destination: "0488", n: 1 };
+    const renderWith = (guesses: string[], savedFor = puzzle) => {
+      const storage = memoryStorage();
+      saveGame(storage, { puzzle: savedFor, guesses });
+      return renderToStaticMarkup(
+        <DailyPuzzleView
+          daily={{ kind: "puzzle", puzzle, graph }}
+          storage={storage}
+          now={new Date(2026, 9, 21, 13, 5, 9)}
+        />,
+      );
+    };
+
+    test("a game in progress is restored and keeps playing", () => {
+      const markup = renderWith(["0136"]);
+      expect(markup).toContain("Gissa (1/5)");
+      expect(markup).toContain("Haninge");
+      expect(markup).not.toContain('aria-labelledby="result-heading"');
+    });
+
+    test("a game saved for another puzzle number is not restored", () => {
+      const markup = renderWith(["0181"], { ...puzzle, number: 20 });
+      expect(markup).toContain("Gissa (0/5)");
+    });
+
+    test("a finished game reopens on the board with the result view open", () => {
+      const markup = renderWith(["0181"]);
+      expect(markup).toContain("Gissa (1/5)");
+      expect(markup).toContain('aria-labelledby="result-heading"');
+      expect(markup).toContain(">Perfekt<");
+      expect(markup).toContain("10:54:51");
     });
   });
 });

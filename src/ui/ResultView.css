@@ -1,0 +1,166 @@
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.result-view {
+  --stop-guessed: #4ade80;
+  --stop-missed: #f87171;
+  --score: var(--text);
+
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1.25rem 1rem 1rem;
+  border-top: 3px solid var(--score);
+  border-radius: 4px 4px 14px 14px;
+  background: var(--surface);
+  animation: result-arrive 320ms ease-out;
+}
+
+.result-view.result-perfect {
+  --score: var(--start);
+}
+
+.result-view.result-lost {
+  --score: var(--stop-missed);
+}
+
+@keyframes result-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result-view {
+    animation: none;
+  }
+}
+
+.result-view h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.result-score {
+  margin: 0;
+  font-size: 4.5rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--score);
+}
+
+.result-missing {
+  margin: 0.4rem 0 0;
+}
+
+.result-emoji {
+  margin: 0;
+  font-size: 1.5rem;
+  letter-spacing: 0.1em;
+  overflow-wrap: anywhere;
+}
+
+/* The route as a line of stops, echoing the map: filled for guessed, a dashed ring for missed. */
+.result-route {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 0.75rem;
+  width: 100%;
+}
+
+.result-route li {
+  position: relative;
+  flex: 0 1 5.75rem;
+  padding-top: 1.35rem;
+  font-size: 0.85rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.result-route li::before {
+  content: "";
+  position: absolute;
+  top: 0.45rem;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--rule);
+}
+
+.result-route li:first-child::before {
+  left: 50%;
+}
+
+.result-route li:last-child::before {
+  right: 50%;
+}
+
+.result-route li::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(50% - 0.5rem);
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--stop-color);
+  border-radius: 50%;
+  background: var(--stop-color);
+}
+
+.result-route .stop-start {
+  --stop-color: var(--start);
+}
+
+.result-route .stop-destination {
+  --stop-color: var(--destination);
+}
+
+.result-route .stop-guessed {
+  --stop-color: var(--stop-guessed);
+}
+
+.result-route .stop-missed {
+  --stop-color: var(--stop-missed);
+  color: var(--stop-missed);
+}
+
+.result-route .stop-missed::after {
+  border-style: dashed;
+  background: var(--surface);
+}
+
+.result-countdown {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+
+.result-countdown time {
+  color: var(--text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-close,
+.result-reopen {
+  background: transparent;
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}

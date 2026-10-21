@@ -1,28 +1,40 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { resolveKommunName } from "../engine/kommunNames";
-import { newGame, type Puzzle, reviewGame } from "../engine/game";
+import { type Puzzle, reviewGame } from "../engine/game";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SatelliteMap } from "../map/SatelliteMap";
+import { recordFinishedGame } from "../progress/history";
+import { loadSavedGame, saveGame } from "../progress/savedGame";
+import type { KeyValueStorage } from "../progress/storage";
 import { GuessInput } from "./GuessInput";
 import { applyGuessInput, type GuessSession, suggestKommuner } from "./guessSession";
-import { outcomeMessage } from "./messages";
 import { reportIssueUrl } from "./reportIssue";
+import { ResultView } from "./ResultView";
 
 type PlayScreenProps = {
   graph: GraphVersion;
   puzzle: Puzzle;
+  storage: KeyValueStorage;
+  now: Date;
 };
 
-export function PlayScreen({ graph, puzzle }: PlayScreenProps) {
+export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
   const [session, setSession] = useState<GuessSession>(() => ({
-    game: newGame(puzzle),
+    game: loadSavedGame(storage, graph, puzzle),
     text: "",
   }));
   const { game, toast } = session;
 
   const review = useMemo(() => reviewGame(graph, game), [graph, game]);
+  const finished = review.status !== "playing";
+  const [resultClosed, setResultClosed] = useState(false);
+  const resultOpen = finished && !resultClosed;
   const nameOf = (code: string) => kommunName(graph, code);
-  const outcome = outcomeMessage(review, review.missing.map(nameOf));
+
+  useEffect(() => {
+    saveGame(storage, game);
+    recordFinishedGame(storage, graph, game);
+  }, [storage, graph, game]);
 
   return (
     <section className="play-screen" aria-labelledby="puzzle-heading">
@@ -31,6 +43,16 @@ export function PlayScreen({ graph, puzzle }: PlayScreenProps) {
         Res från <strong>{nameOf(puzzle.start)}</strong> till{" "}
         <strong>{nameOf(puzzle.destination)}</strong>
       </h2>
+
+      {resultOpen && (
+        <ResultView
+          graph={graph}
+          game={game}
+          review={review}
+          now={now}
+          onClose={() => setResultClosed(true)}
+        />
+      )}
 
       <SatelliteMap graph={graph} puzzle={puzzle} cards={review.cards} />
 
@@ -56,7 +78,11 @@ export function PlayScreen({ graph, puzzle }: PlayScreenProps) {
         ))}
       </ol>
 
-      {outcome && <p role="alert">{outcome}</p>}
+      {finished && !resultOpen && (
+        <button type="button" className="result-reopen" onClick={() => setResultClosed(false)}>
+          Visa resultat
+        </button>
+      )}
 
       <footer className="credits">
         <a href={reportIssueUrl({ puzzleNumber: puzzle.number, graphVersion: graph.id })}>
