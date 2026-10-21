@@ -70,4 +70,16 @@ describe("mapOptions", () => {
   test("uses a compact attribution control", () => {
     expect(options.attributionControl).toEqual({ compact: true });
   });
+
+  test("on touch screens, one finger scrolls the page and two fingers move the map", () => {
+    const touch = mapOptions([12, 56, 17, 59], { touchScreen: true });
+    expect(touch.cooperativeGestures).toBe(true);
+    expect(touch.locale).toMatchObject({
+      "CooperativeGesturesHandler.MobileHelpText": "Använd två fingrar för att flytta kartan",
+    });
+  });
+
+  test("with a mouse, the wheel zooms the map as usual", () => {
+    expect(options.cooperativeGestures).toBe(false);
+  });
 });

@@ -71,8 +71,24 @@ export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
   };
 }
 
-/** Pan and zoom only: no rotation or tilt, by mouse, keyboard or touch. */
-export function mapOptions(bounds: Bounds | undefined): Omit<MapOptions, "container" | "style"> {
+/** Screens whose main pointer is a finger. Matches MapLibre's switch to its mobile help text. */
+export const TOUCH_SCREEN_QUERY = "(hover: none), (pointer: coarse)";
+
+/** MapLibre's on-map texts, in Swedish. */
+const MAP_LOCALE = {
+  "CooperativeGesturesHandler.MobileHelpText": "Använd två fingrar för att flytta kartan",
+  "CooperativeGesturesHandler.WindowsHelpText": "Håll Ctrl och scrolla för att zooma kartan",
+  "CooperativeGesturesHandler.MacHelpText": "Håll ⌘ och scrolla för att zooma kartan",
+};
+
+/**
+ * Pan and zoom only: no rotation or tilt, by mouse, keyboard or touch. On touch screens the map
+ * needs two fingers, so one finger scrolls the page past it.
+ */
+export function mapOptions(
+  bounds: Bounds | undefined,
+  { touchScreen = false }: { touchScreen?: boolean } = {},
+): Omit<MapOptions, "container" | "style"> {
   return {
     bounds: bounds ?? [10.9, 55.3, 24.2, 69.1],
     fitBoundsOptions: { padding: 40 },
@@ -83,5 +99,7 @@ export function mapOptions(bounds: Bounds | undefined): Omit<MapOptions, "contai
     rollEnabled: false,
     maxPitch: 0,
     attributionControl: { compact: true },
+    cooperativeGestures: touchScreen,
+    locale: MAP_LOCALE,
   };
 }

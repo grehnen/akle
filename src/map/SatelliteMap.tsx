@@ -3,7 +3,7 @@ import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import type { GuessCard, Puzzle } from "../engine/game";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { endpointBounds, mapFeatures } from "./mapFeatures";
-import { mapOptions, satelliteMapStyle } from "./mapStyle";
+import { mapOptions, satelliteMapStyle, TOUCH_SCREEN_QUERY } from "./mapStyle";
 
 type SatelliteMapProps = {
   graph: GraphVersion;
@@ -20,6 +20,12 @@ export function SatelliteMap({ graph, puzzle, cards }: SatelliteMapProps) {
   useEffect(() => {
     let cancelled = false;
     let created: MapLibreMap | undefined;
+    const touchScreen = window.matchMedia(TOUCH_SCREEN_QUERY);
+    const followTouchScreen = () => {
+      if (touchScreen.matches) created?.cooperativeGestures.enable();
+      else created?.cooperativeGestures.disable();
+    };
+    touchScreen.addEventListener("change", followTouchScreen);
     // MapLibre is heavy and needs WebGL, so it loads in its own chunk on the client only.
     void Promise.all([import("maplibre-gl"), import("maplibre-gl/dist/maplibre-gl.css")]).then(
       ([maplibre]) => {
@@ -27,7 +33,7 @@ export function SatelliteMap({ graph, puzzle, cards }: SatelliteMapProps) {
         created = new maplibre.Map({
           container: container.current,
           style: satelliteMapStyle({ type: "FeatureCollection", features: [] }),
-          ...mapOptions(endpointBounds(graph, puzzle)),
+          ...mapOptions(endpointBounds(graph, puzzle), { touchScreen: touchScreen.matches }),
         });
         created.touchZoomRotate.disableRotation();
         created.keyboard.disableRotation();
@@ -48,6 +54,7 @@ export function SatelliteMap({ graph, puzzle, cards }: SatelliteMapProps) {
     );
     return () => {
       cancelled = true;
+      touchScreen.removeEventListener("change", followTouchScreen);
       created?.remove();
     };
   }, [graph, puzzle]);
