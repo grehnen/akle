@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Game, GameReview } from "../engine/game";
+import { routeStops } from "../engine/routeStops";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SatelliteMap } from "../map/SatelliteMap";
 import { emojiLine } from "../progress/history";
@@ -37,7 +38,6 @@ export function ResultView({
   useEffect(() => {
     if (focusOnOpen) heading.current?.focus();
   }, [focusOnOpen]);
-  const { start, destination } = game.puzzle;
   const nameOf = (code: string) => kommunName(graph, code);
   const outcome = resultOutcome(review);
   const guessed = useMemo(() => new Set(game.guesses), [game.guesses]);
@@ -64,23 +64,13 @@ export function ResultView({
         <>
           <SatelliteMap graph={graph} puzzle={game.puzzle} cards={review.cards} route={route} />
           <ol aria-label="Kortaste vägen" className="result-route">
-            {route.map((code) => {
-              const mark =
-                code === start
-                  ? "start"
-                  : code === destination
-                    ? "destination"
-                    : guessed.has(code)
-                      ? "guessed"
-                      : "missed";
-              return (
-                <li key={code} className={`stop-${mark}`}>
-                  {nameOf(code)}
-                  {mark === "guessed" && <span className="visually-hidden"> (gissad)</span>}
-                  {mark === "missed" && <span className="visually-hidden"> (missad)</span>}
-                </li>
-              );
-            })}
+            {routeStops(game.puzzle, route, guessed).map(({ code, kind }) => (
+              <li key={code} className={`stop-${kind}`}>
+                {nameOf(code)}
+                {kind === "guessed" && <span className="visually-hidden"> (gissad)</span>}
+                {kind === "missed" && <span className="visually-hidden"> (missad)</span>}
+              </li>
+            ))}
           </ol>
         </>
       )}

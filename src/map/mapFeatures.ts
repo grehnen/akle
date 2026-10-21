@@ -1,4 +1,5 @@
 import type { GuessCard, Puzzle } from "../engine/game";
+import { routeStops } from "../engine/routeStops";
 import type { GraphVersion, KommunCode } from "../graph/graphVersion";
 
 export const START_COLOR = "#fecc02";
@@ -71,13 +72,13 @@ export function routeFeatures(
   const drawn: DrawnKommun[] = [
     { code: puzzle.start, kind: "start", color: START_COLOR, connected: true },
     { code: puzzle.destination, kind: "destination", color: DESTINATION_COLOR, connected: true },
-    ...route
-      .filter((code) => code !== puzzle.start && code !== puzzle.destination)
-      .map((code) =>
-        guesses.has(code)
-          ? { code, kind: "guess" as const, color: CONNECTED_COLOR, connected: true }
-          : { code, kind: "missed" as const, color: MISSED_COLOR, connected: false },
-      ),
+    ...routeStops(puzzle, route, guesses).flatMap(({ code, kind }): DrawnKommun[] => {
+      if (kind === "guessed")
+        return [{ code, kind: "guess", color: CONNECTED_COLOR, connected: true }];
+      if (kind === "missed")
+        return [{ code, kind: "missed", color: MISSED_COLOR, connected: false }];
+      return [];
+    }),
   ];
   return withShapes(graph, drawn);
 }
