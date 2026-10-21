@@ -2,11 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { foldedNameCollisions } from "../engine/kommunNames";
 import { buildGraphVersion, type GraphVersion } from "../graph/graphVersion";
 import { graphVersionFor, parseGraphVersionFiles } from "../graph/graphVersionFiles";
-import {
-  preferredShortestRoute,
-  shortestRouteLength,
-  shortestRouteLengthsFrom,
-} from "../graph/routes";
+import { cheapestRoute, shortestRouteLength, shortestRouteLengthsFrom } from "../graph/routes";
 import { parseScheduleChunk, parseScheduleConfig } from "../schedule/schedule";
 
 const dataDirectory = new URL("../../data/", import.meta.url);
@@ -164,9 +160,7 @@ describe("committed data", () => {
     const nynashamn = codeOf(graph, "Nynäshamn")!;
     const oskarshamn = codeOf(graph, "Oskarshamn")!;
     expect(shortestRouteLength(graph, nynashamn, oskarshamn)).toBeGreaterThan(1);
-    expect(preferredShortestRoute(graph, nynashamn, oskarshamn, new Set([gotland]))).not.toContain(
-      gotland,
-    );
+    expect(cheapestRoute(graph, nynashamn, oskarshamn, new Set([gotland]))).not.toContain(gotland);
     expect(shortestRouteLength(graph, gotland, oskarshamn)).toBe(0);
   });
 

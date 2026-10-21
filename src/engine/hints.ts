@@ -1,5 +1,5 @@
 import type { GraphVersion, KommunCode } from "../graph/graphVersion";
-import { preferredShortestRoute } from "../graph/routes";
+import { cheapestRoute } from "../graph/routes";
 import { type Game, reviewGame } from "./game";
 
 export const HINT_COUNT = 3;
@@ -22,15 +22,14 @@ export function takeHint(graph: GraphVersion, game: Game): Game {
 }
 
 /**
- * Hint 1: the first unguessed kommun along the shortest route with the most guesses (ties by
- * kommun code, as in the result view). Walking from the start, that kommun borders the start's
+ * Hint 1: the first unguessed kommun along the cheapest route, where guessed kommuner are free
+ * (tie-break as in `cheapestRoute`). Walking from the start, that kommun borders the start's
  * connected group.
  */
 export function nextKommunHint(graph: GraphVersion, game: Game): KommunCode | undefined {
   const { start, destination } = game.puzzle;
-  const guessed = new Set(game.guesses);
-  const route = preferredShortestRoute(graph, start, destination, guessed);
-  return route?.find((code) => code !== start && code !== destination && !guessed.has(code));
+  const known = new Set([start, destination, ...game.guesses]);
+  return cheapestRoute(graph, start, destination, known)?.find((code) => !known.has(code));
 }
 
 export function hintReveals(graph: GraphVersion, game: Game): HintReveals {

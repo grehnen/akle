@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { type Game, reviewGame } from "../engine/game";
-import { buildGraphVersion } from "../graph/graphVersion";
+import { buildGraphVersion, type GraphVersion } from "../graph/graphVersion";
 import { deriveStats } from "../progress/stats";
 import { ResultView } from "./ResultView";
 
@@ -42,12 +42,16 @@ function routeItems(markup: string): string[] {
 }
 
 function render(...guesses: string[]) {
-  const game: Game = { puzzle, guesses };
+  return renderOn(graph, puzzle, guesses);
+}
+
+function renderOn(onGraph: GraphVersion, onPuzzle: Game["puzzle"], guesses: string[]) {
+  const game: Game = { puzzle: onPuzzle, guesses };
   return renderToStaticMarkup(
     <ResultView
-      graph={graph}
+      graph={onGraph}
       game={game}
-      review={reviewGame(graph, game)}
+      review={reviewGame(onGraph, game)}
       now={now}
       stats={deriveStats(
         { 20: { won: true, extra: 0, perfect: true, hintsUsed: 0, emojiLine: "✅" } },
@@ -114,5 +118,46 @@ describe("the result view", () => {
     test("lists the shortest route, marking the missed kommuner", () => {
       expect(routeItems(markup)).toEqual(["Nynäshamn", "Södertälje (missad)", "Trosa"]);
     });
+  });
+
+  test("after a loss, names the same missed kommuner in the count, the list and the route", () => {
+    // S ── A ── B ── T is shortest, but the guesses X and Y leave only Z missing on S ── X ── Y ── Z ── T.
+    const detour = buildGraphVersion({
+      id: "detour",
+      startsAtPuzzle: 1,
+      kommuner: ["S", "A", "B", "T", "X", "Y", "Z", "F1", "F2", "F3", "F4"].map((code) => ({
+        code,
+        name: `Kommun ${code}`,
+      })),
+      links: [
+        ["S", "A"],
+        ["A", "B"],
+        ["B", "T"],
+        ["S", "X"],
+        ["X", "Y"],
+        ["Y", "Z"],
+        ["Z", "T"],
+        ["F1", "F2"],
+        ["F2", "F3"],
+        ["F3", "F4"],
+      ].map(([a, b]) => ({ between: [a, b] as const, kind: "land" as const })),
+    });
+    const markup = renderOn(detour, { number: 21, start: "S", destination: "T" }, [
+      "X",
+      "Y",
+      "F1",
+      "F2",
+      "F3",
+      "F4",
+    ]);
+    expect(markup).toContain(">1 kvar<");
+    expect(markup).toContain("Saknades: Kommun Z");
+    expect(routeItems(markup)).toEqual([
+      "Kommun S",
+      "Kommun X (gissad)",
+      "Kommun Y (gissad)",
+      "Kommun Z (missad)",
+      "Kommun T",
+    ]);
   });
 });

@@ -43,7 +43,12 @@ export type GameReview = {
   cards: GuessCard[];
   /** Kommuner still missing from the cheapest route (the "k kvar" on a loss). */
   away: number;
-  /** On a loss, the missing kommuner along one cheapest route; empty otherwise. */
+  /**
+   * Once the game is over, the cheapest route from start to destination, where guessed
+   * kommuner are free (tie-break as in `cheapestRoute`); the result view shows it.
+   */
+  route?: KommunCode[];
+  /** On a loss, the kommuner on `route` that weren't guessed; empty otherwise. */
   missing: KommunCode[];
   /** On a win, guesses beyond N. */
   extra?: number;
@@ -101,10 +106,8 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
   const status: GameStatus = away === 0 ? "won" : cards.length >= limit ? "lost" : "playing";
 
   const hintsUsed = game.hints?.taken ?? 0;
-  const missing =
-    status === "lost"
-      ? (cheapestRoute(graph, start, destination, known) ?? []).filter((code) => !known.has(code))
-      : [];
+  const route = status === "playing" ? undefined : cheapestRoute(graph, start, destination, known);
+  const missing = status === "lost" ? (route ?? []).filter((code) => !known.has(code)) : [];
 
   return {
     n,
@@ -112,6 +115,7 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
     status,
     cards,
     away,
+    route,
     missing,
     extra: status === "won" ? cards.length - n : undefined,
     perfect: status === "won" && hintsUsed === 0 && cards.every((card) => card.feedback === "✅"),

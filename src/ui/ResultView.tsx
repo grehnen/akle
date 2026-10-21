@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Game, GameReview } from "../engine/game";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
-import { preferredShortestRoute } from "../graph/routes";
 import { SatelliteMap } from "../map/SatelliteMap";
 import { emojiLine } from "../progress/history";
 import type { Stats } from "../progress/stats";
@@ -42,10 +41,7 @@ export function ResultView({
   const nameOf = (code: string) => kommunName(graph, code);
   const outcome = resultOutcome(review);
   const guessed = useMemo(() => new Set(game.guesses), [game.guesses]);
-  const route = useMemo(
-    () => preferredShortestRoute(graph, start, destination, guessed),
-    [graph, start, destination, guessed],
-  );
+  const { route } = review;
 
   return (
     <section

@@ -58,11 +58,11 @@ describe("hint 1: the next kommun", () => {
     expect(nextKommunAfter()).toEqual(["A"]);
   });
 
-  test("follows the shortest route with the most guesses", () => {
+  test("follows the route with the fewest unguessed kommuner", () => {
     expect(nextKommunAfter("Eda")).toEqual(["B"]);
   });
 
-  test("breaks a tie in guesses by kommun code", () => {
+  test("breaks a tie by kommun code", () => {
     expect(nextKommunAfter("Malung-Sälen")).toEqual(["A"]);
   });
 
@@ -70,8 +70,8 @@ describe("hint 1: the next kommun", () => {
     expect(nextKommunAfter("Lilla Edet")).toEqual(["C"]);
   });
 
-  test("ignores guesses off every shortest route", () => {
-    expect(nextKommunAfter("Kommun X", "Kommun Y")).toEqual(["A"]);
+  test("follows the cheapest route, where guessed kommuner are free, even when it is longer", () => {
+    expect(nextKommunAfter("Kommun X", "Kommun Y")).toEqual(["Z"]);
   });
 
   test("stays put when later guesses change the best route", () => {

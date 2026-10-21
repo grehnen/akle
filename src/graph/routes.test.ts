@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildGraphVersion } from "./graphVersion";
-import { preferredShortestRoute, shortestRouteLength, shortestRouteLengthsFrom } from "./routes";
+import { cheapestRoute, shortestRouteLength, shortestRouteLengthsFrom } from "./routes";
 
 // A ── B ── C ── D, with ferry-only dead end F linking A and D.
 const graph = buildGraphVersion({
@@ -92,26 +92,29 @@ const tieGraph = buildGraphVersion({
   ],
 });
 
-describe("preferredShortestRoute", () => {
-  const route = (...guesses: string[]) =>
-    preferredShortestRoute(tieGraph, "S", "T", new Set(guesses));
+describe("cheapestRoute", () => {
+  const route = (...guesses: string[]) => cheapestRoute(tieGraph, "S", "T", new Set(guesses));
 
-  test("without guesses, takes the route that comes first by kommun code", () => {
+  test("without guesses, takes the shortest route that comes first by kommun code", () => {
     expect(route()).toEqual(["S", "A", "C", "T"]);
   });
 
-  test("takes the shortest route containing the most guesses", () => {
+  test("takes the route with the fewest unguessed kommuner", () => {
     expect(route("D")).toEqual(["S", "B", "D", "T"]);
     expect(route("A", "B", "D")).toEqual(["S", "B", "D", "T"]);
   });
 
-  test("breaks a tie in guesses by kommun code, in route order", () => {
-    expect(route("B")).toEqual(["S", "B", "C", "T"]);
-    expect(route("C", "D")).toEqual(["S", "A", "C", "T"]);
+  test("takes a longer route when its guesses leave fewer kommuner unguessed", () => {
+    expect(route("L", "M", "N", "D")).toEqual(["S", "L", "M", "N", "T"]);
   });
 
-  test("never takes a longer route, however many guesses it contains", () => {
-    expect(route("L", "M", "N", "D")).toEqual(["S", "B", "D", "T"]);
+  test("among equally cheap routes, takes the shortest", () => {
+    expect(route("L", "M", "N", "A", "C")).toEqual(["S", "A", "C", "T"]);
+  });
+
+  test("breaks a remaining tie by kommun code, in route order", () => {
+    expect(route("B")).toEqual(["S", "B", "C", "T"]);
+    expect(route("C", "D")).toEqual(["S", "A", "C", "T"]);
   });
 
   test("never passes through a dead end", () => {
@@ -120,11 +123,11 @@ describe("preferredShortestRoute", () => {
   });
 
   test("lets a route start or end at a dead end", () => {
-    expect(preferredShortestRoute(tieGraph, "X", "C", new Set())).toEqual(["X", "T", "C"]);
-    expect(preferredShortestRoute(tieGraph, "C", "X", new Set())).toEqual(["C", "T", "X"]);
+    expect(cheapestRoute(tieGraph, "X", "C", new Set())).toEqual(["X", "T", "C"]);
+    expect(cheapestRoute(tieGraph, "C", "X", new Set())).toEqual(["C", "T", "X"]);
   });
 
   test("is undefined when no route exists", () => {
-    expect(preferredShortestRoute(tieGraph, "S", "Y", new Set())).toBeUndefined();
+    expect(cheapestRoute(tieGraph, "S", "Y", new Set())).toBeUndefined();
   });
 });
