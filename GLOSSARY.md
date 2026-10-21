@@ -28,6 +28,14 @@ _Avoid_: Crossing, connection
 A kommun linked to others only by ferry; a route may begin or end there but never pass through it.
 _Avoid_: Island, leaf
 
+**Flagged pair**:
+A pair of kommuner the graph build can't decide on alone, such as a very short land border or a disagreement with SCB's map, so a human must give it a verdict.
+_Avoid_: Warning, suspect pair
+
+**Verdict**:
+A human's committed decision on a flagged pair: keep what the build decided, or override it with a reason and evidence.
+_Avoid_: Approval, exception
+
 **Daily puzzle**:
 The single start/destination pair that every player gets on a given day.
 _Avoid_: Level, round, challenge

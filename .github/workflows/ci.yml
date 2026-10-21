@@ -56,3 +56,6 @@ jobs:
 
       - name: Build
         run: bunx vite build
+
+      - name: Neighbor graph check
+        run: bun run graph:check
