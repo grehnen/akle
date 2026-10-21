@@ -92,6 +92,20 @@ describe("mapFeatures", () => {
     ]);
   });
 
+  test("draws hint outlines first, white, skipping kommuner already drawn", () => {
+    const cards = reviewGame(graph, play("Kommun C")).cards;
+    const properties = mapFeatures(graph, puzzle, cards, ["B", "A", "C", "F"]).features.map(
+      (feature) => feature.properties,
+    );
+    expect(properties).toEqual([
+      { code: "B", kind: "hint", color: "#ffffff", connected: true },
+      { code: "F", kind: "hint", color: "#ffffff", connected: true },
+      { code: "A", kind: "start", color: "#fecc02", connected: true },
+      { code: "E", kind: "destination", color: "#006aa7", connected: true },
+      { code: "C", kind: "guess", color: "#9ca3af", connected: false },
+    ]);
+  });
+
   test("takes each feature's geometry from the graph version's shapes", () => {
     const [start] = mapFeatures(graph, puzzle, []).features;
     expect(start?.geometry).toEqual(square("A", 12, 56).geometry);

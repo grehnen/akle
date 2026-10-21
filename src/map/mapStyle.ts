@@ -1,4 +1,5 @@
 import type {
+  ExpressionSpecification,
   GeoJSONSourceSpecification,
   LayerSpecification,
   MapOptions,
@@ -19,6 +20,11 @@ const EOX_ATTRIBUTION =
 const OSM_ATTRIBUTION =
   '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
+/** The layer whose features show a tooltip on hover or tap. */
+export const TOOLTIP_LAYER = "kommun-tooltip-target";
+
+const NOT_HINT: ExpressionSpecification = ["!=", ["get", "kind"], "hint"];
+
 /** Keeps players near Sweden. */
 const SWEDEN_SURROUNDINGS: Bounds = [4, 53, 32, 71];
 
@@ -29,13 +35,22 @@ export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
       id: "kommun-fill",
       type: "fill",
       source: "kommuner",
+      filter: NOT_HINT,
       paint: { "fill-color": ["get", "color"], "fill-opacity": 0.25 },
+    },
+    // Hint outlines are the one exception to "other outlines are never shown": unfilled and faint.
+    {
+      id: "hint-outline",
+      type: "line",
+      source: "kommuner",
+      filter: ["==", ["get", "kind"], "hint"],
+      paint: { "line-color": "#ffffff", "line-width": 1, "line-opacity": 0.5 },
     },
     {
       id: "kommun-outline-solid",
       type: "line",
       source: "kommuner",
-      filter: ["==", ["get", "connected"], true],
+      filter: ["all", NOT_HINT, ["==", ["get", "connected"], true]],
       paint: { "line-color": ["get", "color"], "line-width": 1, "line-opacity": 1 },
     },
     {
@@ -50,6 +65,8 @@ export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
         "line-dasharray": [3, 2],
       },
     },
+    // Invisible, but MapLibre still finds its features under the pointer.
+    { id: TOOLTIP_LAYER, type: "fill", source: "kommuner", paint: { "fill-opacity": 0 } },
   ];
   return {
     version: 8,

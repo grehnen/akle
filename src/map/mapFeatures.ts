@@ -6,11 +6,15 @@ export const DESTINATION_COLOR = "#006aa7";
 export const CONNECTED_COLOR = "#4ade80";
 export const UNCONNECTED_COLOR = "#9ca3af";
 export const MISSED_COLOR = "#f87171";
+export const HINT_COLOR = "#ffffff";
 
 export type DrawnKommun = {
   code: KommunCode;
-  /** "missed" marks a kommun on the result view's route that the player didn't guess. */
-  kind: "start" | "destination" | "guess" | "missed";
+  /**
+   * "missed" marks a kommun on the result view's route that the player didn't guess; "hint" is
+   * an unfilled outline revealed by a hint.
+   */
+  kind: "start" | "destination" | "guess" | "missed" | "hint";
   color: string;
   /** Unconnected guesses get a dashed outline; endpoints are always drawn solid. */
   connected: boolean;
@@ -30,13 +34,21 @@ export type DrawnFeatures = {
 /** [west, south, east, north] in degrees. */
 export type Bounds = [number, number, number, number];
 
-/** What the map draws: the endpoints, then the guesses in order. Nothing else. */
+/**
+ * What the map draws: any hint outlines underneath, then the endpoints, then the guesses in
+ * order. Nothing else.
+ */
 export function mapFeatures(
   graph: GraphVersion,
   puzzle: Pick<Puzzle, "start" | "destination">,
   cards: readonly Pick<GuessCard, "code" | "connected">[],
+  hintOutlines: readonly KommunCode[] = [],
 ): DrawnFeatures {
+  const shown = new Set([puzzle.start, puzzle.destination, ...cards.map((card) => card.code)]);
   const drawn: DrawnKommun[] = [
+    ...hintOutlines
+      .filter((code) => !shown.has(code))
+      .map((code) => ({ code, kind: "hint" as const, color: HINT_COLOR, connected: true })),
     { code: puzzle.start, kind: "start", color: START_COLOR, connected: true },
     { code: puzzle.destination, kind: "destination", color: DESTINATION_COLOR, connected: true },
     ...cards.map((card) => ({

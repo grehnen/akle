@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mapOptions, SATELLITE_TILE_URL, satelliteMapStyle } from "./mapStyle";
+import { mapOptions, SATELLITE_TILE_URL, satelliteMapStyle, TOOLTIP_LAYER } from "./mapStyle";
 
 const empty = { type: "FeatureCollection" as const, features: [] };
 
@@ -30,7 +30,10 @@ describe("satelliteMapStyle", () => {
   test("fills drawn kommuner at 0.25 opacity with a 1 px opaque outline in the same hue", () => {
     const fill = style.layers.find((layer) => layer.type === "fill");
     expect(fill?.paint).toEqual({ "fill-color": ["get", "color"], "fill-opacity": 0.25 });
-    for (const line of style.layers.filter((layer) => layer.type === "line")) {
+    const lines = style.layers.filter(
+      (layer) => layer.type === "line" && layer.id !== "hint-outline",
+    );
+    for (const line of lines) {
       expect(line.paint).toMatchObject({
         "line-color": ["get", "color"],
         "line-width": 1,
@@ -40,19 +43,42 @@ describe("satelliteMapStyle", () => {
   });
 
   test("outlines connected kommuner solid and unconnected guesses dashed", () => {
-    const lines = style.layers.filter((layer) => layer.type === "line");
+    const lines = style.layers.filter(
+      (layer) => layer.type === "line" && layer.id !== "hint-outline",
+    );
     const solid = lines.find((layer) => !("line-dasharray" in (layer.paint ?? {})));
     const dashed = lines.find((layer) => "line-dasharray" in (layer.paint ?? {}));
     expect(solid && "filter" in solid ? solid.filter : undefined).toEqual([
-      "==",
-      ["get", "connected"],
-      true,
+      "all",
+      ["!=", ["get", "kind"], "hint"],
+      ["==", ["get", "connected"], true],
     ]);
     expect(dashed && "filter" in dashed ? dashed.filter : undefined).toEqual([
       "==",
       ["get", "connected"],
       false,
     ]);
+  });
+
+  test("draws hint outlines unfilled, as a thin white line at half opacity", () => {
+    const fill = style.layers.find((layer) => layer.id === "kommun-fill");
+    expect(fill && "filter" in fill ? fill.filter : undefined).toEqual([
+      "!=",
+      ["get", "kind"],
+      "hint",
+    ]);
+    const hint = style.layers.find((layer) => layer.id === "hint-outline");
+    expect(hint).toMatchObject({
+      type: "line",
+      filter: ["==", ["get", "kind"], "hint"],
+      paint: { "line-color": "#ffffff", "line-width": 1, "line-opacity": 0.5 },
+    });
+  });
+
+  test("an invisible fill over every drawn kommun catches hovers and taps for tooltips", () => {
+    const target = style.layers.find((layer) => layer.id === TOOLTIP_LAYER);
+    expect(target).toMatchObject({ type: "fill", paint: { "fill-opacity": 0 } });
+    expect(target && "filter" in target ? target.filter : undefined).toBeUndefined();
   });
 });
 
