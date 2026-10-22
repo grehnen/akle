@@ -57,8 +57,8 @@ reviewed:
     reason: The OSM boundaries share only 408 m of land border, all on islands in Mälaren and none on the mainland, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either.
   - keep: ["0484", "1980"]
     names: [Eskilstuna, Västerås]
-    kinds: [scb-mismatch, island-border]
-    reason: The OSM boundaries share a 1336 m land border, all on islands of 1 km² or more in Mälaren at Kvicksund and none on the mainland, that SCB's generalised map misses. Kvicksundsbron (road and rail) also links them, though the detected link doesn't qualify since way 196169497 has an end off meaningful land.
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries share a 1336 m land border, all on islands of 1 km² or more in Mälaren at Kvicksund and none on the mainland, that SCB's generalised map misses. Kvicksundsbron (road and rail) also links them as a qualifying fixed link; way 196169497 fails with an end off meaningful land, but the other ways pass.
   - keep: ["0486", "1980"]
     names: [Strängnäs, Västerås]
     kinds: [island-border]
