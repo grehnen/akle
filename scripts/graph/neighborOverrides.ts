@@ -3,7 +3,6 @@ import { type Pair, pairKey, sortedPair } from "../../src/graph/kommunPair";
 
 /** The kinds of flag a pair can get, each needing a human verdict (ADR 0003). */
 export const pairFlagKinds = [
-  "scb-mismatch",
   "short-border",
   "point-touch",
   "non-qualifying-link",

@@ -4,7 +4,7 @@ Both the neighbor graph and the kommun shapes drawn on the map are built from OS
 
 ## Considered Options
 
-- **SCB Digitala gränser (CC0):** too generalised for the land test (see [What exactly makes two kommuner neighbors?](https://github.com/grehnen/akle/issues/6)); kept only as a cross-check in the build report.
+- **SCB Digitala gränser (CC0):** too generalised for the land test (see [What exactly makes two kommuner neighbors?](https://github.com/grehnen/akle/issues/6)); kept only as a cross-check in the build report. The cross-check was dropped on 2026-10-22 for producing only false positives ([ADR 0003](./0003-committed-human-reviewed-neighbor-graph.md)).
 - **Lantmäteriet "Kommun, län och rike":** detailed, but needs a Geotorget account and its license is ambiguous (CC0 on the open-data page, CC BY 4.0 in the STAC metadata). It would still need OSM for water and roads, so ODbL would apply anyway.
 
 ## Consequences

@@ -34,7 +34,7 @@ const review: NeighborReview = {
     },
     {
       between: ["0180", "0186"],
-      kinds: ["scb-mismatch"],
+      kinds: ["river-border"],
       landLength: 0,
       ways: [4054906, 23353186],
       at: [18.1, 59.35],
@@ -53,7 +53,7 @@ const review: NeighborReview = {
     },
     {
       between: ["0484", "1980"],
-      kinds: ["scb-mismatch"],
+      kinds: ["island-border"],
       landLength: 1336,
       mainlandLength: 0,
       islandLength: 1336,
@@ -118,7 +118,7 @@ describe("graphReport", () => {
       "| Ekerö–Stockholm | 0125-0180 | short-border | land border 42 m | [map](https://www.openstreetmap.org/?mlat=59.3684&mlon=17.83261#map=17/59.3684/17.83261) | neighbors (land) | **none** |",
     );
     expect(report).toContain(
-      "| Stockholm–Lidingö | 0180-0186 | scb-mismatch | land border 0 m; ways [4054906](https://www.openstreetmap.org/way/4054906) [23353186](https://www.openstreetmap.org/way/23353186) | [map](https://www.openstreetmap.org/?mlat=59.35&mlon=18.1#map=17/59.35/18.1) | neighbors (fixed) | keep: Lidingöbron \\| a real bridge. |",
+      "| Stockholm–Lidingö | 0180-0186 | river-border | land border 0 m; ways [4054906](https://www.openstreetmap.org/way/4054906) [23353186](https://www.openstreetmap.org/way/23353186) | [map](https://www.openstreetmap.org/?mlat=59.35&mlon=18.1#map=17/59.35/18.1) | neighbors (fixed) | keep: Lidingöbron \\| a real bridge. |",
     );
   });
 
@@ -130,7 +130,7 @@ describe("graphReport", () => {
 
   test("lists the failing ways of a fixed link that qualifies through another way", () => {
     expect(report).toContain(
-      "| Eskilstuna–Västerås | 0484-1980 | scb-mismatch | land border 1336 m (0 m mainland, 1336 m islands); ways [48675096](https://www.openstreetmap.org/way/48675096) [196169497](https://www.openstreetmap.org/way/196169497); failing ways, the link qualifies through the others: [196169497](https://www.openstreetmap.org/way/196169497) an end off the mainland and islands of 1 km² or more | [map](https://www.openstreetmap.org/?mlat=59.48786&mlon=16.65422#map=17/59.48786/16.65422) | neighbors (land, fixed) | keep: Kvicksundsbron. |",
+      "| Eskilstuna–Västerås | 0484-1980 | island-border | land border 1336 m (0 m mainland, 1336 m islands); ways [48675096](https://www.openstreetmap.org/way/48675096) [196169497](https://www.openstreetmap.org/way/196169497); failing ways, the link qualifies through the others: [196169497](https://www.openstreetmap.org/way/196169497) an end off the mainland and islands of 1 km² or more | [map](https://www.openstreetmap.org/?mlat=59.48786&mlon=16.65422#map=17/59.48786/16.65422) | neighbors (land, fixed) | keep: Kvicksundsbron. |",
     );
   });
 

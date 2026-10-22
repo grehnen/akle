@@ -56,11 +56,6 @@ const built = graphVersionFileContents({
       },
     ],
     pointTouches: [],
-    scbPairs: [
-      { between: ["0125", "0127"], at: [17.8, 59.25] },
-      { between: ["0125", "0180"], at: [17.83, 59.37] },
-      { between: ["0127", "0180"], at: [17.9, 59.25] },
-    ],
   },
 });
 

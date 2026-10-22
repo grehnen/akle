@@ -97,13 +97,11 @@ describe("graphVersionFileContents", () => {
           },
         ],
         pointTouches: [{ between: ["1440", "1407"], at: [11.8, 57.7] }],
-        scbPairs: [{ between: ["0125", "0180"], at: [17.8, 59.4] }],
       },
     });
     expect(withEvidence["land-borders.csv"]).toBe(
       "a,b,land,mainland,island,river,exclave,at\n0114,0115,0,0,0,2500,-,18 59.5\n0125,0180,42,0,42,0,0180,17.83261 59.3684\n",
     );
     expect(withEvidence["point-touches.csv"]).toBe("a,b,at\n1407,1440,11.8 57.7\n");
-    expect(withEvidence["scb-pairs.csv"]).toBe("a,b,at\n0125,0180,17.8 59.4\n");
   });
 });

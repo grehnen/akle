@@ -37,8 +37,6 @@ export type BuildEvidence = {
    */
   pointTouches: readonly { between: Pair; at: Point }[];
   fixedLinks: readonly FixedLink[];
-  /** Pairs whose SCB boundaries touch, the cross-check. */
-  scbPairs: readonly { between: Pair; at: Point }[];
 };
 
 /** A pair the build can't trust on its own, with what it measured. */
@@ -101,7 +99,6 @@ export function reviewNeighborGraph(
   const borders = byPair(evidence.landBorders);
   const touches = byPair(evidence.pointTouches);
   const fixed = byPair(evidence.fixedLinks);
-  const scb = byPair(evidence.scbPairs);
 
   const generated: NeighborLink[] = [
     ...evidence.landBorders.filter(makesLandNeighbors).map((border) => ({
@@ -122,8 +119,6 @@ export function reviewNeighborGraph(
   const flagKinds = new Map<string, Set<PairFlagKind>>();
   const flag = (key: string, kind: PairFlagKind) =>
     flagKinds.set(key, (flagKinds.get(key) ?? new Set()).add(kind));
-  // Pairs only SCB joins aren't flagged: SCB's generalised map joins kommuner through water.
-  for (const key of generatedPairs) if (!scb.has(key)) flag(key, "scb-mismatch");
   // A long island or river border makes neighbors, but needs a look when nothing else does.
   const hasOtherValidLink = (key: string) => {
     const link = fixed.get(key);
@@ -152,7 +147,7 @@ export function reviewNeighborGraph(
     .map(([key, kinds]): FlaggedPair => {
       const border = borders.get(key);
       const link = fixed.get(key);
-      const at = (border ?? touches.get(key) ?? scb.get(key))?.at ?? [0, 0];
+      const at = (border ?? touches.get(key))?.at ?? [0, 0];
       return {
         between: sortedPair(key.split("-")),
         kinds: pairFlagKinds.filter((kind) => kinds.has(kind)),
