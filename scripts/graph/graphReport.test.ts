@@ -70,7 +70,7 @@ const review: NeighborReview = {
       mainlandLength: 0,
       islandLength: 328,
       at: [16.91903, 59.48324],
-      built: ["land"],
+      built: [],
       verdict: { action: "keep", reason: "An island in Mälaren." },
     },
     {
@@ -153,6 +153,19 @@ describe("graphReport", () => {
     expect(report).toContain(
       "| Ale–Kungälv | 1440-1482 | river-border | land border 0 m; river border 18695 m |",
     );
+  });
+
+  test("splits the flagged pairs by whether the build made them neighbors", () => {
+    const neighbors = report.indexOf("### Neighbors in the build");
+    const notNeighbors = report.indexOf("### Not neighbors in the build");
+    const row = (pair: string) => report.indexOf(`| ${pair} |`);
+    expect(neighbors).toBeGreaterThan(report.indexOf("## Flagged pairs"));
+    expect(notNeighbors).toBeGreaterThan(neighbors);
+    expect(row("Stockholm–Lidingö")).toBeGreaterThan(neighbors);
+    expect(row("Stockholm–Lidingö")).toBeLessThan(notNeighbors);
+    expect(row("Ale–Kungälv")).toBeLessThan(notNeighbors);
+    expect(row("Håbo–Knivsta")).toBeGreaterThan(notNeighbors);
+    expect(row("Strängnäs–Västerås")).toBeGreaterThan(notNeighbors);
   });
 
   test("counts the flags and lists the problems that fail the check", () => {

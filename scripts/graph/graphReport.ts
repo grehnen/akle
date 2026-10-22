@@ -42,15 +42,18 @@ export function graphReport({ version, kommuner, review, previous }: GraphReport
     "",
     `${review.flaggedPairs.length} flagged pairs, ${unreviewed} without a verdict.`,
     "",
-    "The build column is what the build decided on its own; a keep verdict leaves that as it is.",
+    "The pairs are split by what the build decided on its own; a keep verdict leaves that as it is, and the build column says which links it made.",
     "",
-    "| Pair | Codes | Flags | Measurements | Map | Build | Verdict |",
-    "| --- | --- | --- | --- | --- | --- | --- |",
-    ...review.flaggedPairs.map(
-      (flag) =>
-        `| ${pairName(flag.between)} | ${pairKey(flag.between)} | ${flag.kinds.join(", ")} | ${measurements(flag, pairName)} | [map](${mapLink(flag.at)}) | ${builtText(flag)} | ${verdictText(flag)} |`,
+    ...flagTable(
+      "Neighbors in the build",
+      review.flaggedPairs.filter((flag) => flag.built.length > 0),
+      pairName,
     ),
-    "",
+    ...flagTable(
+      "Not neighbors in the build",
+      review.flaggedPairs.filter((flag) => flag.built.length === 0),
+      pairName,
+    ),
     `## Changes since the previous graph version${previous ? ` (${previous.id})` : ""}`,
     "",
   ];
@@ -135,6 +138,25 @@ function failureText(reason: LinkFailure): string {
 
 function mapLink([lon, lat]: Point): string {
   return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}`;
+}
+
+function flagTable(
+  title: string,
+  flags: readonly FlaggedPair[],
+  names: (codes: readonly KommunCode[]) => string,
+): string[] {
+  if (flags.length === 0) return [`### ${title} (0)`, "", "None.", ""];
+  return [
+    `### ${title} (${flags.length})`,
+    "",
+    "| Pair | Codes | Flags | Measurements | Map | Build | Verdict |",
+    "| --- | --- | --- | --- | --- | --- | --- |",
+    ...flags.map(
+      (flag) =>
+        `| ${names(flag.between)} | ${pairKey(flag.between)} | ${flag.kinds.join(", ")} | ${measurements(flag, names)} | [map](${mapLink(flag.at)}) | ${builtText(flag)} | ${verdictText(flag)} |`,
+    ),
+    "",
+  ];
 }
 
 function builtText({ built }: FlaggedPair): string {
