@@ -452,10 +452,54 @@ describe("reviewNeighborGraph", () => {
     expect(review.problems).toEqual([]);
   });
 
-  /** 0002–0003 share only a water border, crossed by a driveway bridge to an islet. */
+  test("a fixed link qualifies when one of its ways passes, and keeps the failing ones", () => {
+    const review = reviewNeighborGraph(
+      evidence({
+        landBorders: [
+          { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
+          {
+            between: ["0002", "0003"],
+            landLength: 1336,
+            mainlandLength: 0,
+            islandLength: 1336,
+            at: [18.1, 59],
+          },
+          { between: ["0003", "0004"], landLength: 2000, at: [18.2, 59] },
+        ],
+        fixedLinks: [
+          {
+            between: ["0002", "0003"],
+            ways: [7, 9],
+            failures: [{ way: 9, reasons: ["no-land-end"] }],
+          },
+        ],
+        scbPairs: [
+          { between: ["0001", "0002"], at: [18, 59] },
+          { between: ["0003", "0004"], at: [18.2, 59] },
+        ],
+      }),
+      noOverrides,
+    );
+    expect(review.links).toContainEqual({ between: ["0002", "0003"], kind: "fixed" });
+    expect(review.flaggedPairs).toEqual([
+      {
+        between: ["0002", "0003"],
+        kinds: ["scb-mismatch"],
+        landLength: 1336,
+        mainlandLength: 0,
+        islandLength: 1336,
+        ways: [7, 9],
+        failures: [{ way: 9, reasons: ["no-land-end"] }],
+        at: [18.1, 59],
+        built: ["land", "fixed"],
+      },
+    ]);
+  });
+
+  /** 0002–0003 share only a water border, crossed only by a driveway bridge to an islet. */
   const driveway = {
     between: ["0003", "0002"] as const,
-    ways: [7, 9],
+    ways: [9],
     failures: [
       {
         way: 9,
@@ -490,7 +534,7 @@ describe("reviewNeighborGraph", () => {
         between: ["0002", "0003"],
         kinds: ["non-qualifying-link"],
         landLength: 0,
-        ways: [7, 9],
+        ways: [9],
         failures: [{ way: 9, reasons: ["service=driveway", "no-land-end"] }],
         at: [18.1, 59],
         built: [],

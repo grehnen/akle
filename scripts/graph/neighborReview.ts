@@ -4,7 +4,7 @@ import {
   type KommunCode,
   type NeighborLink,
 } from "../../src/graph/graphVersion";
-import type { FixedLink, WayFailure } from "./fixedLinks";
+import { qualifies, type FixedLink, type WayFailure } from "./fixedLinks";
 import { compareCodes, type Pair, pairKey, sortedPair } from "../../src/graph/kommunPair";
 import { pairFlagKinds, type NeighborOverrides, type PairFlagKind } from "./neighborOverrides";
 
@@ -112,12 +112,10 @@ export function reviewNeighborGraph(
       between: sortedPair(touch.between),
       kind: "land" as const,
     })),
-    ...evidence.fixedLinks
-      .filter((link) => link.failures.length === 0)
-      .map((link) => ({
-        between: sortedPair(link.between),
-        kind: "fixed" as const,
-      })),
+    ...evidence.fixedLinks.filter(qualifies).map((link) => ({
+      between: sortedPair(link.between),
+      kind: "fixed" as const,
+    })),
   ];
   const generatedPairs = new Set(generated.map((link) => pairKey(link.between)));
 
@@ -127,8 +125,10 @@ export function reviewNeighborGraph(
   // Pairs only SCB joins aren't flagged: SCB's generalised map joins kommuner through water.
   for (const key of generatedPairs) if (!scb.has(key)) flag(key, "scb-mismatch");
   // A long island or river border makes neighbors, but needs a look when nothing else does.
-  const hasOtherValidLink = (key: string) =>
-    touches.has(key) || fixed.get(key)?.failures.length === 0;
+  const hasOtherValidLink = (key: string) => {
+    const link = fixed.get(key);
+    return touches.has(key) || (link !== undefined && qualifies(link));
+  };
   for (const [key, border] of borders) {
     if (border.landLength > 0 && border.landLength < shortBorderLength) flag(key, "short-border");
     if (isShortIslandBorder(border) || (isLongIslandBorder(border) && !hasOtherValidLink(key))) {
@@ -142,7 +142,7 @@ export function reviewNeighborGraph(
   for (const key of touches.keys()) flag(key, "point-touch");
   for (const [key, link] of fixed) {
     const border = borders.get(key);
-    if (link.failures.length > 0 && !(border && makesLandNeighbors(border))) {
+    if (!qualifies(link) && !(border && makesLandNeighbors(border))) {
       flag(key, "non-qualifying-link");
     }
   }
@@ -169,7 +169,7 @@ export function reviewNeighborGraph(
         at,
         built: [
           ...((border && makesLandNeighbors(border)) || touches.has(key) ? ["land" as const] : []),
-          ...(link && link.failures.length === 0 ? ["fixed" as const] : []),
+          ...(link && qualifies(link) ? ["fixed" as const] : []),
         ],
       };
     });

@@ -35,12 +35,14 @@ export type FixedLink = {
   between: readonly [KommunCode, KommunCode];
   /** The OSM ids of the ways that cross the border over water, ascending. */
   ways: number[];
-  /**
-   * The crossing ways that keep the link from qualifying, ascending. A link qualifies, and makes
-   * the pair neighbors, only when this is empty.
-   */
+  /** The crossing ways that fail, ascending, with why; see {@link qualifies}. */
   failures: WayFailure[];
 };
+
+/** A link qualifies, and makes its pair neighbors, when at least one of its ways passes. */
+export function qualifies(link: Pick<FixedLink, "ways" | "failures">): boolean {
+  return link.failures.length < link.ways.length;
+}
 
 type BorderSegment = { pair: number; from: Position; to: Position };
 type Crossing = { way: LinkWay; step: number };

@@ -1,6 +1,6 @@
 import type { KommunCode, NeighborLink } from "../../src/graph/graphVersion";
 import { pairKey } from "../../src/graph/kommunPair";
-import type { FixedLink } from "./fixedLinks";
+import { qualifies, type FixedLink } from "./fixedLinks";
 import type { LandBorder } from "./landBorders";
 import { logBuildStep } from "./osmTools";
 import type { SharedBorder } from "./sharedBorders";
@@ -29,7 +29,7 @@ export function reportBuild({
   const pairName = (between: readonly string[]) => between.map((code) => names.get(code)).join("–");
   const linked = new Set(landLinks.flatMap((link) => link.between));
   const isolated = kommuner.filter((kommun) => !linked.has(kommun.code));
-  const qualifying = fixedLinks.filter((link) => link.failures.length === 0);
+  const qualifying = fixedLinks.filter(qualifies);
   const withFixedLinks = new Set([...linked, ...qualifying.flatMap((link) => link.between)]);
   logBuildStep(`Wrote ${outputDirectory}`);
   logBuildStep(
@@ -42,7 +42,11 @@ export function reportBuild({
     const failing = link.failures.map(({ way, reasons }) => `${way} ${reasons.join("+")}`);
     logBuildStep(
       `  ${pairName(link.between)}${alsoLand ? " (also land)" : ""}: ${link.ways.join(" ")}${
-        failing.length > 0 ? ` (doesn't qualify: ${failing.join(", ")})` : ""
+        failing.length === 0
+          ? ""
+          : qualifies(link)
+            ? ` (failing: ${failing.join(", ")})`
+            : ` (doesn't qualify: ${failing.join(", ")})`
       }`,
     );
   }

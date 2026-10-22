@@ -112,7 +112,11 @@ function measurements(flag: FlaggedPair, names: (codes: readonly KommunCode[]) =
     const failing = flag.failures.map(
       ({ way, reasons }) => `${wayLink(way)} ${reasons.map(failureText).join(", ")}`,
     );
-    parts.push(`not qualifying: ${failing.join(", ")}`);
+    parts.push(
+      flag.built.includes("fixed")
+        ? `failing ways, the link qualifies through the others: ${failing.join(", ")}`
+        : `not qualifying: ${failing.join(", ")}`,
+    );
   }
   if (flag.kinds.includes("point-touch")) parts.push("touches at one point");
   return parts.join("; ");

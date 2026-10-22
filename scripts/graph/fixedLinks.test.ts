@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { findFixedLinks, type LinkFailure, type LinkWay } from "./fixedLinks";
+import { findFixedLinks, qualifies, type LinkFailure, type LinkWay } from "./fixedLinks";
 import type { AreaGeometry, SharedBorder } from "./sharedBorders";
 
 const box = (west: number, south: number, east: number, north: number): AreaGeometry => ({
@@ -218,5 +218,26 @@ describe("findFixedLinks", () => {
         ],
       },
     ]);
+  });
+});
+
+describe("qualifies", () => {
+  test("a link qualifies when at least one of its ways passes", () => {
+    expect(qualifies({ ways: [3, 7], failures: [] })).toBe(true);
+    expect(
+      qualifies({
+        ways: [3, 7],
+        failures: [{ way: 7, reasons: ["service=driveway"] }],
+      }),
+    ).toBe(true);
+    expect(
+      qualifies({
+        ways: [3, 7],
+        failures: [
+          { way: 3, reasons: ["highway=track"] },
+          { way: 7, reasons: ["no-land-end"] },
+        ],
+      }),
+    ).toBe(false);
   });
 });
