@@ -32,7 +32,6 @@ const review: NeighborReview = {
     {
       between: ["0180", "0186"],
       kinds: ["scb-mismatch"],
-      scb: "only OSM",
       landLength: 0,
       ways: [4054906, 23353186],
       at: [18.1, 59.35],
@@ -41,8 +40,7 @@ const review: NeighborReview = {
     },
     {
       between: ["0305", "0330"],
-      kinds: ["scb-mismatch", "non-qualifying-link"],
-      scb: "only SCB",
+      kinds: ["non-qualifying-link"],
       landLength: 0,
       ways: [956692672, 956692673],
       failures: [{ way: 956692672, reasons: ["service=driveway", "no-land-end"] }],
@@ -94,13 +92,13 @@ describe("graphReport", () => {
       "| Ekerö–Stockholm | 0125-0180 | short-border | land border 42 m | [map](https://www.openstreetmap.org/?mlat=59.3684&mlon=17.83261#map=17/59.3684/17.83261) | neighbors (land) | **none** |",
     );
     expect(report).toContain(
-      "| Stockholm–Lidingö | 0180-0186 | scb-mismatch | only OSM; land border 0 m; ways [4054906](https://www.openstreetmap.org/way/4054906) [23353186](https://www.openstreetmap.org/way/23353186) | [map](https://www.openstreetmap.org/?mlat=59.35&mlon=18.1#map=17/59.35/18.1) | neighbors (fixed) | keep: Lidingöbron \\| a real bridge. |",
+      "| Stockholm–Lidingö | 0180-0186 | scb-mismatch | land border 0 m; ways [4054906](https://www.openstreetmap.org/way/4054906) [23353186](https://www.openstreetmap.org/way/23353186) | [map](https://www.openstreetmap.org/?mlat=59.35&mlon=18.1#map=17/59.35/18.1) | neighbors (fixed) | keep: Lidingöbron \\| a real bridge. |",
     );
   });
 
   test("shows which ways keep a fixed link from qualifying, and why", () => {
     expect(report).toContain(
-      "| Håbo–Knivsta | 0305-0330 | scb-mismatch, non-qualifying-link | only SCB; land border 0 m; ways [956692672](https://www.openstreetmap.org/way/956692672) [956692673](https://www.openstreetmap.org/way/956692673); not qualifying: [956692672](https://www.openstreetmap.org/way/956692672) service=driveway, an end off the mainland and islands of 1 km² or more | [map](https://www.openstreetmap.org/?mlat=59.72217&mlon=17.64847#map=17/59.72217/17.64847) | not neighbors | keep: A driveway bridge to an islet. |",
+      "| Håbo–Knivsta | 0305-0330 | non-qualifying-link | land border 0 m; ways [956692672](https://www.openstreetmap.org/way/956692672) [956692673](https://www.openstreetmap.org/way/956692673); not qualifying: [956692672](https://www.openstreetmap.org/way/956692672) service=driveway, an end off the mainland and islands of 1 km² or more | [map](https://www.openstreetmap.org/?mlat=59.72217&mlon=17.64847#map=17/59.72217/17.64847) | not neighbors | keep: A driveway bridge to an islet. |",
     );
   });
 

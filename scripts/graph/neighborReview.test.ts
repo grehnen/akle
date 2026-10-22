@@ -118,8 +118,7 @@ describe("reviewNeighborGraph", () => {
     expect(review.flaggedPairs).toEqual([
       {
         between: ["0001", "0002"],
-        kinds: ["scb-mismatch", "island-border"],
-        scb: "only SCB",
+        kinds: ["island-border"],
         landLength: 328,
         mainlandLength: 0,
         islandLength: 328,
@@ -148,7 +147,7 @@ describe("reviewNeighborGraph", () => {
       noOverrides,
     );
     expect(review.flaggedPairs.map((flag) => flag.kinds)).toEqual([
-      ["scb-mismatch", "short-border", "island-border"],
+      ["short-border", "island-border"],
     ]);
   });
 
@@ -283,22 +282,20 @@ describe("reviewNeighborGraph", () => {
     ]);
   });
 
-  test("a pair SCB joins but linked only by a non-qualifying link is also an SCB mismatch", () => {
+  test("a pair SCB joins but linked only by a non-qualifying link is not an SCB mismatch", () => {
     const review = reviewNeighborGraph(
       evidence({ landBorders: waterBorders, fixedLinks: [driveway] }),
       noOverrides,
     );
     expect(
-      review.flaggedPairs.map(({ between, kinds, scb }) => ({
+      review.flaggedPairs.map(({ between, kinds }) => ({
         between,
         kinds,
-        scb,
       })),
     ).toEqual([
       {
         between: ["0002", "0003"],
-        kinds: ["scb-mismatch", "non-qualifying-link"],
-        scb: "only SCB",
+        kinds: ["non-qualifying-link"],
       },
     ]);
   });
@@ -452,7 +449,7 @@ describe("reviewNeighborGraph", () => {
     expect(review.problems).toEqual([]);
   });
 
-  test("flags pairs found only by SCB or only by OSM", () => {
+  test("flags pairs found only by OSM, not pairs found only by SCB", () => {
     const review = reviewNeighborGraph(
       evidence({
         scbPairs: [
@@ -465,16 +462,8 @@ describe("reviewNeighborGraph", () => {
     );
     expect(review.flaggedPairs).toEqual([
       {
-        between: ["0001", "0003"],
-        kinds: ["scb-mismatch"],
-        scb: "only SCB",
-        at: [18.05, 59.1],
-        built: [],
-      },
-      {
         between: ["0003", "0004"],
         kinds: ["scb-mismatch"],
-        scb: "only OSM",
         landLength: 2000,
         at: [18.2, 59],
         built: ["land"],

@@ -91,7 +91,6 @@ export function graphReport({ version, kommuner, review, previous }: GraphReport
 
 function measurements(flag: FlaggedPair, names: (codes: readonly KommunCode[]) => string): string {
   const parts: string[] = [];
-  if (flag.scb) parts.push(flag.scb);
   if (flag.landLength !== undefined) {
     const split =
       flag.islandLength === undefined

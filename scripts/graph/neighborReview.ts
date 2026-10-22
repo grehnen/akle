@@ -40,8 +40,6 @@ export type BuildEvidence = {
 export type FlaggedPair = {
   between: Pair;
   kinds: PairFlagKind[];
-  /** Which side of the SCB cross-check has the pair. */
-  scb?: "only SCB" | "only OSM";
   /** Length of the shared OSM border on land, in m, when there is one. */
   landLength?: number;
   /** How the land border splits between the mainland and islands, when some is on islands. */
@@ -112,9 +110,8 @@ export function reviewNeighborGraph(
   const flagKinds = new Map<string, Set<PairFlagKind>>();
   const flag = (key: string, kind: PairFlagKind) =>
     flagKinds.set(key, (flagKinds.get(key) ?? new Set()).add(kind));
-  for (const key of new Set([...scb.keys(), ...generatedPairs])) {
-    if (scb.has(key) !== generatedPairs.has(key)) flag(key, "scb-mismatch");
-  }
+  // Pairs only SCB joins aren't flagged: SCB's generalised map joins kommuner through water.
+  for (const key of generatedPairs) if (!scb.has(key)) flag(key, "scb-mismatch");
   for (const [key, border] of borders) {
     if (border.landLength > 0 && border.landLength < shortBorderLength) flag(key, "short-border");
     if (isShortIslandBorder(border)) flag(key, "island-border");
@@ -137,9 +134,6 @@ export function reviewNeighborGraph(
       return {
         between: sortedPair(key.split("-")),
         kinds: pairFlagKinds.filter((kind) => kinds.has(kind)),
-        ...(kinds.has("scb-mismatch") && {
-          scb: scb.has(key) ? "only SCB" : "only OSM",
-        }),
         ...(border && { landLength: border.landLength }),
         ...(border &&
           border.islandLength > 0 && {

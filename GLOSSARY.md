@@ -33,7 +33,7 @@ Any part of a kommun's boundary, water included, other than its largest part; an
 _Avoid_: Enclave, detached part
 
 **Flagged pair**:
-A pair of kommuner the graph build can't decide on alone, such as a very short land border, a land border only on small islands or only on an exclave, or a disagreement with SCB's map, so a human must give it a verdict.
+A pair of kommuner the graph build can't decide on alone, such as a very short land border, a land border only on small islands or only on an exclave, or a pair SCB's map doesn't join, so a human must give it a verdict.
 _Avoid_: Warning, suspect pair
 
 **Verdict**:
