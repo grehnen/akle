@@ -24,16 +24,6 @@ ferries:
 #     reason: ...
 #     evidence: https://...
 overrides:
-  - add: ["0117", "0162"]
-    names: [Österåker, Danderyd]
-    link: land
-    reason: The OSM boundaries meet at a corner on land; a corner touch counts as a land border.
-    evidence: https://www.openstreetmap.org/?mlat=59.41218&mlon=18.12178#map=17/59.41218/18.12178
-  - add: ["0160", "0187"]
-    names: [Täby, Vaxholm]
-    link: land
-    reason: The OSM boundaries meet at a corner on land; a corner touch counts as a land border.
-    evidence: https://www.openstreetmap.org/?mlat=59.41218&mlon=18.12178#map=17/59.41218/18.12178
   - add: ["0331", "2084"]
     names: [Heby, Avesta]
     link: land
@@ -63,20 +53,16 @@ overrides:
 reviewed:
   - keep: ["0114", "0139"]
     names: [Upplands Väsby, Upplands-Bro]
-    kinds: [short-border]
-    reason: The OSM boundaries share a 18 m land border; nothing suggests a mapping artifact, and any real land border counts.
-  - keep: ["0120", "0136"]
-    names: [Värmdö, Haninge]
-    kinds: [scb-mismatch, short-border]
-    reason: The OSM boundaries share a 8 m land border that SCB's generalised map misses.
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries meet only in water or on islands under 1 km², with no fixed link, so they aren't neighbors. SCB's map joins them there.
   - keep: ["0123", "0139"]
     names: [Järfälla, Upplands-Bro]
     kinds: [fixed-only]
     reason: Linked by the E18, Enköpingsvägen and Mälarbanan bridges, a public fixed link; there is no land border.
   - keep: ["0125", "0180"]
     names: [Ekerö, Stockholm]
-    kinds: [scb-mismatch, short-border]
-    reason: The OSM boundaries share a 42 m land border that SCB's generalised map misses. Nockebybron also links them.
+    kinds: [scb-mismatch, fixed-only]
+    reason: Linked by Nockebybron, a public fixed link; the only land they share is on islands under 1 km². SCB's map only joins kommuner that share land.
   - keep: ["0126", "0138"]
     names: [Huddinge, Tyresö]
     kinds: [scb-mismatch]
@@ -93,10 +79,6 @@ reviewed:
     names: [Danderyd, Solna]
     kinds: [fixed-only]
     reason: Linked by the E18, Roslagsbanan and red metro line bridges, a public fixed link; there is no land border.
-  - keep: ["0162", "0187"]
-    names: [Danderyd, Vaxholm]
-    kinds: [scb-mismatch, short-border]
-    reason: The OSM boundaries share a 54 m land border that SCB's generalised map misses.
   - keep: ["0180", "0186"]
     names: [Stockholm, Lidingö]
     kinds: [scb-mismatch, fixed-only]
@@ -120,27 +102,19 @@ reviewed:
   - keep: ["0381", "0486"]
     names: [Enköping, Strängnäs]
     kinds: [scb-mismatch]
-    reason: The OSM boundaries share a 470 m land border that SCB's generalised map misses.
-  - keep: ["0483", "1880"]
-    names: [Katrineholm, Örebro]
-    kinds: [scb-mismatch, short-border]
-    reason: The OSM boundaries share a 69 m land border that SCB's generalised map misses.
-  - keep: ["0483", "1984"]
-    names: [Katrineholm, Arboga]
-    kinds: [scb-mismatch, short-border]
-    reason: The OSM boundaries share a 80 m land border that SCB's generalised map misses.
+    reason: The OSM boundaries share a 408 m land border that SCB's generalised map misses.
   - keep: ["0484", "1980"]
     names: [Eskilstuna, Västerås]
     kinds: [scb-mismatch]
-    reason: The OSM boundaries share a 2253 m land border that SCB's generalised map misses. Kvicksundsbron (road and rail) also links them.
+    reason: The OSM boundaries share a 1336 m land border that SCB's generalised map misses. Kvicksundsbron (road and rail) also links them.
   - keep: ["0486", "1980"]
     names: [Strängnäs, Västerås]
     kinds: [scb-mismatch]
-    reason: The OSM boundaries share a 940 m land border that SCB's generalised map misses.
+    reason: The OSM boundaries share a 328 m land border that SCB's generalised map misses.
   - keep: ["0662", "0781"]
     names: [Gislaved, Ljungby]
-    kinds: [short-border]
-    reason: The OSM boundaries share a 35 m land border; nothing suggests a mapping artifact, and any real land border counts.
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries meet only in water or on islands under 1 km², with no fixed link, so they aren't neighbors. SCB's map joins them there.
   - keep: ["0685", "0821"]
     names: [Vetlanda, Högsby]
     kinds: [scb-mismatch]
@@ -187,12 +161,12 @@ reviewed:
     reason: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water.
   - keep: ["1421", "1485"]
     names: [Orust, Uddevalla]
-    kinds: [short-border]
-    reason: The OSM boundaries share a 38 m land border; nothing suggests a mapping artifact, and any real land border counts. Nötesundsbron also links them.
+    kinds: [fixed-only]
+    reason: Linked by Nötesundsbron, a public fixed link; the only land they share is on islands under 1 km².
   - keep: ["1438", "1765"]
     names: [Dals-Ed, Årjäng]
-    kinds: [short-border]
-    reason: The OSM boundaries share a 16 m land border; nothing suggests a mapping artifact, and any real land border counts.
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries meet only in water or on islands under 1 km², with no fixed link, so they aren't neighbors. SCB's map joins them there.
   - keep: ["1447", "1862"]
     names: [Gullspång, Degerfors]
     kinds: [scb-mismatch]
@@ -207,8 +181,8 @@ reviewed:
     reason: The OSM boundaries don't meet; they are 2.0 km apart where SCB's generalised map has them touch.
   - keep: ["1484", "1485"]
     names: [Lysekil, Uddevalla]
-    kinds: [short-border]
-    reason: The OSM boundaries share a 12 m land border; nothing suggests a mapping artifact, and any real land border counts. Skaftöbron also links them.
+    kinds: [fixed-only]
+    reason: Linked by Skaftöbron, a public fixed link; the only land they share is on islands under 1 km².
   - keep: ["1485", "1488"]
     names: [Uddevalla, Trollhättan]
     kinds: [scb-mismatch]
