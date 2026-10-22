@@ -25,27 +25,7 @@ ferries:
 #     names: [<name>, <name>]
 #     reason: ...
 #     evidence: https://...
-overrides:
-  - add: ["0331", "2084"]
-    names: [Heby, Avesta]
-    link: land
-    reason: The OSM boundaries meet at a corner on land; a corner touch counts as a land border.
-    evidence: https://www.openstreetmap.org/?mlat=60.19509&mlon=16.70479#map=17/60.19509/16.70479
-  - add: ["1981", "2181"]
-    names: [Sala, Sandviken]
-    link: land
-    reason: The OSM boundaries meet at a corner on land; a corner touch counts as a land border.
-    evidence: https://www.openstreetmap.org/?mlat=60.19509&mlon=16.70479#map=17/60.19509/16.70479
-  - add: ["2080", "2083"]
-    names: [Falun, Hedemora]
-    link: land
-    reason: The OSM boundaries meet at a corner on land; a corner touch counts as a land border.
-    evidence: https://www.openstreetmap.org/?mlat=60.61031&mlon=16.13649#map=17/60.61031/16.13649
-  - add: ["2082", "2104"]
-    names: [Säter, Hofors]
-    link: land
-    reason: The OSM boundaries meet at a corner on land; a corner touch counts as a land border.
-    evidence: https://www.openstreetmap.org/?mlat=60.61031&mlon=16.13649#map=17/60.61031/16.13649
+overrides: []
 
 # reviewed keeps what the build decided for the listed flags:
 #   - keep: ["<code>", "<code>"]
@@ -101,7 +81,15 @@ reviewed:
     names: [Smedjebacken, Borlänge]
     kinds: [exclave-border]
     reason: Their 2968 m land border lies wholly on an exclave of Borlänge, away from its main part, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either.
+  - keep: ["2080", "2083"]
+    names: [Falun, Hedemora]
+    kinds: [point-touch]
+    reason: The OSM boundaries meet at a single point on the mainland, the corner where Falun, Hedemora, Säter and Hofors meet, so they are land neighbors. SCB's map joins them too.
+  - keep: ["2082", "2104"]
+    names: [Säter, Hofors]
+    kinds: [point-touch]
+    reason: The OSM boundaries meet at a single point on the mainland, the corner where Falun, Hedemora, Säter and Hofors meet, so they are land neighbors. SCB's map joins them too.
   - keep: ["2132", "2161"]
     names: [Nordanstig, Ljusdal]
     kinds: [scb-mismatch]
-    reason: The OSM boundaries share a 9623 m land border that SCB's generalised map misses.
+    reason: The OSM boundaries share a 9525 m land border that SCB's generalised map misses.
