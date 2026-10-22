@@ -39,7 +39,7 @@ reviewed:
   - keep: ["0305", "0330"]
     names: [Håbo, Knivsta]
     kinds: [non-qualifying-link]
-    reason: Linked only by way 956692672, a short unpaved private driveway bridge to an islet under 1 km²; not a public link to meaningful land, so they aren't neighbors. SCB's map joins them through the water.
+    reason: Linked only by way 956692672, a short unpaved private driveway bridge to an islet under 1 km²; not a public link to meaningful land, so they aren't neighbors.
   - keep: ["0381", "0486"]
     names: [Enköping, Strängnäs]
     kinds: [island-border]
@@ -47,15 +47,15 @@ reviewed:
   - keep: ["0486", "1980"]
     names: [Strängnäs, Västerås]
     kinds: [island-border]
-    reason: The OSM boundaries share only 328 m of land border, all on islands in Mälaren and none on the mainland, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either.
+    reason: The OSM boundaries share only 328 m of land border, all on islands in Mälaren and none on the mainland, and no fixed link joins them, so they aren't neighbors.
   - keep: ["1440", "1482"]
     names: [Ale, Kungälv]
     kinds: [river-border]
-    reason: Their OSM boundaries share no land, only an 18695 m border in Göta älv's river area (relation 56230), so the build makes them land neighbors. SCB's map joins them too.
+    reason: Their OSM boundaries share no land, only an 18695 m border in Göta älv's river area (relation 56230), so the build makes them land neighbors.
   - keep: ["1462", "1489"]
     names: [Lilla Edet, Alingsås]
     kinds: [exclave-border]
-    reason: Their 1003 m land border lies wholly on an exclave of Lilla Edet, away from its main part, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either.
+    reason: Their 1003 m land border lies wholly on an exclave of Lilla Edet, away from its main part, and no fixed link joins them, so they aren't neighbors.
   - keep: ["1760", "1862"]
     names: [Storfors, Degerfors]
     kinds: [short-border]
@@ -63,16 +63,16 @@ reviewed:
   - keep: ["2061", "2081"]
     names: [Smedjebacken, Borlänge]
     kinds: [exclave-border]
-    reason: Their 2968 m land border lies wholly on an exclave of Borlänge, away from its main part, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either.
+    reason: Their 2968 m land border lies wholly on an exclave of Borlänge, away from its main part, and no fixed link joins them, so they aren't neighbors.
   - keep: ["2080", "2083"]
     names: [Falun, Hedemora]
     kinds: [point-touch]
-    reason: The OSM boundaries meet at a single point on the mainland, the corner where Falun, Hedemora, Säter and Hofors meet, so they are land neighbors. SCB's map joins them too.
+    reason: The OSM boundaries meet at a single point on the mainland, the corner where Falun, Hedemora, Säter and Hofors meet, so they are land neighbors.
   - keep: ["2082", "2104"]
     names: [Säter, Hofors]
     kinds: [point-touch]
-    reason: The OSM boundaries meet at a single point on the mainland, the corner where Falun, Hedemora, Säter and Hofors meet, so they are land neighbors. SCB's map joins them too.
+    reason: The OSM boundaries meet at a single point on the mainland, the corner where Falun, Hedemora, Säter and Hofors meet, so they are land neighbors.
   - keep: ["2422", "2505"]
     names: [Sorsele, Arvidsjaur]
     kinds: [river-border]
-    reason: Their OSM boundaries share no land, only a 7264 m border in the river area of relation 2343268, so the build makes them land neighbors. SCB's map joins them too.
+    reason: Their OSM boundaries share no land, only a 7264 m border in the river area of relation 2343268, so the build makes them land neighbors.
