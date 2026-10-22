@@ -4,7 +4,8 @@ import { compareCodes } from "../../src/graph/kommunPair";
 import type { AreaGeometry, Line, Position, SharedBorder } from "./sharedBorders";
 
 /**
- * Where land is: land polygons (everything outside them is sea) and the lakes to leave out. Each
+ * Where land is: land polygons (everything outside them is sea) and the lakes, river areas
+ * included, to leave out. Each
  * land polygon must be a whole landmass, so its area is the island's; the largest is the mainland.
  */
 export type LandWaterMask = {

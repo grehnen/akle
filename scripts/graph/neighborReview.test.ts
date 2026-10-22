@@ -193,10 +193,16 @@ describe("reviewNeighborGraph", () => {
     ]);
   });
 
-  test("flags a single-point touch on land, which is not a neighbor", () => {
+  test("a single-point touch on land makes a land neighbor, flagged for a human to confirm", () => {
     const review = reviewNeighborGraph(
       evidence({
         pointTouches: [{ between: ["0004", "0001"], at: [18.3, 59] }],
+        scbPairs: [
+          { between: ["0001", "0002"], at: [18, 59] },
+          { between: ["0002", "0003"], at: [18.1, 59] },
+          { between: ["0003", "0004"], at: [18.2, 59] },
+          { between: ["0001", "0004"], at: [18.3, 59] },
+        ],
       }),
       noOverrides,
     );
@@ -205,10 +211,37 @@ describe("reviewNeighborGraph", () => {
         between: ["0001", "0004"],
         kinds: ["point-touch"],
         at: [18.3, 59],
-        built: [],
+        built: ["land"],
       },
     ]);
-    expect(review.links).toHaveLength(3);
+    expect(review.links).toContainEqual({
+      between: ["0001", "0004"],
+      kind: "land",
+    });
+    expect(review.links).toHaveLength(4);
+  });
+
+  test("an add for a single-point touch is stale, the graph already finds the pair", () => {
+    const review = reviewNeighborGraph(
+      evidence({
+        pointTouches: [{ between: ["0001", "0004"], at: [18.3, 59] }],
+      }),
+      {
+        ...noOverrides,
+        overrides: [
+          {
+            between: ["0001", "0004"],
+            action: "add",
+            link: "land",
+            reason: "A corner on land.",
+            evidence: "https://example.org/corner",
+          },
+        ],
+      },
+    );
+    expect(review.problems).toEqual([
+      "0001-0004 (Ada–Dal): stale add, the graph already finds the pair; delete the entry",
+    ]);
   });
 
   test("a qualifying fixed link makes a neighbor without a flag, even with no land border", () => {
@@ -587,7 +620,18 @@ describe("reviewNeighborGraph", () => {
   test("an add puts the pair in the graph with its link", () => {
     const review = reviewNeighborGraph(
       evidence({
-        pointTouches: [{ between: ["0001", "0004"], at: [18.3, 59] }],
+        landBorders: [
+          { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
+          { between: ["0002", "0003"], landLength: 3000, at: [18.1, 59] },
+          { between: ["0003", "0004"], landLength: 2000, at: [18.2, 59] },
+          {
+            between: ["0001", "0004"],
+            landLength: 300,
+            mainlandLength: 0,
+            islandLength: 300,
+            at: [18.3, 59],
+          },
+        ],
       }),
       {
         ...noOverrides,

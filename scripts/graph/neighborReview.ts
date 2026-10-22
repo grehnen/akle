@@ -29,7 +29,10 @@ export type BuildEvidence = {
     exclaveOf: readonly KommunCode[];
     at: Point;
   }[];
-  /** Pairs whose OSM boundaries meet only at single points, one of them on land. */
+  /**
+   * Pairs whose OSM boundaries meet only at single points, one of them on meaningful land: the
+   * mainland or an island of 1 km² or more.
+   */
   pointTouches: readonly { between: Pair; at: Point }[];
   fixedLinks: readonly FixedLink[];
   /** Pairs whose SCB boundaries touch, the cross-check. */
@@ -69,7 +72,8 @@ export type Verdict =
 export type NeighborReview = {
   /**
    * The shipped neighbor graph: the generated links plus ferries, with overrides applied. The
-   * generated links leave out land borders flagged `island-border` or `exclave-border`.
+   * generated links leave out land borders flagged `island-border` or `exclave-border`, and count
+   * a point touch on land as a land border.
    */
   links: NeighborLink[];
   flaggedPairs: FlaggedPair[];
@@ -96,6 +100,10 @@ export function reviewNeighborGraph(
   const generated: NeighborLink[] = [
     ...evidence.landBorders.filter(countsAsLandBorder).map((border) => ({
       between: sortedPair(border.between),
+      kind: "land" as const,
+    })),
+    ...evidence.pointTouches.map((touch) => ({
+      between: sortedPair(touch.between),
       kind: "land" as const,
     })),
     ...evidence.fixedLinks
@@ -145,7 +153,7 @@ export function reviewNeighborGraph(
         ...(link && link.failures.length > 0 && { failures: link.failures }),
         at,
         built: [
-          ...(border && countsAsLandBorder(border) ? ["land" as const] : []),
+          ...((border && countsAsLandBorder(border)) || touches.has(key) ? ["land" as const] : []),
           ...(link && link.failures.length === 0 ? ["fixed" as const] : []),
         ],
       };
