@@ -28,7 +28,16 @@ describe("readBuildEvidence", () => {
         ],
       },
       evidence: {
-        landBorders: [{ between: ["0125", "0180"], landLength: 42, at: [17.83261, 59.3684] }],
+        landBorders: [
+          {
+            between: ["0125", "0180"],
+            landLength: 42,
+            mainlandLength: 12,
+            islandLength: 30,
+            exclaveOf: ["0125", "0180"],
+            at: [17.83261, 59.3684],
+          },
+        ],
         pointTouches: [{ between: ["0125", "0180"], at: [17.8, 59.3] }],
         scbPairs: [{ between: ["0125", "0180"], at: [17.8, 59.4] }],
       },
@@ -40,7 +49,16 @@ describe("readBuildEvidence", () => {
         { code: "0186", name: "Lidingö" },
       ],
       shapeCodes: ["0125", "0180"],
-      landBorders: [{ between: ["0125", "0180"], landLength: 42, at: [17.83261, 59.3684] }],
+      landBorders: [
+        {
+          between: ["0125", "0180"],
+          landLength: 42,
+          mainlandLength: 12,
+          islandLength: 30,
+          exclaveOf: ["0125", "0180"],
+          at: [17.83261, 59.3684],
+        },
+      ],
       pointTouches: [{ between: ["0125", "0180"], at: [17.8, 59.3] }],
       fixedLinks: [
         {

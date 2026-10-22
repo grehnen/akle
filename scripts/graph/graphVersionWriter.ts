@@ -71,10 +71,13 @@ function evidenceFiles(evidence: NonNullable<GraphVersionOutput["evidence"]>) {
   const at = (point: readonly number[]) => point.join(" ");
   return {
     "land-borders.csv": csv(
-      "a,b,land,at",
+      "a,b,land,mainland,island,exclave,at",
       sorted(evidence.landBorders).map((border) => [
         ...border.between,
         String(border.landLength),
+        String(border.mainlandLength),
+        String(border.islandLength),
+        [...border.exclaveOf].sort(compareCodes).join(" ") || "-",
         at(border.at),
       ]),
     ),

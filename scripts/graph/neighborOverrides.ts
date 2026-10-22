@@ -7,6 +7,8 @@ export const pairFlagKinds = [
   "short-border",
   "point-touch",
   "non-qualifying-link",
+  "island-border",
+  "exclave-border",
 ] as const;
 export type PairFlagKind = (typeof pairFlagKinds)[number];
 

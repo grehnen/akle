@@ -15,12 +15,12 @@ One directory per **graph version** ([ADR 0004](../docs/adr/0004-versioned-graph
 
 A version built from OSM also holds the **build evidence**: what the build measured, before the overrides. The app doesn't read these files; `bun run graph:check` reviews them (see below). `at` is a point as `lon lat`.
 
-| File                | Content                                                                                                                                                                             |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fixed-links.csv`   | `a,b,ways,failures`: each detected fixed link, its OSM way ids (space-separated) and why it doesn't qualify: `<way id>:<reason>+<reason>` per failing way, or `-` when it qualifies |
-| `land-borders.csv`  | `a,b,land,at`: each shared OSM border, its length on land in metres, and a point on it                                                                                              |
-| `point-touches.csv` | `a,b,at`: pairs whose OSM boundaries touch only at a point, and that point is on land                                                                                               |
-| `scb-pairs.csv`     | `a,b,at`: pairs whose boundaries share a point in SCB's kommun map, the cross-check                                                                                                 |
+| File                | Content                                                                                                                                                                                                                                                     |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fixed-links.csv`   | `a,b,ways,failures`: each detected fixed link, its OSM way ids (space-separated) and why it doesn't qualify: `<way id>:<reason>+<reason>` per failing way, or `-` when it qualifies                                                                         |
+| `land-borders.csv`  | `a,b,land,mainland,island,exclave,at`: each shared OSM border, its length on land in metres, how much of that is on the mainland and on islands, the codes of the kommuner whose exclave holds all of its land (space-separated, or `-`), and a point on it |
+| `point-touches.csv` | `a,b,at`: pairs whose OSM boundaries touch only at a point, and that point is on land                                                                                                                                                                       |
+| `scb-pairs.csv`     | `a,b,at`: pairs whose boundaries share a point in SCB's kommun map, the cross-check                                                                                                                                                                         |
 
 A kommun whose links are all `ferry` is a **dead end**; this is derived, not stored.
 
@@ -48,6 +48,7 @@ How the graph is built:
 
 - **Kommuner:** OSM `boundary=administrative` + `admin_level=7` relations keyed by `ref:scb`, named from SCB without "kommun". The build fails if the OSM and SCB codes differ, or if two names collide after accent folding (apart from Habo/Håbo).
 - **Neighbors:** two kommuner are `land` neighbors when their shared border is longer than 0 m on land. Land is the OSM coastline's land minus every lake (`natural=water`, except rivers, canals and similar) and minus every island under 1 km², in the sea or in a lake; a border through the sea, through a lake or across such a small island doesn't count. Borders shared with river water count as land. The build prints the pairs that share a border only through water.
+- **Mainland, islands and exclaves:** the mainland is the largest landmass in the OSM coastline, without the islands of 1 km² or more in its lakes; every other land is on an island. An exclave is any part of a kommun's OSM boundary, water included, other than its largest part. The build records, per pair, the land border on the mainland and on islands and whose exclave holds all of it, for the `island-border` and `exclave-border` flags.
 - **Fixed links:** a fixed link is a road, path or railway that crosses two kommuners' shared border where the border runs through water or over an island under 1 km², so on a bridge, in a tunnel or over a causeway. The candidates are every `highway=*` or `railway=*` way tagged `bridge`, `tunnel`, `causeway`, `man_made=causeway` or `embankment`, plus the ways joined to them, since the way crossing the border isn't always tagged. Ways under construction, proposed, abandoned or disused, `tunnel=building_passage`, fords, ferries and ice or winter roads don't count. A fixed link **qualifies**, and makes the pair `fixed` neighbors, only when every crossing way is:
   - **public:** not `access=private` or `access=no`, not `highway=service` + `service=driveway`, and not `highway=track`;
   - **on meaningful land at both ends:** from each side of the crossing, the way, or the ways joined to it, reaches the mainland or an island of at least 1 km² without crossing a border over water again or taking a ferry. The walk follows the candidates and the road network around them, the ways joined to them two steps further, with land and lakes near the borders or the candidates as the mask. A bridge to an islet, or a pier that ends in the water, doesn't.
@@ -68,6 +69,8 @@ The build can't trust every pair on its own, so it **flags** them for a human ([
 | `short-border`        | the pair is a `land` neighbor with less than 100 m of border on land                                                                |
 | `point-touch`         | the OSM boundaries touch only at a point, on land; the pair is not a neighbor                                                       |
 | `non-qualifying-link` | the pair has no land border and a fixed link that doesn't qualify, so the build drops it; the report lists the failing ways and why |
+| `island-border`       | the pair is a `land` neighbor with no land border on the mainland and less than 1000 m on islands                                   |
+| `exclave-border`      | the pair's whole land border lies on an exclave of either kommun; the report names whose                                            |
 
 Every flagged pair needs a **verdict** in `neighbor-overrides.yaml`. Each entry is keyed by its pair of SCB codes, under `add`, `remove` or `keep`, with `names` that must match, and needs a `reason`. A pair appears at most once in the file.
 

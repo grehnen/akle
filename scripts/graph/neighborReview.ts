@@ -17,8 +17,18 @@ export type BuildEvidence = {
   kommuner: readonly Kommun[];
   /** The codes that have an OSM boundary and a drawn shape. */
   shapeCodes: readonly KommunCode[];
-  /** Every border two OSM boundaries share, with its length on land (0 when all water). */
-  landBorders: readonly { between: Pair; landLength: number; at: Point }[];
+  /**
+   * Every border two OSM boundaries share, with its length on land (0 when all water), how that
+   * splits between the mainland and islands, and the kommuner whose exclaves hold all of it.
+   */
+  landBorders: readonly {
+    between: Pair;
+    landLength: number;
+    mainlandLength: number;
+    islandLength: number;
+    exclaveOf: readonly KommunCode[];
+    at: Point;
+  }[];
   /** Pairs whose OSM boundaries meet only at single points, one of them on land. */
   pointTouches: readonly { between: Pair; at: Point }[];
   fixedLinks: readonly FixedLink[];
@@ -34,6 +44,11 @@ export type FlaggedPair = {
   scb?: "only SCB" | "only OSM";
   /** Length of the shared OSM border on land, in m, when there is one. */
   landLength?: number;
+  /** How the land border splits between the mainland and islands, when some is on islands. */
+  mainlandLength?: number;
+  islandLength?: number;
+  /** The kommuner whose exclaves hold the whole land border, when any does. */
+  exclaveOf?: KommunCode[];
   /** OSM way ids of the detected fixed link. */
   ways?: number[];
   /** The ways that keep the fixed link from qualifying, so it isn't in the graph. */
@@ -62,6 +77,8 @@ export type NeighborReview = {
 
 /** Below this land border length (m), a land border may be data noise. */
 const shortBorderLength = 100;
+/** Below this length (m), a land border only on islands may be a small island's, not a real one. */
+const shortIslandBorderLength = 1000;
 
 export function reviewNeighborGraph(
   evidence: BuildEvidence,
@@ -90,6 +107,14 @@ export function reviewNeighborGraph(
   }
   for (const [key, border] of borders) {
     if (border.landLength > 0 && border.landLength < shortBorderLength) flag(key, "short-border");
+    if (
+      border.landLength > 0 &&
+      border.mainlandLength === 0 &&
+      border.islandLength < shortIslandBorderLength
+    ) {
+      flag(key, "island-border");
+    }
+    if (border.landLength > 0 && border.exclaveOf.length > 0) flag(key, "exclave-border");
   }
   for (const key of touches.keys()) flag(key, "point-touch");
   for (const [key, link] of fixed) {
@@ -108,6 +133,12 @@ export function reviewNeighborGraph(
         kinds: pairFlagKinds.filter((kind) => kinds.has(kind)),
         ...(kinds.has("scb-mismatch") && { scb: scb.has(key) ? "only SCB" : "only OSM" }),
         ...(border && { landLength: border.landLength }),
+        ...(border &&
+          border.islandLength > 0 && {
+            mainlandLength: border.mainlandLength,
+            islandLength: border.islandLength,
+          }),
+        ...(border && border.exclaveOf.length > 0 && { exclaveOf: [...border.exclaveOf] }),
         ...(link && { ways: link.ways }),
         ...(link && link.failures.length > 0 && { failures: link.failures }),
         at,

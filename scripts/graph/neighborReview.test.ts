@@ -9,16 +9,23 @@ const kommuner = [
   { code: "0004", name: "Dal" },
 ];
 
+type LandBorder = BuildEvidence["landBorders"][number];
+/** A land border, all on the mainland and off any exclave unless it says otherwise. */
+type TestBorder = Omit<LandBorder, "mainlandLength" | "islandLength" | "exclaveOf"> &
+  Partial<LandBorder>;
+
 /** A chain 0001–0002–0003–0004 of long land borders, all matching SCB. */
-function evidence(changes: Partial<BuildEvidence> = {}): BuildEvidence {
+function evidence(
+  changes: Omit<Partial<BuildEvidence>, "landBorders"> & { landBorders?: TestBorder[] } = {},
+): BuildEvidence {
+  const landBorders: TestBorder[] = changes.landBorders ?? [
+    { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
+    { between: ["0002", "0003"], landLength: 3000, at: [18.1, 59] },
+    { between: ["0003", "0004"], landLength: 2000, at: [18.2, 59] },
+  ];
   return {
     kommuner,
     shapeCodes: kommuner.map((kommun) => kommun.code),
-    landBorders: [
-      { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
-      { between: ["0002", "0003"], landLength: 3000, at: [18.1, 59] },
-      { between: ["0003", "0004"], landLength: 2000, at: [18.2, 59] },
-    ],
     pointTouches: [],
     fixedLinks: [],
     scbPairs: [
@@ -27,6 +34,12 @@ function evidence(changes: Partial<BuildEvidence> = {}): BuildEvidence {
       { between: ["0003", "0004"], at: [18.2, 59] },
     ],
     ...changes,
+    landBorders: landBorders.map((border) => ({
+      mainlandLength: border.landLength,
+      islandLength: 0,
+      exclaveOf: [],
+      ...border,
+    })),
   };
 }
 
@@ -61,6 +74,95 @@ describe("reviewNeighborGraph", () => {
         between: ["0002", "0003"],
         kinds: ["short-border"],
         landLength: 42,
+        at: [18.1, 59],
+        built: ["land"],
+      },
+    ]);
+  });
+
+  test("flags a land border under 1000 m that lies only on islands, with how it splits", () => {
+    const review = reviewNeighborGraph(
+      evidence({
+        landBorders: [
+          {
+            between: ["0001", "0002"],
+            landLength: 328,
+            mainlandLength: 0,
+            islandLength: 328,
+            at: [18, 59],
+          },
+          {
+            between: ["0002", "0003"],
+            landLength: 1000,
+            mainlandLength: 0,
+            islandLength: 1000,
+            at: [18.1, 59],
+          },
+          {
+            between: ["0003", "0004"],
+            landLength: 305,
+            mainlandLength: 5,
+            islandLength: 300,
+            at: [18.2, 59],
+          },
+        ],
+      }),
+      noOverrides,
+    );
+    expect(review.flaggedPairs).toEqual([
+      {
+        between: ["0001", "0002"],
+        kinds: ["island-border"],
+        landLength: 328,
+        mainlandLength: 0,
+        islandLength: 328,
+        at: [18, 59],
+        built: ["land"],
+      },
+    ]);
+    expect(review.links).toHaveLength(3);
+  });
+
+  test("an island border is also short when under 100 m", () => {
+    const review = reviewNeighborGraph(
+      evidence({
+        landBorders: [
+          { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
+          {
+            between: ["0002", "0003"],
+            landLength: 42,
+            mainlandLength: 0,
+            islandLength: 42,
+            at: [18.1, 59],
+          },
+          { between: ["0003", "0004"], landLength: 2000, at: [18.2, 59] },
+        ],
+      }),
+      noOverrides,
+    );
+    expect(review.flaggedPairs.map((flag) => flag.kinds)).toEqual([
+      ["short-border", "island-border"],
+    ]);
+  });
+
+  test("flags a land border that lies wholly on an exclave, with whose", () => {
+    const review = reviewNeighborGraph(
+      evidence({
+        landBorders: [
+          { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
+          { between: ["0002", "0003"], landLength: 1003, exclaveOf: ["0003"], at: [18.1, 59] },
+          { between: ["0003", "0004"], landLength: 0, exclaveOf: [], at: [18.2, 59] },
+        ],
+        fixedLinks: [{ between: ["0003", "0004"], ways: [11], failures: [] }],
+      }),
+      noOverrides,
+    );
+    expect(review.flaggedPairs).toEqual([
+      {
+        between: ["0002", "0003"],
+        kinds: ["exclave-border"],
+        landLength: 1003,
+        exclaveOf: ["0003"],
         at: [18.1, 59],
         built: ["land"],
       },
@@ -109,7 +211,7 @@ describe("reviewNeighborGraph", () => {
     ways: [7, 9],
     failures: [{ way: 9, reasons: ["service=driveway" as const, "no-land-end" as const] }],
   };
-  const waterBorders: BuildEvidence["landBorders"] = [
+  const waterBorders: TestBorder[] = [
     { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
     { between: ["0002", "0003"], landLength: 0, at: [18.1, 59] },
     { between: ["0003", "0004"], landLength: 2000, at: [18.2, 59] },
@@ -396,7 +498,14 @@ describe("reviewNeighborGraph", () => {
         shapeCodes: [...base.shapeCodes, "0005", "0006"],
         landBorders: [
           ...base.landBorders,
-          { between: ["0005", "0006"], landLength: 900, at: [19, 60] },
+          {
+            between: ["0005", "0006"],
+            landLength: 900,
+            mainlandLength: 900,
+            islandLength: 0,
+            exclaveOf: [],
+            at: [19, 60],
+          },
         ],
         scbPairs: [...base.scbPairs, { between: ["0005", "0006"], at: [19, 60] }],
       },

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { sharedBorders, sharedVertices, type KommunArea } from "./sharedBorders";
+import { exclaveEdges, sharedBorders, sharedVertices, type KommunArea } from "./sharedBorders";
 
 const square = (x: number, y: number): number[][][] => [
   [
@@ -109,5 +109,39 @@ describe("sharedVertices", () => {
         ],
       },
     ]);
+  });
+});
+
+describe("exclaveEdges", () => {
+  test("tells which kommun's boundary edges lie on a part other than its largest", () => {
+    const largeWithHole: number[][][] = [
+      [
+        [0, 0],
+        [3, 0],
+        [3, 3],
+        [0, 3],
+        [0, 0],
+      ],
+      [
+        [1, 1],
+        [1, 2],
+        [2, 2],
+        [2, 1],
+        [1, 1],
+      ],
+    ];
+    const onExclave = exclaveEdges([
+      {
+        code: "0001",
+        geometry: { type: "MultiPolygon", coordinates: [square(5, 0), largeWithHole] },
+      },
+      { code: "0002", geometry: { type: "Polygon", coordinates: square(6, 0) } },
+    ]);
+    expect(onExclave("0001", [6, 1], [6, 0])).toBe(true);
+    expect(onExclave("0001", [6, 0], [6, 1])).toBe(true);
+    expect(onExclave("0002", [6, 0], [6, 1])).toBe(false);
+    expect(onExclave("0001", [0, 0], [3, 0])).toBe(false);
+    expect(onExclave("0001", [1, 1], [1, 2])).toBe(false);
+    expect(onExclave("0003", [6, 0], [6, 1])).toBe(false);
   });
 });

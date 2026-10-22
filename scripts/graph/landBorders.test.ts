@@ -32,7 +32,16 @@ describe("measureLandBorders", () => {
       land: [box(-1, -1, 0.6, 1)],
       lakes: [box(0.25, -1, 0.5, 1)],
     });
-    expect(measured).toEqual([{ between: ["0001", "0002"], landLength: 38918, at: [0.125, 0] }]);
+    expect(measured).toEqual([
+      {
+        between: ["0001", "0002"],
+        landLength: 38918,
+        mainlandLength: 38918,
+        islandLength: 0,
+        exclaveOf: [],
+        at: [0.125, 0],
+      },
+    ]);
   });
 
   test("a border running only through a lake or the sea has no length on land; it points at its longest segment", () => {
@@ -54,7 +63,16 @@ describe("measureLandBorders", () => {
         box(0.65, -1, 1.5, 1),
       ],
     });
-    expect(measured).toEqual([{ between: ["0001", "0002"], landLength: 0, at: [0.5, 0] }]);
+    expect(measured).toEqual([
+      {
+        between: ["0001", "0002"],
+        landLength: 0,
+        mainlandLength: 0,
+        islandLength: 0,
+        exclaveOf: [],
+        at: [0.5, 0],
+      },
+    ]);
   });
 
   test("an island inside a lake is land", () => {
@@ -81,7 +99,16 @@ describe("measureLandBorders", () => {
       land: [box(-1, -1, 2, 1)],
       lakes: [lakeWithIsland],
     });
-    expect(measured).toEqual([{ between: ["0001", "0002"], landLength: 55598, at: [0.1, 0] }]);
+    expect(measured).toEqual([
+      {
+        between: ["0001", "0002"],
+        landLength: 55598,
+        mainlandLength: 44478,
+        islandLength: 11120,
+        exclaveOf: [],
+        at: [0.1, 0],
+      },
+    ]);
   });
 
   // 0.005° is about 556 m at the equator, so these islands are about 0.3 km².
@@ -109,7 +136,94 @@ describe("measureLandBorders", () => {
       land: [box(-1, -1, 0.5, 1), box(0.55, -0.0025, 0.555, 0.0025), box(0.6, -1, 2, 1)],
       lakes: [lakeWithIslet],
     });
-    expect(measured).toEqual([{ between: ["0001", "0002"], landLength: 77837, at: [0.25, 0] }]);
+    expect(measured).toEqual([
+      {
+        between: ["0001", "0002"],
+        landLength: 77837,
+        mainlandLength: 55598,
+        islandLength: 22239,
+        exclaveOf: [],
+        at: [0.25, 0],
+      },
+    ]);
+  });
+
+  test("splits the land between the mainland, the largest land polygon, and islands of 1 km² or more in the sea or in a lake", () => {
+    const lakeWithIsland: AreaGeometry = {
+      type: "Polygon",
+      coordinates: [
+        [
+          [0.1, -0.5],
+          [0.25, -0.5],
+          [0.25, 0.5],
+          [0.1, 0.5],
+          [0.1, -0.5],
+        ],
+        [
+          [0.15, -0.1],
+          [0.15, 0.1],
+          [0.2, 0.1],
+          [0.2, -0.1],
+          [0.15, -0.1],
+        ],
+      ],
+    };
+    const [measured] = measureLandBorders([border], {
+      land: [box(0.4, -0.5, 0.6, 0.5), box(-1, -1, 0.3, 1)],
+      lakes: [lakeWithIsland],
+    });
+    expect(measured).toMatchObject({
+      landLength: 44478,
+      mainlandLength: 16679,
+      islandLength: 27799,
+    });
+  });
+
+  describe("exclaves", () => {
+    const exclaveBorder: SharedBorder = {
+      between: ["0001", "0002"],
+      lines: [
+        [
+          [0, 0],
+          [0.5, 0],
+          [1, 0],
+        ],
+      ],
+    };
+    const firstHalfOn =
+      (code: string) =>
+      (kommun: string, from: number[]): boolean =>
+        kommun === code && from[0] === 0;
+
+    test("names the kommun whose exclave holds the whole land border, whatever lies in water", () => {
+      const [measured] = measureLandBorders(
+        [exclaveBorder],
+        { land: [box(-1, -1, 0.5, 1)], lakes: [] },
+        firstHalfOn("0002"),
+      );
+      expect(measured).toMatchObject({ landLength: 55598, exclaveOf: ["0002"] });
+    });
+
+    test("names none when part of the land border lies off the exclave", () => {
+      const [measured] = measureLandBorders(
+        [exclaveBorder],
+        { land: [box(-1, -1, 0.6, 1)], lakes: [] },
+        firstHalfOn("0001"),
+      );
+      expect(measured).toMatchObject({ exclaveOf: [] });
+    });
+
+    test("names both kommuner when the land border joins two exclaves, and none without land", () => {
+      const onAnyExclave = () => true;
+      const [joined] = measureLandBorders(
+        [exclaveBorder],
+        { land: [box(-1, -1, 2, 1)], lakes: [] },
+        onAnyExclave,
+      );
+      expect(joined.exclaveOf).toEqual(["0001", "0002"]);
+      const [inWater] = measureLandBorders([exclaveBorder], { land: [], lakes: [] }, onAnyExclave);
+      expect(inWater.exclaveOf).toEqual([]);
+    });
   });
 
   test("a border point on an island under 1 km² isn't on land", () => {

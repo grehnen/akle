@@ -48,7 +48,7 @@ export function graphReport({ version, kommuner, review, previous }: GraphReport
     "| --- | --- | --- | --- | --- | --- | --- |",
     ...review.flaggedPairs.map(
       (flag) =>
-        `| ${pairName(flag.between)} | ${pairKey(flag.between)} | ${flag.kinds.join(", ")} | ${measurements(flag)} | [map](${mapLink(flag.at)}) | ${builtText(flag)} | ${verdictText(flag)} |`,
+        `| ${pairName(flag.between)} | ${pairKey(flag.between)} | ${flag.kinds.join(", ")} | ${measurements(flag, pairName)} | [map](${mapLink(flag.at)}) | ${builtText(flag)} | ${verdictText(flag)} |`,
     ),
     "",
     `## Changes since the previous graph version${previous ? ` (${previous.id})` : ""}`,
@@ -89,10 +89,24 @@ export function graphReport({ version, kommuner, review, previous }: GraphReport
   return `${lines.join("\n")}\n`;
 }
 
-function measurements(flag: FlaggedPair): string {
+function measurements(flag: FlaggedPair, names: (codes: readonly KommunCode[]) => string): string {
   const parts: string[] = [];
   if (flag.scb) parts.push(flag.scb);
-  if (flag.landLength !== undefined) parts.push(`land border ${flag.landLength} m`);
+  if (flag.landLength !== undefined) {
+    const split =
+      flag.islandLength === undefined
+        ? ""
+        : ` (${flag.mainlandLength} m mainland, ${flag.islandLength} m islands)`;
+    parts.push(`land border ${flag.landLength} m${split}`);
+  }
+  if (flag.exclaveOf) {
+    const owners = flag.exclaveOf.map((code) => names([code]));
+    parts.push(
+      owners.length === 1
+        ? `all on an exclave of ${owners[0]}`
+        : `all on exclaves of ${owners.join(" and ")}`,
+    );
+  }
   if (flag.ways) parts.push(`ways ${flag.ways.map(wayLink).join(" ")}`);
   if (flag.failures) {
     const failing = flag.failures.map(
