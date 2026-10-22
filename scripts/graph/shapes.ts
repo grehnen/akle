@@ -31,6 +31,10 @@ export function isInlandWater(feature: Feature): boolean {
   return !notInlandWater.has(String(properties.water ?? ""));
 }
 
+export function isRiver(feature: Feature): boolean {
+  return feature.properties.natural === "water" && feature.properties.water === "river";
+}
+
 export function isBigWater(water: Feature): boolean {
   return sphericalArea(water.geometry) >= bigWaterArea;
 }

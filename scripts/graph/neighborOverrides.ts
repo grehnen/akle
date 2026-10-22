@@ -9,6 +9,7 @@ export const pairFlagKinds = [
   "non-qualifying-link",
   "island-border",
   "exclave-border",
+  "river-border",
 ] as const;
 export type PairFlagKind = (typeof pairFlagKinds)[number];
 
