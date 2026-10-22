@@ -1,10 +1,10 @@
 // bun run graph-versions:check [--base <git revision>] [--now <ISO date>]
 // The frozen graph versions check (ADR 0004): versions a played puzzle has used are unchanged
-// from the base revision (HEAD by default), and no version starts at an already played puzzle.
-// A puzzle only counts as played if the base scheduled it.
-import { playedThroughAtBase } from "../src/daily/puzzleNumber";
+// from the base revision (HEAD by default), and no version starts at an already played puzzle
+// (data/README.md).
 import { frozenGraphVersionViolations } from "../src/graph/frozenGraphVersions";
 import { readCommittedGraphVersions, readCommittedGraphVersionsAt } from "./graphVersionData";
+import { playedThroughAtBase } from "./playedThrough";
 import { checkArguments, readScheduleConfig, readScheduleRowsAt } from "./scheduleData";
 
 const { base, now } = checkArguments();

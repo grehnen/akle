@@ -12,7 +12,7 @@ const earliestTimeZoneOffsetMilliseconds = 14 * 60 * 60 * 1000;
 
 /**
  * The highest puzzle number anyone could have opened: today's number in UTC+14, the earliest
- * time zone. Rows up to this number count as played and never change. 0 before the epoch.
+ * time zone. 0 before the epoch.
  */
 export function latestPlayedPuzzleNumber(now: Date, epoch: string): number {
   const earliest = new Date(now.getTime() + earliestTimeZoneOffsetMilliseconds);
@@ -25,20 +25,6 @@ export function latestPlayedPuzzleNumber(now: Date, epoch: string): number {
       epoch,
     ),
   );
-}
-
-/**
- * The played puzzle number the checks compare with a base revision at: a puzzle only counts as
- * played if the base scheduled it, so this is capped by the base's last scheduled puzzle, and is
- * 0 when the base has no schedule (bootstrapping the data).
- */
-export function playedThroughAtBase(
-  now: Date,
-  epoch: string,
-  baseRows: readonly { number: number }[],
-): number {
-  const lastScheduledAtBase = baseRows.reduce((last, row) => Math.max(last, row.number), 0);
-  return Math.min(latestPlayedPuzzleNumber(now, epoch), lastScheduledAtBase);
 }
 
 /** The puzzle number of a calendar day; `month` is 0-based, as in `Date`. */

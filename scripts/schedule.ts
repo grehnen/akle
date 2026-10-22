@@ -1,6 +1,5 @@
 // bun run schedule [--chunks k] [--now <ISO date>]
-// Reconciles unplayed rows, appends k chunks (default 1) and prints the PR report.
-import { latestPlayedPuzzleNumber } from "../src/daily/puzzleNumber";
+// Reconciles unplayed rows (data/README.md; HEAD is the base), appends k chunks (default 1) and prints the PR report.
 import { generateSchedule } from "../src/schedule/generateSchedule";
 import { scheduleReport } from "../src/schedule/scheduleReport";
 import {
@@ -8,8 +7,10 @@ import {
   readGraphVersions,
   readScheduleConfig,
   readScheduleRows,
+  readScheduleRowsAt,
   writeScheduleRows,
 } from "./scheduleData";
+import { playedThroughAtBase } from "./playedThrough";
 
 const chunks = Number(argument("chunks") ?? 1);
 if (!Number.isInteger(chunks) || chunks < 0) {
@@ -25,7 +26,7 @@ const schedule = generateSchedule({
   seed: config.seed,
   cooldownDays: config.cooldownDays,
   cooldownDaysByGraphVersion: config.cooldownDaysByGraphVersion,
-  playedThrough: latestPlayedPuzzleNumber(now, config.epoch),
+  playedThrough: playedThroughAtBase(now, config.epoch, readScheduleRowsAt("HEAD")),
   chunks,
 });
 await writeScheduleRows(schedule.rows);

@@ -96,7 +96,7 @@ It rereads the build evidence of the newest version, so it needs no OSM, and rew
 
 Every change to the kommuner, their names, neighbors or shapes, whether a kommun merger, a new bridge or ferry, or an error fix, goes into a **new graph version** that starts at a future puzzle number ([ADR 0004](../docs/adr/0004-versioned-graphs-keyed-by-puzzle-number.md)). It can be reviewed and merged well ahead of time: no deploy needs to be timed, and games in progress are never rescored.
 
-A version is **frozen** once a puzzle has used it, that is once its `startsAtPuzzle` is played (today's puzzle number in UTC+14, the earliest time zone). Frozen versions are never edited, rebuilt or rechecked; a known error stays in the puzzles that already used it. Until its first puzzle is played, the newest version may still be rebuilt in place.
+A version is **frozen** once a puzzle has used it, that is once its `startsAtPuzzle` is [played](#played-puzzles). Frozen versions are never edited, rebuilt or rechecked; a known error stays in the puzzles that already used it. Until its first puzzle is played, the newest version may still be rebuilt in place.
 
 1. Pick the starting puzzle number: the first puzzle that should use the change. It must be after every played puzzle; leave time for review. For a merger on 1 January, it is the puzzle number of 1 January.
 2. In `scripts/graph/build-config.json`, set a new `id` (for example `osm-YYYY-MM-DD` after the extract date) and `startsAtPuzzle`, and pin a newer extract or SCB names file if needed. The overrides in `neighbor-overrides.yaml` apply to the new version only; an older version's overrides live only in git history.
@@ -111,7 +111,7 @@ The app picks the version by puzzle number, never by the clock, and fetches only
 
 ### Checking: `bun run graph-versions:check [--base <git revision>]`
 
-The required frozen graph versions check, run in CI against the PR's base (`HEAD` by default): every version a played puzzle has used is byte for byte unchanged from the base, keeps its `startsAtPuzzle` and isn't removed, and no new or moved version starts at a played puzzle. A puzzle only counts as played if the base scheduled it, so a base with no schedule (bootstrapping the data) has nothing played and nothing frozen.
+The required frozen graph versions check, run in CI against the PR's base (`HEAD` by default): every version a played puzzle has used is byte for byte unchanged from the base, keeps its `startsAtPuzzle` and isn't removed, and no new or moved version starts at a [played](#played-puzzles) puzzle, counted against the base.
 
 ## Schedule: `schedule/`
 
@@ -120,14 +120,18 @@ The required frozen graph versions check, run in CI against the PR's base (`HEAD
 
 The current `0001.csv` is a fixture of 90 rows: #1–#30 on the fixture graph version, the rest on `osm-2026-10-01`.
 
+### Played puzzles
+
+A puzzle is **played** when its number is at most today's puzzle number in UTC+14, the earliest time zone, and the base revision scheduled it. The base is the `--base` revision for the checks and `HEAD` for the generator. So a base with no schedule (bootstrapping the data) has nothing played, and nothing frozen. The generator, `schedule:check` and `graph-versions:check` all use this one rule (`scripts/playedThrough.ts`).
+
 ### Generating: `bun run schedule [--chunks k] [--now <ISO date>]`
 
 Reconciles every unplayed row against the graph version for its puzzle number (updating N, or redrawing the pair when N leaves 3–8, an endpoint is gone or a rule is broken), then completes or adds `k` chunks (default 1; `0` only reconciles). It prints the Markdown report for the PR body. The same committed files, seed and date always give byte-identical chunks.
 
 - Each row's draws come from sha256 of `seed:puzzle:attempt`. N is drawn uniformly from 3–8, then a pair uniformly among the least-used pairs with that N whose endpoints are outside the cooldown of the row's graph version; when none qualifies, the next attempt redraws.
-- **Played** rows (puzzle number up to today's in UTC+14, the earliest time zone) are never changed.
+- [Played](#played-puzzles) rows are never changed; the generator counts them against `HEAD`.
 - Rows may be curated by hand; a rerun keeps any unplayed row that still follows the rules.
 
 ### Checking: `bun run schedule:check [--base <git revision>]`
 
-The required schedule rules check, run in CI against the PR's base: N matches the row's graph version, N is 3–8, no pair repeats before every pair with its N is used as often, no endpoint repeats within the cooldown of the row's graph version, puzzle numbers run 1, 2, 3, … and each row sits in its own chunk, and played rows are unchanged from the base (`HEAD` by default). Rows that were already played are exempt from the other rules.
+The required schedule rules check, run in CI against the PR's base: N matches the row's graph version, N is 3–8, no pair repeats before every pair with its N is used as often, no endpoint repeats within the cooldown of the row's graph version, puzzle numbers run 1, 2, 3, … and each row sits in its own chunk, and [played](#played-puzzles) rows, counted against the base (`HEAD` by default), are unchanged from it. Played rows are exempt from the other rules.
