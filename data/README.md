@@ -65,7 +65,7 @@ The build can't trust every pair on its own, so it **flags** them for a human ([
 
 | Flag                  | When                                                                                                                                                                           |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `scb-mismatch`        | SCB's kommun map and the generated land and fixed links disagree: the pair is in only one of them                                                                              |
+| `scb-mismatch`        | the generated graph has the pair but SCB's kommun map doesn't; pairs only SCB joins aren't flagged, since its generalised map joins kommuner through water                     |
 | `short-border`        | the pair has less than 100 m of border on land                                                                                                                                 |
 | `point-touch`         | the OSM boundaries touch only at a point, on land; the pair is not a neighbor                                                                                                  |
 | `non-qualifying-link` | the pair has no land border that makes it neighbors and a fixed link that doesn't qualify, so the build drops it; the report lists the failing ways and why                    |
