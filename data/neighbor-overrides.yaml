@@ -91,16 +91,16 @@ reviewed:
     reason: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water.
   - keep: ["0381", "0486"]
     names: [Enköping, Strängnäs]
-    kinds: [scb-mismatch, island-border]
-    reason: The OSM boundaries share a 408 m land border that SCB's generalised map misses. All of it lies on islands of 1 km² or more in Mälaren, none on the mainland; such islands are land, so the build keeps the pair.
+    kinds: [island-border]
+    reason: The OSM boundaries share only 408 m of land border, all on islands in Mälaren and none on the mainland, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either.
   - keep: ["0484", "1980"]
     names: [Eskilstuna, Västerås]
     kinds: [scb-mismatch]
     reason: The OSM boundaries share a 1336 m land border that SCB's generalised map misses. Kvicksundsbron (road and rail) also links them.
   - keep: ["0486", "1980"]
     names: [Strängnäs, Västerås]
-    kinds: [scb-mismatch, island-border]
-    reason: The OSM boundaries share a 328 m land border that SCB's generalised map misses. All of it lies on islands of 1 km² or more in Mälaren, none on the mainland; such islands are land, so the build keeps the pair.
+    kinds: [island-border]
+    reason: The OSM boundaries share only 328 m of land border, all on islands in Mälaren and none on the mainland, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either.
   - keep: ["0662", "0781"]
     names: [Gislaved, Ljungby]
     kinds: [scb-mismatch]
@@ -159,8 +159,8 @@ reviewed:
     reason: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water.
   - keep: ["1462", "1489"]
     names: [Lilla Edet, Alingsås]
-    kinds: [scb-mismatch, exclave-border]
-    reason: The OSM boundaries share a 1003 m land border that SCB's generalised map misses. All of it lies on an exclave of Lilla Edet, which is part of the kommun, so the build keeps the pair.
+    kinds: [exclave-border]
+    reason: Their 1003 m land border lies wholly on an exclave of Lilla Edet, away from its main part, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either.
   - keep: ["1473", "1860"]
     names: [Töreboda, Laxå]
     kinds: [scb-mismatch]
@@ -199,8 +199,8 @@ reviewed:
     reason: The OSM boundaries don't meet; they are 2.0 km apart where SCB's generalised map has them touch.
   - keep: ["2061", "2081"]
     names: [Smedjebacken, Borlänge]
-    kinds: [scb-mismatch, exclave-border]
-    reason: The OSM boundaries share a 2968 m land border that SCB's generalised map misses. All of it lies on an exclave of Borlänge, which is part of the kommun, so the build keeps the pair.
+    kinds: [exclave-border]
+    reason: Their 2968 m land border lies wholly on an exclave of Borlänge, away from its main part, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either.
   - keep: ["2132", "2161"]
     names: [Nordanstig, Ljusdal]
     kinds: [scb-mismatch]
