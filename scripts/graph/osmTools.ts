@@ -1,8 +1,8 @@
 import { closeMainlandCoastline } from "./coastlineClosure";
 import type { AreaGeometry, Position } from "./sharedBorders";
 
-export const root = new URL("../../", import.meta.url).pathname;
-export const cacheDirectory = `${root}.cache/osm`;
+export const repositoryRoot = new URL("../../", import.meta.url).pathname;
+export const cacheDirectory = `${repositoryRoot}.cache/osm`;
 const toolsImage = "akle-osm-tools";
 
 export type Feature<Geometry = AreaGeometry> = {
@@ -11,18 +11,19 @@ export type Feature<Geometry = AreaGeometry> = {
   geometry: Geometry;
 };
 
-export function fileName(url: string): string {
+/** The last path segment of `url`, the name a download is cached under. */
+export function urlFileName(url: string): string {
   return url.slice(url.lastIndexOf("/") + 1);
 }
 
-export function log(message: string): void {
+export function logBuildStep(message: string): void {
   console.log(`[graph] ${message}`);
 }
 
 /** Downloads `url` to `path` unless it is cached there, then checks its sha256. */
 export async function download(url: string, path: string, sha256: string): Promise<void> {
   if (!(await Bun.file(path).exists())) {
-    log(`Downloading ${url}`);
+    logBuildStep(`Downloading ${url}`);
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Download of ${url} failed: ${response.status}`);
     await Bun.write(`${path}.part`, response);
@@ -52,20 +53,20 @@ export async function extractLayers({
   const hasLand = await Bun.file(`${layersDirectory}/land.geojsonseq`).exists();
   const hasLinks = await Bun.file(`${layersDirectory}/links.geojsonseq`).exists();
   if (hasLand && hasLinks) return;
-  log("Building the OSM tools image");
-  await Bun.$`docker build --quiet --tag ${toolsImage} ${root}scripts/osm`.quiet();
+  logBuildStep("Building the OSM tools image");
+  await Bun.$`docker build --quiet --tag ${toolsImage} ${repositoryRoot}scripts/osm`.quiet();
   if (!hasLinks) {
-    log("Extracting roads, paths and railways that may be fixed links");
-    await runTool("links.sh", `/work/${fileName(extractFile)}`, `/work/${graphVersionId}`);
+    logBuildStep("Extracting roads, paths and railways that may be fixed links");
+    await runTool("links.sh", `/work/${urlFileName(extractFile)}`, `/work/${graphVersionId}`);
   }
   if (hasLand) return;
-  log("Extracting kommuner, water and coastline");
-  await runTool("extract.sh", `/work/${fileName(extractFile)}`, `/work/${graphVersionId}`);
+  logBuildStep("Extracting kommuner, water and coastline");
+  await runTool("extract.sh", `/work/${urlFileName(extractFile)}`, `/work/${graphVersionId}`);
 
-  log("Closing the mainland coastline");
+  logBuildStep("Closing the mainland coastline");
   await writeCoastlineClosure(layersDirectory, coastlineRoute);
 
-  log("Assembling land from the coastline");
+  logBuildStep("Assembling land from the coastline");
   await runTool("coastline.sh", `/work/${graphVersionId}`);
 }
 
@@ -104,7 +105,7 @@ async function writeCoastlineClosure(
 
 async function runTool(script: string, ...args: string[]): Promise<void> {
   const user = `${process.getuid?.() ?? 0}:${process.getgid?.() ?? 0}`;
-  await Bun.$`docker run --rm --user ${user} --volume ${cacheDirectory}:/work --volume ${root}scripts/osm:/scripts:ro ${toolsImage} sh /scripts/${script} ${args}`;
+  await Bun.$`docker run --rm --user ${user} --volume ${cacheDirectory}:/work --volume ${repositoryRoot}scripts/osm:/scripts:ro ${toolsImage} sh /scripts/${script} ${args}`;
 }
 
 /** The features of a GeoJSON text sequence whose geometry is one of `geometryTypes`. */

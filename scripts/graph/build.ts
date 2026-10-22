@@ -14,10 +14,10 @@ import {
   cacheDirectory,
   download,
   extractLayers,
-  fileName,
-  log,
+  urlFileName,
+  logBuildStep,
   readFeatures,
-  root,
+  repositoryRoot,
 } from "./osmTools";
 import { readScbBoundaries } from "./scbBoundaries";
 import { readScbKommunWorkbook } from "./scbKommuner";
@@ -31,16 +31,16 @@ import { sharedBorders, sharedVertices, type KommunArea, type Line } from "./sha
  * See `data/README.md`.
  */
 
-const extractFile = `${cacheDirectory}/${fileName(buildConfig.extract.url)}`;
+const extractFile = `${cacheDirectory}/${urlFileName(buildConfig.extract.url)}`;
 const layersDirectory = `${cacheDirectory}/${buildConfig.id}`;
-const outputDirectory = `${root}data/${graphVersionDirectory(buildConfig.id)}`;
-const overridesFile = `${root}data/neighbor-overrides.yaml`;
+const outputDirectory = `${repositoryRoot}data/${graphVersionDirectory(buildConfig.id)}`;
+const overridesFile = `${repositoryRoot}data/neighbor-overrides.yaml`;
 
 await mkdir(cacheDirectory, { recursive: true });
 await download(buildConfig.extract.url, extractFile, buildConfig.extract.sha256);
-const scbFile = `${cacheDirectory}/${fileName(buildConfig.scbKommuner.url)}`;
+const scbFile = `${cacheDirectory}/${urlFileName(buildConfig.scbKommuner.url)}`;
 await download(buildConfig.scbKommuner.url, scbFile, buildConfig.scbKommuner.sha256);
-const scbBoundariesFile = `${cacheDirectory}/${fileName(buildConfig.scbBoundaries.url)}`;
+const scbBoundariesFile = `${cacheDirectory}/${urlFileName(buildConfig.scbBoundaries.url)}`;
 await download(buildConfig.scbBoundaries.url, scbBoundariesFile, buildConfig.scbBoundaries.sha256);
 await extractLayers({
   extractFile,
@@ -62,7 +62,7 @@ if (collisions.length > 0) {
   throw new Error(`Kommun names collide after accent folding: ${JSON.stringify(collisions)}`);
 }
 
-log("Finding shared borders");
+logBuildStep("Finding shared borders");
 const borders = sharedBorders(areas);
 const borderPairs = new Set(borders.map((border) => pairKey(border.between)));
 const touchCandidates = sharedVertices(areas).filter(
@@ -76,11 +76,11 @@ const nearBorders = borderProximity([
   })),
 ]);
 
-log("Reading land and lakes");
+logBuildStep("Reading land and lakes");
 const land = await readFeatures(`${layersDirectory}/land.geojsonseq`);
 const lakes = (await readFeatures(`${layersDirectory}/water.geojsonseq`)).filter(isLake);
 
-log("Measuring borders on land");
+logBuildStep("Measuring borders on land");
 const mask = {
   land: land.filter((feature) => nearBorders(feature.geometry)).map((feature) => feature.geometry),
   lakes: lakes
@@ -101,7 +101,7 @@ const landLinks: NeighborLink[] = measured
   .filter((border) => border.landLength > 0)
   .map((border) => ({ between: border.between, kind: "land" }));
 
-log("Finding fixed links");
+logBuildStep("Finding fixed links");
 const linkWays: LinkWay[] = (
   await readFeatures<{ type: "LineString"; coordinates: Line }>(
     `${layersDirectory}/links.geojsonseq`,
@@ -114,7 +114,7 @@ const linkWays: LinkWay[] = (
 }));
 const fixedLinks = findFixedLinks(borders, linkWays, mask);
 
-log("Cross-checking with SCB's boundaries");
+logBuildStep("Cross-checking with SCB's boundaries");
 const scbPairs = sharedVertices(
   await readScbBoundaries(new Uint8Array(await Bun.file(scbBoundariesFile).arrayBuffer())),
 ).map((pair) => ({ between: pair.between, at: roundedPoint(pair.points[0]) }));
@@ -133,7 +133,7 @@ const evidence: Omit<BuildEvidence, "shapeCodes"> = {
   scbPairs,
 };
 
-log("Drawing shapes");
+logBuildStep("Drawing shapes");
 const shapes = await drawShapes(areas, land, lakes.filter(isBigLake));
 
 const review = reviewNeighborGraph(
@@ -174,8 +174,8 @@ reportBuild({
   ferryCount: ferryLinks.length,
   shapesGeojson: files[graphVersionFileNames.shapes],
 });
-log("Reviewing flagged pairs");
-await Bun.$`bun ${root}scripts/graph/review.ts`.cwd(root).nothrow();
+logBuildStep("Reviewing flagged pairs");
+await Bun.$`bun ${repositoryRoot}scripts/graph/review.ts`.cwd(repositoryRoot).nothrow();
 
 async function readKommunAreas(): Promise<KommunArea[]> {
   const byCode = new Map<string, KommunArea>();
