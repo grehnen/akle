@@ -21,7 +21,7 @@ import {
 } from "./osmTools";
 import { readScbBoundaries } from "./scbBoundaries";
 import { readScbKommunWorkbook } from "./scbKommuner";
-import { drawShapes, isBigWater, isInlandWater } from "./shapes";
+import { drawShapes, isBigWater, isInlandWater, isRiver } from "./shapes";
 import {
   exclaveEdges,
   sharedBorders,
@@ -89,6 +89,9 @@ const mask = {
   land: land.filter((feature) => nearBorders(feature.geometry)).map((feature) => feature.geometry),
   lakes: lakes
     .filter((feature) => nearBorders(feature.geometry))
+    .map((feature) => feature.geometry),
+  rivers: lakes
+    .filter((feature) => isRiver(feature) && nearBorders(feature.geometry))
     .map((feature) => feature.geometry),
 };
 const measured = measureLandBorders(borders, mask, exclaveEdges(areas));

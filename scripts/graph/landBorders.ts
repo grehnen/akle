@@ -11,6 +11,8 @@ import type { AreaGeometry, Line, Position, SharedBorder } from "./sharedBorders
 export type LandWaterMask = {
   land: readonly AreaGeometry[];
   lakes: readonly AreaGeometry[];
+  /** The river areas among the lakes, where a border's length in water is measured apart. */
+  rivers?: readonly AreaGeometry[];
 };
 
 /**
@@ -27,6 +29,8 @@ export type LandBorder = {
   mainlandLength: number;
   /** The part of it on islands of {@link minIslandArea} or more, in the sea or in a lake. */
   islandLength: number;
+  /** Length of the shared border in river areas, off land and out of the sea, in whole metres. */
+  riverLength: number;
   /** The kommuner, by code, whose exclaves hold the whole border on land; empty without land. */
   exclaveOf: KommunCode[];
   /**
@@ -49,18 +53,20 @@ export function measureLandBorders(
   mask: LandWaterMask,
   onExclave: (code: KommunCode, from: Position, to: Position) => boolean = () => false,
 ): LandBorder[] {
-  const { indexes, landKind } = landIndexes(mask);
+  const { indexes, landKind, inRiver } = landIndexes(mask);
+  const pieceKind = (point: Position) => landKind(point) ?? (inRiver(point) ? "river" : "water");
   return borders.map((border) => {
     const tally: Tally = {
       mainland: 0,
       island: 0,
+      river: 0,
       offExclave: [0, 0],
       longest: { land: undefined, any: undefined },
     };
     const exclaveSides = (from: Position, to: Position) =>
       [onExclave(border.between[0], from, to), onExclave(border.between[1], from, to)] as const;
     for (const line of border.lines) {
-      measureLine(line, indexes, landKind, exclaveSides, tally);
+      measureLine(line, indexes, pieceKind, exclaveSides, tally);
     }
     const land = tally.mainland + tally.island;
     const piece = tally.longest.land ?? tally.longest.any;
@@ -70,6 +76,7 @@ export function measureLandBorders(
       landLength: Math.round(land),
       mainlandLength: Math.round(tally.mainland),
       islandLength: Math.round(tally.island),
+      riverLength: Math.round(tally.river),
       exclaveOf:
         land > 0
           ? border.between
@@ -83,10 +90,12 @@ export function measureLandBorders(
 
 type Piece = { from: Position; to: Position; length: number };
 type LandKind = "mainland" | "island";
-/** What a border's pieces on land add up to; `offExclave` per side of the pair. */
+type PieceKind = LandKind | "river" | "water";
+/** What a border's pieces add up to, on land and in river water; `offExclave` per side of the pair. */
 type Tally = {
   mainland: number;
   island: number;
+  river: number;
   offExclave: [number, number];
   longest: { land: Piece | undefined; any: Piece | undefined };
 };
@@ -103,8 +112,10 @@ function landIndexes(mask: LandWaterMask): {
   indexes: PolygonIndex[];
   isOnLand: (point: Position) => boolean;
   landKind: (point: Position) => LandKind | undefined;
+  inRiver: (point: Position) => boolean;
 } {
   const land = new PolygonIndex(mask.land);
+  const rivers = new PolygonIndex(mask.rivers ?? []);
   const lakes = new PolygonIndex(mask.lakes);
   const islets = new PolygonIndex(smallIslands(mask));
   const isOnLand = (point: Position) =>
@@ -119,8 +130,9 @@ function landIndexes(mask: LandWaterMask): {
   const lakeIslands = new PolygonIndex(asPolygons(lakeHoles(mask).filter(isBigIsland)));
   return {
     // Every mainland and lake island edge is a land or lake edge, so these find all the crossings.
-    indexes: [land, lakes, islets],
+    indexes: [land, lakes, islets, rivers],
     isOnLand,
+    inRiver: (point) => land.contains(point) && rivers.contains(point),
     landKind: (point) => {
       if (!isOnLand(point)) return undefined;
       return mainland.contains(point) && !lakeIslands.contains(point) ? "mainland" : "island";
@@ -206,18 +218,18 @@ function bounds(geometry: AreaGeometry): [number, number, number, number] {
 
 /**
  * Splits each segment where it crosses a mask edge and adds up the pieces whose midpoint is on
- * land. Between two crossings a line can't change sides, so a piece's kind of land is reused until
- * the next crossing.
+ * land or in river water. Between two crossings a line can't change sides, so a piece's kind is
+ * reused until the next crossing.
  */
 function measureLine(
   line: Line,
   indexes: readonly PolygonIndex[],
-  landKind: (point: Position) => LandKind | undefined,
+  pieceKind: (point: Position) => PieceKind,
   exclaveSides: (from: Position, to: Position) => readonly [boolean, boolean],
   tally: Tally,
 ): void {
   const { longest } = tally;
-  let status: LandKind | "water" | undefined;
+  let status: PieceKind | undefined;
   for (let index = 0; index + 1 < line.length; index++) {
     const [from, to] = [line[index], line[index + 1]];
     const segmentLength = haversine(from, to);
@@ -236,9 +248,10 @@ function measureLine(
         interpolate(from, to, stops[piece + 1]),
       ];
       if (status === undefined || piece > 0) {
-        status = landKind(interpolate(start, end, 0.5)) ?? "water";
+        status = pieceKind(interpolate(start, end, 0.5));
       }
-      if (status !== "water") {
+      if (status === "river") tally.river += haversine(start, end);
+      else if (status !== "water") {
         const pieceLength = haversine(start, end);
         tally[status] += pieceLength;
         onExclave.forEach((isOnExclave, side) => {

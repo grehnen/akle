@@ -19,13 +19,15 @@ export type BuildEvidence = {
   shapeCodes: readonly KommunCode[];
   /**
    * Every border two OSM boundaries share, with its length on land (0 when all water), how that
-   * splits between the mainland and islands, and the kommuner whose exclaves hold all of it.
+   * splits between the mainland and islands, its length in river water, and the kommuner whose
+   * exclaves hold all of its land.
    */
   landBorders: readonly {
     between: Pair;
     landLength: number;
     mainlandLength: number;
     islandLength: number;
+    riverLength: number;
     exclaveOf: readonly KommunCode[];
     at: Point;
   }[];
@@ -48,6 +50,8 @@ export type FlaggedPair = {
   /** How the land border splits between the mainland and islands, when some is on islands. */
   mainlandLength?: number;
   islandLength?: number;
+  /** Length of the shared OSM border in river water, in m, when some is. */
+  riverLength?: number;
   /** The kommuner whose exclaves hold the whole land border, when any does. */
   exclaveOf?: KommunCode[];
   /** OSM way ids of the detected fixed link. */
@@ -72,8 +76,8 @@ export type Verdict =
 export type NeighborReview = {
   /**
    * The shipped neighbor graph: the generated links plus ferries, with overrides applied. The
-   * generated links leave out land borders flagged `island-border` or `exclave-border`, and count
-   * a point touch on land as a land border.
+   * generated links leave out island and river borders under 1000 m and land borders only on an
+   * exclave, and count a point touch on land as a land border.
    */
   links: NeighborLink[];
   flaggedPairs: FlaggedPair[];
@@ -87,6 +91,8 @@ export type NeighborReview = {
 const shortBorderLength = 100;
 /** Below this length (m), a land border only on islands may be a small island's, not a real one. */
 const shortIslandBorderLength = 1000;
+/** From this length (m), a border only in river water makes its pair land neighbors. */
+const longRiverBorderLength = 1000;
 
 export function reviewNeighborGraph(
   evidence: BuildEvidence,
@@ -98,7 +104,7 @@ export function reviewNeighborGraph(
   const scb = byPair(evidence.scbPairs);
 
   const generated: NeighborLink[] = [
-    ...evidence.landBorders.filter(countsAsLandBorder).map((border) => ({
+    ...evidence.landBorders.filter(makesLandNeighbors).map((border) => ({
       between: sortedPair(border.between),
       kind: "land" as const,
     })),
@@ -120,15 +126,23 @@ export function reviewNeighborGraph(
     flagKinds.set(key, (flagKinds.get(key) ?? new Set()).add(kind));
   // Pairs only SCB joins aren't flagged: SCB's generalised map joins kommuner through water.
   for (const key of generatedPairs) if (!scb.has(key)) flag(key, "scb-mismatch");
+  // A long island or river border makes neighbors, but needs a look when nothing else does.
+  const hasOtherValidLink = (key: string) =>
+    touches.has(key) || fixed.get(key)?.failures.length === 0;
   for (const [key, border] of borders) {
     if (border.landLength > 0 && border.landLength < shortBorderLength) flag(key, "short-border");
-    if (isShortIslandBorder(border)) flag(key, "island-border");
+    if (isShortIslandBorder(border) || (isLongIslandBorder(border) && !hasOtherValidLink(key))) {
+      flag(key, "island-border");
+    }
     if (isExclaveBorder(border)) flag(key, "exclave-border");
+    if (isRiverBorder(border) && !(isLongRiverBorder(border) && hasOtherValidLink(key))) {
+      flag(key, "river-border");
+    }
   }
   for (const key of touches.keys()) flag(key, "point-touch");
   for (const [key, link] of fixed) {
     const border = borders.get(key);
-    if (link.failures.length > 0 && !(border && countsAsLandBorder(border))) {
+    if (link.failures.length > 0 && !(border && makesLandNeighbors(border))) {
       flag(key, "non-qualifying-link");
     }
   }
@@ -148,12 +162,13 @@ export function reviewNeighborGraph(
             mainlandLength: border.mainlandLength,
             islandLength: border.islandLength,
           }),
+        ...(border && border.riverLength > 0 && { riverLength: border.riverLength }),
         ...(border && border.exclaveOf.length > 0 && { exclaveOf: [...border.exclaveOf] }),
         ...(link && { ways: link.ways }),
         ...(link && link.failures.length > 0 && { failures: link.failures }),
         at,
         built: [
-          ...((border && countsAsLandBorder(border)) || touches.has(key) ? ["land" as const] : []),
+          ...((border && makesLandNeighbors(border)) || touches.has(key) ? ["land" as const] : []),
           ...(link && link.failures.length === 0 ? ["fixed" as const] : []),
         ],
       };
@@ -234,17 +249,38 @@ function isShortIslandBorder(border: LandBorderEvidence): boolean {
   );
 }
 
+function isLongIslandBorder(border: LandBorderEvidence): boolean {
+  return (
+    border.landLength > 0 &&
+    border.mainlandLength === 0 &&
+    border.islandLength >= shortIslandBorderLength
+  );
+}
+
 function isExclaveBorder(border: LandBorderEvidence): boolean {
   return border.landLength > 0 && border.exclaveOf.length > 0;
 }
 
 /**
- * Whether a land border makes its pair neighbors: any length on land, unless it is flagged
- * `island-border` or `exclave-border`. Such a pair stays a neighbor only through a qualifying
- * fixed link or an `add` override.
+ * Whether a land border makes its pair neighbors: any length on land, unless it lies only on
+ * islands and is under 1000 m, or only on an exclave. Such a pair stays a neighbor only through a
+ * qualifying fixed link or an `add` override.
  */
 function countsAsLandBorder(border: LandBorderEvidence): boolean {
   return border.landLength > 0 && !isShortIslandBorder(border) && !isExclaveBorder(border);
+}
+
+/** A border with no land, only river water: the river may separate the pair or not. */
+function isRiverBorder(border: LandBorderEvidence): boolean {
+  return border.landLength === 0 && border.riverLength > 0;
+}
+
+function isLongRiverBorder(border: LandBorderEvidence): boolean {
+  return isRiverBorder(border) && border.riverLength >= longRiverBorderLength;
+}
+
+function makesLandNeighbors(border: LandBorderEvidence): boolean {
+  return countsAsLandBorder(border) || isLongRiverBorder(border);
 }
 
 function wholeGraphProblems(evidence: BuildEvidence, links: readonly NeighborLink[]): string[] {

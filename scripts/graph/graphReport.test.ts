@@ -13,6 +13,8 @@ const kommuner = [
   { code: "1980", name: "Västerås" },
   { code: "1462", name: "Lilla Edet" },
   { code: "1489", name: "Alingsås" },
+  { code: "1440", name: "Ale" },
+  { code: "1482", name: "Kungälv" },
 ];
 
 const review: NeighborReview = {
@@ -67,6 +69,15 @@ const review: NeighborReview = {
       built: ["land"],
       verdict: { action: "keep", reason: "Lilla Edet's exclave." },
     },
+    {
+      between: ["1440", "1482"],
+      kinds: ["river-border"],
+      landLength: 0,
+      riverLength: 18695,
+      at: [12.04664, 57.90685],
+      built: ["land"],
+      verdict: { action: "keep", reason: "Göta älv." },
+    },
   ],
   problems: ["0125-0180 (Ekerö–Stockholm) is flagged short-border but has no verdict"],
   graphProblems: [],
@@ -111,8 +122,14 @@ describe("graphReport", () => {
     );
   });
 
+  test("shows the length of a border in river water", () => {
+    expect(report).toContain(
+      "| Ale–Kungälv | 1440-1482 | river-border | land border 0 m; river border 18695 m |",
+    );
+  });
+
   test("counts the flags and lists the problems that fail the check", () => {
-    expect(report).toContain("5 flagged pairs, 1 without a verdict.");
+    expect(report).toContain("6 flagged pairs, 1 without a verdict.");
     expect(report).toContain(
       "- 0125-0180 (Ekerö–Stockholm) is flagged short-border but has no verdict",
     );

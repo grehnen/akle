@@ -38,6 +38,7 @@ describe("measureLandBorders", () => {
         landLength: 38918,
         mainlandLength: 38918,
         islandLength: 0,
+        riverLength: 0,
         exclaveOf: [],
         at: [0.125, 0],
       },
@@ -69,6 +70,7 @@ describe("measureLandBorders", () => {
         landLength: 0,
         mainlandLength: 0,
         islandLength: 0,
+        riverLength: 0,
         exclaveOf: [],
         at: [0.5, 0],
       },
@@ -105,8 +107,29 @@ describe("measureLandBorders", () => {
         landLength: 55598,
         mainlandLength: 44478,
         islandLength: 11120,
+        riverLength: 0,
         exclaveOf: [],
         at: [0.1, 0],
+      },
+    ]);
+  });
+
+  test("measures the part of a border in a river area apart from lakes and the sea", () => {
+    const river = box(0.2, -1, 0.3, 1);
+    const measured = measureLandBorders([border], {
+      land: [box(-1, -1, 0.8, 1)],
+      lakes: [river, box(0.4, -1, 0.5, 1)],
+      rivers: [river],
+    });
+    expect(measured).toEqual([
+      {
+        between: ["0001", "0002"],
+        landLength: 66717,
+        mainlandLength: 66717,
+        islandLength: 0,
+        riverLength: 11120,
+        exclaveOf: [],
+        at: [0.65, 0],
       },
     ]);
   });
@@ -142,6 +165,7 @@ describe("measureLandBorders", () => {
         landLength: 77837,
         mainlandLength: 55598,
         islandLength: 22239,
+        riverLength: 0,
         exclaveOf: [],
         at: [0.25, 0],
       },
@@ -176,6 +200,7 @@ describe("measureLandBorders", () => {
       landLength: 44478,
       mainlandLength: 16679,
       islandLength: 27799,
+      riverLength: 0,
     });
   });
 

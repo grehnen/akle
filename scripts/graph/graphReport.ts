@@ -98,6 +98,7 @@ function measurements(flag: FlaggedPair, names: (codes: readonly KommunCode[]) =
         : ` (${flag.mainlandLength} m mainland, ${flag.islandLength} m islands)`;
     parts.push(`land border ${flag.landLength} m${split}`);
   }
+  if (flag.riverLength !== undefined) parts.push(`river border ${flag.riverLength} m`);
   if (flag.exclaveOf) {
     const owners = flag.exclaveOf.map((code) => names([code]));
     parts.push(

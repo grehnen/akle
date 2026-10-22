@@ -10,8 +10,11 @@ const kommuner = [
 ];
 
 type LandBorder = BuildEvidence["landBorders"][number];
-/** A land border, all on the mainland and off any exclave unless it says otherwise. */
-type TestBorder = Omit<LandBorder, "mainlandLength" | "islandLength" | "exclaveOf"> &
+/** A land border, all on the mainland, off any exclave and out of rivers unless it says otherwise. */
+type TestBorder = Omit<
+  LandBorder,
+  "mainlandLength" | "islandLength" | "riverLength" | "exclaveOf"
+> &
   Partial<LandBorder>;
 
 /** A chain 0001–0002–0003–0004 of long land borders, all matching SCB. */
@@ -39,6 +42,7 @@ function evidence(
     landBorders: landBorders.map((border) => ({
       mainlandLength: border.landLength,
       islandLength: 0,
+      riverLength: 0,
       exclaveOf: [],
       ...border,
     })),
@@ -112,6 +116,7 @@ describe("reviewNeighborGraph", () => {
             at: [18.2, 59],
           },
         ],
+        fixedLinks: [{ between: ["0002", "0003"], ways: [7], failures: [] }],
       }),
       noOverrides,
     );
@@ -126,7 +131,83 @@ describe("reviewNeighborGraph", () => {
         built: [],
       },
     ]);
-    expect(review.links.map((link) => link.between.join("-"))).toEqual(["0002-0003", "0003-0004"]);
+    expect(review.links.map((link) => link.between.join("-"))).toEqual([
+      "0002-0003",
+      "0002-0003",
+      "0003-0004",
+    ]);
+  });
+
+  describe("an island border of 1000 m or more", () => {
+    const withLongIslandBorder = (changes: Omit<Partial<BuildEvidence>, "landBorders"> = {}) =>
+      evidence({
+        landBorders: [
+          { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
+          {
+            between: ["0002", "0003"],
+            landLength: 1000,
+            mainlandLength: 0,
+            islandLength: 1000,
+            at: [18.1, 59],
+          },
+          { between: ["0003", "0004"], landLength: 2000, at: [18.2, 59] },
+        ],
+        ...changes,
+      });
+
+    test("makes a land neighbor, flagged when it is the pair's only valid link", () => {
+      const review = reviewNeighborGraph(withLongIslandBorder(), noOverrides);
+      expect(review.flaggedPairs).toEqual([
+        {
+          between: ["0002", "0003"],
+          kinds: ["island-border"],
+          landLength: 1000,
+          mainlandLength: 0,
+          islandLength: 1000,
+          at: [18.1, 59],
+          built: ["land"],
+        },
+      ]);
+      expect(review.links).toContainEqual({ between: ["0002", "0003"], kind: "land" });
+    });
+
+    test("isn't flagged when a qualifying fixed link also joins the pair", () => {
+      const review = reviewNeighborGraph(
+        withLongIslandBorder({
+          fixedLinks: [{ between: ["0002", "0003"], ways: [7], failures: [] }],
+        }),
+        noOverrides,
+      );
+      expect(review.flaggedPairs).toEqual([]);
+    });
+
+    test("is flagged when the only fixed link doesn't qualify", () => {
+      const review = reviewNeighborGraph(
+        withLongIslandBorder({
+          fixedLinks: [
+            {
+              between: ["0002", "0003"],
+              ways: [7],
+              failures: [{ way: 7, reasons: ["service=driveway"] }],
+            },
+          ],
+        }),
+        noOverrides,
+      );
+      expect(review.flaggedPairs.map(({ between, kinds }) => ({ between, kinds }))).toEqual([
+        { between: ["0002", "0003"], kinds: ["island-border"] },
+      ]);
+    });
+
+    test("isn't flagged when the pair also touches at a point on land", () => {
+      const review = reviewNeighborGraph(
+        withLongIslandBorder({ pointTouches: [{ between: ["0002", "0003"], at: [18.1, 59.1] }] }),
+        noOverrides,
+      );
+      expect(review.flaggedPairs.map(({ between, kinds }) => ({ between, kinds }))).toEqual([
+        { between: ["0002", "0003"], kinds: ["point-touch"] },
+      ]);
+    });
   });
 
   test("an island border is also short when under 100 m", () => {
@@ -191,6 +272,108 @@ describe("reviewNeighborGraph", () => {
       { between: ["0001", "0002"], kind: "land" },
       { between: ["0003", "0004"], kind: "fixed" },
     ]);
+  });
+
+  describe("borders in river water", () => {
+    const withRiverBorder = (
+      riverLength: number,
+      changes: Omit<Partial<BuildEvidence>, "landBorders"> = {},
+    ) =>
+      evidence({
+        landBorders: [
+          { between: ["0001", "0002"], landLength: 5000, riverLength: 3000, at: [18, 59] },
+          { between: ["0002", "0003"], landLength: 3000, at: [18.1, 59] },
+          { between: ["0003", "0004"], landLength: 2000, at: [18.2, 59] },
+          { between: ["0001", "0004"], landLength: 0, riverLength, at: [18.3, 59] },
+        ],
+        scbPairs: [
+          { between: ["0001", "0002"], at: [18, 59] },
+          { between: ["0002", "0003"], at: [18.1, 59] },
+          { between: ["0003", "0004"], at: [18.2, 59] },
+          { between: ["0001", "0004"], at: [18.3, 59] },
+        ],
+        ...changes,
+      });
+
+    test("drops and flags a pair whose only border is under 1000 m in river water", () => {
+      const review = reviewNeighborGraph(withRiverBorder(999), noOverrides);
+      expect(review.flaggedPairs).toEqual([
+        {
+          between: ["0001", "0004"],
+          kinds: ["river-border"],
+          landLength: 0,
+          riverLength: 999,
+          at: [18.3, 59],
+          built: [],
+        },
+      ]);
+      expect(review.links.map((link) => link.between.join("-"))).toEqual([
+        "0001-0002",
+        "0002-0003",
+        "0003-0004",
+      ]);
+    });
+
+    test("a border of 1000 m or more in river water makes a land neighbor, still flagged", () => {
+      const review = reviewNeighborGraph(withRiverBorder(1000), noOverrides);
+      expect(review.flaggedPairs).toEqual([
+        {
+          between: ["0001", "0004"],
+          kinds: ["river-border"],
+          landLength: 0,
+          riverLength: 1000,
+          at: [18.3, 59],
+          built: ["land"],
+        },
+      ]);
+      expect(review.links).toContainEqual({ between: ["0001", "0004"], kind: "land" });
+    });
+
+    test("flags a river border that a qualifying fixed link keeps as neighbors", () => {
+      const review = reviewNeighborGraph(
+        withRiverBorder(400, {
+          fixedLinks: [{ between: ["0001", "0004"], ways: [5], failures: [] }],
+        }),
+        noOverrides,
+      );
+      expect(
+        review.flaggedPairs.map(({ between, kinds, built }) => ({ between, kinds, built })),
+      ).toEqual([{ between: ["0001", "0004"], kinds: ["river-border"], built: ["fixed"] }]);
+    });
+
+    test("a river border of 1000 m or more isn't flagged when a qualifying fixed link joins the pair", () => {
+      const review = reviewNeighborGraph(
+        withRiverBorder(1000, {
+          fixedLinks: [{ between: ["0001", "0004"], ways: [5], failures: [] }],
+        }),
+        noOverrides,
+      );
+      expect(review.flaggedPairs).toEqual([]);
+      expect(review.links).toContainEqual({ between: ["0001", "0004"], kind: "land" });
+    });
+
+    test("a river border of 1000 m or more is flagged when the only fixed link doesn't qualify", () => {
+      const review = reviewNeighborGraph(
+        withRiverBorder(1000, {
+          fixedLinks: [
+            {
+              between: ["0001", "0004"],
+              ways: [5],
+              failures: [{ way: 5, reasons: ["service=driveway"] }],
+            },
+          ],
+        }),
+        noOverrides,
+      );
+      expect(
+        review.flaggedPairs.map(({ between, kinds, built }) => ({ between, kinds, built })),
+      ).toEqual([{ between: ["0001", "0004"], kinds: ["river-border"], built: ["land"] }]);
+    });
+
+    test("a border partly in river water and partly on land is a plain land border", () => {
+      const review = reviewNeighborGraph(withRiverBorder(0), noOverrides);
+      expect(review.flaggedPairs).toEqual([]);
+    });
   });
 
   test("a single-point touch on land makes a land neighbor, flagged for a human to confirm", () => {
@@ -717,6 +900,7 @@ describe("reviewNeighborGraph", () => {
             landLength: 900,
             mainlandLength: 900,
             islandLength: 0,
+            riverLength: 0,
             exclaveOf: [],
             at: [19, 60],
           },
