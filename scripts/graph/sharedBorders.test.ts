@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { exclaveEdges, sharedBorders, sharedVertices, type KommunArea } from "./sharedBorders";
+import {
+  exclaveEdges,
+  mainPartContains,
+  sharedBorders,
+  sharedVertices,
+  type KommunArea,
+} from "./sharedBorders";
 
 const square = (x: number, y: number): number[][][] => [
   [
@@ -143,5 +149,36 @@ describe("exclaveEdges", () => {
     expect(onExclave("0001", [0, 0], [3, 0])).toBe(false);
     expect(onExclave("0001", [1, 1], [1, 2])).toBe(false);
     expect(onExclave("0003", [6, 0], [6, 1])).toBe(false);
+  });
+});
+
+describe("mainPartContains", () => {
+  test("tells whether a point lies in a kommun's largest part, not on an exclave", () => {
+    const inMainPart = mainPartContains([
+      {
+        code: "0001",
+        geometry: {
+          type: "MultiPolygon",
+          coordinates: [
+            square(5, 0),
+            [
+              [
+                [0, 0],
+                [3, 0],
+                [3, 3],
+                [0, 3],
+                [0, 0],
+              ],
+            ],
+          ],
+        },
+      },
+      { code: "0002", geometry: { type: "Polygon", coordinates: square(6, 0) } },
+    ]);
+    expect(inMainPart("0001", [1.5, 1.5])).toBe(true);
+    expect(inMainPart("0001", [5.5, 0.5])).toBe(false);
+    expect(inMainPart("0002", [6.5, 0.5])).toBe(true);
+    expect(inMainPart("0002", [1.5, 1.5])).toBe(false);
+    expect(inMainPart("0003", [1.5, 1.5])).toBe(false);
   });
 });

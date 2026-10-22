@@ -1,6 +1,6 @@
 import type { KommunCode } from "../../src/graph/graphVersion";
 import { compareCodes, comparePairs, pairKey } from "../../src/graph/kommunPair";
-import { sphericalArea } from "./landBorders";
+import { PolygonIndex, sphericalArea } from "./landBorders";
 
 export type Position = number[];
 export type Line = Position[];
@@ -134,6 +134,23 @@ export function exclaveEdges(
     edgesByCode.set(code, edges);
   }
   return (code, from, to) => edgesByCode.get(code)?.has(edgeKey(from, to)) ?? false;
+}
+
+/** Whether a point lies in a kommun's main part, the largest part of its boundary, water included. */
+export function mainPartContains(
+  areas: readonly KommunArea[],
+): (code: KommunCode, point: Position) => boolean {
+  const mainParts = new Map<KommunCode, PolygonIndex>();
+  for (const { code, geometry } of areas) {
+    const largest =
+      geometry.type === "Polygon"
+        ? geometry
+        : geometry.coordinates
+            .map((coordinates) => ({ type: "Polygon" as const, coordinates }))
+            .reduce((max, part) => (sphericalArea(part) > sphericalArea(max) ? part : max));
+    mainParts.set(code, new PolygonIndex([largest]));
+  }
+  return (code, point) => mainParts.get(code)?.contains(point) ?? false;
 }
 
 /** A run that wraps past the ring's start point is one line, not two. */

@@ -36,12 +36,15 @@ export function reportBuild({
     `${kommuner.length} kommuner, ${borders.length} shared borders, ${landLinks.length} land neighbors, ${qualifying.length} fixed links (${fixedLinks.length - qualifying.length} more don't qualify), ${ferryCount} ferries`,
   );
   logBuildStep(`No land neighbor: ${isolated.map((kommun) => kommun.name).join(", ") || "none"}`);
-  logBuildStep("Fixed links (OSM way ids):");
-  for (const link of fixedLinks) {
-    const alsoLand = landLinks.some((other) => pairKey(other.between) === pairKey(link.between));
+  const landPairs = new Set(landLinks.map((link) => pairKey(link.between)));
+  const withoutLand = fixedLinks.filter((link) => !landPairs.has(pairKey(link.between)));
+  logBuildStep(
+    `Fixed links of pairs without a land border (OSM way ids; ${fixedLinks.length - withoutLand.length} more join land neighbors):`,
+  );
+  for (const link of withoutLand) {
     const failing = link.failures.map(({ way, reasons }) => `${way} ${reasons.join("+")}`);
     logBuildStep(
-      `  ${pairName(link.between)}${alsoLand ? " (also land)" : ""}: ${link.ways.join(" ")}${
+      `  ${pairName(link.between)}: ${link.ways.join(" ")}${
         failing.length === 0
           ? ""
           : qualifies(link)

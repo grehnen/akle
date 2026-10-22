@@ -127,7 +127,10 @@ function wayLink(way: number): string {
 }
 
 function failureText(reason: LinkFailure): string {
-  return reason === "no-land-end" ? "an end off the mainland and islands of 1 km² or more" : reason;
+  if (reason === "no-land-end") return "an end off the mainland and islands of 1 km² or more";
+  if (reason === "exclave-end")
+    return "an end on land off the main part of its kommun, such as an exclave";
+  return reason;
 }
 
 function mapLink([lon, lat]: Point): string {

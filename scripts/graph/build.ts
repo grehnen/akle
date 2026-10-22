@@ -5,7 +5,7 @@ import { graphVersionDirectory, graphVersionFileNames } from "../../src/graph/gr
 import { pairKey } from "../../src/graph/kommunPair";
 import buildConfig from "./build-config.json";
 import { reportBuild } from "./buildReport";
-import { findFixedLinks, type LinkWay } from "./fixedLinks";
+import { crossesABorder, findFixedLinks, type LinkWay } from "./fixedLinks";
 import { graphVersionFileContents } from "./graphVersionWriter";
 import { lineProximity, measureLandBorders, pointOnLand, roundedPoint } from "./landBorders";
 import { readNeighborOverrides } from "./neighborOverrides";
@@ -24,6 +24,7 @@ import { readScbKommunWorkbook } from "./scbKommuner";
 import { drawShapes, isBigWater, isInlandWater, isRiver } from "./shapes";
 import {
   exclaveEdges,
+  mainPartContains,
   sharedBorders,
   sharedVertices,
   type AreaGeometry,
@@ -109,10 +110,11 @@ const landLinks: NeighborLink[] = measured
   .map((border) => ({ between: border.between, kind: "land" }));
 
 logBuildStep("Finding fixed links");
-const linkWays = await readLinkWays("links.geojsonseq");
+const linkWays = await readLinkWays("ways.geojsonseq", crossesABorder(borders));
+const network = [...linkWays, ...(await readLinkWays("roads.geojsonseq"))];
 // The ends of a link may reach land well away from the border, so its mask also covers the land
-// and lakes around the candidate ways.
-const nearLinks = lineProximity(linkWays.map((way) => way.line));
+// and lakes around the ways an end can follow.
+const nearLinks = lineProximity(network.map((way) => way.line));
 const near = (feature: { geometry: AreaGeometry }) =>
   nearBorders(feature.geometry) || nearLinks(feature.geometry);
 const fixedLinks = findFixedLinks(
@@ -122,7 +124,8 @@ const fixedLinks = findFixedLinks(
     land: land.filter(near).map((feature) => feature.geometry),
     lakes: lakes.filter(near).map((feature) => feature.geometry),
   },
-  await readLinkWays("roads.geojsonseq"),
+  network,
+  mainPartContains(areas),
 );
 
 logBuildStep("Cross-checking with SCB's boundaries");
@@ -184,17 +187,25 @@ reportBuild({
 logBuildStep("Reviewing flagged pairs");
 await Bun.$`bun ${repositoryRoot}scripts/graph/review.ts`.cwd(repositoryRoot).nothrow();
 
-async function readLinkWays(fileName: string): Promise<LinkWay[]> {
-  return (
-    await readFeatures<{ type: "LineString"; coordinates: Line }>(
-      `${layersDirectory}/${fileName}`,
-      ["LineString"],
-    )
-  ).map((feature) => ({
-    id: Number(feature.properties["@id"]),
-    tags: feature.properties,
-    line: feature.geometry.coordinates,
-  }));
+async function readLinkWays(
+  fileName: string,
+  keep: (way: LinkWay) => boolean = () => true,
+): Promise<LinkWay[]> {
+  const ways: LinkWay[] = [];
+  await readFeatures<{ type: "LineString"; coordinates: Line }>(
+    `${layersDirectory}/${fileName}`,
+    ["LineString"],
+    (feature) => {
+      const way = {
+        id: Number(feature.properties["@id"]),
+        tags: feature.properties,
+        line: feature.geometry.coordinates,
+      };
+      if (keep(way)) ways.push(way);
+      return false;
+    },
+  );
+  return ways;
 }
 
 async function readKommunAreas(): Promise<KommunArea[]> {

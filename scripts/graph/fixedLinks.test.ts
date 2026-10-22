@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { findFixedLinks, qualifies, type LinkFailure, type LinkWay } from "./fixedLinks";
+import {
+  crossesABorder,
+  findFixedLinks,
+  qualifies,
+  type LinkFailure,
+  type LinkWay,
+} from "./fixedLinks";
 import type { AreaGeometry, SharedBorder } from "./sharedBorders";
 
 const box = (west: number, south: number, east: number, north: number): AreaGeometry => ({
@@ -56,8 +62,73 @@ describe("findFixedLinks", () => {
     ]);
   });
 
-  test("a way crossing the border on land is no fixed link", () => {
-    expect(findFixedLinks([border], [way(7, 2)], mask)).toEqual([]);
+  test("a road crossing the border on land links the two kommuner too", () => {
+    expect(findFixedLinks([border], [way(7, 2, { bridge: undefined })], mask)).toEqual([
+      { between: ["0001", "0002"], ways: [7], failures: [] },
+    ]);
+  });
+
+  test("a way whose end reaches land only on an exclave fails", () => {
+    // 0002's main part is the strip 0 < x < 0.5; the land the way reaches at x = 1 is an exclave.
+    const offMainPart = (code: string, [x]: number[]) =>
+      code === "0001" ? x < 0 : x > 0 && x < 0.5;
+    expect(findFixedLinks([border], [way(7, 2)], mask, undefined, offMainPart)).toEqual([
+      { between: ["0001", "0002"], ways: [7], failures: [{ way: 7, reasons: ["exclave-end"] }] },
+    ]);
+  });
+
+  test("a way must reach each kommun's main part on its own side", () => {
+    const onlyFirst = (code: string, [x]: number[]) => code === "0001" && x < 0;
+    expect(findFixedLinks([border], [way(7, 2)], mask, undefined, onlyFirst)).toEqual([
+      { between: ["0001", "0002"], ways: [7], failures: [{ way: 7, reasons: ["exclave-end"] }] },
+    ]);
+  });
+
+  test("a way that touches the border and turns back crosses nothing", () => {
+    const sides = (code: string, [x]: number[]) => (code === "0001" ? x <= 0 : x > 0);
+    const touching = road(3, [
+      [-1, 2],
+      [0, 2],
+      [-1, 2.5],
+    ]);
+    expect(findFixedLinks([border], [touching], mask, undefined, sides)).toEqual([]);
+    const through = road(4, [
+      [-1, 2],
+      [0, 2],
+      [1, 2],
+    ]);
+    expect(findFixedLinks([border], [touching, through], mask, undefined, sides)).toEqual([
+      { between: ["0001", "0002"], ways: [4], failures: [] },
+    ]);
+  });
+
+  test("an end doesn't reach land by crossing another border on land", () => {
+    // 0002 is split by a second border at x = 0.5, south of the strait.
+    const second: SharedBorder = {
+      between: ["0002", "0003"],
+      lines: [
+        [
+          [0.5, 0],
+          [0.5, 4.5],
+        ],
+      ],
+    };
+    const pier = road(3, [
+      [-1, 3],
+      [-1, 4.5],
+      [0.3, 4.5],
+    ]);
+    const toLand = road(4, [
+      [0.3, 4.5],
+      [0.3, 4.6],
+      [1, 3],
+    ]);
+    const links = findFixedLinks([border, second], [pier, toLand], mask);
+    expect(links.find((link) => link.between.join() === "0001,0002")).toEqual({
+      between: ["0001", "0002"],
+      ways: [3],
+      failures: [{ way: 3, reasons: ["no-land-end"] }],
+    });
   });
 
   test("a way crossing the border on an island under 1 km² crosses water", () => {
@@ -103,17 +174,29 @@ describe("findFixedLinks", () => {
     ]);
   });
 
-  test("a link fails when any of its ways fails, and lists only the failing ways", () => {
+  test("a link that qualifies lists only its passing ways", () => {
     const links = findFixedLinks(
       [border],
       [way(3, 4.5), way(9, 5.5, { highway: "track", access: "no" })],
+      mask,
+    );
+    expect(links).toEqual([{ between: ["0001", "0002"], ways: [3], failures: [] }]);
+  });
+
+  test("a link that doesn't qualify lists every way and why it fails", () => {
+    const links = findFixedLinks(
+      [border],
+      [way(3, 4.5, { access: "private" }), way(9, 5.5, { highway: "track", access: "no" })],
       mask,
     );
     expect(links).toEqual([
       {
         between: ["0001", "0002"],
         ways: [3, 9],
-        failures: [{ way: 9, reasons: ["access=no", "highway=track"] }],
+        failures: [
+          { way: 3, reasons: ["access=private"] },
+          { way: 9, reasons: ["access=no", "highway=track"] },
+        ],
       },
     ]);
   });
@@ -218,6 +301,21 @@ describe("findFixedLinks", () => {
         ],
       },
     ]);
+  });
+});
+
+describe("crossesABorder", () => {
+  test("tells the ways that cross a shared border from those that don't", () => {
+    const crosses = crossesABorder([border]);
+    expect(crosses(way(7, 2))).toBe(true);
+    expect(
+      crosses(
+        road(8, [
+          [1, 1],
+          [2, 2],
+        ]),
+      ),
+    ).toBe(false);
   });
 });
 
