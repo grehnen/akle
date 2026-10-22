@@ -5,11 +5,13 @@ import { minIslandArea, sphericalArea } from "./landBorders";
 import type { Feature } from "./osmTools";
 import type { KommunArea } from "./sharedBorders";
 
-/** Lakes at least this large (m²) are cut out of the drawn shapes (ADR 0002). */
-const bigLakeArea = 10_000_000;
-/** `water=*` values that are flowing or artificial channels, not lakes (#6 counts only lakes). */
-const notLakes = new Set([
-  "river",
+/** Lakes and river areas at least this large (m²) are cut out of the drawn shapes (ADR 0002). */
+const bigWaterArea = 10_000_000;
+/**
+ * `water=*` values that are narrow or artificial channels. River areas count as water, so a border
+ * through a river doesn't count and an islet in one isn't meaningful land.
+ */
+const notInlandWater = new Set([
   "canal",
   "stream",
   "ditch",
@@ -22,17 +24,18 @@ const notLakes = new Set([
   "stream_pool",
 ]);
 
-export function isLake(feature: Feature): boolean {
+/** Lakes and river areas: the inland water of the land/water mask. */
+export function isInlandWater(feature: Feature): boolean {
   const { properties } = feature;
   if (properties.natural !== "water") return false;
-  return !notLakes.has(String(properties.water ?? ""));
+  return !notInlandWater.has(String(properties.water ?? ""));
 }
 
-export function isBigLake(lake: Feature): boolean {
-  return sphericalArea(lake.geometry) >= bigLakeArea;
+export function isBigWater(water: Feature): boolean {
+  return sphericalArea(water.geometry) >= bigWaterArea;
 }
 
-/** The boundaries clipped to land, with big lakes cut out, simplified for the web. */
+/** The boundaries clipped to land, with big lakes and river areas cut out, simplified for the web. */
 export async function drawShapes(
   kommunAreas: readonly KommunArea[],
   landAreas: readonly Feature[],

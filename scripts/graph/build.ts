@@ -21,7 +21,7 @@ import {
 } from "./osmTools";
 import { readScbBoundaries } from "./scbBoundaries";
 import { readScbKommunWorkbook } from "./scbKommuner";
-import { drawShapes, isBigLake, isLake } from "./shapes";
+import { drawShapes, isBigWater, isInlandWater } from "./shapes";
 import {
   exclaveEdges,
   sharedBorders,
@@ -80,9 +80,9 @@ const nearBorders = lineProximity([
   ...touchCandidates.flatMap((pair) => pair.points.map((point) => [point, point])),
 ]);
 
-logBuildStep("Reading land and lakes");
+logBuildStep("Reading land, lakes and rivers");
 const land = await readFeatures(`${layersDirectory}/land.geojsonseq`);
-const lakes = (await readFeatures(`${layersDirectory}/water.geojsonseq`)).filter(isLake);
+const lakes = (await readFeatures(`${layersDirectory}/water.geojsonseq`)).filter(isInlandWater);
 
 logBuildStep("Measuring borders on land");
 const mask = {
@@ -138,7 +138,7 @@ const evidence: Omit<BuildEvidence, "shapeCodes"> = {
 };
 
 logBuildStep("Drawing shapes");
-const shapes = await drawShapes(areas, land, lakes.filter(isBigLake));
+const shapes = await drawShapes(areas, land, lakes.filter(isBigWater));
 
 const review = reviewNeighborGraph(
   { ...evidence, shapeCodes: shapes.features.map((feature) => feature.properties.code) },
