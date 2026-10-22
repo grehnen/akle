@@ -72,14 +72,14 @@ overrides: # change the generated graph
     names: [Upplands Väsby, Upplands-Bro]
     reason: Why the generated graph is wrong.
     evidence: https://example.org/evidence # required, http(s)
-reviewed: # keep what the build decided
+reviewed: # keep what the build decided, whether neighbors or not
   - keep: ["0123", "0139"]
     names: [Järfälla, Upplands-Bro]
     kinds: [fixed-only] # the flags that were reviewed
     reason: Why the generated graph is right.
 ```
 
-`data/graph-report.md` lists the flags, measurements, map links and verdicts of the newest graph version, the problems left, and the pairs added or removed since the previous version. After editing the overrides, run
+`data/graph-report.md` lists the flags, measurements, map links, what the build decided and the verdicts of the newest graph version, the problems left, and the pairs added or removed since the previous version. After editing the overrides, run
 
 ```sh
 bun run graph:review

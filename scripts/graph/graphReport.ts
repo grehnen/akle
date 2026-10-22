@@ -41,11 +41,13 @@ export function graphReport({ version, kommuner, review, previous }: GraphReport
     "",
     `${review.flaggedPairs.length} flagged pairs, ${unreviewed} without a verdict.`,
     "",
-    "| Pair | Codes | Flags | Measurements | Map | Verdict |",
-    "| --- | --- | --- | --- | --- | --- |",
+    "The build column is what the build decided on its own; a keep verdict leaves that as it is.",
+    "",
+    "| Pair | Codes | Flags | Measurements | Map | Build | Verdict |",
+    "| --- | --- | --- | --- | --- | --- | --- |",
     ...review.flaggedPairs.map(
       (flag) =>
-        `| ${pairName(flag.between)} | ${pairKey(flag.between)} | ${flag.kinds.join(", ")} | ${measurements(flag)} | [map](${mapLink(flag.at)}) | ${verdictText(flag)} |`,
+        `| ${pairName(flag.between)} | ${pairKey(flag.between)} | ${flag.kinds.join(", ")} | ${measurements(flag)} | [map](${mapLink(flag.at)}) | ${builtText(flag)} | ${verdictText(flag)} |`,
     ),
     "",
     `## Changes since the previous graph version${previous ? ` (${previous.id})` : ""}`,
@@ -101,6 +103,10 @@ function measurements(flag: FlaggedPair): string {
 
 function mapLink([lon, lat]: Point): string {
   return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}`;
+}
+
+function builtText({ built }: FlaggedPair): string {
+  return built.length === 0 ? "not neighbors" : `neighbors (${built.join(", ")})`;
 }
 
 function verdictText({ verdict }: FlaggedPair): string {
