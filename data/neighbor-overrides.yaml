@@ -38,7 +38,7 @@ reviewed:
   - keep: ["0120", "0182"]
     names: [Värmdö, Nacka]
     kinds: [island-border]
-    reason: The OSM boundaries share 6710 m of land border, all on Värmdölandet, an island of 1 km² or more where Nacka's Boo meets Värmdö, and none on the mainland; that island border makes them land neighbors. SCB's map joins them too.
+    reason: The OSM boundaries share 6710 m of land border, all on islands of 1 km² or more and none on the mainland; that island border makes them land neighbors. SCB's map joins them too.
   - keep: ["0125", "0180"]
     names: [Ekerö, Stockholm]
     kinds: [scb-mismatch]
