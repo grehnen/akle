@@ -2,7 +2,7 @@
 
 Written by `bun run graph:build` and `bun run graph:review` from the graph version and `data/neighbor-overrides.yaml` (ADR 0003). Don't edit it by hand: `bun run graph:check` fails when it's out of date.
 
-Graph version `osm-2026-10-01` starts at puzzle #31. 290 kommuner, 706 neighbor pairs: 692 land, 87 fixed, 3 ferry links.
+Graph version `osm-2026-10-01` starts at puzzle #31. 290 kommuner, 708 neighbor pairs: 695 land, 87 fixed, 3 ferry links.
 
 ## Problems
 
@@ -10,31 +10,35 @@ None.
 
 ## Flagged pairs
 
-15 flagged pairs, 0 without a verdict.
+19 flagged pairs, 0 without a verdict.
 
 The build column is what the build decided on its own; a keep verdict leaves that as it is.
 
 | Pair | Codes | Flags | Measurements | Map | Build | Verdict |
 | --- | --- | --- | --- | --- | --- | --- |
+| Värmdö–Nacka | 0120-0182 | island-border | land border 6710 m (0 m mainland, 6710 m islands) | [map](https://www.openstreetmap.org/?mlat=59.35047&mlon=18.35015#map=17/59.35047/18.35015) | neighbors (land) | keep: The OSM boundaries share 6710 m of land border, all on Värmdölandet, an island of 1 km² or more where Nacka's Boo meets Värmdö, and none on the mainland; that island border makes them land neighbors. SCB's map joins them too. |
 | Ekerö–Stockholm | 0125-0180 | scb-mismatch | land border 0 m; ways [5178953](https://www.openstreetmap.org/way/5178953) [23518439](https://www.openstreetmap.org/way/23518439) [155417841](https://www.openstreetmap.org/way/155417841) [1537912019](https://www.openstreetmap.org/way/1537912019) | [map](https://www.openstreetmap.org/?mlat=59.37773&mlon=17.78065#map=17/59.37773/17.78065) | neighbors (fixed) | keep: Linked by Nockebybron, a public fixed link; the only land they share is on islands under 1 km². SCB's map only joins kommuner that share land. |
 | Stockholm–Lidingö | 0180-0186 | scb-mismatch | land border 0 m; ways [23427017](https://www.openstreetmap.org/way/23427017) [254115692](https://www.openstreetmap.org/way/254115692) [320984941](https://www.openstreetmap.org/way/320984941) [888976686](https://www.openstreetmap.org/way/888976686) [888976687](https://www.openstreetmap.org/way/888976687) [1094574293](https://www.openstreetmap.org/way/1094574293) | [map](https://www.openstreetmap.org/?mlat=59.35273&mlon=18.11937#map=17/59.35273/18.11937) | neighbors (fixed) | keep: Linked by Lidingöbron, Lilla Lidingöbron and Lidingöbanan, a public fixed link; there is no land border. SCB's map only joins kommuner that share land. |
 | Håbo–Knivsta | 0305-0330 | non-qualifying-link | land border 0 m; ways [956692672](https://www.openstreetmap.org/way/956692672); not qualifying: [956692672](https://www.openstreetmap.org/way/956692672) service=driveway, an end off the mainland and islands of 1 km² or more | [map](https://www.openstreetmap.org/?mlat=59.73681&mlon=17.6277#map=17/59.73681/17.6277) | not neighbors | keep: Linked only by way 956692672, a short unpaved private driveway bridge to an islet under 1 km²; not a public link to meaningful land, so they aren't neighbors. SCB's map joins them through the water. |
 | Enköping–Strängnäs | 0381-0486 | island-border | land border 408 m (0 m mainland, 408 m islands) | [map](https://www.openstreetmap.org/?mlat=59.51194&mlon=17.03878#map=17/59.51194/17.03878) | not neighbors | keep: The OSM boundaries share only 408 m of land border, all on islands in Mälaren and none on the mainland, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either. |
-| Eskilstuna–Västerås | 0484-1980 | scb-mismatch | land border 1336 m (0 m mainland, 1336 m islands); ways [48675096](https://www.openstreetmap.org/way/48675096) [196169497](https://www.openstreetmap.org/way/196169497) [1007801475](https://www.openstreetmap.org/way/1007801475) [1093118022](https://www.openstreetmap.org/way/1093118022); not qualifying: [196169497](https://www.openstreetmap.org/way/196169497) an end off the mainland and islands of 1 km² or more | [map](https://www.openstreetmap.org/?mlat=59.48786&mlon=16.65422#map=17/59.48786/16.65422) | neighbors (land) | keep: The OSM boundaries share a 1336 m land border that SCB's generalised map misses. Kvicksundsbron (road and rail) also links them. |
+| Eskilstuna–Västerås | 0484-1980 | scb-mismatch, island-border | land border 1336 m (0 m mainland, 1336 m islands); ways [48675096](https://www.openstreetmap.org/way/48675096) [196169497](https://www.openstreetmap.org/way/196169497) [1007801475](https://www.openstreetmap.org/way/1007801475) [1093118022](https://www.openstreetmap.org/way/1093118022); not qualifying: [196169497](https://www.openstreetmap.org/way/196169497) an end off the mainland and islands of 1 km² or more | [map](https://www.openstreetmap.org/?mlat=59.48786&mlon=16.65422#map=17/59.48786/16.65422) | neighbors (land) | keep: The OSM boundaries share a 1336 m land border, all on islands of 1 km² or more in Mälaren at Kvicksund and none on the mainland, that SCB's generalised map misses. Kvicksundsbron (road and rail) also links them, though the detected link doesn't qualify since way 196169497 has an end off meaningful land. |
 | Strängnäs–Västerås | 0486-1980 | island-border | land border 328 m (0 m mainland, 328 m islands) | [map](https://www.openstreetmap.org/?mlat=59.48324&mlon=16.91903#map=17/59.48324/16.91903) | not neighbors | keep: The OSM boundaries share only 328 m of land border, all on islands in Mälaren and none on the mainland, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either. |
 | Mörbylånga–Kalmar | 0840-0880 | scb-mismatch | land border 0 m; ways [305792496](https://www.openstreetmap.org/way/305792496) | [map](https://www.openstreetmap.org/?mlat=56.50838&mlon=16.2849#map=17/56.50838/16.2849) | neighbors (fixed) | keep: Linked by Ölandsbron, a public fixed link; there is no land border. SCB's map only joins kommuner that share land. |
+| Mörbylånga–Borgholm | 0840-0885 | island-border | land border 25453 m (0 m mainland, 25453 m islands) | [map](https://www.openstreetmap.org/?mlat=56.71473&mlon=16.62383#map=17/56.71473/16.62383) | neighbors (land) | keep: The OSM boundaries share 25453 m of land border, all across Öland, and none on the mainland; Öland's border makes them land neighbors. SCB's map joins them too. |
 | Stenungsund–Tjörn | 1415-1419 | scb-mismatch | land border 0 m; ways [4796177](https://www.openstreetmap.org/way/4796177) [146230141](https://www.openstreetmap.org/way/146230141) [377539544](https://www.openstreetmap.org/way/377539544) | [map](https://www.openstreetmap.org/?mlat=58.07516&mlon=11.763#map=17/58.07516/11.763) | neighbors (fixed) | keep: Linked by Tjörnbron, a public fixed link; there is no land border. SCB's map only joins kommuner that share land. |
 | Tjörn–Orust | 1419-1421 | scb-mismatch | land border 0 m; ways [146272124](https://www.openstreetmap.org/way/146272124) [146272533](https://www.openstreetmap.org/way/146272533) [942969634](https://www.openstreetmap.org/way/942969634) | [map](https://www.openstreetmap.org/?mlat=58.04886&mlon=11.14014#map=17/58.04886/11.14014) | neighbors (fixed) | keep: Linked by the road 160 bridge, a public fixed link; there is no land border. SCB's map only joins kommuner that share land. |
+| Ale–Kungälv | 1440-1482 | river-border | land border 0 m; river border 18695 m | [map](https://www.openstreetmap.org/?mlat=57.90685&mlon=12.04664#map=17/57.90685/12.04664) | neighbors (land) | keep: Their OSM boundaries share no land, only an 18695 m border in Göta älv's river area (relation 56230), so the build makes them land neighbors. SCB's map joins them too. |
 | Lilla Edet–Alingsås | 1462-1489 | exclave-border | land border 1003 m; all on an exclave of Lilla Edet | [map](https://www.openstreetmap.org/?mlat=58.05616&mlon=12.41988#map=17/58.05616/12.41988) | not neighbors | keep: Their 1003 m land border lies wholly on an exclave of Lilla Edet, away from its main part, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either. |
 | Storfors–Degerfors | 1760-1862 | scb-mismatch, short-border | land border 64 m | [map](https://www.openstreetmap.org/?mlat=59.31807&mlon=14.32572#map=17/59.31807/14.32572) | neighbors (land) | keep: The OSM boundaries share a 64 m land border that SCB's generalised map misses. |
 | Smedjebacken–Borlänge | 2061-2081 | exclave-border | land border 2968 m; all on an exclave of Borlänge | [map](https://www.openstreetmap.org/?mlat=60.27258&mlon=15.40611#map=17/60.27258/15.40611) | not neighbors | keep: Their 2968 m land border lies wholly on an exclave of Borlänge, away from its main part, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either. |
 | Falun–Hedemora | 2080-2083 | point-touch | touches at one point | [map](https://www.openstreetmap.org/?mlat=60.61031&mlon=16.13649#map=17/60.61031/16.13649) | neighbors (land) | keep: The OSM boundaries meet at a single point on the mainland, the corner where Falun, Hedemora, Säter and Hofors meet, so they are land neighbors. SCB's map joins them too. |
 | Säter–Hofors | 2082-2104 | point-touch | touches at one point | [map](https://www.openstreetmap.org/?mlat=60.61031&mlon=16.13649#map=17/60.61031/16.13649) | neighbors (land) | keep: The OSM boundaries meet at a single point on the mainland, the corner where Falun, Hedemora, Säter and Hofors meet, so they are land neighbors. SCB's map joins them too. |
-| Nordanstig–Ljusdal | 2132-2161 | scb-mismatch | land border 9525 m | [map](https://www.openstreetmap.org/?mlat=62.24521&mlon=16.06309#map=17/62.24521/16.06309) | neighbors (land) | keep: The OSM boundaries share a 9525 m land border that SCB's generalised map misses. |
+| Nordanstig–Ljusdal | 2132-2161 | scb-mismatch | land border 9525 m; river border 98 m | [map](https://www.openstreetmap.org/?mlat=62.24521&mlon=16.06309#map=17/62.24521/16.06309) | neighbors (land) | keep: The OSM boundaries share a 9525 m land border that SCB's generalised map misses. |
+| Sorsele–Arvidsjaur | 2422-2505 | river-border | land border 0 m; river border 7264 m | [map](https://www.openstreetmap.org/?mlat=65.54777&mlon=18.21663#map=17/65.54777/18.21663) | neighbors (land) | keep: Their OSM boundaries share no land, only a 7264 m border in the river area of relation 2343268, so the build makes them land neighbors. SCB's map joins them too. |
 
 ## Changes since the previous graph version (fixture)
 
-### Added (683)
+### Added (685)
 
 - Upplands Väsby–Vallentuna (0114-0115, land)
 - Upplands Väsby–Järfälla (0114-0123, land)
@@ -376,6 +380,7 @@ The build column is what the build decided on its own; a keep verdict leaves tha
 - Ale–Lerum (1440-1441, land)
 - Ale–Lilla Edet (1440-1462, land)
 - Ale–Göteborg (1440-1480, fixed, land)
+- Ale–Kungälv (1440-1482, land)
 - Ale–Trollhättan (1440-1488, land)
 - Ale–Alingsås (1440-1489, land)
 - Lerum–Bollebygd (1441-1443, land)
@@ -441,7 +446,7 @@ The build column is what the build decided on its own; a keep verdict leaves tha
 - Töreboda–Mariestad (1473-1493, land)
 - Töreboda–Skövde (1473-1496, land)
 - Göteborg–Mölndal (1480-1481, land)
-- Göteborg–Kungälv (1480-1482, fixed)
+- Göteborg–Kungälv (1480-1482, fixed, land)
 - Lysekil–Uddevalla (1484-1485, fixed)
 - Uddevalla–Vänersborg (1485-1487, land)
 - Vänersborg–Trollhättan (1487-1488, land)
@@ -681,6 +686,7 @@ The build column is what the build decided on its own; a keep verdict leaves tha
 - Storuman–Vilhelmina (2421-2462, fixed, land)
 - Storuman–Lycksele (2421-2481, land)
 - Sorsele–Lycksele (2422-2481, land)
+- Sorsele–Arvidsjaur (2422-2505, land)
 - Sorsele–Arjeplog (2422-2506, land)
 - Dorotea–Vilhelmina (2425-2462, land)
 - Dorotea–Åsele (2425-2463, land)

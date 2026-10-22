@@ -15,10 +15,12 @@ ferries:
     reason: Västtrafik's Öckeröleden car ferry Hönö–Lilla Varholmen (Hisingen).
 
 # Verdicts on the pairs the build flags (scb-mismatch, short-border, point-touch,
-# non-qualifying-link, island-border, exclave-border); see data/graph-report.md and "Reviewing flagged pairs" in data/README.md.
+# non-qualifying-link, island-border, exclave-border, river-border); see data/graph-report.md and "Reviewing flagged pairs" in data/README.md.
 # Every flagged pair needs exactly one, and bun run graph:check fails on stale ones. Run
-# bun run graph:review after editing. The build drops an island-border or exclave-border pair
-# unless a qualifying fixed link keeps it; a keep leaves that as it is, and an add puts it back.
+# bun run graph:review after editing. The build drops an exclave-border pair, and an island-border
+# or river-border pair under 1000 m, unless a qualifying fixed link keeps it; a keep leaves that as
+# it is, and an add puts it back. An island-border or river-border pair of 1000 m or more is a land
+# neighbor, flagged because that border is its only valid link.
 #
 # overrides change the generated graph, with a reason and an http(s) evidence link:
 #   - remove: ["<code>", "<code>"]   # or add: ["<code>", "<code>"] with link: land | fixed
@@ -33,6 +35,10 @@ overrides: []
 #     kinds: [short-border]       # the flags that were reviewed
 #     reason: ...
 reviewed:
+  - keep: ["0120", "0182"]
+    names: [Värmdö, Nacka]
+    kinds: [island-border]
+    reason: The OSM boundaries share 6710 m of land border, all on Värmdölandet, an island of 1 km² or more where Nacka's Boo meets Värmdö, and none on the mainland; that island border makes them land neighbors. SCB's map joins them too.
   - keep: ["0125", "0180"]
     names: [Ekerö, Stockholm]
     kinds: [scb-mismatch]
@@ -51,8 +57,8 @@ reviewed:
     reason: The OSM boundaries share only 408 m of land border, all on islands in Mälaren and none on the mainland, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either.
   - keep: ["0484", "1980"]
     names: [Eskilstuna, Västerås]
-    kinds: [scb-mismatch]
-    reason: The OSM boundaries share a 1336 m land border that SCB's generalised map misses. Kvicksundsbron (road and rail) also links them.
+    kinds: [scb-mismatch, island-border]
+    reason: The OSM boundaries share a 1336 m land border, all on islands of 1 km² or more in Mälaren at Kvicksund and none on the mainland, that SCB's generalised map misses. Kvicksundsbron (road and rail) also links them, though the detected link doesn't qualify since way 196169497 has an end off meaningful land.
   - keep: ["0486", "1980"]
     names: [Strängnäs, Västerås]
     kinds: [island-border]
@@ -61,6 +67,10 @@ reviewed:
     names: [Mörbylånga, Kalmar]
     kinds: [scb-mismatch]
     reason: Linked by Ölandsbron, a public fixed link; there is no land border. SCB's map only joins kommuner that share land.
+  - keep: ["0840", "0885"]
+    names: [Mörbylånga, Borgholm]
+    kinds: [island-border]
+    reason: The OSM boundaries share 25453 m of land border, all across Öland, and none on the mainland; Öland's border makes them land neighbors. SCB's map joins them too.
   - keep: ["1415", "1419"]
     names: [Stenungsund, Tjörn]
     kinds: [scb-mismatch]
@@ -69,6 +79,10 @@ reviewed:
     names: [Tjörn, Orust]
     kinds: [scb-mismatch]
     reason: Linked by the road 160 bridge, a public fixed link; there is no land border. SCB's map only joins kommuner that share land.
+  - keep: ["1440", "1482"]
+    names: [Ale, Kungälv]
+    kinds: [river-border]
+    reason: Their OSM boundaries share no land, only an 18695 m border in Göta älv's river area (relation 56230), so the build makes them land neighbors. SCB's map joins them too.
   - keep: ["1462", "1489"]
     names: [Lilla Edet, Alingsås]
     kinds: [exclave-border]
@@ -93,3 +107,7 @@ reviewed:
     names: [Nordanstig, Ljusdal]
     kinds: [scb-mismatch]
     reason: The OSM boundaries share a 9525 m land border that SCB's generalised map misses.
+  - keep: ["2422", "2505"]
+    names: [Sorsele, Arvidsjaur]
+    kinds: [river-border]
+    reason: Their OSM boundaries share no land, only a 7264 m border in the river area of relation 2343268, so the build makes them land neighbors. SCB's map joins them too.
