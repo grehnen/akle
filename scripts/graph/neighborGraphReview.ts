@@ -1,6 +1,9 @@
-import { readCsv } from "../../src/data/csv";
-import type { NeighborLink } from "../../src/graph/graphVersion";
-import { parseGraphVersionHeader } from "../../src/graph/graphVersionFiles";
+import {
+  graphVersionFileNames,
+  parseGraphVersionHeader,
+  parseKommunerFile,
+  parseNeighborsFile,
+} from "../../src/graph/graphVersionFiles";
 import { readBuildEvidence } from "./buildEvidenceFiles";
 import { graphReport } from "./graphReport";
 import { neighborsFileContent } from "./graphVersionWriter";
@@ -28,7 +31,9 @@ export function neighborGraphReview({ files, overridesYaml, previous }: Neighbor
   review: NeighborReview;
   problems: string[];
 } {
-  const version = parseGraphVersionHeader(JSON.parse(files["version.json"] ?? "null"));
+  const version = parseGraphVersionHeader(
+    JSON.parse(files[graphVersionFileNames.version] ?? "null"),
+  );
   const evidence = readBuildEvidence(files);
   let overrides: ReturnType<typeof readNeighborOverrides>;
   try {
@@ -42,13 +47,9 @@ export function neighborGraphReview({ files, overridesYaml, previous }: Neighbor
     kommuner: evidence.kommuner,
     review,
     previous: previous && {
-      id: parseGraphVersionHeader(JSON.parse(previous["version.json"])).id,
-      kommuner: readCsv(previous["kommuner.csv"], "code,name", "kommuner.csv").map(
-        ([code, name]) => ({ code, name }),
-      ),
-      links: readCsv(previous["neighbors.csv"], "a,b,link", "neighbors.csv").map(
-        ([a, b, kind]) => ({ between: [a, b], kind }) as NeighborLink,
-      ),
+      id: parseGraphVersionHeader(JSON.parse(previous[graphVersionFileNames.version])).id,
+      kommuner: parseKommunerFile(previous[graphVersionFileNames.kommuner]),
+      links: parseNeighborsFile(previous[graphVersionFileNames.neighbors]),
     },
   });
   return {
@@ -69,11 +70,11 @@ export function checkNeighborGraphReview(
   } catch (error) {
     return [(error as Error).message];
   }
-  const version = parseGraphVersionHeader(JSON.parse(input.files["version.json"]));
+  const version = parseGraphVersionHeader(JSON.parse(input.files[graphVersionFileNames.version]));
   const problems = [...result.problems];
-  if (result.neighbors !== input.files["neighbors.csv"]) {
+  if (result.neighbors !== input.files[graphVersionFileNames.neighbors]) {
     problems.push(
-      `${version.id}/neighbors.csv is out of date with ${overridesPath}; run bun run graph:review`,
+      `${version.id}/${graphVersionFileNames.neighbors} is out of date with ${overridesPath}; run bun run graph:review`,
     );
   }
   if (result.report !== input.committedReport) {

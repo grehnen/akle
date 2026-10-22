@@ -1,5 +1,6 @@
 import { readCsv } from "../../src/data/csv";
 import type { KommunShapes } from "../../src/graph/graphVersion";
+import { graphVersionFileNames } from "../../src/graph/graphVersionFiles";
 import type { Pair } from "../../src/graph/kommunPair";
 import type { BuildEvidence, Point } from "./neighborReview";
 
@@ -18,9 +19,12 @@ export function readBuildEvidence(files: Record<string, string>): BuildEvidence 
     const [lon, lat] = text.split(" ").map(Number);
     return [lon, lat];
   };
-  const shapes = JSON.parse(files["shapes.geojson"] ?? "{}") as Partial<KommunShapes>;
+  const shapes = JSON.parse(files[graphVersionFileNames.shapes] ?? "{}") as Partial<KommunShapes>;
   return {
-    kommuner: rows("kommuner.csv", "code,name").map(([code, name]) => ({ code, name })),
+    kommuner: rows(graphVersionFileNames.kommuner, "code,name").map(([code, name]) => ({
+      code,
+      name,
+    })),
     shapeCodes: (shapes.features ?? []).map((feature) => feature.properties.code),
     landBorders: rows("land-borders.csv", "a,b,land,at").map(([a, b, land, at]) => ({
       between: pair(a, b),

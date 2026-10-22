@@ -57,30 +57,27 @@ export type GraphVersionHeader = {
 const linkKinds: readonly LinkKind[] = ["land", "fixed", "ferry"];
 
 export function parseGraphVersionFiles(files: GraphVersionFiles): GraphVersion {
-  const header = parseGraphVersionHeader(files.version);
-  const kommuner: Kommun[] = readCsv(
-    files.kommuner,
-    "code,name",
-    "kommuner.csv",
-    ([code, name]) => ({
-      code,
-      name,
-    }),
-  );
-  const links: NeighborLink[] = readCsv(
-    files.neighbors,
-    "a,b,link",
-    "neighbors.csv",
-    ([a, b, kind]) => {
-      if (!linkKinds.includes(kind as LinkKind)) throw new Error(`unknown link kind "${kind}"`);
-      return { between: [a, b], kind: kind as LinkKind };
-    },
-  );
   return buildGraphVersion({
-    ...header,
-    kommuner,
-    links,
+    ...parseGraphVersionHeader(files.version),
+    kommuner: parseKommunerFile(files.kommuner),
+    links: parseNeighborsFile(files.neighbors),
     shapes: files.shapes as KommunShapes,
+  });
+}
+
+/** The rows of a `kommuner.csv`. */
+export function parseKommunerFile(text: string): Kommun[] {
+  return readCsv(text, "code,name", graphVersionFileNames.kommuner, ([code, name]) => ({
+    code,
+    name,
+  }));
+}
+
+/** The rows of a `neighbors.csv`. */
+export function parseNeighborsFile(text: string): NeighborLink[] {
+  return readCsv(text, "a,b,link", graphVersionFileNames.neighbors, ([a, b, kind]) => {
+    if (!linkKinds.includes(kind as LinkKind)) throw new Error(`unknown link kind "${kind}"`);
+    return { between: [a, b], kind: kind as LinkKind };
   });
 }
 

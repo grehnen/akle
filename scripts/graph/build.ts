@@ -1,7 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import type { NeighborLink } from "../../src/graph/graphVersion";
 import { foldedNameCollisions } from "../../src/engine/kommunNames";
-import { graphVersionDirectory } from "../../src/graph/graphVersionFiles";
+import { graphVersionDirectory, graphVersionFileNames } from "../../src/graph/graphVersionFiles";
 import { pairKey } from "../../src/graph/kommunPair";
 import buildConfig from "./build-config.json";
 import { reportBuild } from "./buildReport";
@@ -172,7 +172,7 @@ reportBuild({
   landLinks,
   fixedLinks,
   ferryCount: ferryLinks.length,
-  shapesGeojson: files["shapes.geojson"],
+  shapesGeojson: files[graphVersionFileNames.shapes],
 });
 log("Reviewing flagged pairs");
 await Bun.$`bun ${root}scripts/graph/review.ts`.cwd(root).nothrow();
