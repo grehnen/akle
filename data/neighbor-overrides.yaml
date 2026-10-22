@@ -23,11 +23,241 @@ ferries:
 #     names: [<name>, <name>]
 #     reason: ...
 #     evidence: https://...
-overrides: []
+overrides:
+  - add: ["0117", "0162"]
+    names: [Österåker, Danderyd]
+    link: land
+    reason: The OSM boundaries meet at a corner on land; a corner touch counts as a land border.
+    evidence: https://www.openstreetmap.org/?mlat=59.41218&mlon=18.12178#map=17/59.41218/18.12178
+  - add: ["0160", "0187"]
+    names: [Täby, Vaxholm]
+    link: land
+    reason: The OSM boundaries meet at a corner on land; a corner touch counts as a land border.
+    evidence: https://www.openstreetmap.org/?mlat=59.41218&mlon=18.12178#map=17/59.41218/18.12178
+  - add: ["0331", "2084"]
+    names: [Heby, Avesta]
+    link: land
+    reason: The OSM boundaries meet at a corner on land; a corner touch counts as a land border.
+    evidence: https://www.openstreetmap.org/?mlat=60.19509&mlon=16.70479#map=17/60.19509/16.70479
+  - add: ["1981", "2181"]
+    names: [Sala, Sandviken]
+    link: land
+    reason: The OSM boundaries meet at a corner on land; a corner touch counts as a land border.
+    evidence: https://www.openstreetmap.org/?mlat=60.19509&mlon=16.70479#map=17/60.19509/16.70479
+  - add: ["2080", "2083"]
+    names: [Falun, Hedemora]
+    link: land
+    reason: The OSM boundaries meet at a corner on land; a corner touch counts as a land border.
+    evidence: https://www.openstreetmap.org/?mlat=60.61031&mlon=16.13649#map=17/60.61031/16.13649
+  - add: ["2082", "2104"]
+    names: [Säter, Hofors]
+    link: land
+    reason: The OSM boundaries meet at a corner on land; a corner touch counts as a land border.
+    evidence: https://www.openstreetmap.org/?mlat=60.61031&mlon=16.13649#map=17/60.61031/16.13649
 
 # reviewed keeps what the build decided for the listed flags:
 #   - keep: ["<code>", "<code>"]
 #     names: [<name>, <name>]
 #     kinds: [short-border]       # the flags that were reviewed
 #     reason: ...
-reviewed: []
+reviewed:
+  - keep: ["0114", "0139"]
+    names: [Upplands Väsby, Upplands-Bro]
+    kinds: [short-border]
+    reason: The OSM boundaries share a 18 m land border; nothing suggests a mapping artifact, and any real land border counts.
+  - keep: ["0120", "0136"]
+    names: [Värmdö, Haninge]
+    kinds: [scb-mismatch, short-border]
+    reason: The OSM boundaries share a 8 m land border that SCB's generalised map misses.
+  - keep: ["0123", "0139"]
+    names: [Järfälla, Upplands-Bro]
+    kinds: [fixed-only]
+    reason: Linked by the E18, Enköpingsvägen and Mälarbanan bridges, a public fixed link; there is no land border.
+  - keep: ["0125", "0180"]
+    names: [Ekerö, Stockholm]
+    kinds: [scb-mismatch, short-border]
+    reason: The OSM boundaries share a 42 m land border that SCB's generalised map misses. Nockebybron also links them.
+  - keep: ["0126", "0138"]
+    names: [Huddinge, Tyresö]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water.
+  - keep: ["0139", "0191"]
+    names: [Upplands-Bro, Sigtuna]
+    kinds: [fixed-only]
+    reason: Linked by the Erikssundsvägen road bridge, a public fixed link; there is no land border.
+  - keep: ["0162", "0180"]
+    names: [Danderyd, Stockholm]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water.
+  - keep: ["0162", "0184"]
+    names: [Danderyd, Solna]
+    kinds: [fixed-only]
+    reason: Linked by the E18, Roslagsbanan and red metro line bridges, a public fixed link; there is no land border.
+  - keep: ["0162", "0187"]
+    names: [Danderyd, Vaxholm]
+    kinds: [scb-mismatch, short-border]
+    reason: The OSM boundaries share a 54 m land border that SCB's generalised map misses.
+  - keep: ["0180", "0186"]
+    names: [Stockholm, Lidingö]
+    kinds: [scb-mismatch, fixed-only]
+    reason: Linked by Lidingöbron, Lilla Lidingöbron and Lidingöbanan, a public fixed link; there is no land border. SCB's map only joins kommuner that share land.
+  - keep: ["0191", "0305"]
+    names: [Sigtuna, Håbo]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water.
+  - keep: ["0191", "0380"]
+    names: [Sigtuna, Uppsala]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are more than 3 km apart where SCB's generalised map has them touch.
+  - keep: ["0305", "0330"]
+    names: [Håbo, Knivsta]
+    kinds: [fixed-only]
+    reason: Linked by a short unpaved driveway bridge (way 956692672) across the water between them; there is no land border. SCB's map also has them as neighbors.
+  - keep: ["0305", "0380"]
+    names: [Håbo, Uppsala]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water.
+  - keep: ["0381", "0486"]
+    names: [Enköping, Strängnäs]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries share a 470 m land border that SCB's generalised map misses.
+  - keep: ["0483", "1880"]
+    names: [Katrineholm, Örebro]
+    kinds: [scb-mismatch, short-border]
+    reason: The OSM boundaries share a 69 m land border that SCB's generalised map misses.
+  - keep: ["0483", "1984"]
+    names: [Katrineholm, Arboga]
+    kinds: [scb-mismatch, short-border]
+    reason: The OSM boundaries share a 80 m land border that SCB's generalised map misses.
+  - keep: ["0484", "1980"]
+    names: [Eskilstuna, Västerås]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries share a 2253 m land border that SCB's generalised map misses. Kvicksundsbron (road and rail) also links them.
+  - keep: ["0486", "1980"]
+    names: [Strängnäs, Västerås]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries share a 940 m land border that SCB's generalised map misses.
+  - keep: ["0662", "0781"]
+    names: [Gislaved, Ljungby]
+    kinds: [short-border]
+    reason: The OSM boundaries share a 35 m land border; nothing suggests a mapping artifact, and any real land border counts.
+  - keep: ["0685", "0821"]
+    names: [Vetlanda, Högsby]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are 1.2 km apart where SCB's generalised map has them touch.
+  - keep: ["0765", "1293"]
+    names: [Älmhult, Hässleholm]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are 1.2 km apart where SCB's generalised map has them touch.
+  - keep: ["0840", "0880"]
+    names: [Mörbylånga, Kalmar]
+    kinds: [scb-mismatch, fixed-only]
+    reason: Linked by Ölandsbron, a public fixed link; there is no land border. SCB's map only joins kommuner that share land.
+  - keep: ["1060", "1256"]
+    names: [Olofström, Östra Göinge]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are more than 3 km apart where SCB's generalised map has them touch.
+  - keep: ["1273", "1290"]
+    names: [Osby, Kristianstad]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water.
+  - keep: ["1281", "1287"]
+    names: [Lund, Trelleborg]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are 1.8 km apart where SCB's generalised map has them touch.
+  - keep: ["1383", "1465"]
+    names: [Varberg, Svenljunga]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are 3.8 km apart where SCB's generalised map has them touch.
+  - keep: ["1384", "1401"]
+    names: [Kungsbacka, Härryda]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are 0.9 km apart where SCB's generalised map has them touch.
+  - keep: ["1415", "1419"]
+    names: [Stenungsund, Tjörn]
+    kinds: [scb-mismatch, fixed-only]
+    reason: Linked by Tjörnbron, a public fixed link; there is no land border. SCB's map only joins kommuner that share land.
+  - keep: ["1419", "1421"]
+    names: [Tjörn, Orust]
+    kinds: [scb-mismatch, fixed-only]
+    reason: Linked by the road 160 bridge, a public fixed link; there is no land border. SCB's map only joins kommuner that share land.
+  - keep: ["1421", "1484"]
+    names: [Orust, Lysekil]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water.
+  - keep: ["1421", "1485"]
+    names: [Orust, Uddevalla]
+    kinds: [short-border]
+    reason: The OSM boundaries share a 38 m land border; nothing suggests a mapping artifact, and any real land border counts. Nötesundsbron also links them.
+  - keep: ["1438", "1765"]
+    names: [Dals-Ed, Årjäng]
+    kinds: [short-border]
+    reason: The OSM boundaries share a 16 m land border; nothing suggests a mapping artifact, and any real land border counts.
+  - keep: ["1447", "1862"]
+    names: [Gullspång, Degerfors]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water.
+  - keep: ["1462", "1489"]
+    names: [Lilla Edet, Alingsås]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries share a 1003 m land border that SCB's generalised map misses.
+  - keep: ["1473", "1860"]
+    names: [Töreboda, Laxå]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are 2.0 km apart where SCB's generalised map has them touch.
+  - keep: ["1484", "1485"]
+    names: [Lysekil, Uddevalla]
+    kinds: [short-border]
+    reason: The OSM boundaries share a 12 m land border; nothing suggests a mapping artifact, and any real land border counts. Skaftöbron also links them.
+  - keep: ["1485", "1488"]
+    names: [Uddevalla, Trollhättan]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are 1.1 km apart where SCB's generalised map has them touch.
+  - keep: ["1487", "1494"]
+    names: [Vänersborg, Lidköping]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water.
+  - keep: ["1492", "1765"]
+    names: [Åmål, Årjäng]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are more than 3 km apart where SCB's generalised map has them touch.
+  - keep: ["1760", "1862"]
+    names: [Storfors, Degerfors]
+    kinds: [scb-mismatch, short-border]
+    reason: The OSM boundaries share a 64 m land border that SCB's generalised map misses.
+  - keep: ["1781", "1860"]
+    names: [Kristinehamn, Laxå]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are 3.1 km apart where SCB's generalised map has them touch.
+  - keep: ["1781", "1883"]
+    names: [Kristinehamn, Karlskoga]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are 63 m apart where SCB's generalised map has them touch. Storfors and Degerfors share the 64 m border between them.
+  - keep: ["1980", "1983"]
+    names: [Västerås, Köping]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are 1.0 km apart where SCB's generalised map has them touch.
+  - keep: ["2026", "2080"]
+    names: [Gagnef, Falun]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are 2.0 km apart where SCB's generalised map has them touch.
+  - keep: ["2061", "2081"]
+    names: [Smedjebacken, Borlänge]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries share a 2968 m land border that SCB's generalised map misses.
+  - keep: ["2132", "2161"]
+    names: [Nordanstig, Ljusdal]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries share a 9623 m land border that SCB's generalised map misses.
+  - keep: ["2184", "2260"]
+    names: [Hudiksvall, Ånge]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are more than 3 km apart where SCB's generalised map has them touch.
+  - keep: ["2280", "2281"]
+    names: [Härnösand, Sundsvall]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are 0.9 km apart where SCB's generalised map has them touch.
+  - keep: ["2581", "2582"]
+    names: [Piteå, Boden]
+    kinds: [scb-mismatch]
+    reason: The OSM boundaries don't meet; they are 1.7 km apart where SCB's generalised map has them touch.

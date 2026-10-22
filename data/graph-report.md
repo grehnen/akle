@@ -2,133 +2,78 @@
 
 Written by `bun run graph:build` and `bun run graph:review` from the graph version and `data/neighbor-overrides.yaml` (ADR 0003). Don't edit it by hand: `bun run graph:check` fails when it's out of date.
 
-Graph version `osm-2026-10-01` starts at puzzle #31. 290 kommuner, 718 neighbor pairs: 707 land, 53 fixed, 3 ferry links.
+Graph version `osm-2026-10-01` starts at puzzle #31. 290 kommuner, 724 neighbor pairs: 713 land, 53 fixed, 3 ferry links.
 
 ## Problems
 
-- 0114-0139 (Upplands Väsby–Upplands-Bro) is flagged short-border but has no verdict
-- 0117-0162 (Österåker–Danderyd) is flagged point-touch but has no verdict
-- 0120-0136 (Värmdö–Haninge) is flagged scb-mismatch, short-border but has no verdict
-- 0123-0139 (Järfälla–Upplands-Bro) is flagged fixed-only but has no verdict
-- 0125-0180 (Ekerö–Stockholm) is flagged scb-mismatch, short-border but has no verdict
-- 0126-0138 (Huddinge–Tyresö) is flagged scb-mismatch but has no verdict
-- 0139-0191 (Upplands-Bro–Sigtuna) is flagged fixed-only but has no verdict
-- 0160-0187 (Täby–Vaxholm) is flagged point-touch but has no verdict
-- 0162-0180 (Danderyd–Stockholm) is flagged scb-mismatch but has no verdict
-- 0162-0184 (Danderyd–Solna) is flagged fixed-only but has no verdict
-- 0162-0187 (Danderyd–Vaxholm) is flagged scb-mismatch, short-border but has no verdict
-- 0180-0186 (Stockholm–Lidingö) is flagged scb-mismatch, fixed-only but has no verdict
-- 0191-0305 (Sigtuna–Håbo) is flagged scb-mismatch but has no verdict
-- 0191-0380 (Sigtuna–Uppsala) is flagged scb-mismatch but has no verdict
-- 0305-0330 (Håbo–Knivsta) is flagged fixed-only but has no verdict
-- 0305-0380 (Håbo–Uppsala) is flagged scb-mismatch but has no verdict
-- 0331-2084 (Heby–Avesta) is flagged scb-mismatch, point-touch but has no verdict
-- 0381-0486 (Enköping–Strängnäs) is flagged scb-mismatch but has no verdict
-- 0483-1880 (Katrineholm–Örebro) is flagged scb-mismatch, short-border but has no verdict
-- 0483-1984 (Katrineholm–Arboga) is flagged scb-mismatch, short-border but has no verdict
-- 0484-1980 (Eskilstuna–Västerås) is flagged scb-mismatch but has no verdict
-- 0486-1980 (Strängnäs–Västerås) is flagged scb-mismatch but has no verdict
-- 0662-0781 (Gislaved–Ljungby) is flagged short-border but has no verdict
-- 0685-0821 (Vetlanda–Högsby) is flagged scb-mismatch but has no verdict
-- 0765-1293 (Älmhult–Hässleholm) is flagged scb-mismatch but has no verdict
-- 0840-0880 (Mörbylånga–Kalmar) is flagged scb-mismatch, fixed-only but has no verdict
-- 1060-1256 (Olofström–Östra Göinge) is flagged scb-mismatch but has no verdict
-- 1273-1290 (Osby–Kristianstad) is flagged scb-mismatch but has no verdict
-- 1281-1287 (Lund–Trelleborg) is flagged scb-mismatch but has no verdict
-- 1383-1465 (Varberg–Svenljunga) is flagged scb-mismatch but has no verdict
-- 1384-1401 (Kungsbacka–Härryda) is flagged scb-mismatch but has no verdict
-- 1415-1419 (Stenungsund–Tjörn) is flagged scb-mismatch, fixed-only but has no verdict
-- 1419-1421 (Tjörn–Orust) is flagged scb-mismatch, fixed-only but has no verdict
-- 1421-1484 (Orust–Lysekil) is flagged scb-mismatch but has no verdict
-- 1421-1485 (Orust–Uddevalla) is flagged short-border but has no verdict
-- 1438-1765 (Dals-Ed–Årjäng) is flagged short-border but has no verdict
-- 1447-1862 (Gullspång–Degerfors) is flagged scb-mismatch but has no verdict
-- 1462-1489 (Lilla Edet–Alingsås) is flagged scb-mismatch but has no verdict
-- 1473-1860 (Töreboda–Laxå) is flagged scb-mismatch but has no verdict
-- 1484-1485 (Lysekil–Uddevalla) is flagged short-border but has no verdict
-- 1485-1488 (Uddevalla–Trollhättan) is flagged scb-mismatch but has no verdict
-- 1487-1494 (Vänersborg–Lidköping) is flagged scb-mismatch but has no verdict
-- 1492-1765 (Åmål–Årjäng) is flagged scb-mismatch but has no verdict
-- 1760-1862 (Storfors–Degerfors) is flagged scb-mismatch, short-border but has no verdict
-- 1781-1860 (Kristinehamn–Laxå) is flagged scb-mismatch but has no verdict
-- 1781-1883 (Kristinehamn–Karlskoga) is flagged scb-mismatch but has no verdict
-- 1980-1983 (Västerås–Köping) is flagged scb-mismatch but has no verdict
-- 1981-2181 (Sala–Sandviken) is flagged scb-mismatch, point-touch but has no verdict
-- 2026-2080 (Gagnef–Falun) is flagged scb-mismatch but has no verdict
-- 2061-2081 (Smedjebacken–Borlänge) is flagged scb-mismatch but has no verdict
-- 2080-2083 (Falun–Hedemora) is flagged scb-mismatch, point-touch but has no verdict
-- 2082-2104 (Säter–Hofors) is flagged scb-mismatch, point-touch but has no verdict
-- 2132-2161 (Nordanstig–Ljusdal) is flagged scb-mismatch but has no verdict
-- 2184-2260 (Hudiksvall–Ånge) is flagged scb-mismatch but has no verdict
-- 2280-2281 (Härnösand–Sundsvall) is flagged scb-mismatch but has no verdict
-- 2581-2582 (Piteå–Boden) is flagged scb-mismatch but has no verdict
+None.
 
 ## Flagged pairs
 
-56 flagged pairs, 56 without a verdict.
+56 flagged pairs, 0 without a verdict.
 
 | Pair | Codes | Flags | Measurements | Map | Verdict |
 | --- | --- | --- | --- | --- | --- |
-| Upplands Väsby–Upplands-Bro | 0114-0139 | short-border | land border 18 m | [map](https://www.openstreetmap.org/?mlat=59.51863&mlon=17.82331#map=17/59.51863/17.82331) | **none** |
-| Österåker–Danderyd | 0117-0162 | point-touch | touches at one point | [map](https://www.openstreetmap.org/?mlat=59.41218&mlon=18.12178#map=17/59.41218/18.12178) | **none** |
-| Värmdö–Haninge | 0120-0136 | scb-mismatch, short-border | only OSM; land border 8 m | [map](https://www.openstreetmap.org/?mlat=59.07409&mlon=18.55605#map=17/59.07409/18.55605) | **none** |
-| Järfälla–Upplands-Bro | 0123-0139 | fixed-only | land border 0 m; ways [15395289](https://www.openstreetmap.org/way/15395289) [15395446](https://www.openstreetmap.org/way/15395446) [15405649](https://www.openstreetmap.org/way/15405649) [135333834](https://www.openstreetmap.org/way/135333834) [243557693](https://www.openstreetmap.org/way/243557693) [1293101366](https://www.openstreetmap.org/way/1293101366) | [map](https://www.openstreetmap.org/?mlat=59.42458&mlon=17.74452#map=17/59.42458/17.74452) | **none** |
-| Ekerö–Stockholm | 0125-0180 | scb-mismatch, short-border | only OSM; land border 42 m; ways [5178953](https://www.openstreetmap.org/way/5178953) [23518439](https://www.openstreetmap.org/way/23518439) [155417841](https://www.openstreetmap.org/way/155417841) [1537912019](https://www.openstreetmap.org/way/1537912019) | [map](https://www.openstreetmap.org/?mlat=59.3526&mlon=17.82734#map=17/59.3526/17.82734) | **none** |
-| Huddinge–Tyresö | 0126-0138 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=59.21304&mlon=18.18081#map=17/59.21304/18.18081) | **none** |
-| Upplands-Bro–Sigtuna | 0139-0191 | fixed-only | land border 0 m; ways [4730396](https://www.openstreetmap.org/way/4730396) [1362372369](https://www.openstreetmap.org/way/1362372369) | [map](https://www.openstreetmap.org/?mlat=59.57992&mlon=17.80235#map=17/59.57992/17.80235) | **none** |
-| Täby–Vaxholm | 0160-0187 | point-touch | touches at one point | [map](https://www.openstreetmap.org/?mlat=59.41218&mlon=18.12178#map=17/59.41218/18.12178) | **none** |
-| Danderyd–Stockholm | 0162-0180 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=59.37062&mlon=18.08819#map=17/59.37062/18.08819) | **none** |
-| Danderyd–Solna | 0162-0184 | fixed-only | land border 0 m; ways [4215436](https://www.openstreetmap.org/way/4215436) [38161370](https://www.openstreetmap.org/way/38161370) [40922941](https://www.openstreetmap.org/way/40922941) [120350431](https://www.openstreetmap.org/way/120350431) [120350434](https://www.openstreetmap.org/way/120350434) [137306379](https://www.openstreetmap.org/way/137306379) [137306392](https://www.openstreetmap.org/way/137306392) [310576264](https://www.openstreetmap.org/way/310576264) | [map](https://www.openstreetmap.org/?mlat=59.38481&mlon=18.03679#map=17/59.38481/18.03679) | **none** |
-| Danderyd–Vaxholm | 0162-0187 | scb-mismatch, short-border | only OSM; land border 54 m | [map](https://www.openstreetmap.org/?mlat=59.41195&mlon=18.12185#map=17/59.41195/18.12185) | **none** |
-| Stockholm–Lidingö | 0180-0186 | scb-mismatch, fixed-only | only OSM; land border 0 m; ways [23427017](https://www.openstreetmap.org/way/23427017) [254115692](https://www.openstreetmap.org/way/254115692) [320984941](https://www.openstreetmap.org/way/320984941) [888976686](https://www.openstreetmap.org/way/888976686) [888976687](https://www.openstreetmap.org/way/888976687) [1094574293](https://www.openstreetmap.org/way/1094574293) | [map](https://www.openstreetmap.org/?mlat=59.35273&mlon=18.11937#map=17/59.35273/18.11937) | **none** |
-| Sigtuna–Håbo | 0191-0305 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=59.66834&mlon=17.60456#map=17/59.66834/17.60456) | **none** |
-| Sigtuna–Uppsala | 0191-0380 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=59.73617&mlon=18.08911#map=17/59.73617/18.08911) | **none** |
-| Håbo–Knivsta | 0305-0330 | fixed-only | land border 0 m; ways [956692672](https://www.openstreetmap.org/way/956692672) | [map](https://www.openstreetmap.org/?mlat=59.73681&mlon=17.6277#map=17/59.73681/17.6277) | **none** |
-| Håbo–Uppsala | 0305-0380 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=59.73631&mlon=17.57309#map=17/59.73631/17.57309) | **none** |
-| Heby–Avesta | 0331-2084 | scb-mismatch, point-touch | only SCB; touches at one point | [map](https://www.openstreetmap.org/?mlat=60.19509&mlon=16.70479#map=17/60.19509/16.70479) | **none** |
-| Enköping–Strängnäs | 0381-0486 | scb-mismatch | only OSM; land border 470 m | [map](https://www.openstreetmap.org/?mlat=59.51194&mlon=17.03878#map=17/59.51194/17.03878) | **none** |
-| Katrineholm–Örebro | 0483-1880 | scb-mismatch, short-border | only OSM; land border 69 m | [map](https://www.openstreetmap.org/?mlat=59.19769&mlon=15.76215#map=17/59.19769/15.76215) | **none** |
-| Katrineholm–Arboga | 0483-1984 | scb-mismatch, short-border | only OSM; land border 80 m | [map](https://www.openstreetmap.org/?mlat=59.19808&mlon=15.76267#map=17/59.19808/15.76267) | **none** |
-| Eskilstuna–Västerås | 0484-1980 | scb-mismatch | only OSM; land border 2253 m; ways [48675096](https://www.openstreetmap.org/way/48675096) [1007801475](https://www.openstreetmap.org/way/1007801475) [1093118022](https://www.openstreetmap.org/way/1093118022) | [map](https://www.openstreetmap.org/?mlat=59.48786&mlon=16.65422#map=17/59.48786/16.65422) | **none** |
-| Strängnäs–Västerås | 0486-1980 | scb-mismatch | only OSM; land border 940 m | [map](https://www.openstreetmap.org/?mlat=59.48057&mlon=16.88376#map=17/59.48057/16.88376) | **none** |
-| Gislaved–Ljungby | 0662-0781 | short-border | land border 35 m | [map](https://www.openstreetmap.org/?mlat=57.03846&mlon=13.74662#map=17/57.03846/13.74662) | **none** |
-| Vetlanda–Högsby | 0685-0821 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=57.19996&mlon=15.52997#map=17/57.19996/15.52997) | **none** |
-| Älmhult–Hässleholm | 0765-1293 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=56.42789&mlon=13.70508#map=17/56.42789/13.70508) | **none** |
-| Mörbylånga–Kalmar | 0840-0880 | scb-mismatch, fixed-only | only OSM; land border 0 m; ways [305792496](https://www.openstreetmap.org/way/305792496) | [map](https://www.openstreetmap.org/?mlat=56.50838&mlon=16.2849#map=17/56.50838/16.2849) | **none** |
-| Olofström–Östra Göinge | 1060-1256 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=56.30666&mlon=14.41093#map=17/56.30666/14.41093) | **none** |
-| Osby–Kristianstad | 1273-1290 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=56.30032&mlon=14.38019#map=17/56.30032/14.38019) | **none** |
-| Lund–Trelleborg | 1281-1287 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=55.52776&mlon=13.45035#map=17/55.52776/13.45035) | **none** |
-| Varberg–Svenljunga | 1383-1465 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=57.28908&mlon=12.79867#map=17/57.28908/12.79867) | **none** |
-| Kungsbacka–Härryda | 1384-1401 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=57.60418&mlon=12.28404#map=17/57.60418/12.28404) | **none** |
-| Stenungsund–Tjörn | 1415-1419 | scb-mismatch, fixed-only | only OSM; land border 0 m; ways [4796177](https://www.openstreetmap.org/way/4796177) [146230141](https://www.openstreetmap.org/way/146230141) [377539544](https://www.openstreetmap.org/way/377539544) | [map](https://www.openstreetmap.org/?mlat=58.07516&mlon=11.763#map=17/58.07516/11.763) | **none** |
-| Tjörn–Orust | 1419-1421 | scb-mismatch, fixed-only | only OSM; land border 0 m; ways [146272124](https://www.openstreetmap.org/way/146272124) [146272533](https://www.openstreetmap.org/way/146272533) [942969634](https://www.openstreetmap.org/way/942969634) | [map](https://www.openstreetmap.org/?mlat=58.04886&mlon=11.14014#map=17/58.04886/11.14014) | **none** |
-| Orust–Lysekil | 1421-1484 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=58.17508&mlon=11.09573#map=17/58.17508/11.09573) | **none** |
-| Orust–Uddevalla | 1421-1485 | short-border | land border 38 m; ways [146214179](https://www.openstreetmap.org/way/146214179) [964801050](https://www.openstreetmap.org/way/964801050) | [map](https://www.openstreetmap.org/?mlat=58.23511&mlon=11.55211#map=17/58.23511/11.55211) | **none** |
-| Dals-Ed–Årjäng | 1438-1765 | short-border | land border 16 m | [map](https://www.openstreetmap.org/?mlat=59.2378&mlon=11.82628#map=17/59.2378/11.82628) | **none** |
-| Gullspång–Degerfors | 1447-1862 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=58.9972&mlon=14.29482#map=17/58.9972/14.29482) | **none** |
-| Lilla Edet–Alingsås | 1462-1489 | scb-mismatch | only OSM; land border 1003 m | [map](https://www.openstreetmap.org/?mlat=58.05616&mlon=12.41988#map=17/58.05616/12.41988) | **none** |
-| Töreboda–Laxå | 1473-1860 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=58.83415&mlon=14.32677#map=17/58.83415/14.32677) | **none** |
-| Lysekil–Uddevalla | 1484-1485 | short-border | land border 12 m; ways [175706577](https://www.openstreetmap.org/way/175706577) | [map](https://www.openstreetmap.org/?mlat=58.2643&mlon=11.48913#map=17/58.2643/11.48913) | **none** |
-| Uddevalla–Trollhättan | 1485-1488 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=58.29773&mlon=12.14272#map=17/58.29773/12.14272) | **none** |
-| Vänersborg–Lidköping | 1487-1494 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=58.53252&mlon=12.73013#map=17/58.53252/12.73013) | **none** |
-| Åmål–Årjäng | 1492-1765 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=59.14489&mlon=12.46443#map=17/59.14489/12.46443) | **none** |
-| Storfors–Degerfors | 1760-1862 | scb-mismatch, short-border | only OSM; land border 64 m | [map](https://www.openstreetmap.org/?mlat=59.31807&mlon=14.32572#map=17/59.31807/14.32572) | **none** |
-| Kristinehamn–Laxå | 1781-1860 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=58.99974&mlon=14.26796#map=17/58.99974/14.26796) | **none** |
-| Kristinehamn–Karlskoga | 1781-1883 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=59.32298&mlon=14.31878#map=17/59.32298/14.31878) | **none** |
-| Västerås–Köping | 1980-1983 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=59.49826&mlon=16.241#map=17/59.49826/16.241) | **none** |
-| Sala–Sandviken | 1981-2181 | scb-mismatch, point-touch | only SCB; touches at one point | [map](https://www.openstreetmap.org/?mlat=60.19509&mlon=16.70479#map=17/60.19509/16.70479) | **none** |
-| Gagnef–Falun | 2026-2080 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=60.62628&mlon=15.30909#map=17/60.62628/15.30909) | **none** |
-| Smedjebacken–Borlänge | 2061-2081 | scb-mismatch | only OSM; land border 2968 m | [map](https://www.openstreetmap.org/?mlat=60.27258&mlon=15.40611#map=17/60.27258/15.40611) | **none** |
-| Falun–Hedemora | 2080-2083 | scb-mismatch, point-touch | only SCB; touches at one point | [map](https://www.openstreetmap.org/?mlat=60.61031&mlon=16.13649#map=17/60.61031/16.13649) | **none** |
-| Säter–Hofors | 2082-2104 | scb-mismatch, point-touch | only SCB; touches at one point | [map](https://www.openstreetmap.org/?mlat=60.61031&mlon=16.13649#map=17/60.61031/16.13649) | **none** |
-| Nordanstig–Ljusdal | 2132-2161 | scb-mismatch | only OSM; land border 9623 m | [map](https://www.openstreetmap.org/?mlat=62.24873&mlon=16.05059#map=17/62.24873/16.05059) | **none** |
-| Hudiksvall–Ånge | 2184-2260 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=62.27079&mlon=16.02149#map=17/62.27079/16.02149) | **none** |
-| Härnösand–Sundsvall | 2280-2281 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=62.86035&mlon=17.16749#map=17/62.86035/17.16749) | **none** |
-| Piteå–Boden | 2581-2582 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=65.6695&mlon=21.36226#map=17/65.6695/21.36226) | **none** |
+| Upplands Väsby–Upplands-Bro | 0114-0139 | short-border | land border 18 m | [map](https://www.openstreetmap.org/?mlat=59.51863&mlon=17.82331#map=17/59.51863/17.82331) | keep: The OSM boundaries share a 18 m land border; nothing suggests a mapping artifact, and any real land border counts. |
+| Österåker–Danderyd | 0117-0162 | point-touch | touches at one point | [map](https://www.openstreetmap.org/?mlat=59.41218&mlon=18.12178#map=17/59.41218/18.12178) | add: The OSM boundaries meet at a corner on land; a corner touch counts as a land border. ([evidence](https://www.openstreetmap.org/?mlat=59.41218&mlon=18.12178#map=17/59.41218/18.12178)) |
+| Värmdö–Haninge | 0120-0136 | scb-mismatch, short-border | only OSM; land border 8 m | [map](https://www.openstreetmap.org/?mlat=59.07409&mlon=18.55605#map=17/59.07409/18.55605) | keep: The OSM boundaries share a 8 m land border that SCB's generalised map misses. |
+| Järfälla–Upplands-Bro | 0123-0139 | fixed-only | land border 0 m; ways [15395289](https://www.openstreetmap.org/way/15395289) [15395446](https://www.openstreetmap.org/way/15395446) [15405649](https://www.openstreetmap.org/way/15405649) [135333834](https://www.openstreetmap.org/way/135333834) [243557693](https://www.openstreetmap.org/way/243557693) [1293101366](https://www.openstreetmap.org/way/1293101366) | [map](https://www.openstreetmap.org/?mlat=59.42458&mlon=17.74452#map=17/59.42458/17.74452) | keep: Linked by the E18, Enköpingsvägen and Mälarbanan bridges, a public fixed link; there is no land border. |
+| Ekerö–Stockholm | 0125-0180 | scb-mismatch, short-border | only OSM; land border 42 m; ways [5178953](https://www.openstreetmap.org/way/5178953) [23518439](https://www.openstreetmap.org/way/23518439) [155417841](https://www.openstreetmap.org/way/155417841) [1537912019](https://www.openstreetmap.org/way/1537912019) | [map](https://www.openstreetmap.org/?mlat=59.3526&mlon=17.82734#map=17/59.3526/17.82734) | keep: The OSM boundaries share a 42 m land border that SCB's generalised map misses. Nockebybron also links them. |
+| Huddinge–Tyresö | 0126-0138 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=59.21304&mlon=18.18081#map=17/59.21304/18.18081) | keep: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water. |
+| Upplands-Bro–Sigtuna | 0139-0191 | fixed-only | land border 0 m; ways [4730396](https://www.openstreetmap.org/way/4730396) [1362372369](https://www.openstreetmap.org/way/1362372369) | [map](https://www.openstreetmap.org/?mlat=59.57992&mlon=17.80235#map=17/59.57992/17.80235) | keep: Linked by the Erikssundsvägen road bridge, a public fixed link; there is no land border. |
+| Täby–Vaxholm | 0160-0187 | point-touch | touches at one point | [map](https://www.openstreetmap.org/?mlat=59.41218&mlon=18.12178#map=17/59.41218/18.12178) | add: The OSM boundaries meet at a corner on land; a corner touch counts as a land border. ([evidence](https://www.openstreetmap.org/?mlat=59.41218&mlon=18.12178#map=17/59.41218/18.12178)) |
+| Danderyd–Stockholm | 0162-0180 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=59.37062&mlon=18.08819#map=17/59.37062/18.08819) | keep: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water. |
+| Danderyd–Solna | 0162-0184 | fixed-only | land border 0 m; ways [4215436](https://www.openstreetmap.org/way/4215436) [38161370](https://www.openstreetmap.org/way/38161370) [40922941](https://www.openstreetmap.org/way/40922941) [120350431](https://www.openstreetmap.org/way/120350431) [120350434](https://www.openstreetmap.org/way/120350434) [137306379](https://www.openstreetmap.org/way/137306379) [137306392](https://www.openstreetmap.org/way/137306392) [310576264](https://www.openstreetmap.org/way/310576264) | [map](https://www.openstreetmap.org/?mlat=59.38481&mlon=18.03679#map=17/59.38481/18.03679) | keep: Linked by the E18, Roslagsbanan and red metro line bridges, a public fixed link; there is no land border. |
+| Danderyd–Vaxholm | 0162-0187 | scb-mismatch, short-border | only OSM; land border 54 m | [map](https://www.openstreetmap.org/?mlat=59.41195&mlon=18.12185#map=17/59.41195/18.12185) | keep: The OSM boundaries share a 54 m land border that SCB's generalised map misses. |
+| Stockholm–Lidingö | 0180-0186 | scb-mismatch, fixed-only | only OSM; land border 0 m; ways [23427017](https://www.openstreetmap.org/way/23427017) [254115692](https://www.openstreetmap.org/way/254115692) [320984941](https://www.openstreetmap.org/way/320984941) [888976686](https://www.openstreetmap.org/way/888976686) [888976687](https://www.openstreetmap.org/way/888976687) [1094574293](https://www.openstreetmap.org/way/1094574293) | [map](https://www.openstreetmap.org/?mlat=59.35273&mlon=18.11937#map=17/59.35273/18.11937) | keep: Linked by Lidingöbron, Lilla Lidingöbron and Lidingöbanan, a public fixed link; there is no land border. SCB's map only joins kommuner that share land. |
+| Sigtuna–Håbo | 0191-0305 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=59.66834&mlon=17.60456#map=17/59.66834/17.60456) | keep: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water. |
+| Sigtuna–Uppsala | 0191-0380 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=59.73617&mlon=18.08911#map=17/59.73617/18.08911) | keep: The OSM boundaries don't meet; they are more than 3 km apart where SCB's generalised map has them touch. |
+| Håbo–Knivsta | 0305-0330 | fixed-only | land border 0 m; ways [956692672](https://www.openstreetmap.org/way/956692672) | [map](https://www.openstreetmap.org/?mlat=59.73681&mlon=17.6277#map=17/59.73681/17.6277) | keep: Linked by a short unpaved driveway bridge (way 956692672) across the water between them; there is no land border. SCB's map also has them as neighbors. |
+| Håbo–Uppsala | 0305-0380 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=59.73631&mlon=17.57309#map=17/59.73631/17.57309) | keep: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water. |
+| Heby–Avesta | 0331-2084 | scb-mismatch, point-touch | only SCB; touches at one point | [map](https://www.openstreetmap.org/?mlat=60.19509&mlon=16.70479#map=17/60.19509/16.70479) | add: The OSM boundaries meet at a corner on land; a corner touch counts as a land border. ([evidence](https://www.openstreetmap.org/?mlat=60.19509&mlon=16.70479#map=17/60.19509/16.70479)) |
+| Enköping–Strängnäs | 0381-0486 | scb-mismatch | only OSM; land border 470 m | [map](https://www.openstreetmap.org/?mlat=59.51194&mlon=17.03878#map=17/59.51194/17.03878) | keep: The OSM boundaries share a 470 m land border that SCB's generalised map misses. |
+| Katrineholm–Örebro | 0483-1880 | scb-mismatch, short-border | only OSM; land border 69 m | [map](https://www.openstreetmap.org/?mlat=59.19769&mlon=15.76215#map=17/59.19769/15.76215) | keep: The OSM boundaries share a 69 m land border that SCB's generalised map misses. |
+| Katrineholm–Arboga | 0483-1984 | scb-mismatch, short-border | only OSM; land border 80 m | [map](https://www.openstreetmap.org/?mlat=59.19808&mlon=15.76267#map=17/59.19808/15.76267) | keep: The OSM boundaries share a 80 m land border that SCB's generalised map misses. |
+| Eskilstuna–Västerås | 0484-1980 | scb-mismatch | only OSM; land border 2253 m; ways [48675096](https://www.openstreetmap.org/way/48675096) [1007801475](https://www.openstreetmap.org/way/1007801475) [1093118022](https://www.openstreetmap.org/way/1093118022) | [map](https://www.openstreetmap.org/?mlat=59.48786&mlon=16.65422#map=17/59.48786/16.65422) | keep: The OSM boundaries share a 2253 m land border that SCB's generalised map misses. Kvicksundsbron (road and rail) also links them. |
+| Strängnäs–Västerås | 0486-1980 | scb-mismatch | only OSM; land border 940 m | [map](https://www.openstreetmap.org/?mlat=59.48057&mlon=16.88376#map=17/59.48057/16.88376) | keep: The OSM boundaries share a 940 m land border that SCB's generalised map misses. |
+| Gislaved–Ljungby | 0662-0781 | short-border | land border 35 m | [map](https://www.openstreetmap.org/?mlat=57.03846&mlon=13.74662#map=17/57.03846/13.74662) | keep: The OSM boundaries share a 35 m land border; nothing suggests a mapping artifact, and any real land border counts. |
+| Vetlanda–Högsby | 0685-0821 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=57.19996&mlon=15.52997#map=17/57.19996/15.52997) | keep: The OSM boundaries don't meet; they are 1.2 km apart where SCB's generalised map has them touch. |
+| Älmhult–Hässleholm | 0765-1293 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=56.42789&mlon=13.70508#map=17/56.42789/13.70508) | keep: The OSM boundaries don't meet; they are 1.2 km apart where SCB's generalised map has them touch. |
+| Mörbylånga–Kalmar | 0840-0880 | scb-mismatch, fixed-only | only OSM; land border 0 m; ways [305792496](https://www.openstreetmap.org/way/305792496) | [map](https://www.openstreetmap.org/?mlat=56.50838&mlon=16.2849#map=17/56.50838/16.2849) | keep: Linked by Ölandsbron, a public fixed link; there is no land border. SCB's map only joins kommuner that share land. |
+| Olofström–Östra Göinge | 1060-1256 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=56.30666&mlon=14.41093#map=17/56.30666/14.41093) | keep: The OSM boundaries don't meet; they are more than 3 km apart where SCB's generalised map has them touch. |
+| Osby–Kristianstad | 1273-1290 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=56.30032&mlon=14.38019#map=17/56.30032/14.38019) | keep: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water. |
+| Lund–Trelleborg | 1281-1287 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=55.52776&mlon=13.45035#map=17/55.52776/13.45035) | keep: The OSM boundaries don't meet; they are 1.8 km apart where SCB's generalised map has them touch. |
+| Varberg–Svenljunga | 1383-1465 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=57.28908&mlon=12.79867#map=17/57.28908/12.79867) | keep: The OSM boundaries don't meet; they are 3.8 km apart where SCB's generalised map has them touch. |
+| Kungsbacka–Härryda | 1384-1401 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=57.60418&mlon=12.28404#map=17/57.60418/12.28404) | keep: The OSM boundaries don't meet; they are 0.9 km apart where SCB's generalised map has them touch. |
+| Stenungsund–Tjörn | 1415-1419 | scb-mismatch, fixed-only | only OSM; land border 0 m; ways [4796177](https://www.openstreetmap.org/way/4796177) [146230141](https://www.openstreetmap.org/way/146230141) [377539544](https://www.openstreetmap.org/way/377539544) | [map](https://www.openstreetmap.org/?mlat=58.07516&mlon=11.763#map=17/58.07516/11.763) | keep: Linked by Tjörnbron, a public fixed link; there is no land border. SCB's map only joins kommuner that share land. |
+| Tjörn–Orust | 1419-1421 | scb-mismatch, fixed-only | only OSM; land border 0 m; ways [146272124](https://www.openstreetmap.org/way/146272124) [146272533](https://www.openstreetmap.org/way/146272533) [942969634](https://www.openstreetmap.org/way/942969634) | [map](https://www.openstreetmap.org/?mlat=58.04886&mlon=11.14014#map=17/58.04886/11.14014) | keep: Linked by the road 160 bridge, a public fixed link; there is no land border. SCB's map only joins kommuner that share land. |
+| Orust–Lysekil | 1421-1484 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=58.17508&mlon=11.09573#map=17/58.17508/11.09573) | keep: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water. |
+| Orust–Uddevalla | 1421-1485 | short-border | land border 38 m; ways [146214179](https://www.openstreetmap.org/way/146214179) [964801050](https://www.openstreetmap.org/way/964801050) | [map](https://www.openstreetmap.org/?mlat=58.23511&mlon=11.55211#map=17/58.23511/11.55211) | keep: The OSM boundaries share a 38 m land border; nothing suggests a mapping artifact, and any real land border counts. Nötesundsbron also links them. |
+| Dals-Ed–Årjäng | 1438-1765 | short-border | land border 16 m | [map](https://www.openstreetmap.org/?mlat=59.2378&mlon=11.82628#map=17/59.2378/11.82628) | keep: The OSM boundaries share a 16 m land border; nothing suggests a mapping artifact, and any real land border counts. |
+| Gullspång–Degerfors | 1447-1862 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=58.9972&mlon=14.29482#map=17/58.9972/14.29482) | keep: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water. |
+| Lilla Edet–Alingsås | 1462-1489 | scb-mismatch | only OSM; land border 1003 m | [map](https://www.openstreetmap.org/?mlat=58.05616&mlon=12.41988#map=17/58.05616/12.41988) | keep: The OSM boundaries share a 1003 m land border that SCB's generalised map misses. |
+| Töreboda–Laxå | 1473-1860 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=58.83415&mlon=14.32677#map=17/58.83415/14.32677) | keep: The OSM boundaries don't meet; they are 2.0 km apart where SCB's generalised map has them touch. |
+| Lysekil–Uddevalla | 1484-1485 | short-border | land border 12 m; ways [175706577](https://www.openstreetmap.org/way/175706577) | [map](https://www.openstreetmap.org/?mlat=58.2643&mlon=11.48913#map=17/58.2643/11.48913) | keep: The OSM boundaries share a 12 m land border; nothing suggests a mapping artifact, and any real land border counts. Skaftöbron also links them. |
+| Uddevalla–Trollhättan | 1485-1488 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=58.29773&mlon=12.14272#map=17/58.29773/12.14272) | keep: The OSM boundaries don't meet; they are 1.1 km apart where SCB's generalised map has them touch. |
+| Vänersborg–Lidköping | 1487-1494 | scb-mismatch | only SCB; land border 0 m | [map](https://www.openstreetmap.org/?mlat=58.53252&mlon=12.73013#map=17/58.53252/12.73013) | keep: The OSM boundaries meet only in water, with no fixed link, so they aren't neighbors. SCB's map joins them through the water. |
+| Åmål–Årjäng | 1492-1765 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=59.14489&mlon=12.46443#map=17/59.14489/12.46443) | keep: The OSM boundaries don't meet; they are more than 3 km apart where SCB's generalised map has them touch. |
+| Storfors–Degerfors | 1760-1862 | scb-mismatch, short-border | only OSM; land border 64 m | [map](https://www.openstreetmap.org/?mlat=59.31807&mlon=14.32572#map=17/59.31807/14.32572) | keep: The OSM boundaries share a 64 m land border that SCB's generalised map misses. |
+| Kristinehamn–Laxå | 1781-1860 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=58.99974&mlon=14.26796#map=17/58.99974/14.26796) | keep: The OSM boundaries don't meet; they are 3.1 km apart where SCB's generalised map has them touch. |
+| Kristinehamn–Karlskoga | 1781-1883 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=59.32298&mlon=14.31878#map=17/59.32298/14.31878) | keep: The OSM boundaries don't meet; they are 63 m apart where SCB's generalised map has them touch. Storfors and Degerfors share the 64 m border between them. |
+| Västerås–Köping | 1980-1983 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=59.49826&mlon=16.241#map=17/59.49826/16.241) | keep: The OSM boundaries don't meet; they are 1.0 km apart where SCB's generalised map has them touch. |
+| Sala–Sandviken | 1981-2181 | scb-mismatch, point-touch | only SCB; touches at one point | [map](https://www.openstreetmap.org/?mlat=60.19509&mlon=16.70479#map=17/60.19509/16.70479) | add: The OSM boundaries meet at a corner on land; a corner touch counts as a land border. ([evidence](https://www.openstreetmap.org/?mlat=60.19509&mlon=16.70479#map=17/60.19509/16.70479)) |
+| Gagnef–Falun | 2026-2080 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=60.62628&mlon=15.30909#map=17/60.62628/15.30909) | keep: The OSM boundaries don't meet; they are 2.0 km apart where SCB's generalised map has them touch. |
+| Smedjebacken–Borlänge | 2061-2081 | scb-mismatch | only OSM; land border 2968 m | [map](https://www.openstreetmap.org/?mlat=60.27258&mlon=15.40611#map=17/60.27258/15.40611) | keep: The OSM boundaries share a 2968 m land border that SCB's generalised map misses. |
+| Falun–Hedemora | 2080-2083 | scb-mismatch, point-touch | only SCB; touches at one point | [map](https://www.openstreetmap.org/?mlat=60.61031&mlon=16.13649#map=17/60.61031/16.13649) | add: The OSM boundaries meet at a corner on land; a corner touch counts as a land border. ([evidence](https://www.openstreetmap.org/?mlat=60.61031&mlon=16.13649#map=17/60.61031/16.13649)) |
+| Säter–Hofors | 2082-2104 | scb-mismatch, point-touch | only SCB; touches at one point | [map](https://www.openstreetmap.org/?mlat=60.61031&mlon=16.13649#map=17/60.61031/16.13649) | add: The OSM boundaries meet at a corner on land; a corner touch counts as a land border. ([evidence](https://www.openstreetmap.org/?mlat=60.61031&mlon=16.13649#map=17/60.61031/16.13649)) |
+| Nordanstig–Ljusdal | 2132-2161 | scb-mismatch | only OSM; land border 9623 m | [map](https://www.openstreetmap.org/?mlat=62.24873&mlon=16.05059#map=17/62.24873/16.05059) | keep: The OSM boundaries share a 9623 m land border that SCB's generalised map misses. |
+| Hudiksvall–Ånge | 2184-2260 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=62.27079&mlon=16.02149#map=17/62.27079/16.02149) | keep: The OSM boundaries don't meet; they are more than 3 km apart where SCB's generalised map has them touch. |
+| Härnösand–Sundsvall | 2280-2281 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=62.86035&mlon=17.16749#map=17/62.86035/17.16749) | keep: The OSM boundaries don't meet; they are 0.9 km apart where SCB's generalised map has them touch. |
+| Piteå–Boden | 2581-2582 | scb-mismatch | only SCB | [map](https://www.openstreetmap.org/?mlat=65.6695&mlon=21.36226#map=17/65.6695/21.36226) | keep: The OSM boundaries don't meet; they are 1.7 km apart where SCB's generalised map has them touch. |
 
 ## Changes since the previous graph version (fixture)
 
-### Added (695)
+### Added (701)
 
 - Upplands Väsby–Vallentuna (0114-0115, land)
 - Upplands Väsby–Järfälla (0114-0123, land)
@@ -141,6 +86,7 @@ Graph version `osm-2026-10-01` starts at puzzle #31. 290 kommuner, 718 neighbor 
 - Vallentuna–Norrtälje (0115-0188, land)
 - Vallentuna–Sigtuna (0115-0191, land)
 - Österåker–Täby (0117-0160, land)
+- Österåker–Danderyd (0117-0162, land)
 - Österåker–Vaxholm (0117-0187, land)
 - Österåker–Norrtälje (0117-0188, land)
 - Värmdö–Haninge (0120-0136, land)
@@ -156,6 +102,7 @@ Graph version `osm-2026-10-01` starts at puzzle #31. 290 kommuner, 718 neighbor 
 - Nykvarn–Strängnäs (0140-0486, land)
 - Täby–Danderyd (0160-0162, land)
 - Täby–Sollentuna (0160-0163, land)
+- Täby–Vaxholm (0160-0187, land)
 - Danderyd–Sollentuna (0162-0163, land)
 - Danderyd–Solna (0162-0184, fixed)
 - Danderyd–Vaxholm (0162-0187, land)
@@ -180,6 +127,7 @@ Graph version `osm-2026-10-01` starts at puzzle #31. 290 kommuner, 718 neighbor 
 - Heby–Uppsala (0331-0380, land)
 - Heby–Enköping (0331-0381, land)
 - Heby–Sala (0331-1981, land)
+- Heby–Avesta (0331-2084, land)
 - Heby–Gävle (0331-2180, land)
 - Heby–Sandviken (0331-2181, fixed, land)
 - Tierp–Uppsala (0360-0380, land)
@@ -659,6 +607,7 @@ Graph version `osm-2026-10-01` starts at puzzle #31. 290 kommuner, 718 neighbor 
 - Västerås–Sala (1980-1981, land)
 - Sala–Fagersta (1981-1982, land)
 - Sala–Avesta (1981-2084, land)
+- Sala–Sandviken (1981-2181, land)
 - Fagersta–Smedjebacken (1982-2061, land)
 - Köping–Arboga (1983-1984, land)
 - Vansbro–Malung-Sälen (2021-2023, land)
@@ -692,6 +641,7 @@ Graph version `osm-2026-10-01` starts at puzzle #31. 290 kommuner, 718 neighbor 
 - Mora–Härjedalen (2062-2361, land)
 - Falun–Borlänge (2080-2081, land)
 - Falun–Säter (2080-2082, land)
+- Falun–Hedemora (2080-2083, land)
 - Falun–Ockelbo (2080-2101, land)
 - Falun–Hofors (2080-2104, land)
 - Falun–Ovanåker (2080-2121, land)
@@ -701,6 +651,7 @@ Graph version `osm-2026-10-01` starts at puzzle #31. 290 kommuner, 718 neighbor 
 - Borlänge–Ludvika (2081-2085, land)
 - Säter–Hedemora (2082-2083, land)
 - Säter–Ludvika (2082-2085, land)
+- Säter–Hofors (2082-2104, land)
 - Hedemora–Avesta (2083-2084, land)
 - Hedemora–Hofors (2083-2104, land)
 - Avesta–Hofors (2084-2104, land)
