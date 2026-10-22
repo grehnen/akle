@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildGraphVersion } from "./graphVersion";
-import { cheapestRoute, shortestRouteLength, shortestRouteLengthsFrom } from "./routes";
+import { cheapestRoute, routeCost, shortestRouteLength, shortestRouteLengthsFrom } from "./routes";
 
 // A ── B ── C ── D, with ferry-only dead end F linking A and D.
 const graph = buildGraphVersion({
@@ -129,5 +129,43 @@ describe("cheapestRoute", () => {
 
   test("is undefined when no route exists", () => {
     expect(cheapestRoute(tieGraph, "S", "Y", new Set())).toBeUndefined();
+  });
+});
+
+describe("routeCost", () => {
+  const cost = (...guesses: string[]) => routeCost(tieGraph, "S", "T", new Set(guesses));
+
+  test("counts the unguessed kommuner on the cheapest route", () => {
+    expect(cost()).toBe(2);
+    expect(cost("D")).toBe(1);
+    expect(cost("B", "D")).toBe(0);
+    expect(cost("L", "M", "N", "D")).toBe(0);
+  });
+
+  test("never passes through a dead end", () => {
+    expect(cost("0", "C")).toBe(1);
+  });
+
+  test("is Infinity when no route exists", () => {
+    expect(routeCost(tieGraph, "S", "Y", new Set())).toBe(Infinity);
+  });
+
+  test("agrees with cheapestRoute for every pair and every set of guesses", () => {
+    const codes = [...tieGraph.kommuner.keys()];
+    const guessable = ["A", "B", "C", "D", "L", "M", "N", "0"];
+    for (let mask = 0; mask < 1 << guessable.length; mask++) {
+      const known = new Set(guessable.filter((_, bit) => mask & (1 << bit)));
+      for (const from of codes) {
+        for (const to of codes) {
+          if (from === to) continue;
+          const route = cheapestRoute(tieGraph, from, to, known);
+          const expected =
+            route === undefined
+              ? Infinity
+              : route.slice(1, -1).filter((code) => !known.has(code)).length;
+          expect(routeCost(tieGraph, from, to, known)).toBe(expected);
+        }
+      }
+    }
   });
 });

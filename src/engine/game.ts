@@ -85,9 +85,13 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
   const n = shortestRouteLength(graph, start, destination);
 
   const known = new Set<KommunCode>([start, destination]);
+  // Each guess's distance after is the next guess's distance before, so it's searched once.
+  let away = routeCost(graph, start, destination, known);
   const feedbacks: Feedback[] = [];
   for (const guess of game.guesses) {
-    feedbacks.push(rateGuess(graph, start, destination, known, guess));
+    const rating = rateGuess(graph, start, destination, known, away, guess);
+    feedbacks.push(rating.feedback);
+    away = rating.distanceAfter;
     known.add(guess);
   }
 
@@ -99,7 +103,6 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
   }));
 
   const limit = guessLimit(n);
-  const away = routeCost(graph, start, destination, known);
   const status: GameStatus = away === 0 ? "won" : cards.length >= limit ? "lost" : "playing";
 
   const hintsUsed = game.hints?.taken ?? 0;
@@ -126,22 +129,23 @@ function rateGuess(
   start: KommunCode,
   destination: KommunCode,
   knownBefore: ReadonlySet<KommunCode>,
+  distanceBefore: number,
   guess: KommunCode,
-): Feedback {
-  if (graph.deadEnds.has(guess)) return "🟥";
+): { feedback: Feedback; distanceAfter: number } {
+  // A dead end is never passed through, so guessing one leaves the distance as it was.
+  if (graph.deadEnds.has(guess)) return { feedback: "🟥", distanceAfter: distanceBefore };
 
   const knownAfter = new Set(knownBefore).add(guess);
-  const distanceBefore = routeCost(graph, start, destination, knownBefore);
   const distanceAfter = routeCost(graph, start, destination, knownAfter);
   if (distanceAfter < distanceBefore) {
     const guessesAfter = [...knownAfter].filter((code) => code !== start && code !== destination);
     const connectedNow = connectedToStart(graph, start, guessesAfter).has(guess);
-    return connectedNow ? "✅" : "🟩";
+    return { feedback: connectedNow ? "✅" : "🟩", distanceAfter };
   }
 
   const detour =
     routeCost(graph, start, guess, knownAfter) + routeCost(graph, guess, destination, knownAfter);
-  return detour <= distanceBefore + 1 ? "🟧" : "🟥";
+  return { feedback: detour <= distanceBefore + 1 ? "🟧" : "🟥", distanceAfter };
 }
 
 /** Guesses connected to the start through an unbroken chain of guesses (dead ends link nothing). */

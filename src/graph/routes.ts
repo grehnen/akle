@@ -11,7 +11,9 @@ export function routeCost(
   to: KommunCode,
   known: ReadonlySet<KommunCode>,
 ): number {
-  return findCheapestRoute(graph, from, to, known)?.cost ?? Infinity;
+  const search = searchTowards(graph, from, to, known);
+  const totalWeight = search.weightToEnd.get(from);
+  return totalWeight === undefined ? Infinity : Math.floor(totalWeight / search.stepsPerCost);
 }
 
 /** The number of intermediate kommuner on a shortest route (N). */
@@ -50,21 +52,39 @@ export function cheapestRoute(
   to: KommunCode,
   known: ReadonlySet<KommunCode>,
 ): KommunCode[] | undefined {
-  return findCheapestRoute(graph, from, to, known)?.route;
+  const { weightToEnd, canPassThrough, enterWeight } = searchTowards(graph, from, to, known);
+  if (!weightToEnd.has(from)) return undefined;
+  const route = [from];
+  let cursor = from;
+  while (cursor !== to) {
+    const remaining = weightToEnd.get(cursor) as number;
+    cursor = [...(graph.neighbors.get(cursor) ?? [])]
+      .sort()
+      .find(
+        (next) =>
+          canPassThrough(next) &&
+          (weightToEnd.get(next) ?? Infinity) + enterWeight(next) === remaining,
+      ) as KommunCode;
+    route.push(cursor);
+  }
+  return route;
 }
 
-function findCheapestRoute(
+/**
+ * Dijkstra outward from `to`, stopping once `from` is settled: the weight of the best route
+ * from each settled kommun to `to`, where a route's weight orders by cost, then by length:
+ * cost × stepsPerCost + steps.
+ */
+function searchTowards(
   graph: GraphVersion,
   from: KommunCode,
   to: KommunCode,
   known: ReadonlySet<KommunCode>,
-): { cost: number; route: KommunCode[] } | undefined {
-  // A route's weight orders by cost, then by length: cost × stepsPerCost + steps.
+) {
   const stepsPerCost = graph.kommuner.size + 1;
   const canPassThrough = (code: KommunCode) => code === to || !graph.deadEnds.has(code);
   const enterWeight = (code: KommunCode) => (code === to || known.has(code) ? 0 : stepsPerCost) + 1;
 
-  // Dijkstra outward from `to`: the weight of the best route from each kommun to `to`.
   const weightToEnd = new Map<KommunCode, number>([[to, 0]]);
   const settled = new Set<KommunCode>();
   const frontier = new Set<KommunCode>([to]);
@@ -86,20 +106,5 @@ function findCheapestRoute(
     }
   }
 
-  const totalWeight = weightToEnd.get(from);
-  if (totalWeight === undefined) return undefined;
-  const route = [from];
-  let cursor = from;
-  while (cursor !== to) {
-    const remaining = weightToEnd.get(cursor) as number;
-    cursor = [...(graph.neighbors.get(cursor) ?? [])]
-      .sort()
-      .find(
-        (next) =>
-          canPassThrough(next) &&
-          (weightToEnd.get(next) ?? Infinity) + enterWeight(next) === remaining,
-      ) as KommunCode;
-    route.push(cursor);
-  }
-  return { cost: Math.floor(totalWeight / stepsPerCost), route };
+  return { weightToEnd, stepsPerCost, canPassThrough, enterWeight };
 }
