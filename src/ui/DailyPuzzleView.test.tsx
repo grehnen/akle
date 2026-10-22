@@ -17,10 +17,12 @@ const graph = buildGraphVersion({
     { code: "0181", name: "Södertälje" },
     { code: "0488", name: "Trosa" },
     { code: "0136", name: "Haninge" },
+    { code: "0484", name: "Eskilstuna" },
   ],
   links: [
     { between: ["0192", "0181"], kind: "land" },
     { between: ["0181", "0488"], kind: "land" },
+    { between: ["0488", "0484"], kind: "land" },
   ],
 });
 
@@ -84,13 +86,13 @@ describe("DailyPuzzleView", () => {
 
   describe("with a saved game", () => {
     const puzzle = { number: 21, start: "0192", destination: "0488", n: 1 };
-    const renderWith = (guesses: string[], savedFor = puzzle, hintsTaken = 0) => {
+    const renderWith = (guesses: string[], savedFor = puzzle, hintsTaken = 0, today = puzzle) => {
       const storage = memoryStorage();
       const hints = hintsTaken > 0 ? { taken: hintsTaken, nextKommun: "0181" } : undefined;
       saveGame(storage, { puzzle: savedFor, guesses, hints });
       return renderToStaticMarkup(
         <DailyPuzzleView
-          daily={{ kind: "puzzle", puzzle, graph }}
+          daily={{ kind: "puzzle", puzzle: today, graph }}
           storage={storage}
           now={new Date(2026, 9, 21, 13, 5, 9)}
         />,
@@ -109,24 +111,27 @@ describe("DailyPuzzleView", () => {
       expect(visibleText(markup)).toContain("Gissa (0/5)");
     });
 
-    test("a finished game reopens on the board with the result view open", () => {
+    test("a finished game reopens with the result view open", () => {
       const markup = renderWith(["0181"]);
-      expect(visibleText(markup)).toContain("Gissa (1/5)");
       expect(markup).toContain('aria-labelledby="result-heading"');
       expect(markup).toContain(">Perfekt<");
       expect(markup).toContain("10:54:51");
     });
 
-    test("a finished game keeps the guess input usable, so a guess shows Spelet är slut", () => {
+    test("the result view takes the board's place: no game map, guess input, toast, hints or guess list", () => {
       const markup = renderWith(["0181"]);
-      expect(markup).toMatch(/<input id="guess-input"(?![^>]*disabled)[^>]*>/);
-      expect(markup).toMatch(/<button type="submit"(?![^>]*disabled)[^>]*>/);
+      expect(markup).not.toContain('aria-label="Karta över Nynäshamn och Trosa"');
+      expect(markup).not.toContain('id="guess-input"');
+      expect(markup).not.toContain('class="toast"');
+      expect(markup).not.toContain('class="hint-section"');
+      expect(markup).not.toContain('aria-label="Gissningar"');
+      expect(markup).toContain(
+        'aria-label="Bästa vägen med dina gissningar från Nynäshamn till Trosa"',
+      );
     });
 
-    test("shows the toast right under the guess input, also once the game has ended", () => {
-      for (const guesses of [[], ["0181"]]) {
-        expect(renderWith(guesses)).toMatch(/<\/form><p role="alert" class="toast">/);
-      }
+    test("shows the toast right under the guess input", () => {
+      expect(renderWith([])).toMatch(/<\/form><p role="alert" class="toast">/);
     });
 
     test("lists past guesses under a heading, before the hints", () => {
@@ -170,7 +175,8 @@ describe("DailyPuzzleView", () => {
     });
 
     test("each guess card reads out its number, feedback and connection", () => {
-      const markup = renderWith(["0136", "0181"]);
+      const longer = { number: 21, start: "0192", destination: "0484", n: 2 };
+      const markup = renderWith(["0136", "0181"], longer, 0, longer);
       expect(markup).toContain(
         '<span class="visually-hidden">Gissning 1: Haninge, långt från en kortaste väg, inte ansluten till start.</span>',
       );
@@ -206,7 +212,7 @@ describe("DailyPuzzleView", () => {
     test("a finished game's result is not announced again on reload", () => {
       const markup = renderWith(["0181"]);
       expect(markup).not.toContain('role="alert">');
-      expect(markup).toContain('<p role="alert" class="toast"></p>');
+      expect(markup).toContain('<p class="visually-hidden" aria-live="polite"></p>');
     });
 
     test("a win with a hint is not Perfekt", () => {

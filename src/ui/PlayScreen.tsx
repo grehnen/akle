@@ -56,6 +56,7 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
   );
   const todayEntry = history[puzzle.number];
   const outcome = gameOutcome(review);
+  const showResult = resultOpen && todayEntry !== undefined && outcome !== undefined;
 
   useEffect(() => {
     saveGame(storage, game);
@@ -70,7 +71,7 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
         <strong>{nameOf(puzzle.destination)}</strong>
       </h2>
 
-      {resultOpen && todayEntry && outcome && (
+      {showResult && (
         <ResultView
           graph={graph}
           game={game}
@@ -87,57 +88,66 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
         />
       )}
 
-      <SatelliteMap
-        graph={graph}
-        puzzle={puzzle}
-        cards={review.cards}
-        hintOutlines={reveals.outlines}
-        initials={reveals.initials}
-        allOutlines={finished}
-      />
+      {/* The board steps aside while the result view is open; Stäng brings it back. */}
+      {!showResult && (
+        <>
+          <SatelliteMap
+            graph={graph}
+            puzzle={puzzle}
+            cards={review.cards}
+            hintOutlines={reveals.outlines}
+            initials={reveals.initials}
+            allOutlines={finished}
+          />
 
-      <GuessInput
-        text={session.text}
-        exactMatch={resolveKommunName(graph, session.text) !== undefined}
-        suggestions={suggestKommuner(graph, game, session.text)}
-        highlighted={session.highlighted}
-        counter={<UsedCounter label="Gissa" used={review.cards.length} limit={review.limit} />}
-        onEvent={(event) => setSession((current) => applyGuessInput(graph, current, event))}
-        inputRef={guessInput}
-      />
+          <GuessInput
+            text={session.text}
+            exactMatch={resolveKommunName(graph, session.text) !== undefined}
+            suggestions={suggestKommuner(graph, game, session.text)}
+            highlighted={session.highlighted}
+            counter={<UsedCounter label="Gissa" used={review.cards.length} limit={review.limit} />}
+            onEvent={(event) => setSession((current) => applyGuessInput(graph, current, event))}
+            inputRef={guessInput}
+          />
 
-      <p role="alert" className="toast">
-        {toast}
-      </p>
+          <p role="alert" className="toast">
+            {toast}
+          </p>
+        </>
+      )}
 
       <p className="visually-hidden" aria-live="polite">
         {announcement}
       </p>
 
-      <section className="past-guesses" aria-labelledby="guesses-heading">
-        <h3 id="guesses-heading" className="section-heading">
-          Tidigare gissningar:
-        </h3>
-        <ol aria-label="Gissningar">
-          {review.cards.map((card, index) => (
-            <li key={card.code}>
-              <span aria-hidden="true">
-                {card.feedback} {nameOf(card.code)}
-              </span>
-              <span className="visually-hidden">
-                {guessCardText(card, { number: index + 1, name: nameOf(card.code) })}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </section>
+      {!showResult && (
+        <>
+          <section className="past-guesses" aria-labelledby="guesses-heading">
+            <h3 id="guesses-heading" className="section-heading">
+              Tidigare gissningar:
+            </h3>
+            <ol aria-label="Gissningar">
+              {review.cards.map((card, index) => (
+                <li key={card.code}>
+                  <span aria-hidden="true">
+                    {card.feedback} {nameOf(card.code)}
+                  </span>
+                  <span className="visually-hidden">
+                    {guessCardText(card, { number: index + 1, name: nameOf(card.code) })}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
 
-      {!finished && (
-        <HintSection
-          hintsUsed={review.hintsUsed}
-          onTakeHint={() => setSession((current) => takeSessionHint(graph, current))}
-          focusAfterLastHint={guessInput}
-        />
+          {!finished && (
+            <HintSection
+              hintsUsed={review.hintsUsed}
+              onTakeHint={() => setSession((current) => takeSessionHint(graph, current))}
+              focusAfterLastHint={guessInput}
+            />
+          )}
+        </>
       )}
 
       {finished && !resultOpen && (
