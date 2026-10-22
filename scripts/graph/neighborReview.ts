@@ -55,7 +55,10 @@ export type FlaggedPair = {
   failures?: WayFailure[];
   /** Where to look on the map. */
   at: Point;
-  /** The links the build generated for the pair, before any verdict; empty when it isn't a neighbor. */
+  /**
+   * The links the build generated for the pair, before any verdict; empty when it isn't a neighbor,
+   * as when its land border is dropped for being on small islands or an exclave.
+   */
   built: ("land" | "fixed")[];
   /** The human verdict from `neighbor-overrides.yaml`, if there is one. */
   verdict?: Verdict;
@@ -66,7 +69,10 @@ export type Verdict =
   | { action: "add" | "remove"; reason: string; evidence: string };
 
 export type NeighborReview = {
-  /** The shipped neighbor graph: the generated links plus ferries, with overrides applied. */
+  /**
+   * The shipped neighbor graph: the generated links plus ferries, with overrides applied. The
+   * generated links leave out land borders flagged `island-border` or `exclave-border`.
+   */
   links: NeighborLink[];
   flaggedPairs: FlaggedPair[];
   /** Flags without a verdict, new flag kinds on reviewed pairs and stale entries. */
@@ -90,12 +96,16 @@ export function reviewNeighborGraph(
   const scb = byPair(evidence.scbPairs);
 
   const generated: NeighborLink[] = [
-    ...evidence.landBorders
-      .filter((border) => border.landLength > 0)
-      .map((border) => ({ between: sortedPair(border.between), kind: "land" as const })),
+    ...evidence.landBorders.filter(countsAsLandBorder).map((border) => ({
+      between: sortedPair(border.between),
+      kind: "land" as const,
+    })),
     ...evidence.fixedLinks
       .filter((link) => link.failures.length === 0)
-      .map((link) => ({ between: sortedPair(link.between), kind: "fixed" as const })),
+      .map((link) => ({
+        between: sortedPair(link.between),
+        kind: "fixed" as const,
+      })),
   ];
   const generatedPairs = new Set(generated.map((link) => pairKey(link.between)));
 
@@ -107,19 +117,15 @@ export function reviewNeighborGraph(
   }
   for (const [key, border] of borders) {
     if (border.landLength > 0 && border.landLength < shortBorderLength) flag(key, "short-border");
-    if (
-      border.landLength > 0 &&
-      border.mainlandLength === 0 &&
-      border.islandLength < shortIslandBorderLength
-    ) {
-      flag(key, "island-border");
-    }
-    if (border.landLength > 0 && border.exclaveOf.length > 0) flag(key, "exclave-border");
+    if (isShortIslandBorder(border)) flag(key, "island-border");
+    if (isExclaveBorder(border)) flag(key, "exclave-border");
   }
   for (const key of touches.keys()) flag(key, "point-touch");
   for (const [key, link] of fixed) {
-    const hasLandBorder = (borders.get(key)?.landLength ?? 0) > 0;
-    if (link.failures.length > 0 && !hasLandBorder) flag(key, "non-qualifying-link");
+    const border = borders.get(key);
+    if (link.failures.length > 0 && !(border && countsAsLandBorder(border))) {
+      flag(key, "non-qualifying-link");
+    }
   }
 
   const flaggedPairs = [...flagKinds]
@@ -131,7 +137,9 @@ export function reviewNeighborGraph(
       return {
         between: sortedPair(key.split("-")),
         kinds: pairFlagKinds.filter((kind) => kinds.has(kind)),
-        ...(kinds.has("scb-mismatch") && { scb: scb.has(key) ? "only SCB" : "only OSM" }),
+        ...(kinds.has("scb-mismatch") && {
+          scb: scb.has(key) ? "only SCB" : "only OSM",
+        }),
         ...(border && { landLength: border.landLength }),
         ...(border &&
           border.islandLength > 0 && {
@@ -143,7 +151,7 @@ export function reviewNeighborGraph(
         ...(link && link.failures.length > 0 && { failures: link.failures }),
         at,
         built: [
-          ...((border?.landLength ?? 0) > 0 ? ["land" as const] : []),
+          ...(border && countsAsLandBorder(border) ? ["land" as const] : []),
           ...(link && link.failures.length === 0 ? ["fixed" as const] : []),
         ],
       };
@@ -212,6 +220,29 @@ export function reviewNeighborGraph(
     graphProblems: wholeGraphProblems(evidence, shipped),
     problems: pairProblems.sort(([a], [b]) => compareCodes(a, b)).map(([, message]) => message),
   };
+}
+
+type LandBorderEvidence = BuildEvidence["landBorders"][number];
+
+function isShortIslandBorder(border: LandBorderEvidence): boolean {
+  return (
+    border.landLength > 0 &&
+    border.mainlandLength === 0 &&
+    border.islandLength < shortIslandBorderLength
+  );
+}
+
+function isExclaveBorder(border: LandBorderEvidence): boolean {
+  return border.landLength > 0 && border.exclaveOf.length > 0;
+}
+
+/**
+ * Whether a land border makes its pair neighbors: any length on land, unless it is flagged
+ * `island-border` or `exclave-border`. Such a pair stays a neighbor only through a qualifying
+ * fixed link or an `add` override.
+ */
+function countsAsLandBorder(border: LandBorderEvidence): boolean {
+  return border.landLength > 0 && !isShortIslandBorder(border) && !isExclaveBorder(border);
 }
 
 function wholeGraphProblems(evidence: BuildEvidence, links: readonly NeighborLink[]): string[] {

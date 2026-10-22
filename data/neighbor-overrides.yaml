@@ -17,7 +17,8 @@ ferries:
 # Verdicts on the pairs the build flags (scb-mismatch, short-border, point-touch,
 # non-qualifying-link, island-border, exclave-border); see data/graph-report.md and "Reviewing flagged pairs" in data/README.md.
 # Every flagged pair needs exactly one, and bun run graph:check fails on stale ones. Run
-# bun run graph:review after editing.
+# bun run graph:review after editing. The build drops an island-border or exclave-border pair
+# unless a qualifying fixed link keeps it; a keep leaves that as it is, and an add puts it back.
 #
 # overrides change the generated graph, with a reason and an http(s) evidence link:
 #   - remove: ["<code>", "<code>"]   # or add: ["<code>", "<code>"] with link: land | fixed
