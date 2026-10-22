@@ -115,7 +115,7 @@ The required frozen graph versions check, run in CI against the PR's base (`HEAD
 
 ## Schedule: `schedule/`
 
-- `config.json`: `{ "epoch": "YYYY-MM-DD", "seed": "…", "cooldownDays": 30, "cooldownDaysByGraphVersion": { "<id>": <days> } }`. The epoch is puzzle #1. Each row's endpoint cooldown comes from its graph version: its entry in `cooldownDaysByGraphVersion`, else `cooldownDays`, which defaults to 30. The fixture graph version gets 3, because a 30-day cooldown can't be met with its 21 kommuner.
+- `config.json`: `{ "epoch": "YYYY-MM-DD", "seed": "…", "cooldownDays": 30, "cooldownDaysByGraphVersion": { "<id>": <days> } }`. The epoch is puzzle #1. Each row's endpoint cooldown comes from its graph version: its entry in `cooldownDaysByGraphVersion`, else `cooldownDays`, which defaults to 30. Every id in `cooldownDaysByGraphVersion` must be a graph version under `data/graphs/`; the schedule scripts reject the config otherwise. The fixture graph version gets 3, because a 30-day cooldown can't be met with its 21 kommuner.
 - `0001.csv`, `0002.csv`, …: chunks of 1,000 puzzles with the header `puzzle,start,destination,n` ([ADR 0001](../docs/adr/0001-pre-generated-puzzle-schedule.md)).
 
 The current `0001.csv` is a fixture of 90 rows: #1–#30 on the fixture graph version, the rest on `osm-2026-10-01`.

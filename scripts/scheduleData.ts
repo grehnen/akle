@@ -18,18 +18,25 @@ const dataDirectory = new URL("../data/", import.meta.url).pathname;
 export const scheduleDirectory = `${dataDirectory}schedule/`;
 const chunkFilePattern = /^\d{4}\.csv$/;
 
+/** The schedule config; its per-version cooldowns must name graph versions under data/graphs. */
 export async function readScheduleConfig(): Promise<ScheduleConfig> {
-  return parseScheduleConfig(await Bun.file(`${scheduleDirectory}config.json`).json());
+  return parseScheduleConfig(await Bun.file(`${scheduleDirectory}config.json`).json(), {
+    graphVersionIds: graphVersionVersionFiles().map((versionFile) => versionFile.split("/")[1]),
+  });
 }
 
-export async function readGraphVersions(): Promise<GraphVersion[]> {
-  const versionFiles = [
+/** Each committed graph version's version.json, relative to data/, in id order. */
+function graphVersionVersionFiles(): string[] {
+  return [
     ...new Bun.Glob(`${graphVersionDirectory("*")}${graphVersionFileNames.version}`).scanSync(
       dataDirectory,
     ),
   ].sort();
+}
+
+export async function readGraphVersions(): Promise<GraphVersion[]> {
   return Promise.all(
-    versionFiles.map(async (versionFile) => {
+    graphVersionVersionFiles().map(async (versionFile) => {
       const directory = `${dataDirectory}${versionFile.slice(0, -graphVersionFileNames.version.length)}`;
       const graph = parseGraphVersionFiles(
         await readGraphVersionFiles(directory, (path) => Bun.file(path).text()),

@@ -118,4 +118,27 @@ describe("parseScheduleConfig", () => {
       }),
     ).toThrow(/cooldownDaysByGraphVersion/);
   });
+
+  test.each([[[3]], [null], ["fixture"], [3]])(
+    "rejects cooldownDaysByGraphVersion %p, which is not an object",
+    (cooldownDaysByGraphVersion) => {
+      expect(() =>
+        parseScheduleConfig({ epoch: "2026-10-01", seed: "s", cooldownDaysByGraphVersion }),
+      ).toThrow(/cooldownDaysByGraphVersion/);
+    },
+  );
+
+  test("rejects a cooldown for a graph version that doesn't exist", () => {
+    const config = {
+      epoch: "2026-10-01",
+      seed: "s",
+      cooldownDaysByGraphVersion: { fixture: 3, "osm-2099-01-01": 5 },
+    };
+    expect(() => parseScheduleConfig(config, { graphVersionIds: ["fixture"] })).toThrow(
+      /osm-2099-01-01/,
+    );
+    expect(
+      parseScheduleConfig(config, { graphVersionIds: ["fixture", "osm-2099-01-01"] }),
+    ).toMatchObject({ cooldownDaysByGraphVersion: { fixture: 3, "osm-2099-01-01": 5 } });
+  });
 });

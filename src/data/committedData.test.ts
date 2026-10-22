@@ -30,9 +30,9 @@ const codeOf = (graph: GraphVersion, name: string) =>
   [...graph.kommuner.values()].find((kommun) => kommun.name === name)?.code;
 
 describe("committed data", () => {
-  test("the schedule config has an epoch and seed", async () => {
+  test("the schedule config is valid and its cooldowns name committed graph versions", async () => {
     const config = JSON.parse(await readText("schedule/config.json"));
-    expect(() => parseScheduleConfig(config)).not.toThrow();
+    expect(() => parseScheduleConfig(config, { graphVersionIds: versionIds })).not.toThrow();
   });
 
   test.each(versionIds)(

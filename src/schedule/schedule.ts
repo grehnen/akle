@@ -8,8 +8,9 @@ export type ScheduledPuzzle = Puzzle & {
 };
 
 /**
- * Puzzles a kommun must wait before it can be an endpoint again: `cooldownDays` (30 unless
- * set), or the graph version's own entry in `cooldownDaysByGraphVersion`.
+ * Puzzles a kommun must wait before it can be an endpoint again: the graph version's own entry
+ * in `cooldownDaysByGraphVersion`, else `cooldownDays`. (`parseScheduleConfig` defaults
+ * `cooldownDays` to `defaultCooldownDays` when the config leaves it out.)
  */
 export type Cooldown = {
   cooldownDays: number;
@@ -74,7 +75,11 @@ export function cooldownDaysOn(cooldown: Cooldown, graphVersionId: string): numb
   return cooldown.cooldownDaysByGraphVersion?.[graphVersionId] ?? cooldown.cooldownDays;
 }
 
-export function parseScheduleConfig(json: unknown): ScheduleConfig {
+/** Checks `cooldownDaysByGraphVersion` against `graphVersionIds` too, when given. */
+export function parseScheduleConfig(
+  json: unknown,
+  { graphVersionIds }: { graphVersionIds?: readonly string[] } = {},
+): ScheduleConfig {
   const config = json as Partial<ScheduleConfig>;
   if (typeof config?.epoch !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(config.epoch)) {
     throw new Error("Schedule config needs an epoch as YYYY-MM-DD");
@@ -86,16 +91,29 @@ export function parseScheduleConfig(json: unknown): ScheduleConfig {
   if (!isWholeDays(cooldownDays)) {
     throw new Error("Schedule config cooldownDays must be a whole number of days");
   }
-  const cooldownDaysByGraphVersion = config.cooldownDaysByGraphVersion ?? {};
+  const cooldownDaysByGraphVersion =
+    config.cooldownDaysByGraphVersion === undefined ? {} : config.cooldownDaysByGraphVersion;
   if (
-    typeof cooldownDaysByGraphVersion !== "object" ||
+    !isPlainObject(cooldownDaysByGraphVersion) ||
     !Object.values(cooldownDaysByGraphVersion).every(isWholeDays)
   ) {
     throw new Error(
       "Schedule config cooldownDaysByGraphVersion must map graph version ids to whole numbers of days",
     );
   }
+  const unknownIds = Object.keys(cooldownDaysByGraphVersion).filter(
+    (id) => graphVersionIds !== undefined && !graphVersionIds.includes(id),
+  );
+  if (unknownIds.length > 0) {
+    throw new Error(
+      `Schedule config cooldownDaysByGraphVersion names graph versions that don't exist: ${unknownIds.join(", ")}`,
+    );
+  }
   return { epoch: config.epoch, seed: config.seed, cooldownDays, cooldownDaysByGraphVersion };
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isWholeDays(days: unknown): boolean {
