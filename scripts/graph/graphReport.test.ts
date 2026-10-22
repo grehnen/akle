@@ -16,7 +16,13 @@ const review: NeighborReview = {
     { between: ["0180", "0186"], kind: "fixed" },
   ],
   flaggedPairs: [
-    { between: ["0125", "0180"], kinds: ["short-border"], landLength: 42, at: [17.83261, 59.3684] },
+    {
+      between: ["0125", "0180"],
+      kinds: ["short-border"],
+      landLength: 42,
+      at: [17.83261, 59.3684],
+      built: ["land"],
+    },
     {
       between: ["0180", "0186"],
       kinds: ["scb-mismatch", "fixed-only"],
@@ -24,6 +30,7 @@ const review: NeighborReview = {
       landLength: 0,
       ways: [4054906, 23353186],
       at: [18.1, 59.35],
+      built: ["fixed"],
       verdict: { action: "keep", reason: "Lidingöbron | a real bridge." },
     },
   ],
@@ -48,10 +55,10 @@ const report = graphReport({
 describe("graphReport", () => {
   test("lists every flag with its kinds, measurements, map link and verdict", () => {
     expect(report).toContain(
-      "| Ekerö–Stockholm | 0125-0180 | short-border | land border 42 m | [map](https://www.openstreetmap.org/?mlat=59.3684&mlon=17.83261#map=17/59.3684/17.83261) | **none** |",
+      "| Ekerö–Stockholm | 0125-0180 | short-border | land border 42 m | [map](https://www.openstreetmap.org/?mlat=59.3684&mlon=17.83261#map=17/59.3684/17.83261) | neighbors (land) | **none** |",
     );
     expect(report).toContain(
-      "| Stockholm–Lidingö | 0180-0186 | scb-mismatch, fixed-only | only OSM; land border 0 m; ways [4054906](https://www.openstreetmap.org/way/4054906) [23353186](https://www.openstreetmap.org/way/23353186) | [map](https://www.openstreetmap.org/?mlat=59.35&mlon=18.1#map=17/59.35/18.1) | keep: Lidingöbron \\| a real bridge. |",
+      "| Stockholm–Lidingö | 0180-0186 | scb-mismatch, fixed-only | only OSM; land border 0 m; ways [4054906](https://www.openstreetmap.org/way/4054906) [23353186](https://www.openstreetmap.org/way/23353186) | [map](https://www.openstreetmap.org/?mlat=59.35&mlon=18.1#map=17/59.35/18.1) | neighbors (fixed) | keep: Lidingöbron \\| a real bridge. |",
     );
   });
 

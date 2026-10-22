@@ -57,7 +57,13 @@ describe("reviewNeighborGraph", () => {
       noOverrides,
     );
     expect(review.flaggedPairs).toEqual([
-      { between: ["0002", "0003"], kinds: ["short-border"], landLength: 42, at: [18.1, 59] },
+      {
+        between: ["0002", "0003"],
+        kinds: ["short-border"],
+        landLength: 42,
+        at: [18.1, 59],
+        built: ["land"],
+      },
     ]);
   });
 
@@ -67,7 +73,7 @@ describe("reviewNeighborGraph", () => {
       noOverrides,
     );
     expect(review.flaggedPairs).toEqual([
-      { between: ["0001", "0004"], kinds: ["point-touch"], at: [18.3, 59] },
+      { between: ["0001", "0004"], kinds: ["point-touch"], at: [18.3, 59], built: [] },
     ]);
     expect(review.links).toHaveLength(3);
   });
@@ -100,6 +106,7 @@ describe("reviewNeighborGraph", () => {
         landLength: 0,
         ways: [7, 9],
         at: [18.1, 59],
+        built: ["fixed"],
       },
     ]);
   });
@@ -116,13 +123,20 @@ describe("reviewNeighborGraph", () => {
       noOverrides,
     );
     expect(review.flaggedPairs).toEqual([
-      { between: ["0001", "0003"], kinds: ["scb-mismatch"], scb: "only SCB", at: [18.05, 59.1] },
+      {
+        between: ["0001", "0003"],
+        kinds: ["scb-mismatch"],
+        scb: "only SCB",
+        at: [18.05, 59.1],
+        built: [],
+      },
       {
         between: ["0003", "0004"],
         kinds: ["scb-mismatch"],
         scb: "only OSM",
         landLength: 2000,
         at: [18.2, 59],
+        built: ["land"],
       },
     ]);
   });

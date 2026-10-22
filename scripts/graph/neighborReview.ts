@@ -38,6 +38,8 @@ export type FlaggedPair = {
   ways?: number[];
   /** Where to look on the map. */
   at: Point;
+  /** The links the build generated for the pair, before any verdict; empty when it isn't a neighbor. */
+  built: ("land" | "fixed")[];
   /** The human verdict from `neighbor-overrides.yaml`, if there is one. */
   verdict?: Verdict;
 };
@@ -106,6 +108,10 @@ export function reviewNeighborGraph(
         ...(border && { landLength: border.landLength }),
         ...(ways && { ways }),
         at,
+        built: [
+          ...((border?.landLength ?? 0) > 0 ? ["land" as const] : []),
+          ...(ways ? ["fixed" as const] : []),
+        ],
       };
     });
 
