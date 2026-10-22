@@ -35,10 +35,6 @@ overrides: []
 #     kinds: [short-border]       # the flags that were reviewed
 #     reason: ...
 reviewed:
-  - keep: ["0120", "0182"]
-    names: [Värmdö, Nacka]
-    kinds: [island-border]
-    reason: The OSM boundaries share 6710 m of land border, all on islands of 1 km² or more and none on the mainland; that island border makes them land neighbors. SCB's map joins them too.
   - keep: ["0125", "0180"]
     names: [Ekerö, Stockholm]
     kinds: [scb-mismatch]
@@ -53,8 +49,8 @@ reviewed:
     reason: Linked only by way 956692672, a short unpaved private driveway bridge to an islet under 1 km²; not a public link to meaningful land, so they aren't neighbors. SCB's map joins them through the water.
   - keep: ["0381", "0486"]
     names: [Enköping, Strängnäs]
-    kinds: [island-border]
-    reason: The OSM boundaries share only 408 m of land border, all on islands in Mälaren and none on the mainland, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either.
+    kinds: [scb-mismatch, island-border]
+    reason: The OSM boundaries share only 408 m of land border, all on islands in Mälaren and none on the mainland. Riksväg 55 (way 58916726) crosses that border on a Mälaren island of 1 km² or more, which Hjulstabron joins to Enköping's mainland and Strängnäsbron to Strängnäs's; that road link makes them neighbors. SCB's map doesn't join them.
   - keep: ["0484", "1980"]
     names: [Eskilstuna, Västerås]
     kinds: [scb-mismatch]
@@ -67,10 +63,6 @@ reviewed:
     names: [Mörbylånga, Kalmar]
     kinds: [scb-mismatch]
     reason: Linked by Ölandsbron, a public fixed link; there is no land border. SCB's map only joins kommuner that share land.
-  - keep: ["0840", "0885"]
-    names: [Mörbylånga, Borgholm]
-    kinds: [island-border]
-    reason: The OSM boundaries share 25453 m of land border, all across Öland, and none on the mainland; Öland's border makes them land neighbors. SCB's map joins them too.
   - keep: ["1415", "1419"]
     names: [Stenungsund, Tjörn]
     kinds: [scb-mismatch]
