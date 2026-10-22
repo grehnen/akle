@@ -67,6 +67,7 @@ export function ResultView({
             puzzle={game.puzzle}
             cards={review.cards}
             cheapestRoute={cheapestRoute}
+            allOutlines
           />
           <ol aria-label="Bästa vägen med dina gissningar" className="result-route">
             {routeStops(game.puzzle, cheapestRoute, guessed).map(({ code, kind }) => (

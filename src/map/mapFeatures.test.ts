@@ -106,6 +106,21 @@ describe("mapFeatures", () => {
     ]);
   });
 
+  test("once finished, outlines every other kommun underneath, instead of the hint outlines", () => {
+    const cards = reviewGame(graph, play("Kommun C")).cards;
+    const properties = mapFeatures(graph, puzzle, cards, ["B", "F"], {
+      allOutlines: true,
+    }).features.map((feature) => feature.properties);
+    expect(properties).toEqual([
+      { code: "B", kind: "other", color: "#ffffff", connected: true },
+      { code: "D", kind: "other", color: "#ffffff", connected: true },
+      { code: "F", kind: "other", color: "#ffffff", connected: true },
+      { code: "A", kind: "start", color: "#fecc02", connected: true },
+      { code: "E", kind: "destination", color: "#006aa7", connected: true },
+      { code: "C", kind: "guess", color: "#9ca3af", connected: false },
+    ]);
+  });
+
   test("takes each feature's geometry from the graph version's shapes", () => {
     const [start] = mapFeatures(graph, puzzle, []).features;
     expect(start?.geometry).toEqual(square("A", 12, 56).geometry);
@@ -140,6 +155,17 @@ describe("routeFeatures", () => {
       { code: "C", kind: "guess", color: "#4ade80", connected: true },
       { code: "D", kind: "missed", color: "#f87171", connected: false },
     ]);
+  });
+
+  test("with allOutlines, outlines every kommun off the route underneath", () => {
+    const properties = routeFeatures(graph, puzzle, route, new Set(["C"]), {
+      allOutlines: true,
+    }).features.map((feature) => feature.properties);
+    expect(properties.slice(0, 2)).toEqual([
+      { code: "F", kind: "other", color: "#ffffff", connected: true },
+      { code: "A", kind: "start", color: "#fecc02", connected: true },
+    ]);
+    expect(properties).toHaveLength(6);
   });
 });
 

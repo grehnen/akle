@@ -8,14 +8,16 @@ export const CONNECTED_COLOR = "#4ade80";
 export const UNCONNECTED_COLOR = "#9ca3af";
 export const MISSED_COLOR = "#f87171";
 export const HINT_COLOR = "#ffffff";
+export const OTHER_COLOR = "#ffffff";
 
 export type DrawnKommun = {
   code: KommunCode;
   /**
    * "missed" marks a kommun on the result view's route that the player didn't guess; "hint" is
-   * an unfilled outline revealed by a hint.
+   * an unfilled outline revealed by a hint; "other" is an unfilled outline of any other kommun,
+   * drawn once the game is finished.
    */
-  kind: "start" | "destination" | "guess" | "missed" | "hint";
+  kind: "start" | "destination" | "guess" | "missed" | "hint" | "other";
   color: string;
   /** Unconnected guesses get a dashed outline; endpoints are always drawn solid. */
   connected: boolean;
@@ -35,19 +37,26 @@ export type DrawnFeatures = {
 /** [west, south, east, north] in degrees. */
 export type Bounds = [number, number, number, number];
 
+type FeatureOptions = {
+  /** Once the game is finished: outlines every other kommun too, underneath the rest. */
+  allOutlines?: boolean;
+};
+
 /**
  * What the map draws: any hint outlines underneath, then the endpoints, then the guesses in
- * order. Nothing else.
+ * order. Nothing else, until the game is finished: then every other kommun is outlined instead
+ * of the hint outlines.
  */
 export function mapFeatures(
   graph: GraphVersion,
   puzzle: Pick<Puzzle, "start" | "destination">,
   cards: readonly Pick<GuessCard, "code" | "connected">[],
   hintOutlines: readonly KommunCode[] = [],
+  { allOutlines = false }: FeatureOptions = {},
 ): DrawnFeatures {
   const shown = new Set([puzzle.start, puzzle.destination, ...cards.map((card) => card.code)]);
   const drawn: DrawnKommun[] = [
-    ...hintOutlines
+    ...(allOutlines ? [] : hintOutlines)
       .filter((code) => !shown.has(code))
       .map((code) => ({ code, kind: "hint" as const, color: HINT_COLOR, connected: true })),
     { code: puzzle.start, kind: "start", color: START_COLOR, connected: true },
@@ -59,15 +68,19 @@ export function mapFeatures(
       connected: card.connected,
     })),
   ];
-  return withShapes(graph, drawn);
+  return withShapes(graph, allOutlines ? withOtherOutlines(graph, drawn) : drawn);
 }
 
-/** The result view's map: the endpoints, then the route's kommuner, guessed or missed. */
+/**
+ * The result view's map: the endpoints, then the route's kommuner, guessed or missed, over the
+ * outlines of every other kommun when `allOutlines` is set.
+ */
 export function routeFeatures(
   graph: GraphVersion,
   puzzle: Pick<Puzzle, "start" | "destination">,
   route: readonly KommunCode[],
   guesses: ReadonlySet<KommunCode>,
+  { allOutlines = false }: FeatureOptions = {},
 ): DrawnFeatures {
   const drawn: DrawnKommun[] = [
     { code: puzzle.start, kind: "start", color: START_COLOR, connected: true },
@@ -80,7 +93,19 @@ export function routeFeatures(
       return [];
     }),
   ];
-  return withShapes(graph, drawn);
+  return withShapes(graph, allOutlines ? withOtherOutlines(graph, drawn) : drawn);
+}
+
+/** Puts an outline of every kommun not already drawn underneath the drawn ones. */
+function withOtherOutlines(graph: GraphVersion, drawn: readonly DrawnKommun[]): DrawnKommun[] {
+  const shown = new Set(drawn.map((kommun) => kommun.code));
+  return [
+    ...graph.shapes.features
+      .map((feature) => feature.properties.code)
+      .filter((code) => !shown.has(code))
+      .map((code) => ({ code, kind: "other" as const, color: OTHER_COLOR, connected: true })),
+    ...drawn,
+  ];
 }
 
 function withShapes(graph: GraphVersion, drawn: readonly DrawnKommun[]): DrawnFeatures {

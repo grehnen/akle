@@ -13,7 +13,7 @@ const graph = buildGraphVersion({
 });
 
 describe("tooltipText", () => {
-  test.each(["start", "destination", "guess", "missed"] as const)(
+  test.each(["start", "destination", "guess", "missed", "other"] as const)(
     "a %s shows its full name",
     (kind) => {
       expect(tooltipText(graph, { code: "0139", kind }, { initials: false })).toBe("Upplands-Bro");

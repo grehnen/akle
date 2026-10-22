@@ -93,6 +93,7 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
         cards={review.cards}
         hintOutlines={reveals.outlines}
         initials={reveals.initials}
+        allOutlines={finished}
       />
 
       <GuessInput
