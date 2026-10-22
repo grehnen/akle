@@ -169,7 +169,7 @@ reviewed:
     reason: Fine.
 `;
     expect(() => readNeighborOverrides(yaml, kommuner)).toThrow(
-      /reviewed\[0\]: kinds must list flag kinds from scb-mismatch, short-border, point-touch, fixed-only/,
+      /reviewed\[0\]: kinds must list flag kinds from scb-mismatch, short-border, point-touch, non-qualifying-link/,
     );
   });
 
@@ -206,8 +206,8 @@ reviewed:
       ]);
       expect(read.reviewed).toEqual([
         {
-          between: ["0123", "0139"],
-          kinds: ["fixed-only"],
+          between: ["0305", "0330"],
+          kinds: ["scb-mismatch", "non-qualifying-link"],
           reason: "Why the generated graph is right.",
         },
       ]);

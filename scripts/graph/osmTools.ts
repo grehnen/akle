@@ -51,7 +51,9 @@ export async function extractLayers({
 }): Promise<void> {
   const layersDirectory = `${cacheDirectory}/${graphVersionId}`;
   const hasLand = await Bun.file(`${layersDirectory}/land.geojsonseq`).exists();
-  const hasLinks = await Bun.file(`${layersDirectory}/links.geojsonseq`).exists();
+  const hasLinks =
+    (await Bun.file(`${layersDirectory}/links.geojsonseq`).exists()) &&
+    (await Bun.file(`${layersDirectory}/roads.geojsonseq`).exists());
   if (hasLand && hasLinks) return;
   logBuildStep("Building the OSM tools image");
   await Bun.$`docker build --quiet --tag ${toolsImage} ${repositoryRoot}scripts/osm`.quiet();

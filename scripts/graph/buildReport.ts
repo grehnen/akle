@@ -29,17 +29,21 @@ export function reportBuild({
   const pairName = (between: readonly string[]) => between.map((code) => names.get(code)).join("–");
   const linked = new Set(landLinks.flatMap((link) => link.between));
   const isolated = kommuner.filter((kommun) => !linked.has(kommun.code));
-  const withFixedLinks = new Set([...linked, ...fixedLinks.flatMap((link) => link.between)]);
+  const qualifying = fixedLinks.filter((link) => link.failures.length === 0);
+  const withFixedLinks = new Set([...linked, ...qualifying.flatMap((link) => link.between)]);
   logBuildStep(`Wrote ${outputDirectory}`);
   logBuildStep(
-    `${kommuner.length} kommuner, ${borders.length} shared borders, ${landLinks.length} land neighbors, ${fixedLinks.length} fixed links, ${ferryCount} ferries`,
+    `${kommuner.length} kommuner, ${borders.length} shared borders, ${landLinks.length} land neighbors, ${qualifying.length} fixed links (${fixedLinks.length - qualifying.length} more don't qualify), ${ferryCount} ferries`,
   );
   logBuildStep(`No land neighbor: ${isolated.map((kommun) => kommun.name).join(", ") || "none"}`);
   logBuildStep("Fixed links (OSM way ids):");
   for (const link of fixedLinks) {
     const alsoLand = landLinks.some((other) => pairKey(other.between) === pairKey(link.between));
+    const failing = link.failures.map(({ way, reasons }) => `${way} ${reasons.join("+")}`);
     logBuildStep(
-      `  ${pairName(link.between)}${alsoLand ? " (also land)" : ""}: ${link.ways.join(" ")}`,
+      `  ${pairName(link.between)}${alsoLand ? " (also land)" : ""}: ${link.ways.join(" ")}${
+        failing.length > 0 ? ` (doesn't qualify: ${failing.join(", ")})` : ""
+      }`,
     );
   }
   logBuildStep(

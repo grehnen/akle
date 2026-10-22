@@ -2,7 +2,12 @@ import type { Kommun, KommunCode, NeighborLink } from "../../src/graph/graphVers
 import { type Pair, pairKey, sortedPair } from "../../src/graph/kommunPair";
 
 /** The kinds of flag a pair can get, each needing a human verdict (ADR 0003). */
-export const pairFlagKinds = ["scb-mismatch", "short-border", "point-touch", "fixed-only"] as const;
+export const pairFlagKinds = [
+  "scb-mismatch",
+  "short-border",
+  "point-touch",
+  "non-qualifying-link",
+] as const;
 export type PairFlagKind = (typeof pairFlagKinds)[number];
 
 /** An `add` or `remove` correction to the generated graph, backed by a reason and evidence. */

@@ -1,0 +1,4 @@
+{
+  "attributes": { "type": true, "id": true },
+  "include_tags": ["highway", "railway", "tunnel", "ford", "ice_road", "winter_road"]
+}

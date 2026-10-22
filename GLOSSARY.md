@@ -21,7 +21,7 @@ The neighbor graph, kommun names and kommun shapes that apply from a given puzzl
 _Avoid_: Snapshot, release, map version
 
 **Fixed link**:
-A public bridge, tunnel or causeway running directly between two kommuner across water, whatever traffic it carries.
+A public bridge, tunnel or causeway running directly between two kommuner across water, whatever traffic it carries, with both ends on meaningful land: the mainland or an island of at least 1 km². Only such a qualifying link makes the kommuner neighbors; a private road, driveway or track, or a bridge to an islet, doesn't.
 _Avoid_: Crossing, connection
 
 **Dead end**:

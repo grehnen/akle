@@ -2,6 +2,7 @@ import { readCsv } from "../../src/data/csv";
 import type { KommunShapes } from "../../src/graph/graphVersion";
 import { graphVersionFileNames } from "../../src/graph/graphVersionFiles";
 import type { Pair } from "../../src/graph/kommunPair";
+import { linkFailures, type LinkFailure, type WayFailure } from "./fixedLinks";
 import type { BuildEvidence, Point } from "./neighborReview";
 
 /**
@@ -35,13 +36,28 @@ export function readBuildEvidence(files: Record<string, string>): BuildEvidence 
       between: pair(a, b),
       at: point(at),
     })),
-    fixedLinks: rows("fixed-links.csv", "a,b,ways").map(([a, b, ways]) => ({
+    fixedLinks: rows("fixed-links.csv", "a,b,ways,failures").map(([a, b, ways, failures]) => ({
       between: pair(a, b),
       ways: ways.split(" ").map(Number),
+      failures: failures === "-" ? [] : failures.split(" ").map(wayFailure),
     })),
     scbPairs: rows("scb-pairs.csv", "a,b,at").map(([a, b, at]) => ({
       between: pair(a, b),
       at: point(at),
     })),
+  };
+}
+
+/** A `fixed-links.csv` failure, `<way id>:<reason>+<reason>`. */
+function wayFailure(text: string): WayFailure {
+  const [way, reasons] = text.split(":");
+  return {
+    way: Number(way),
+    reasons: reasons.split("+").map((reason) => {
+      if (!linkFailures.includes(reason as LinkFailure)) {
+        throw new Error(`fixed-links.csv: unknown failure ${reason}`);
+      }
+      return reason as LinkFailure;
+    }),
   };
 }

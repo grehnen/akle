@@ -1,6 +1,7 @@
 import type { Kommun, KommunCode, NeighborLink } from "../../src/graph/graphVersion";
 import type { GraphVersionHeader } from "../../src/graph/graphVersionFiles";
 import { pairKey } from "../../src/graph/kommunPair";
+import type { LinkFailure } from "./fixedLinks";
 import type { NeighborReview, FlaggedPair, Point } from "./neighborReview";
 
 export type GraphReportInput = {
@@ -92,13 +93,23 @@ function measurements(flag: FlaggedPair): string {
   const parts: string[] = [];
   if (flag.scb) parts.push(flag.scb);
   if (flag.landLength !== undefined) parts.push(`land border ${flag.landLength} m`);
-  if (flag.ways) {
-    parts.push(
-      `ways ${flag.ways.map((way) => `[${way}](https://www.openstreetmap.org/way/${way})`).join(" ")}`,
+  if (flag.ways) parts.push(`ways ${flag.ways.map(wayLink).join(" ")}`);
+  if (flag.failures) {
+    const failing = flag.failures.map(
+      ({ way, reasons }) => `${wayLink(way)} ${reasons.map(failureText).join(", ")}`,
     );
+    parts.push(`not qualifying: ${failing.join(", ")}`);
   }
   if (flag.kinds.includes("point-touch")) parts.push("touches at one point");
   return parts.join("; ");
+}
+
+function wayLink(way: number): string {
+  return `[${way}](https://www.openstreetmap.org/way/${way})`;
+}
+
+function failureText(reason: LinkFailure): string {
+  return reason === "no-land-end" ? "an end off the mainland and islands of 1 km² or more" : reason;
 }
 
 function mapLink([lon, lat]: Point): string {
