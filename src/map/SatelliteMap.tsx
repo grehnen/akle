@@ -70,42 +70,46 @@ export function SatelliteMap({
     };
     touchScreen.addEventListener("change", followTouchScreen);
     // MapLibre is heavy and needs WebGL, so it loads in its own chunk on the client only.
-    void Promise.all([import("maplibre-gl"), import("maplibre-gl/dist/maplibre-gl.css")]).then(
-      ([maplibre]) => {
-        if (cancelled || !container.current) return;
-        created = new maplibre.Map({
-          container: container.current,
-          style: satelliteMapStyle({ type: "FeatureCollection", features: [] }),
-          ...mapOptions(bounds, { touchScreen: touchScreen.matches }),
-        });
-        if (described) created.getCanvas().setAttribute("aria-describedby", descriptionId);
-        created.touchZoomRotate.disableRotation();
-        created.keyboard.disableRotation();
-        created.addControl(
-          new maplibre.NavigationControl({ showCompass: false, visualizePitch: false }),
-          "top-right",
-        );
-        showTooltips(
-          created,
-          new maplibre.Popup({
-            closeButton: false,
-            closeOnClick: false,
-            className: "kommun-tooltip",
-            offset: 10,
-          }),
-          (kommun) => tooltipFor.current?.(kommun),
-        );
-        const loaded = created;
-        loaded.once("load", () => {
-          // Start with the attribution folded to its ⓘ button so it doesn't cover the endpoints.
-          loaded
-            .getContainer()
-            .querySelector(".maplibregl-ctrl-attrib")
-            ?.classList.remove("maplibregl-compact-show");
-          setMap(loaded);
-        });
-      },
-    );
+    void Promise.all([
+      import("maplibre-gl"),
+      // MapLibre looks for its worker next to its own module, which the build moves and renames.
+      import("maplibre-gl/dist/maplibre-gl-worker.mjs?url"),
+      import("maplibre-gl/dist/maplibre-gl.css"),
+    ]).then(([maplibre, { default: workerUrl }]) => {
+      if (cancelled || !container.current) return;
+      maplibre.setWorkerUrl(workerUrl);
+      created = new maplibre.Map({
+        container: container.current,
+        style: satelliteMapStyle({ type: "FeatureCollection", features: [] }),
+        ...mapOptions(bounds, { touchScreen: touchScreen.matches }),
+      });
+      if (described) created.getCanvas().setAttribute("aria-describedby", descriptionId);
+      created.touchZoomRotate.disableRotation();
+      created.keyboard.disableRotation();
+      created.addControl(
+        new maplibre.NavigationControl({ showCompass: false, visualizePitch: false }),
+        "top-right",
+      );
+      showTooltips(
+        created,
+        new maplibre.Popup({
+          closeButton: false,
+          closeOnClick: false,
+          className: "kommun-tooltip",
+          offset: 10,
+        }),
+        (kommun) => tooltipFor.current?.(kommun),
+      );
+      const loaded = created;
+      loaded.once("load", () => {
+        // Start with the attribution folded to its ⓘ button so it doesn't cover the endpoints.
+        loaded
+          .getContainer()
+          .querySelector(".maplibregl-ctrl-attrib")
+          ?.classList.remove("maplibregl-compact-show");
+        setMap(loaded);
+      });
+    });
     return () => {
       cancelled = true;
       touchScreen.removeEventListener("change", followTouchScreen);
