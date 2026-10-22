@@ -25,7 +25,7 @@ A kommun whose links are all `ferry` is a **dead end**; this is derived, not sto
 
 `graphs/fixture/` is a small hand-made version for development. Its borders and shapes are not real. It applies to puzzles #1–#30.
 
-`graphs/osm-2026-10-01/` is built from OpenStreetMap and starts at puzzle #31. It has all 290 kommuner with land, fixed-link and ferry neighbors; Gotland and Öckerö are linked only by ferry, so they are dead ends. Its `version.json` records the extract and the SCB names file it was built from. Borders and shapes © OpenStreetMap contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
+`graphs/osm-2026-10-01/` is built from OpenStreetMap and starts at puzzle #24. It has all 290 kommuner with land, fixed-link and ferry neighbors; Gotland and Öckerö are linked only by ferry, so they are dead ends. Its `version.json` records the extract and the SCB names file it was built from. Borders and shapes © OpenStreetMap contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
 
 ### Rebuilding a graph version from OSM
 

@@ -1,6 +1,6 @@
 {
   "id": "osm-2026-10-01",
-  "startsAtPuzzle": 31,
+  "startsAtPuzzle": 24,
   "source": {
     "extract": {
       "url": "https://download.geofabrik.de/europe/sweden-261001.osm.pbf",

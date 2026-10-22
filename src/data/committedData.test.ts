@@ -61,9 +61,9 @@ describe("committed data", () => {
     expect(osmGraph?.kommuner.get("0360")?.name).toBe("Tierp");
   });
 
-  test("puzzles from #31 on are played on the OSM graph version", () => {
-    expect(graphVersionFor(graphVersions, 30)?.id).toBe("fixture");
-    expect(graphVersionFor(graphVersions, 31)?.id).toBe("osm-2026-10-01");
+  test("puzzles from #24 on are played on the OSM graph version", () => {
+    expect(graphVersionFor(graphVersions, 23)?.id).toBe("fixture");
+    expect(graphVersionFor(graphVersions, 24)?.id).toBe("osm-2026-10-01");
   });
 
   test("island kommuner reach the mainland by fixed links, with the OSM way ids recorded", async () => {
