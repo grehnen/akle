@@ -74,7 +74,7 @@ The build can't trust every pair on its own, so it **flags** them for a human ([
 | `river-border`        | the pair has no border on land but one in river water, and either less than 1000 m of it, so the build drops the pair unless a qualifying fixed link keeps it, or 1000 m or more with no other valid link, so the river border alone makes the pair `land` neighbors                                                   |
 | `exclave-border`      | the pair's whole land border, at any length, lies on an exclave of either kommun; the report names whose, and the build drops the pair unless a qualifying fixed link keeps it                                                                                                                                         |
 
-A dropped pair stays flagged, and the report's build column says whether it ended up a neighbor; an `add` puts it back.
+A dropped pair stays flagged, and the report lists it under the pairs the build made neighbors or not; an `add` puts it back.
 
 Every flagged pair needs a **verdict** in `neighbor-overrides.yaml`. Each entry is keyed by its pair of SCB codes, under `add`, `remove` or `keep`, with `names` that must match, and needs a `reason`. A pair appears at most once in the file.
 
