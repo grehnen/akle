@@ -23,7 +23,7 @@ type ResultViewProps = {
   focusOnOpen?: boolean;
 };
 
-/** Opens when the game ends: the outcome, the emoji line, a shortest route, the stats, sharing and the countdown. */
+/** Opens when the game ends: the outcome, the emoji line, the cheapest route, the stats, sharing and the countdown. */
 export function ResultView({
   graph,
   game,
@@ -41,7 +41,7 @@ export function ResultView({
   const nameOf = (code: string) => kommunName(graph, code);
   const outcome = resultOutcome(review);
   const guessed = useMemo(() => new Set(game.guesses), [game.guesses]);
-  const { route } = review;
+  const { cheapestRoute } = review;
 
   return (
     <section
@@ -60,11 +60,16 @@ export function ResultView({
         {emojiLine(review.cards)}
       </p>
 
-      {route && (
+      {cheapestRoute && (
         <>
-          <SatelliteMap graph={graph} puzzle={game.puzzle} cards={review.cards} route={route} />
-          <ol aria-label="Kortaste vägen" className="result-route">
-            {routeStops(game.puzzle, route, guessed).map(({ code, kind }) => (
+          <SatelliteMap
+            graph={graph}
+            puzzle={game.puzzle}
+            cards={review.cards}
+            cheapestRoute={cheapestRoute}
+          />
+          <ol aria-label="Bästa vägen med dina gissningar" className="result-route">
+            {routeStops(game.puzzle, cheapestRoute, guessed).map(({ code, kind }) => (
               <li key={code} className={`stop-${kind}`}>
                 {nameOf(code)}
                 {kind === "guessed" && <span className="visually-hidden"> (gissad)</span>}

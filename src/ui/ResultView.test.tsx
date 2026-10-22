@@ -35,7 +35,8 @@ const puzzle = { number: 21, start: "0192", destination: "0488" };
 const now = new Date(2026, 9, 21, 13, 5, 9);
 
 function routeItems(markup: string): string[] {
-  const route = markup.match(/<ol aria-label="Kortaste vägen"[^>]*>(.*?)<\/ol>/)?.[1] ?? "";
+  const route =
+    markup.match(/<ol aria-label="Bästa vägen med dina gissningar"[^>]*>(.*?)<\/ol>/)?.[1] ?? "";
   return [...route.matchAll(/<li[^>]*>(.*?)<\/li>/g)].map((item) =>
     (item[1] ?? "").replace(/<[^>]+>/g, ""),
   );
@@ -75,11 +76,13 @@ describe("the result view", () => {
       expect(markup).toContain("🟧✅");
     });
 
-    test("shows the shortest route on the map", () => {
-      expect(markup).toContain('aria-label="Kortaste vägen från Nynäshamn till Trosa"');
+    test("shows the cheapest route on the map", () => {
+      expect(markup).toContain(
+        'aria-label="Bästa vägen med dina gissningar från Nynäshamn till Trosa"',
+      );
     });
 
-    test("lists the shortest route with the player's guess on it marked", () => {
+    test("lists the cheapest route with the player's guess on it marked", () => {
       expect(routeItems(markup)).toEqual(["Nynäshamn", "Södertälje (gissad)", "Trosa"]);
     });
 
@@ -115,12 +118,12 @@ describe("the result view", () => {
       expect(markup).toContain("🟧🟥🟥🟥🟥");
     });
 
-    test("lists the shortest route, marking the missed kommuner", () => {
+    test("lists the cheapest route, marking the missed kommuner", () => {
       expect(routeItems(markup)).toEqual(["Nynäshamn", "Södertälje (missad)", "Trosa"]);
     });
   });
 
-  test("after a loss, names the same missed kommuner in the count, the list and the route", () => {
+  test("after a loss, names the same missed kommuner in the count, the list and the cheapest route", () => {
     // S ── A ── B ── T is shortest, but the guesses X and Y leave only Z missing on S ── X ── Y ── Z ── T.
     const detour = buildGraphVersion({
       id: "detour",

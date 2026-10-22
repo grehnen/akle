@@ -64,6 +64,10 @@ _Avoid_: Reached, linked, on the route
 A route with the fewest intermediate kommuner; a daily puzzle may have several.
 _Avoid_: Optimal path, solution
 
+**Cheapest route**:
+A route through the fewest kommuner the player hasn't guessed, with guessed kommuner free; it can be longer than a shortest route. In the UI: _bästa vägen med dina gissningar_.
+_Avoid_: Shortest route (for this), best route, kortaste vägen
+
 **Guess limit**:
 The number of guesses allowed in a daily puzzle, set by the length of its shortest route.
 _Avoid_: Max guesses, lives

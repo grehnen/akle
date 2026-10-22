@@ -17,8 +17,8 @@ type SatelliteMapProps = {
   graph: GraphVersion;
   puzzle: Pick<Puzzle, "start" | "destination">;
   cards: readonly Pick<GuessCard, "code" | "connected">[];
-  /** Draws this route instead, with the guessed and missed kommuner on it marked. */
-  route?: readonly KommunCode[];
+  /** Draws this cheapest route instead, with the guessed and missed kommuner on it marked. */
+  cheapestRoute?: readonly KommunCode[];
   /** Kommuner revealed by hints, drawn as unfilled outlines. */
   hintOutlines?: readonly KommunCode[];
   /** Hint 3: hint-outline tooltips show initials instead of `?`. */
@@ -33,7 +33,7 @@ export function SatelliteMap({
   graph,
   puzzle,
   cards,
-  route,
+  cheapestRoute,
   hintOutlines,
   initials = false,
 }: SatelliteMapProps) {
@@ -41,21 +41,23 @@ export function SatelliteMap({
   const [map, setMap] = useState<MapLibreMap>();
   const drawn = useMemo(
     () =>
-      route
-        ? routeFeatures(graph, puzzle, route, new Set(cards.map((card) => card.code)))
+      cheapestRoute
+        ? routeFeatures(graph, puzzle, cheapestRoute, new Set(cards.map((card) => card.code)))
         : mapFeatures(graph, puzzle, cards, hintOutlines),
-    [graph, puzzle, cards, route, hintOutlines],
+    [graph, puzzle, cards, cheapestRoute, hintOutlines],
   );
   const tooltipFor = useRef<(kommun: DrawnKommun) => string | undefined>(undefined);
   useEffect(() => {
     tooltipFor.current = (kommun) => tooltipText(graph, kommun, { initials });
   }, [graph, initials]);
   const descriptionId = useId();
-  const description = route ? undefined : mapDescription(graph, puzzle, cards, hintOutlines);
+  const description = cheapestRoute
+    ? undefined
+    : mapDescription(graph, puzzle, cards, hintOutlines);
   const described = description !== undefined;
   const bounds = useMemo(
-    () => (route ? routeBounds(graph, route) : endpointBounds(graph, puzzle)),
-    [graph, puzzle, route],
+    () => (cheapestRoute ? routeBounds(graph, cheapestRoute) : endpointBounds(graph, puzzle)),
+    [graph, puzzle, cheapestRoute],
   );
 
   useEffect(() => {
@@ -121,8 +123,8 @@ export function SatelliteMap({
       className="satellite-map"
       role="region"
       aria-label={
-        route
-          ? `Kortaste vägen från ${kommunName(graph, puzzle.start)} till ${kommunName(graph, puzzle.destination)}`
+        cheapestRoute
+          ? `Bästa vägen med dina gissningar från ${kommunName(graph, puzzle.start)} till ${kommunName(graph, puzzle.destination)}`
           : `Karta över ${kommunName(graph, puzzle.start)} och ${kommunName(graph, puzzle.destination)}`
       }
     >
