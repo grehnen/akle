@@ -1,5 +1,6 @@
 import mapshaper from "mapshaper";
 import type { KommunShapes } from "../../src/graph/graphVersion";
+import { compareCodes } from "../../src/graph/kommunPair";
 import type { Feature } from "./osmTools";
 import type { AreaGeometry, KommunArea } from "./sharedBorders";
 
@@ -50,7 +51,7 @@ export async function drawShapes(
     {
       "kommuner.json": collection(
         [...kommunAreas]
-          .sort((a, b) => (a.code < b.code ? -1 : 1))
+          .sort((a, b) => compareCodes(a.code, b.code))
           .map((area) => ({
             type: "Feature",
             properties: { code: area.code },

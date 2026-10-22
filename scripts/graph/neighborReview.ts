@@ -1,6 +1,11 @@
-import type { Kommun, KommunCode, NeighborLink } from "../../src/graph/graphVersion";
+import {
+  compareLinks,
+  type Kommun,
+  type KommunCode,
+  type NeighborLink,
+} from "../../src/graph/graphVersion";
 import type { FixedLink } from "./fixedLinks";
-import { type Pair, pairKey, sortedPair } from "../../src/graph/kommunPair";
+import { compareCodes, type Pair, pairKey, sortedPair } from "../../src/graph/kommunPair";
 import { pairFlagKinds, type NeighborOverrides, type PairFlagKind } from "./neighborOverrides";
 
 /** A WGS 84 `[lon, lat]` point. */
@@ -89,7 +94,7 @@ export function reviewNeighborGraph(
   }
 
   const flaggedPairs = [...flagKinds]
-    .sort(([a], [b]) => compare(a, b))
+    .sort(([a], [b]) => compareCodes(a, b))
     .map(([key, kinds]): FlaggedPair => {
       const border = borders.get(key);
       const ways = fixed.get(key)?.ways;
@@ -158,14 +163,14 @@ export function reviewNeighborGraph(
     }
   }
 
-  const shipped = sortLinks(
-    links.map((link) => ({ between: sortedPair(link.between), kind: link.kind })),
-  );
+  const shipped = links
+    .map((link) => ({ between: sortedPair(link.between), kind: link.kind }))
+    .sort(compareLinks);
   return {
     links: shipped,
     flaggedPairs,
     graphProblems: wholeGraphProblems(evidence, shipped),
-    problems: pairProblems.sort(([a], [b]) => compare(a, b)).map(([, message]) => message),
+    problems: pairProblems.sort(([a], [b]) => compareCodes(a, b)).map(([, message]) => message),
   };
 }
 
@@ -206,7 +211,7 @@ function wholeGraphProblems(evidence: BuildEvidence, links: readonly NeighborLin
   const unreachable = components
     .filter((component) => component !== main)
     .flat()
-    .sort(compare);
+    .sort(compareCodes);
   if (unreachable.length > 0) {
     problems.push(
       `${unreachable.map(named).join(", ")} can't be reached from the rest of the graph`,
@@ -227,7 +232,7 @@ function wholeGraphProblems(evidence: BuildEvidence, links: readonly NeighborLin
       ...links,
     ].flatMap((item) => item.between),
   ]);
-  for (const code of [...used].sort(compare)) {
+  for (const code of [...used].sort(compareCodes)) {
     if (!names.has(code)) problems.push(`${code} has an OSM boundary but isn't in SCB's list`);
   }
   return problems;
@@ -237,17 +242,4 @@ function byPair<Item extends { between: readonly KommunCode[] }>(
   items: readonly Item[],
 ): Map<string, Item> {
   return new Map(items.map((item) => [pairKey(item.between), item]));
-}
-
-function sortLinks(links: NeighborLink[]): NeighborLink[] {
-  return links.sort(
-    (a, b) =>
-      compare(a.between[0], b.between[0]) ||
-      compare(a.between[1], b.between[1]) ||
-      compare(a.kind, b.kind),
-  );
-}
-
-function compare(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

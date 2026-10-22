@@ -1,3 +1,5 @@
+import { comparePairs } from "./kommunPair";
+
 /** SCB kommun code, e.g. "0180" for Stockholm. */
 export type KommunCode = string;
 
@@ -13,6 +15,16 @@ export type NeighborLink = {
   between: readonly [KommunCode, KommunCode];
   kind: LinkKind;
 };
+
+/** Orders link kinds alphabetically, as `neighbors.csv` lists them for a pair. */
+export function compareLinkKinds(a: LinkKind, b: LinkKind): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/** Orders links by pair (each in code order), then by kind. */
+export function compareLinks(a: NeighborLink, b: NeighborLink): number {
+  return comparePairs(a, b) || compareLinkKinds(a.kind, b.kind);
+}
 
 export type GraphVersionSource = {
   id: string;

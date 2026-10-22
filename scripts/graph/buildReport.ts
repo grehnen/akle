@@ -1,4 +1,5 @@
 import type { KommunCode, NeighborLink } from "../../src/graph/graphVersion";
+import { pairKey } from "../../src/graph/kommunPair";
 import type { FixedLink } from "./fixedLinks";
 import type { LandBorder } from "./landBorders";
 import { log } from "./osmTools";
@@ -36,7 +37,7 @@ export function reportBuild({
   log(`No land neighbor: ${isolated.map((kommun) => kommun.name).join(", ") || "none"}`);
   log("Fixed links (OSM way ids):");
   for (const link of fixedLinks) {
-    const alsoLand = landLinks.some((other) => other.between.join() === link.between.join());
+    const alsoLand = landLinks.some((other) => pairKey(other.between) === pairKey(link.between));
     log(`  ${pairName(link.between)}${alsoLand ? " (also land)" : ""}: ${link.ways.join(" ")}`);
   }
   log(

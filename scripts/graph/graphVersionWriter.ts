@@ -1,5 +1,10 @@
-import type { Kommun, KommunShapes, NeighborLink } from "../../src/graph/graphVersion";
-import { compareCodes, comparePairs } from "../../src/graph/kommunPair";
+import {
+  compareLinks,
+  type Kommun,
+  type KommunShapes,
+  type NeighborLink,
+} from "../../src/graph/graphVersion";
+import { compareCodes, comparePairs, sortedPair } from "../../src/graph/kommunPair";
 import { type GraphVersionHeader, graphVersionFileNames } from "../../src/graph/graphVersionFiles";
 import type { FixedLink } from "./fixedLinks";
 import type { BuildEvidence } from "./neighborReview";
@@ -21,7 +26,7 @@ export type GraphVersionOutput = {
 export function graphVersionFileContents(output: GraphVersionOutput): Record<string, string> {
   const kommuner = [...output.kommuner].sort((a, b) => compareCodes(a.code, b.code));
   const fixedLinks = (output.fixedLinks ?? [])
-    .map((link) => ({ between: [...link.between].sort(compareCodes), ways: link.ways }))
+    .map((link) => ({ between: sortedPair(link.between), ways: link.ways }))
     .sort(comparePairs);
   const features = [...output.shapes.features].sort((a, b) =>
     compareCodes(a.properties.code, b.properties.code),
@@ -48,8 +53,8 @@ export function graphVersionFileContents(output: GraphVersionOutput): Record<str
 /** `neighbors.csv`, sorted by pair and link kind. */
 export function neighborsFileContent(links: readonly NeighborLink[]): string {
   const pairs = links
-    .map((link) => ({ between: [...link.between].sort(compareCodes), kind: link.kind }))
-    .sort((a, b) => comparePairs(a, b) || compareCodes(a.kind, b.kind));
+    .map((link) => ({ between: sortedPair(link.between), kind: link.kind }))
+    .sort(compareLinks);
   return csv(
     "a,b,link",
     pairs.map((pair) => [...pair.between, pair.kind]),
@@ -58,9 +63,7 @@ export function neighborsFileContent(links: readonly NeighborLink[]): string {
 
 function evidenceFiles(evidence: NonNullable<GraphVersionOutput["evidence"]>) {
   const sorted = <Item extends { between: readonly string[] }>(items: readonly Item[]) =>
-    items
-      .map((item) => ({ ...item, between: [...item.between].sort(compareCodes) }))
-      .sort(comparePairs);
+    items.map((item) => ({ ...item, between: sortedPair(item.between) })).sort(comparePairs);
   const at = (point: readonly number[]) => point.join(" ");
   return {
     "land-borders.csv": csv(

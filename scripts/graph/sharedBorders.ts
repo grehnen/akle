@@ -55,7 +55,7 @@ export function sharedBorders(areas: readonly KommunArea[]): SharedBorder[] {
       }
       for (const [partner, lines] of ringLines) {
         joinAcrossRingStart(lines);
-        const key = `${area.code}-${partner}`;
+        const key = pairKey([area.code, partner]);
         const border = borders.get(key) ?? { between: [area.code, partner] as const, lines: [] };
         border.lines.push(...lines);
         borders.set(key, border);
