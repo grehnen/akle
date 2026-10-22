@@ -123,32 +123,45 @@ describe("DailyPuzzleView", () => {
       expect(markup).toMatch(/<button type="submit"(?![^>]*disabled)[^>]*>/);
     });
 
-    test("shows the toast in the Ledtråd row, also once the game has ended", () => {
+    test("shows the toast in the hint row, also once the game has ended", () => {
       for (const guesses of [[], ["0181"]]) {
         expect(renderWith(guesses)).toMatch(/<div class="hint-row"><p role="alert" class="toast">/);
       }
     });
 
-    test("offers Ledtråd (0/3) before the first guess", () => {
-      expect(renderWith([])).toMatch(
-        /<button[^>]*class="hint-button"[^>]*>Ledtråd <span aria-hidden="true">\(0\/3\)<\/span>/,
+    test("offers three stacked hint buttons before the first guess, only the topmost enabled", () => {
+      const markup = renderWith([]);
+      expect(markup).toContain('<div role="group" aria-label="Ledtrådar" class="hint-buttons">');
+      expect(markup).toMatch(
+        /<button[^>]*class="hint-button"(?![^>]*disabled)[^>]*>Visa nästa kommun</,
+      );
+      expect(markup).toMatch(
+        /<button[^>]*class="hint-button"[^>]*disabled=""[^>]*>Visa alla kommuner</,
+      );
+      expect(markup).toMatch(
+        /<button[^>]*class="hint-button"[^>]*disabled=""[^>]*>Visa initialer</,
       );
     });
 
     test("restores the hints taken, and says what the last one revealed", () => {
       const markup = renderWith(["0136"], puzzle, 2);
-      expect(visibleText(markup)).toContain("Ledtråd (2/3)");
+      expect(visibleText(markup)).toContain("Visa nästa kommun ✓");
+      expect(visibleText(markup)).toContain("Visa alla kommuner ✓");
+      expect(markup).toMatch(
+        /<button[^>]*class="hint-button"(?![^>]*disabled)[^>]*>Visa initialer</,
+      );
       expect(markup).toContain("Alla kommuner syns nu på kartan.");
     });
 
-    test("disables Ledtråd once all three are taken", () => {
-      expect(renderWith([], puzzle, 3)).toMatch(
-        /<button[^>]*disabled=""[^>]*>Ledtråd <span aria-hidden="true">\(3\/3\)/,
+    test("disables every hint button once all three are taken", () => {
+      const markup = renderWith([], puzzle, 3);
+      expect(markup.match(/<button[^>]*class="hint-button taken"[^>]*disabled=""/g)).toHaveLength(
+        3,
       );
     });
 
-    test("hides Ledtråd once the game has ended", () => {
-      expect(renderWith(["0181"], puzzle, 1)).not.toContain("Ledtråd ");
+    test("hides the hint buttons once the game has ended", () => {
+      expect(renderWith(["0181"], puzzle, 1)).not.toContain("hint-button");
     });
 
     test("each guess card reads out its number, feedback and connection", () => {
@@ -161,10 +174,12 @@ describe("DailyPuzzleView", () => {
       );
     });
 
-    test("the Gissa and Ledtråd buttons say how many are used", () => {
+    test("the Gissa button says how many are used, and taken hint buttons say so", () => {
       const markup = renderWith(["0136"], puzzle, 1);
       expect(markup).toMatch(/<button type="submit"[^>]*>.*?1 av 5 använda.*?<\/button>/);
-      expect(markup).toMatch(/<button[^>]*class="hint-button"[^>]*>.*?1 av 3 använda.*?<\/button>/);
+      expect(markup).toMatch(
+        /<button[^>]*class="hint-button taken"[^>]*>Visa nästa kommun.*?\(använd\).*?<\/button>/,
+      );
     });
 
     test("a restored game announces nothing until the next guess or hint", () => {

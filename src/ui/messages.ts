@@ -1,4 +1,5 @@
 import type { Feedback, GameReview, GameStatus, GuessCard, GuessResult } from "../engine/game";
+import type { HINT_COUNT } from "../engine/hints";
 import { gameOutcome } from "../progress/outcome";
 
 type RejectionReason = Extract<GuessResult, { kind: "rejected" }>["reason"];
@@ -44,7 +45,16 @@ function hintCount(hints: number): string {
   return hints === 1 ? "1 ledtråd" : `${hints} ledtrådar`;
 }
 
-/** What the latest hint revealed, under the Ledtråd button. */
+/** The hint buttons, top to bottom: what each hint reveals. */
+export const HINT_LABELS = [
+  "Visa nästa kommun",
+  "Visa alla kommuner",
+  "Visa initialer",
+] as const satisfies readonly string[] & {
+  length: typeof HINT_COUNT;
+};
+
+/** What the latest hint revealed, under the hint buttons. */
 export function hintRevealed(hintsUsed: number): string {
   switch (hintsUsed) {
     case 0:
