@@ -38,20 +38,37 @@ async function clickHint(hintsTaken: number) {
   dom.window.document.body.append(container);
   const root = createRoot(container);
   await act(async () => root.render(<Row hintsTaken={hintsTaken} />));
-  const button = container.querySelector<HTMLButtonElement>(".hint-button");
+  const buttons = [...container.querySelectorAll<HTMLButtonElement>(".hint-button")];
+  const button = buttons[hintsTaken];
   button?.focus();
   await act(async () => button?.click());
   const focused = dom.window.document.activeElement;
-  const disabled = button?.disabled;
+  const enabled = buttons.flatMap((hintButton, index) => (hintButton.disabled ? [] : [index]));
   await act(async () => root.unmount());
   container.remove();
-  return { focused: focused === button ? "hint-button" : focused?.id, disabled };
+  const focusedHint = buttons.findIndex((hintButton) => hintButton === focused);
+  return { focused: focusedHint >= 0 ? `hint ${focusedHint}` : focused?.id, enabled };
 }
 
-test("taking the last hint moves focus to the guess input, not the top of the page", async () => {
-  expect(await clickHint(2)).toEqual({ focused: "guess-input", disabled: true });
+test("only the topmost hint not yet taken is enabled", async () => {
+  const container = dom.window.document.createElement("div");
+  dom.window.document.body.append(container);
+  const root = createRoot(container);
+  for (const hintsTaken of [0, 1, 2, 3]) {
+    await act(async () => root.render(<Row key={hintsTaken} hintsTaken={hintsTaken} />));
+    const buttons = [...container.querySelectorAll<HTMLButtonElement>(".hint-button")];
+    expect(buttons.map((button) => !button.disabled)).toEqual(
+      [0, 1, 2].map((index) => index === hintsTaken),
+    );
+  }
+  await act(async () => root.unmount());
+  container.remove();
 });
 
-test("taking an earlier hint leaves focus on the Ledtråd button", async () => {
-  expect(await clickHint(0)).toEqual({ focused: "hint-button", disabled: false });
+test("taking the last hint moves focus to the guess input, not the top of the page", async () => {
+  expect(await clickHint(2)).toEqual({ focused: "guess-input", enabled: [] });
+});
+
+test("taking an earlier hint moves focus to the next hint button", async () => {
+  expect(await clickHint(0)).toEqual({ focused: "hint 1", enabled: [1] });
 });

@@ -219,7 +219,7 @@ a {
   border-left-color: var(--night);
 }
 
-/* The toast and the Ledtråd button share a row, as on phones (#35). */
+/* The toast and the hint buttons share a row, as on phones (#35). */
 .hint-row {
   display: flex;
   flex-wrap: wrap;
@@ -228,22 +228,33 @@ a {
   gap: 0.25rem 0.75rem;
 }
 
-/* The Ledtråd button is drawn like a hint outline: unfilled, with a thin white edge. */
-.hint-row:has(> .toast:empty):not(:has(> .hint-button)) {
+.hint-row:has(> .toast:empty):not(:has(> .hint-buttons)) {
   display: none;
 }
 
+/* One button per hint, stacked as on travle.earth; only the topmost not yet taken is enabled. */
+.hint-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+/* The hint buttons are drawn like a hint outline: unfilled, with a thin white edge. */
 .hint-button {
   min-width: 2.75rem;
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--hint-outline);
   color: var(--text);
   font-weight: 400;
-  font-variant-numeric: tabular-nums;
 }
 
 .hint-button:hover:not(:disabled) {
   box-shadow: inset 0 0 0 1px var(--text);
+}
+
+.hint-button.taken {
+  box-shadow: none;
 }
 
 .hint-note {
