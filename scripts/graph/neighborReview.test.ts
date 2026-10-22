@@ -17,7 +17,7 @@ type TestBorder = Omit<
 > &
   Partial<LandBorder>;
 
-/** A chain 0001–0002–0003–0004 of long land borders, all matching SCB. */
+/** A chain 0001–0002–0003–0004 of long land borders. */
 function evidence(
   changes: Omit<Partial<BuildEvidence>, "landBorders"> & {
     landBorders?: TestBorder[];
@@ -33,11 +33,6 @@ function evidence(
     shapeCodes: kommuner.map((kommun) => kommun.code),
     pointTouches: [],
     fixedLinks: [],
-    scbPairs: [
-      { between: ["0001", "0002"], at: [18, 59] },
-      { between: ["0002", "0003"], at: [18.1, 59] },
-      { between: ["0003", "0004"], at: [18.2, 59] },
-    ],
     ...changes,
     landBorders: landBorders.map((border) => ({
       mainlandLength: border.landLength,
@@ -251,10 +246,6 @@ describe("reviewNeighborGraph", () => {
           },
         ],
         fixedLinks: [{ between: ["0003", "0004"], ways: [11], failures: [] }],
-        scbPairs: [
-          { between: ["0001", "0002"], at: [18, 59] },
-          { between: ["0003", "0004"], at: [18.2, 59] },
-        ],
       }),
       noOverrides,
     );
@@ -285,12 +276,6 @@ describe("reviewNeighborGraph", () => {
           { between: ["0002", "0003"], landLength: 3000, at: [18.1, 59] },
           { between: ["0003", "0004"], landLength: 2000, at: [18.2, 59] },
           { between: ["0001", "0004"], landLength: 0, riverLength, at: [18.3, 59] },
-        ],
-        scbPairs: [
-          { between: ["0001", "0002"], at: [18, 59] },
-          { between: ["0002", "0003"], at: [18.1, 59] },
-          { between: ["0003", "0004"], at: [18.2, 59] },
-          { between: ["0001", "0004"], at: [18.3, 59] },
         ],
         ...changes,
       });
@@ -380,12 +365,6 @@ describe("reviewNeighborGraph", () => {
     const review = reviewNeighborGraph(
       evidence({
         pointTouches: [{ between: ["0004", "0001"], at: [18.3, 59] }],
-        scbPairs: [
-          { between: ["0001", "0002"], at: [18, 59] },
-          { between: ["0002", "0003"], at: [18.1, 59] },
-          { between: ["0003", "0004"], at: [18.2, 59] },
-          { between: ["0001", "0004"], at: [18.3, 59] },
-        ],
       }),
       noOverrides,
     );
@@ -459,9 +438,9 @@ describe("reviewNeighborGraph", () => {
           { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
           {
             between: ["0002", "0003"],
-            landLength: 1336,
+            landLength: 328,
             mainlandLength: 0,
-            islandLength: 1336,
+            islandLength: 328,
             at: [18.1, 59],
           },
           { between: ["0003", "0004"], landLength: 2000, at: [18.2, 59] },
@@ -473,10 +452,6 @@ describe("reviewNeighborGraph", () => {
             failures: [{ way: 9, reasons: ["no-land-end"] }],
           },
         ],
-        scbPairs: [
-          { between: ["0001", "0002"], at: [18, 59] },
-          { between: ["0003", "0004"], at: [18.2, 59] },
-        ],
       }),
       noOverrides,
     );
@@ -484,14 +459,14 @@ describe("reviewNeighborGraph", () => {
     expect(review.flaggedPairs).toEqual([
       {
         between: ["0002", "0003"],
-        kinds: ["scb-mismatch"],
-        landLength: 1336,
+        kinds: ["island-border"],
+        landLength: 328,
         mainlandLength: 0,
-        islandLength: 1336,
+        islandLength: 328,
         ways: [7, 9],
         failures: [{ way: 9, reasons: ["no-land-end"] }],
         at: [18.1, 59],
-        built: ["land", "fixed"],
+        built: ["fixed"],
       },
     ]);
   });
@@ -518,10 +493,6 @@ describe("reviewNeighborGraph", () => {
       evidence({
         landBorders: waterBorders,
         fixedLinks: [driveway],
-        scbPairs: [
-          { between: ["0001", "0002"], at: [18, 59] },
-          { between: ["0003", "0004"], at: [18.2, 59] },
-        ],
       }),
       noOverrides,
     );
@@ -538,24 +509,6 @@ describe("reviewNeighborGraph", () => {
         failures: [{ way: 9, reasons: ["service=driveway", "no-land-end"] }],
         at: [18.1, 59],
         built: [],
-      },
-    ]);
-  });
-
-  test("a pair SCB joins but linked only by a non-qualifying link is not an SCB mismatch", () => {
-    const review = reviewNeighborGraph(
-      evidence({ landBorders: waterBorders, fixedLinks: [driveway] }),
-      noOverrides,
-    );
-    expect(
-      review.flaggedPairs.map(({ between, kinds }) => ({
-        between,
-        kinds,
-      })),
-    ).toEqual([
-      {
-        between: ["0002", "0003"],
-        kinds: ["non-qualifying-link"],
       },
     ]);
   });
@@ -628,7 +581,6 @@ describe("reviewNeighborGraph", () => {
       evidence({
         landBorders: doubtfulBorders,
         fixedLinks: [{ ...driveway, between: ["0002", "0003"] }],
-        scbPairs: [{ between: ["0001", "0002"], at: [18, 59] }],
       }),
       noOverrides,
     );
@@ -660,7 +612,6 @@ describe("reviewNeighborGraph", () => {
     const review = reviewNeighborGraph(
       evidence({
         landBorders: doubtfulBorders,
-        scbPairs: [{ between: ["0001", "0002"], at: [18, 59] }],
       }),
       {
         ...noOverrides,
@@ -682,10 +633,6 @@ describe("reviewNeighborGraph", () => {
       evidence({
         landBorders: waterBorders,
         fixedLinks: [driveway],
-        scbPairs: [
-          { between: ["0001", "0002"], at: [18, 59] },
-          { between: ["0003", "0004"], at: [18.2, 59] },
-        ],
       }),
       {
         ...noOverrides,
@@ -709,45 +656,19 @@ describe("reviewNeighborGraph", () => {
     expect(review.problems).toEqual([]);
   });
 
-  test("flags pairs found only by OSM, not pairs found only by SCB", () => {
-    const review = reviewNeighborGraph(
-      evidence({
-        scbPairs: [
-          { between: ["0001", "0002"], at: [18, 59] },
-          { between: ["0002", "0003"], at: [18.1, 59] },
-          { between: ["0001", "0003"], at: [18.05, 59.1] },
-        ],
-      }),
-      noOverrides,
-    );
-    expect(review.flaggedPairs).toEqual([
-      {
-        between: ["0003", "0004"],
-        kinds: ["scb-mismatch"],
-        landLength: 2000,
-        at: [18.2, 59],
-        built: ["land"],
-      },
-    ]);
-  });
-
   test("lists every flag kind a pair has", () => {
     const review = reviewNeighborGraph(
       evidence({
         landBorders: [
           { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
           { between: ["0002", "0003"], landLength: 3000, at: [18.1, 59] },
-          { between: ["0003", "0004"], landLength: 20, at: [18.2, 59] },
-        ],
-        scbPairs: [
-          { between: ["0001", "0002"], at: [18, 59] },
-          { between: ["0002", "0003"], at: [18.1, 59] },
+          { between: ["0003", "0004"], landLength: 20, exclaveOf: ["0004"], at: [18.2, 59] },
         ],
       }),
       noOverrides,
     );
     expect(review.flaggedPairs.map((flag) => flag.kinds)).toEqual([
-      ["scb-mismatch", "short-border"],
+      ["short-border", "exclave-border"],
     ]);
   });
 
@@ -783,7 +704,11 @@ describe("reviewNeighborGraph", () => {
     const review = reviewNeighborGraph(
       {
         ...shortBo,
-        scbPairs: shortBo.scbPairs.filter((pair) => pair.between[0] !== "0002"),
+        landBorders: shortBo.landBorders.map((border) =>
+          border.between[0] === "0002"
+            ? { ...border, mainlandLength: 0, islandLength: border.landLength }
+            : border,
+        ),
       },
       {
         ...noOverrides,
@@ -797,7 +722,7 @@ describe("reviewNeighborGraph", () => {
       },
     );
     expect(review.problems).toEqual([
-      "0002-0003 (Bo–Cil) is now also flagged scb-mismatch, which its keep doesn't cover",
+      "0002-0003 (Bo–Cil) is now also flagged island-border, which its keep doesn't cover",
     ]);
   });
 
@@ -923,7 +848,6 @@ describe("reviewNeighborGraph", () => {
       {
         ...base,
         landBorders: base.landBorders.slice(0, 2),
-        scbPairs: base.scbPairs.slice(0, 2),
       },
       noOverrides,
     );
@@ -949,7 +873,6 @@ describe("reviewNeighborGraph", () => {
             at: [19, 60],
           },
         ],
-        scbPairs: [...base.scbPairs, { between: ["0005", "0006"], at: [19, 60] }],
       },
       noOverrides,
     );

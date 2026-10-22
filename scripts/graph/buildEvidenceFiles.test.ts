@@ -40,7 +40,6 @@ describe("readBuildEvidence", () => {
           },
         ],
         pointTouches: [{ between: ["0125", "0180"], at: [17.8, 59.3] }],
-        scbPairs: [{ between: ["0125", "0180"], at: [17.8, 59.4] }],
       },
     });
     expect(readBuildEvidence(files)).toEqual({
@@ -70,7 +69,6 @@ describe("readBuildEvidence", () => {
         },
         { between: ["0180", "0186"], ways: [4054906], failures: [] },
       ],
-      scbPairs: [{ between: ["0125", "0180"], at: [17.8, 59.4] }],
     });
   });
 

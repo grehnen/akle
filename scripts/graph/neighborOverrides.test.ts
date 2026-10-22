@@ -50,7 +50,7 @@ overrides:
 reviewed:
   - keep: ["0882", "0980"]
     names: [Oskarshamn, Gotland]
-    kinds: [short-border, scb-mismatch, island-border, exclave-border]
+    kinds: [short-border, island-border, exclave-border]
     reason: Checked on the map.
 `;
     const read = readNeighborOverrides(yaml, kommuner);
@@ -73,7 +73,7 @@ reviewed:
     expect(read.reviewed).toEqual([
       {
         between: ["0882", "0980"],
-        kinds: ["short-border", "scb-mismatch", "island-border", "exclave-border"],
+        kinds: ["short-border", "island-border", "exclave-border"],
         reason: "Checked on the map.",
       },
     ]);
@@ -169,7 +169,7 @@ reviewed:
     reason: Fine.
 `;
     expect(() => readNeighborOverrides(yaml, kommuner)).toThrow(
-      /reviewed\[0\]: kinds must list flag kinds from scb-mismatch, short-border, point-touch, non-qualifying-link, island-border, exclave-border/,
+      /reviewed\[0\]: kinds must list flag kinds from short-border, point-touch, non-qualifying-link, island-border, exclave-border/,
     );
   });
 
@@ -182,7 +182,7 @@ ferries:
 reviewed:
   - keep: ["0192", "0980"]
     names: [Nynäshamn, Gotland]
-    kinds: [scb-mismatch]
+    kinds: [short-border]
     reason: Again
 `;
     expect(() => readNeighborOverrides(yaml, kommuner)).toThrow(
@@ -207,7 +207,7 @@ reviewed:
       expect(read.reviewed).toEqual([
         {
           between: ["0305", "0330"],
-          kinds: ["scb-mismatch", "non-qualifying-link"],
+          kinds: ["non-qualifying-link"],
           reason: "Why the generated graph is right.",
         },
       ]);

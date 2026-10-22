@@ -19,7 +19,6 @@ import {
   readFeatures,
   repositoryRoot,
 } from "./osmTools";
-import { readScbBoundaries } from "./scbBoundaries";
 import { readScbKommunWorkbook } from "./scbKommuner";
 import { drawShapes, isBigWater, isInlandWater, isRiver } from "./shapes";
 import {
@@ -48,8 +47,6 @@ await mkdir(cacheDirectory, { recursive: true });
 await download(buildConfig.extract.url, extractFile, buildConfig.extract.sha256);
 const scbFile = `${cacheDirectory}/${urlFileName(buildConfig.scbKommuner.url)}`;
 await download(buildConfig.scbKommuner.url, scbFile, buildConfig.scbKommuner.sha256);
-const scbBoundariesFile = `${cacheDirectory}/${urlFileName(buildConfig.scbBoundaries.url)}`;
-await download(buildConfig.scbBoundaries.url, scbBoundariesFile, buildConfig.scbBoundaries.sha256);
 await extractLayers({
   extractFile,
   graphVersionId: buildConfig.id,
@@ -128,11 +125,6 @@ const fixedLinks = findFixedLinks(
   mainPartContains(areas),
 );
 
-logBuildStep("Cross-checking with SCB's boundaries");
-const scbPairs = sharedVertices(
-  await readScbBoundaries(new Uint8Array(await Bun.file(scbBoundariesFile).arrayBuffer())),
-).map((pair) => ({ between: pair.between, at: roundedPoint(pair.points[0]) }));
-
 const overrides = readNeighborOverrides(await Bun.file(overridesFile).text(), scbKommuner);
 const ferryLinks = overrides.ferries;
 const evidence: Omit<BuildEvidence, "shapeCodes"> = {
@@ -140,7 +132,6 @@ const evidence: Omit<BuildEvidence, "shapeCodes"> = {
   landBorders: measured.map((border) => ({ ...border, at: [border.at[0], border.at[1]] })),
   pointTouches,
   fixedLinks,
-  scbPairs,
 };
 
 logBuildStep("Drawing shapes");
@@ -157,10 +148,6 @@ const files = graphVersionFileContents({
     source: {
       extract: { url: buildConfig.extract.url, sha256: buildConfig.extract.sha256, timestamp },
       names: { url: buildConfig.scbKommuner.url, sha256: buildConfig.scbKommuner.sha256 },
-      crossCheck: {
-        url: buildConfig.scbBoundaries.url,
-        sha256: buildConfig.scbBoundaries.sha256,
-      },
       license: "Borders and shapes © OpenStreetMap contributors, ODbL 1.0",
     },
   },

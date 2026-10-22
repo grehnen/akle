@@ -17,3 +17,7 @@ We chose this over rebuilding from Geofabrik in CI. A fresh OSM extract can sile
 - Generated files (the graph, `data/graph-report.md`) live in the repo, and changing them means rerunning the script locally.
 - The first review pass covers about 90 SCB disagreements plus the other flags, and it blocks v1 launch. An agent may draft verdicts, but the owner signs them off.
 - The OSM extract is refreshed only when needed. Each refresh produces a new graph version, and only the newest version is checked ([ADR 0004](./0004-versioned-graphs-keyed-by-puzzle-number.md)).
+
+## Amendment (2026-10-22)
+
+The SCB cross-check is dropped: the build no longer compares its pairs with SCB's kommun map or flags SCB mismatches, and keeps no SCB pair evidence. Every SCB mismatch reviewed was a false positive, from SCB's generalised map missing fixed links and short or island borders. SCB's kommun list still has to match the OSM boundaries.

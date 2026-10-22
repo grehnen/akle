@@ -20,13 +20,12 @@ A version built from OSM also holds the **build evidence**: what the build measu
 | `fixed-links.csv`   | `a,b,ways,failures`: each detected fixed link and its OSM way ids (space-separated): only the passing ways when the link qualifies, with failures `-`; every crossing way when none passes, with failures `<way id>:<reason>+<reason>` per way                                                                                           |
 | `land-borders.csv`  | `a,b,land,mainland,island,river,exclave,at`: each shared OSM border, its length on land in metres, how much of that is on the mainland and on islands, its length in river water (river areas, apart from lakes and the sea), the codes of the kommuner whose exclave holds all of its land (space-separated, or `-`), and a point on it |
 | `point-touches.csv` | `a,b,at`: pairs whose OSM boundaries touch only at a point, and that point is on meaningful land                                                                                                                                                                                                                                         |
-| `scb-pairs.csv`     | `a,b,at`: pairs whose boundaries share a point in SCB's kommun map, the cross-check                                                                                                                                                                                                                                                      |
 
 A kommun whose links are all `ferry` is a **dead end**; this is derived, not stored.
 
 `graphs/fixture/` is a small hand-made version for development. Its borders and shapes are not real. It applies to puzzles #1–#30.
 
-`graphs/osm-2026-10-01/` is built from OpenStreetMap and starts at puzzle #31. It has all 290 kommuner with land, fixed-link and ferry neighbors; Gotland and Öckerö are linked only by ferry, so they are dead ends. Its `version.json` records the extract, the SCB names file and the SCB boundaries it was built from. Borders and shapes © OpenStreetMap contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
+`graphs/osm-2026-10-01/` is built from OpenStreetMap and starts at puzzle #31. It has all 290 kommuner with land, fixed-link and ferry neighbors; Gotland and Öckerö are linked only by ferry, so they are dead ends. Its `version.json` records the extract and the SCB names file it was built from. Borders and shapes © OpenStreetMap contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
 
 ### Rebuilding a graph version from OSM
 
@@ -36,7 +35,7 @@ bun run graph:build
 
 Needs Bun and Docker. The command reads `scripts/graph/build-config.json`, which pins:
 
-- the Geofabrik Sweden extract, the SCB kommun names file (`knkopplingar`) and SCB's kommun boundaries (`shape_svenska`), all by URL and sha256;
+- the Geofabrik Sweden extract and the SCB kommun names file (`knkopplingar`), both by URL and sha256;
 - the version id and the puzzle it starts at;
 - the route that closes the mainland coastline, which the extract cuts at the borders with Norway and Finland.
 
@@ -66,7 +65,6 @@ The build can't trust every pair on its own, so it **flags** them for a human ([
 
 | Flag                  | When                                                                                                                                                                                                                                                                                                                   |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scb-mismatch`        | the generated graph has the pair but SCB's kommun map doesn't; pairs only SCB joins aren't flagged, since its generalised map joins kommuner through water                                                                                                                                                             |
 | `short-border`        | the pair has less than 100 m of border on land                                                                                                                                                                                                                                                                         |
 | `point-touch`         | the OSM boundaries touch only at a point, on land; the build makes the pair `land` neighbors                                                                                                                                                                                                                           |
 | `non-qualifying-link` | the pair has no land border that makes it neighbors and a fixed link that doesn't qualify, so the build drops it; the report lists the failing ways and why                                                                                                                                                            |
@@ -87,7 +85,7 @@ overrides: # change the generated graph
 reviewed: # keep what the build decided, whether neighbors or not
   - keep: ["0305", "0330"]
     names: [Håbo, Knivsta]
-    kinds: [scb-mismatch, non-qualifying-link] # the flags that were reviewed
+    kinds: [non-qualifying-link] # the flags that were reviewed
     reason: Why the generated graph is right.
 ```
 
@@ -101,7 +99,7 @@ It rereads the build evidence of the newest version, so it needs no OSM, and rew
 
 - a flagged pair has no verdict, or a `reviewed` entry misses one of its flags;
 - an entry is stale: a `reviewed` pair or flag is no longer flagged, a `remove` names a pair the build didn't link, or an `add` names a pair already linked;
-- a kommun has no neighbors, can't be reached from the rest, or its code differs between OSM, SCB's names and SCB's boundaries; no verdict accepts these;
+- a kommun has no neighbors, can't be reached from the rest, or its code differs between OSM and SCB's names; no verdict accepts these;
 - `neighbors.csv` or the report is out of date.
 
 ### Adding a graph version

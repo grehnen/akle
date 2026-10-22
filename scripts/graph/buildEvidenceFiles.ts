@@ -47,10 +47,6 @@ export function readBuildEvidence(files: Record<string, string>): BuildEvidence 
       ways: ways.split(" ").map(Number),
       failures: failures === "-" ? [] : failures.split(" ").map(wayFailure),
     })),
-    scbPairs: rows("scb-pairs.csv", "a,b,at").map(([a, b, at]) => ({
-      between: pair(a, b),
-      at: point(at),
-    })),
   };
 }
 

@@ -19,7 +19,7 @@ export type GraphVersionOutput = {
   fixedLinks?: readonly FixedLink[];
   shapes: KommunShapes;
   /** What the build found, for the review of flagged pairs (ADR 0003). */
-  evidence?: Pick<BuildEvidence, "landBorders" | "pointTouches" | "scbPairs">;
+  evidence?: Pick<BuildEvidence, "landBorders" | "pointTouches">;
 };
 
 /** The files of a graph version (see `data/README.md`), sorted by SCB code so rebuilds diff cleanly. */
@@ -85,10 +85,6 @@ function evidenceFiles(evidence: NonNullable<GraphVersionOutput["evidence"]>) {
     "point-touches.csv": csv(
       "a,b,at",
       sorted(evidence.pointTouches).map((touch) => [...touch.between, at(touch.at)]),
-    ),
-    "scb-pairs.csv": csv(
-      "a,b,at",
-      sorted(evidence.scbPairs).map((pair) => [...pair.between, at(pair.at)]),
     ),
   };
 }
