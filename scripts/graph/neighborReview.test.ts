@@ -16,7 +16,9 @@ type TestBorder = Omit<LandBorder, "mainlandLength" | "islandLength" | "exclaveO
 
 /** A chain 0001–0002–0003–0004 of long land borders, all matching SCB. */
 function evidence(
-  changes: Omit<Partial<BuildEvidence>, "landBorders"> & { landBorders?: TestBorder[] } = {},
+  changes: Omit<Partial<BuildEvidence>, "landBorders"> & {
+    landBorders?: TestBorder[];
+  } = {},
 ): BuildEvidence {
   const landBorders: TestBorder[] = changes.landBorders ?? [
     { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
@@ -43,7 +45,11 @@ function evidence(
   };
 }
 
-const noOverrides: NeighborOverrides = { ferries: [], overrides: [], reviewed: [] };
+const noOverrides: NeighborOverrides = {
+  ferries: [],
+  overrides: [],
+  reviewed: [],
+};
 
 describe("reviewNeighborGraph", () => {
   test("a clean graph has its land links, no flags and no problems", () => {
@@ -112,15 +118,16 @@ describe("reviewNeighborGraph", () => {
     expect(review.flaggedPairs).toEqual([
       {
         between: ["0001", "0002"],
-        kinds: ["island-border"],
+        kinds: ["scb-mismatch", "island-border"],
+        scb: "only SCB",
         landLength: 328,
         mainlandLength: 0,
         islandLength: 328,
         at: [18, 59],
-        built: ["land"],
+        built: [],
       },
     ]);
-    expect(review.links).toHaveLength(3);
+    expect(review.links.map((link) => link.between.join("-"))).toEqual(["0002-0003", "0003-0004"]);
   });
 
   test("an island border is also short when under 100 m", () => {
@@ -141,19 +148,33 @@ describe("reviewNeighborGraph", () => {
       noOverrides,
     );
     expect(review.flaggedPairs.map((flag) => flag.kinds)).toEqual([
-      ["short-border", "island-border"],
+      ["scb-mismatch", "short-border", "island-border"],
     ]);
   });
 
-  test("flags a land border that lies wholly on an exclave, with whose", () => {
+  test("drops and flags a land border that lies wholly on an exclave, at any length", () => {
     const review = reviewNeighborGraph(
       evidence({
         landBorders: [
           { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
-          { between: ["0002", "0003"], landLength: 1003, exclaveOf: ["0003"], at: [18.1, 59] },
-          { between: ["0003", "0004"], landLength: 0, exclaveOf: [], at: [18.2, 59] },
+          {
+            between: ["0002", "0003"],
+            landLength: 8000,
+            exclaveOf: ["0003"],
+            at: [18.1, 59],
+          },
+          {
+            between: ["0003", "0004"],
+            landLength: 0,
+            exclaveOf: [],
+            at: [18.2, 59],
+          },
         ],
         fixedLinks: [{ between: ["0003", "0004"], ways: [11], failures: [] }],
+        scbPairs: [
+          { between: ["0001", "0002"], at: [18, 59] },
+          { between: ["0003", "0004"], at: [18.2, 59] },
+        ],
       }),
       noOverrides,
     );
@@ -161,21 +182,32 @@ describe("reviewNeighborGraph", () => {
       {
         between: ["0002", "0003"],
         kinds: ["exclave-border"],
-        landLength: 1003,
+        landLength: 8000,
         exclaveOf: ["0003"],
         at: [18.1, 59],
-        built: ["land"],
+        built: [],
       },
+    ]);
+    expect(review.links).toEqual([
+      { between: ["0001", "0002"], kind: "land" },
+      { between: ["0003", "0004"], kind: "fixed" },
     ]);
   });
 
   test("flags a single-point touch on land, which is not a neighbor", () => {
     const review = reviewNeighborGraph(
-      evidence({ pointTouches: [{ between: ["0004", "0001"], at: [18.3, 59] }] }),
+      evidence({
+        pointTouches: [{ between: ["0004", "0001"], at: [18.3, 59] }],
+      }),
       noOverrides,
     );
     expect(review.flaggedPairs).toEqual([
-      { between: ["0001", "0004"], kinds: ["point-touch"], at: [18.3, 59], built: [] },
+      {
+        between: ["0001", "0004"],
+        kinds: ["point-touch"],
+        at: [18.3, 59],
+        built: [],
+      },
     ]);
     expect(review.links).toHaveLength(3);
   });
@@ -209,7 +241,12 @@ describe("reviewNeighborGraph", () => {
   const driveway = {
     between: ["0003", "0002"] as const,
     ways: [7, 9],
-    failures: [{ way: 9, reasons: ["service=driveway" as const, "no-land-end" as const] }],
+    failures: [
+      {
+        way: 9,
+        reasons: ["service=driveway" as const, "no-land-end" as const],
+      },
+    ],
   };
   const waterBorders: TestBorder[] = [
     { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
@@ -251,15 +288,19 @@ describe("reviewNeighborGraph", () => {
       evidence({ landBorders: waterBorders, fixedLinks: [driveway] }),
       noOverrides,
     );
-    expect(review.flaggedPairs.map(({ between, kinds, scb }) => ({ between, kinds, scb }))).toEqual(
-      [
-        {
-          between: ["0002", "0003"],
-          kinds: ["scb-mismatch", "non-qualifying-link"],
-          scb: "only SCB",
-        },
-      ],
-    );
+    expect(
+      review.flaggedPairs.map(({ between, kinds, scb }) => ({
+        between,
+        kinds,
+        scb,
+      })),
+    ).toEqual([
+      {
+        between: ["0002", "0003"],
+        kinds: ["scb-mismatch", "non-qualifying-link"],
+        scb: "only SCB",
+      },
+    ]);
   });
 
   test("a non-qualifying link next to a land border adds no fixed link and no flag", () => {
@@ -273,6 +314,110 @@ describe("reviewNeighborGraph", () => {
       { between: ["0003", "0004"], kind: "land" },
     ]);
     expect(review.flaggedPairs).toEqual([]);
+  });
+
+  /** 0002–0003 share a short land border only on islands, and Bo's exclave holds 0003–0004's. */
+  const doubtfulBorders: TestBorder[] = [
+    { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
+    {
+      between: ["0002", "0003"],
+      landLength: 328,
+      mainlandLength: 0,
+      islandLength: 328,
+      at: [18.1, 59],
+    },
+    {
+      between: ["0003", "0004"],
+      landLength: 2000,
+      exclaveOf: ["0004"],
+      at: [18.2, 59],
+    },
+  ];
+
+  test("a qualifying fixed link keeps a pair whose island or exclave border is dropped", () => {
+    const review = reviewNeighborGraph(
+      evidence({
+        landBorders: doubtfulBorders,
+        fixedLinks: [
+          { between: ["0002", "0003"], ways: [7], failures: [] },
+          { between: ["0003", "0004"], ways: [11], failures: [] },
+        ],
+      }),
+      noOverrides,
+    );
+    expect(review.links).toEqual([
+      { between: ["0001", "0002"], kind: "land" },
+      { between: ["0002", "0003"], kind: "fixed" },
+      { between: ["0003", "0004"], kind: "fixed" },
+    ]);
+    expect(
+      review.flaggedPairs.map(({ between, kinds, built }) => ({
+        between,
+        kinds,
+        built,
+      })),
+    ).toEqual([
+      { between: ["0002", "0003"], kinds: ["island-border"], built: ["fixed"] },
+      {
+        between: ["0003", "0004"],
+        kinds: ["exclave-border"],
+        built: ["fixed"],
+      },
+    ]);
+  });
+
+  test("a non-qualifying link doesn't keep a dropped pair and is flagged with it", () => {
+    const review = reviewNeighborGraph(
+      evidence({
+        landBorders: doubtfulBorders,
+        fixedLinks: [{ ...driveway, between: ["0002", "0003"] }],
+        scbPairs: [{ between: ["0001", "0002"], at: [18, 59] }],
+      }),
+      noOverrides,
+    );
+    expect(review.links).toEqual([{ between: ["0001", "0002"], kind: "land" }]);
+    expect(
+      review.flaggedPairs.map(({ between, kinds, built }) => ({
+        between,
+        kinds,
+        built,
+      })),
+    ).toEqual([
+      {
+        between: ["0002", "0003"],
+        kinds: ["non-qualifying-link", "island-border"],
+        built: [],
+      },
+      { between: ["0003", "0004"], kinds: ["exclave-border"], built: [] },
+    ]);
+  });
+
+  test("an add puts a dropped island or exclave pair back and is its verdict", () => {
+    const add = (between: [string, string]) => ({
+      between,
+      action: "add" as const,
+      link: "land" as const,
+      reason: "A real border.",
+      evidence: "https://example.org/border",
+    });
+    const review = reviewNeighborGraph(
+      evidence({
+        landBorders: doubtfulBorders,
+        scbPairs: [{ between: ["0001", "0002"], at: [18, 59] }],
+      }),
+      {
+        ...noOverrides,
+        overrides: [add(["0002", "0003"]), add(["0003", "0004"])],
+      },
+    );
+    expect(review.links.map((link) => link.between.join("-"))).toEqual([
+      "0001-0002",
+      "0002-0003",
+      "0003-0004",
+    ]);
+    expect(review.flaggedPairs.filter((flag) => flag.verdict?.action === "add")).toHaveLength(2);
+    expect(review.flaggedPairs.map((flag) => flag.built)).toEqual([[], []]);
+    expect(review.problems).toEqual([]);
   });
 
   test("an add with link fixed puts a non-qualifying link back in the graph", () => {
@@ -298,7 +443,10 @@ describe("reviewNeighborGraph", () => {
         ],
       },
     );
-    expect(review.links).toContainEqual({ between: ["0002", "0003"], kind: "fixed" });
+    expect(review.links).toContainEqual({
+      between: ["0002", "0003"],
+      kind: "fixed",
+    });
     expect(review.flaggedPairs[0].built).toEqual([]);
     expect(review.flaggedPairs[0].verdict?.action).toBe("add");
     expect(review.problems).toEqual([]);
@@ -375,16 +523,28 @@ describe("reviewNeighborGraph", () => {
       ...noOverrides,
       reviewed: [{ between: ["0002", "0003"], kinds: ["short-border"], reason: "Real." }],
     });
-    expect(review.flaggedPairs[0].verdict).toEqual({ action: "keep", reason: "Real." });
+    expect(review.flaggedPairs[0].verdict).toEqual({
+      action: "keep",
+      reason: "Real.",
+    });
     expect(review.problems).toEqual([]);
   });
 
   test("fails on a reviewed pair now flagged for a new kind", () => {
     const review = reviewNeighborGraph(
-      { ...shortBo, scbPairs: shortBo.scbPairs.filter((pair) => pair.between[0] !== "0002") },
+      {
+        ...shortBo,
+        scbPairs: shortBo.scbPairs.filter((pair) => pair.between[0] !== "0002"),
+      },
       {
         ...noOverrides,
-        reviewed: [{ between: ["0002", "0003"], kinds: ["short-border"], reason: "Real." }],
+        reviewed: [
+          {
+            between: ["0002", "0003"],
+            kinds: ["short-border"],
+            reason: "Real.",
+          },
+        ],
       },
     );
     expect(review.problems).toEqual([
@@ -396,8 +556,16 @@ describe("reviewNeighborGraph", () => {
     const review = reviewNeighborGraph(shortBo, {
       ...noOverrides,
       reviewed: [
-        { between: ["0002", "0003"], kinds: ["short-border", "point-touch"], reason: "Real." },
-        { between: ["0001", "0002"], kinds: ["short-border"], reason: "Was short." },
+        {
+          between: ["0002", "0003"],
+          kinds: ["short-border", "point-touch"],
+          reason: "Real.",
+        },
+        {
+          between: ["0001", "0002"],
+          kinds: ["short-border"],
+          reason: "Was short.",
+        },
       ],
     });
     expect(review.problems).toEqual([
@@ -429,7 +597,9 @@ describe("reviewNeighborGraph", () => {
 
   test("an add puts the pair in the graph with its link", () => {
     const review = reviewNeighborGraph(
-      evidence({ pointTouches: [{ between: ["0001", "0004"], at: [18.3, 59] }] }),
+      evidence({
+        pointTouches: [{ between: ["0001", "0004"], at: [18.3, 59] }],
+      }),
       {
         ...noOverrides,
         overrides: [
@@ -443,7 +613,10 @@ describe("reviewNeighborGraph", () => {
         ],
       },
     );
-    expect(review.links).toContainEqual({ between: ["0001", "0004"], kind: "land" });
+    expect(review.links).toContainEqual({
+      between: ["0001", "0004"],
+      kind: "land",
+    });
     expect(review.flaggedPairs[0].verdict?.action).toBe("add");
     expect(review.problems).toEqual([]);
   });
@@ -459,7 +632,12 @@ describe("reviewNeighborGraph", () => {
           reason: "r",
           evidence: "https://e",
         },
-        { between: ["0001", "0004"], action: "remove", reason: "r", evidence: "https://e" },
+        {
+          between: ["0001", "0004"],
+          action: "remove",
+          reason: "r",
+          evidence: "https://e",
+        },
       ],
     });
     expect(review.problems).toEqual([
@@ -473,7 +651,10 @@ describe("reviewNeighborGraph", () => {
       ...noOverrides,
       ferries: [{ between: ["0004", "0001"], kind: "ferry" }],
     });
-    expect(review.links).toContainEqual({ between: ["0001", "0004"], kind: "ferry" });
+    expect(review.links).toContainEqual({
+      between: ["0001", "0004"],
+      kind: "ferry",
+    });
   });
 
   test("fails on a kommun with no neighbors", () => {
