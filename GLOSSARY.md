@@ -9,7 +9,7 @@ One of Sweden's municipalities, the unit the whole game is played in.
 _Avoid_: Municipality, county, region
 
 **Neighbor**:
-A kommun connected to another for gameplay purposes, so a route may pass directly between them: by a land border, by a fixed link, or by ferry when a kommun has no other link.
+A kommun connected to another for gameplay purposes, so a route may pass directly between them: by a land border on the mainland or on an island of at least 1 km², by a fixed link, or by ferry when a kommun has no other link.
 _Avoid_: Adjacent, bordering
 
 **Neighbor graph**:

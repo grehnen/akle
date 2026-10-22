@@ -42,7 +42,8 @@ function isUsable({ tags }: LinkWay): boolean {
 
 /**
  * The pairs of kommuner joined by a bridge, tunnel or causeway: a usable way that crosses their
- * shared border where the border runs through water (the sea or a lake).
+ * shared border where the border runs through water (the sea or a lake) or over an island under
+ * 1 km², which doesn't count as land.
  */
 export function findFixedLinks(
   borders: readonly SharedBorder[],
