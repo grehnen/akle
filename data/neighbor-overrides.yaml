@@ -14,8 +14,9 @@ ferries:
     names: [Öckerö, Göteborg]
     reason: Västtrafik's Öckeröleden car ferry Hönö–Lilla Varholmen (Hisingen).
 
-# Verdicts on the pairs the build flags (scb-mismatch, short-border, point-touch,
-# non-qualifying-link, island-border, exclave-border, river-border); see data/graph-report.md and "Reviewing flagged pairs" in data/README.md.
+# Verdicts on the pairs the build flags (short-border, point-touch, non-qualifying-link,
+# island-border, exclave-border, river-border); see data/graph-report.md and "Reviewing flagged
+# pairs" in data/README.md.
 # Every flagged pair needs exactly one, and bun run graph:check fails on stale ones. Run
 # bun run graph:review after editing. The build drops an exclave-border pair, and an island-border
 # or river-border pair under 1000 m, unless a qualifying fixed link keeps it; a keep leaves that as
@@ -35,42 +36,18 @@ overrides: []
 #     kinds: [short-border]       # the flags that were reviewed
 #     reason: ...
 reviewed:
-  - keep: ["0125", "0180"]
-    names: [Ekerö, Stockholm]
-    kinds: [scb-mismatch]
-    reason: Linked by Nockebybron, a public fixed link; the only land they share is on islands under 1 km². SCB's map only joins kommuner that share land.
-  - keep: ["0180", "0186"]
-    names: [Stockholm, Lidingö]
-    kinds: [scb-mismatch]
-    reason: Linked by Lidingöbron, Lilla Lidingöbron and Lidingöbanan, a public fixed link; there is no land border. SCB's map only joins kommuner that share land.
   - keep: ["0305", "0330"]
     names: [Håbo, Knivsta]
     kinds: [non-qualifying-link]
     reason: Linked only by way 956692672, a short unpaved private driveway bridge to an islet under 1 km²; not a public link to meaningful land, so they aren't neighbors. SCB's map joins them through the water.
   - keep: ["0381", "0486"]
     names: [Enköping, Strängnäs]
-    kinds: [scb-mismatch, island-border]
-    reason: The OSM boundaries share only 408 m of land border, all on islands in Mälaren and none on the mainland. Riksväg 55 (way 58916726) crosses that border on a Mälaren island of 1 km² or more, which Hjulstabron joins to Enköping's mainland and Strängnäsbron to Strängnäs's; that road link makes them neighbors. SCB's map doesn't join them.
-  - keep: ["0484", "1980"]
-    names: [Eskilstuna, Västerås]
-    kinds: [scb-mismatch]
-    reason: The OSM boundaries share a 1336 m land border, all on islands of 1 km² or more in Mälaren at Kvicksund and none on the mainland, that SCB's generalised map misses. Kvicksundsbron (road and rail) also links them as a qualifying fixed link; way 196169497 fails with an end off meaningful land, but the other ways pass.
+    kinds: [island-border]
+    reason: The OSM boundaries share only 408 m of land border, all on islands in Mälaren and none on the mainland. Riksväg 55 (way 58916726) crosses that border on a Mälaren island of 1 km² or more, which Hjulstabron joins to Enköping's mainland and Strängnäsbron to Strängnäs's; that road link makes them neighbors.
   - keep: ["0486", "1980"]
     names: [Strängnäs, Västerås]
     kinds: [island-border]
     reason: The OSM boundaries share only 328 m of land border, all on islands in Mälaren and none on the mainland, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either.
-  - keep: ["0840", "0880"]
-    names: [Mörbylånga, Kalmar]
-    kinds: [scb-mismatch]
-    reason: Linked by Ölandsbron, a public fixed link; there is no land border. SCB's map only joins kommuner that share land.
-  - keep: ["1415", "1419"]
-    names: [Stenungsund, Tjörn]
-    kinds: [scb-mismatch]
-    reason: Linked by Tjörnbron, a public fixed link; there is no land border. SCB's map only joins kommuner that share land.
-  - keep: ["1419", "1421"]
-    names: [Tjörn, Orust]
-    kinds: [scb-mismatch]
-    reason: Linked by the road 160 bridge, a public fixed link; there is no land border. SCB's map only joins kommuner that share land.
   - keep: ["1440", "1482"]
     names: [Ale, Kungälv]
     kinds: [river-border]
@@ -81,8 +58,8 @@ reviewed:
     reason: Their 1003 m land border lies wholly on an exclave of Lilla Edet, away from its main part, and no fixed link joins them, so they aren't neighbors. SCB's map doesn't join them either.
   - keep: ["1760", "1862"]
     names: [Storfors, Degerfors]
-    kinds: [scb-mismatch, short-border]
-    reason: The OSM boundaries share a 64 m land border that SCB's generalised map misses.
+    kinds: [short-border]
+    reason: The OSM boundaries share a 64 m land border on the mainland, so they are land neighbors; a qualifying fixed link, way 1201771779, also crosses it.
   - keep: ["2061", "2081"]
     names: [Smedjebacken, Borlänge]
     kinds: [exclave-border]
@@ -95,10 +72,6 @@ reviewed:
     names: [Säter, Hofors]
     kinds: [point-touch]
     reason: The OSM boundaries meet at a single point on the mainland, the corner where Falun, Hedemora, Säter and Hofors meet, so they are land neighbors. SCB's map joins them too.
-  - keep: ["2132", "2161"]
-    names: [Nordanstig, Ljusdal]
-    kinds: [scb-mismatch]
-    reason: The OSM boundaries share a 9525 m land border that SCB's generalised map misses.
   - keep: ["2422", "2505"]
     names: [Sorsele, Arvidsjaur]
     kinds: [river-border]
