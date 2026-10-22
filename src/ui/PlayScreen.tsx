@@ -5,6 +5,7 @@ import { hintReveals } from "../engine/hints";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SatelliteMap } from "../map/SatelliteMap";
 import { readHistory, recordFinishedGame, withFinishedGame } from "../progress/history";
+import { gameOutcome } from "../progress/outcome";
 import { loadSavedGame, saveGame } from "../progress/savedGame";
 import { shareText } from "../progress/shareText";
 import { deriveStats } from "../progress/stats";
@@ -54,6 +55,7 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
     [storage, graph, game],
   );
   const todayEntry = history[puzzle.number];
+  const outcome = gameOutcome(review);
 
   useEffect(() => {
     saveGame(storage, game);
@@ -68,14 +70,18 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
         <strong>{nameOf(puzzle.destination)}</strong>
       </h2>
 
-      {resultOpen && todayEntry && (
+      {resultOpen && todayEntry && outcome && (
         <ResultView
           graph={graph}
           game={game}
           review={review}
           now={now}
           stats={deriveStats(history, puzzle.number)}
-          shareText={shareText({ ...todayEntry, puzzleNumber: puzzle.number, away: review.away })}
+          shareText={shareText({
+            puzzleNumber: puzzle.number,
+            outcome,
+            emojiLine: todayEntry.emojiLine,
+          })}
           onClose={() => setResultClosed(true)}
           focusOnOpen={resultToggled || announcement !== undefined}
         />

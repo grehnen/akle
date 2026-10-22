@@ -1,28 +1,42 @@
+import type { GameReview } from "../engine/game";
 import type { HistoryEntry } from "./history";
 
-/** How a finished game went, as the result view, the share text and the stats tell it. */
-export type Outcome =
+type WonOutcome =
   | { kind: "perfect"; extra: number }
-  | { kind: "won"; extra: number; hintsUsed: number }
-  | { kind: "lost"; hintsUsed: number };
+  | { kind: "won"; extra: number; hintsUsed: number };
+
+/** How a finished game went, as the result view and the share text tell it. */
+export type Outcome = WonOutcome | { kind: "lost"; hintsUsed: number; away: number };
+
+/** How a recorded game went, as the stats count it; history doesn't keep a loss's `away`. */
+export type RecordedOutcome = WonOutcome | { kind: "lost"; hintsUsed: number };
 
 export function classifyOutcome({
   won,
   extra,
   perfect,
   hintsUsed,
-}: Pick<HistoryEntry, "won" | "extra" | "perfect" | "hintsUsed">): Outcome {
+}: Pick<HistoryEntry, "won" | "extra" | "perfect" | "hintsUsed">): RecordedOutcome {
   if (!won) return { kind: "lost", hintsUsed };
-  if (perfect) return { kind: "perfect", extra: extra ?? 0 };
-  return { kind: "won", extra: extra ?? 0, hintsUsed };
+  return wonOutcome(extra ?? 0, perfect, hintsUsed);
 }
 
-/** `1 ledtråd`, `2 ledtrådar`. */
-export function hintCount(hints: number): string {
-  return hints === 1 ? "1 ledtråd" : `${hints} ledtrådar`;
+/** A game's outcome from its review; undefined while it is still being played. */
+export function gameOutcome(
+  review: Pick<GameReview, "status" | "extra" | "perfect" | "away"> &
+    Partial<Pick<GameReview, "hintsUsed">>,
+): Outcome | undefined {
+  const hintsUsed = review.hintsUsed ?? 0;
+  switch (review.status) {
+    case "playing":
+      return undefined;
+    case "lost":
+      return { kind: "lost", hintsUsed, away: review.away };
+    case "won":
+      return wonOutcome(review.extra ?? 0, review.perfect, hintsUsed);
+  }
 }
 
-/** ` (2 ledtrådar)` after a result when hints were used, else nothing. */
-export function hintsNote(hintsUsed: number): string {
-  return hintsUsed > 0 ? ` (${hintCount(hintsUsed)})` : "";
+function wonOutcome(extra: number, perfect: boolean, hintsUsed: number): WonOutcome {
+  return perfect ? { kind: "perfect", extra } : { kind: "won", extra, hintsUsed };
 }

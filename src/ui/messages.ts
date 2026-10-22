@@ -1,5 +1,5 @@
 import type { Feedback, GameReview, GameStatus, GuessCard, GuessResult } from "../engine/game";
-import { classifyOutcome, hintsNote } from "../progress/outcome";
+import { gameOutcome } from "../progress/outcome";
 
 type RejectionReason = Extract<GuessResult, { kind: "rejected" }>["reason"];
 
@@ -21,21 +21,27 @@ export function resultOutcome(
   review: Pick<GameReview, "status" | "extra" | "perfect" | "away"> &
     Partial<Pick<GameReview, "hintsUsed">>,
 ): { headline: string; score: string } | undefined {
-  if (review.status === "playing") return undefined;
-  const outcome = classifyOutcome({
-    won: review.status === "won",
-    extra: review.extra ?? null,
-    perfect: review.perfect,
-    hintsUsed: review.hintsUsed ?? 0,
-  });
-  switch (outcome.kind) {
+  const outcome = gameOutcome(review);
+  switch (outcome?.kind) {
+    case undefined:
+      return undefined;
     case "perfect":
       return { headline: "Framme!", score: "Perfekt" };
     case "won":
       return { headline: "Framme!", score: `+${outcome.extra}${hintsNote(outcome.hintsUsed)}` };
     case "lost":
-      return { headline: "Slut på gissningar", score: `${review.away} kvar` };
+      return { headline: "Slut på gissningar", score: `${outcome.away} kvar` };
   }
+}
+
+/** ` (2 ledtrådar)` after a result when hints were used, else nothing. */
+export function hintsNote(hintsUsed: number): string {
+  return hintsUsed > 0 ? ` (${hintCount(hintsUsed)})` : "";
+}
+
+/** `1 ledtråd`, `2 ledtrådar`. */
+function hintCount(hints: number): string {
+  return hints === 1 ? "1 ledtråd" : `${hints} ledtrådar`;
 }
 
 /** What the latest hint revealed, under the Ledtråd button. */

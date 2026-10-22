@@ -1,16 +1,14 @@
-import type { HistoryEntry } from "./history";
-import { classifyOutcome, hintsNote } from "./outcome";
+import { hintsNote } from "../ui/messages";
+import type { Outcome } from "./outcome";
 
 export const SITE_URL = "https://akle.grehn.net";
 
 /** A finished game as the share text needs it. */
-export type ShareResult = Pick<
-  HistoryEntry,
-  "won" | "extra" | "perfect" | "hintsUsed" | "emojiLine"
-> & {
+export type ShareResult = {
   puzzleNumber: number;
-  /** Kommuner still missing on a loss: the "k kvar". */
-  away: number;
+  outcome: Outcome;
+  /** One ✅/🟩/🟧/🟥 per counted guess, in guess order. */
+  emojiLine: string;
 };
 
 /** The three lines a player copies: `#åkle #n` and the result, the emoji line, the site. */
@@ -20,14 +18,13 @@ export function shareText(result: ShareResult): string {
   );
 }
 
-function resultLabel(result: ShareResult): string {
-  const outcome = classifyOutcome(result);
+function resultLabel({ outcome }: ShareResult): string {
   switch (outcome.kind) {
     case "perfect":
       return `+${outcome.extra} (Perfekt)`;
     case "won":
       return `+${outcome.extra}${hintsNote(outcome.hintsUsed)}`;
     case "lost":
-      return `(${result.away} kvar)${hintsNote(outcome.hintsUsed)}`;
+      return `(${outcome.away} kvar)${hintsNote(outcome.hintsUsed)}`;
   }
 }
