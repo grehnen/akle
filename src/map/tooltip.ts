@@ -3,8 +3,8 @@ import type { GraphVersion } from "../graph/graphVersion";
 import type { DrawnKommun } from "./mapFeatures";
 
 /**
- * What a drawn kommun's tooltip says: the endpoints and guesses show their full name, hint
- * outlines `?`, or their initials once hint 3 is taken.
+ * What a drawn kommun's tooltip says: the endpoints, guesses and other outlines show their full
+ * name, hint outlines `?`, or their initials once hint 3 is taken.
  */
 export function tooltipText(
   graph: GraphVersion,

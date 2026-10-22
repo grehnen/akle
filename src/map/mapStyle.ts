@@ -23,7 +23,11 @@ const OSM_ATTRIBUTION =
 /** The layer whose features show a tooltip on hover or tap. */
 export const TOOLTIP_LAYER = "kommun-tooltip-target";
 
-const NOT_HINT: ExpressionSpecification = ["!=", ["get", "kind"], "hint"];
+/** Hint and other outlines are drawn unfilled, in their own line layers. */
+const FILLED: ExpressionSpecification = [
+  "!",
+  ["in", ["get", "kind"], ["literal", ["hint", "other"]]],
+];
 
 /** Keeps players near Sweden. */
 const SWEDEN_SURROUNDINGS: Bounds = [4, 53, 32, 71];
@@ -35,10 +39,18 @@ export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
       id: "kommun-fill",
       type: "fill",
       source: "kommuner",
-      filter: NOT_HINT,
+      filter: FILLED,
       paint: { "fill-color": ["get", "color"], "fill-opacity": 0.25 },
     },
-    // Hint outlines are the one exception to "other outlines are never shown": unfilled and faint.
+    // Once the game is finished, every other kommun is outlined too: unfilled and fainter still.
+    {
+      id: "other-outline",
+      type: "line",
+      source: "kommuner",
+      filter: ["==", ["get", "kind"], "other"],
+      paint: { "line-color": "#ffffff", "line-width": 1, "line-opacity": 0.35 },
+    },
+    // While playing, hint outlines are the one exception to "other outlines are never shown": unfilled and faint.
     {
       id: "hint-outline",
       type: "line",
@@ -50,7 +62,7 @@ export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
       id: "kommun-outline-solid",
       type: "line",
       source: "kommuner",
-      filter: ["all", NOT_HINT, ["==", ["get", "connected"], true]],
+      filter: ["all", FILLED, ["==", ["get", "connected"], true]],
       paint: { "line-color": ["get", "color"], "line-width": 1, "line-opacity": 1 },
     },
     {

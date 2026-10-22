@@ -42,4 +42,10 @@ describe("mapDescription", () => {
       mapDescription(graph, puzzle, cards, ["0181", "0192", "0488", "0136", "0128"]),
     ).toEndWith(" 2 ledtrådskonturer.");
   });
+
+  test("once finished, says every kommun is outlined instead of counting hint outlines", () => {
+    expect(mapDescription(graph, puzzle, [], ["0181"], { allOutlines: true })).toEndWith(
+      " Alla kommuners konturer visas.",
+    );
+  });
 });

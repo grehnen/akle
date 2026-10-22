@@ -3,13 +3,15 @@ import { type GraphVersion, type KommunCode, kommunName } from "../graph/graphVe
 
 /**
  * The play map in words, for screen readers: the endpoints by colour, the connected guesses, the
- * other guesses and how many hint outlines are drawn.
+ * other guesses and how many hint outlines are drawn, or that every kommun is outlined once the
+ * game is finished.
  */
 export function mapDescription(
   graph: GraphVersion,
   puzzle: Pick<Puzzle, "start" | "destination">,
   cards: readonly Pick<GuessCard, "code" | "connected">[],
   hintOutlines: readonly KommunCode[] = [],
+  { allOutlines = false }: { allOutlines?: boolean } = {},
 ): string {
   const names = (connected: boolean) =>
     cards
@@ -18,8 +20,9 @@ export function mapDescription(
       .join(", ") || "inga";
   const shown = new Set([puzzle.start, puzzle.destination, ...cards.map((card) => card.code)]);
   const outlines = hintOutlines.filter((code) => !shown.has(code)).length;
-  const outlineText =
-    outlines === 0
+  const outlineText = allOutlines
+    ? "Alla kommuners konturer visas."
+    : outlines === 0
       ? "Inga ledtrådskonturer."
       : `${outlines} ${outlines === 1 ? "ledtrådskontur" : "ledtrådskonturer"}.`;
   return [

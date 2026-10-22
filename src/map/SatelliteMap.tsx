@@ -23,10 +23,13 @@ type SatelliteMapProps = {
   hintOutlines?: readonly KommunCode[];
   /** Hint 3: hint-outline tooltips show initials instead of `?`. */
   initials?: boolean;
+  /** Once the game is finished: outlines every other kommun too, each with its name as tooltip. */
+  allOutlines?: boolean;
 };
 
 /**
- * Satellite map of the endpoints, guesses and hint outlines. Hovering or tapping a drawn kommun
+ * Satellite map of the endpoints, guesses and hint outlines, and of every other kommun's outline
+ * once the game is finished. Hovering or tapping a drawn kommun
  * shows its tooltip. Display only: clicking or tapping it never guesses.
  */
 export function SatelliteMap({
@@ -36,15 +39,18 @@ export function SatelliteMap({
   cheapestRoute,
   hintOutlines,
   initials = false,
+  allOutlines = false,
 }: SatelliteMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap>();
   const drawn = useMemo(
     () =>
       cheapestRoute
-        ? routeFeatures(graph, puzzle, cheapestRoute, new Set(cards.map((card) => card.code)))
-        : mapFeatures(graph, puzzle, cards, hintOutlines),
-    [graph, puzzle, cards, cheapestRoute, hintOutlines],
+        ? routeFeatures(graph, puzzle, cheapestRoute, new Set(cards.map((card) => card.code)), {
+            allOutlines,
+          })
+        : mapFeatures(graph, puzzle, cards, hintOutlines, { allOutlines }),
+    [graph, puzzle, cards, cheapestRoute, hintOutlines, allOutlines],
   );
   const tooltipFor = useRef<(kommun: DrawnKommun) => string | undefined>(undefined);
   useEffect(() => {
@@ -53,7 +59,7 @@ export function SatelliteMap({
   const descriptionId = useId();
   const description = cheapestRoute
     ? undefined
-    : mapDescription(graph, puzzle, cards, hintOutlines);
+    : mapDescription(graph, puzzle, cards, hintOutlines, { allOutlines });
   const described = description !== undefined;
   const bounds = useMemo(
     () => (cheapestRoute ? routeBounds(graph, cheapestRoute) : endpointBounds(graph, puzzle)),
