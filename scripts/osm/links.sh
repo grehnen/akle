@@ -1,8 +1,8 @@
 #!/bin/sh
-# Cuts the candidate fixed links out of a Sweden extract: roads, paths and railways that are
-# bridges, tunnels or causeways, plus the ways joined to them, since a bridge's crossing way isn't
-# always tagged. Also cuts the road network around them, the ways joined to those two steps
-# further, which the build follows to see that each end of a link reaches meaningful land.
+# Cuts every road, path and railway out of a Sweden extract, the candidate fixed links, which the
+# build narrows to the ways that cross a kommun border. Also cuts the road network around bridges,
+# tunnels and causeways, the ways joined to them three steps out, which the build follows to see
+# that each end of a link over water reaches meaningful land.
 # Runs inside the tools image with the cache directory mounted at /work.
 # Usage: links.sh <extract.osm.pbf> <output directory>
 set -eu
@@ -24,9 +24,9 @@ join_ways() {
     -o "$out/joined.pbf"
 }
 
+osmium export --overwrite "$out/ways.pbf" --geometry-types=linestring \
+  --config=/scripts/ways-export.json -f geojsonseq -o "$out/ways.geojsonseq"
 join_ways
-osmium export --overwrite "$out/joined.pbf" --geometry-types=linestring --attributes=type,id \
-  -f geojsonseq -o "$out/links.geojsonseq"
 join_ways
 join_ways
 osmium export --overwrite "$out/joined.pbf" --geometry-types=linestring \

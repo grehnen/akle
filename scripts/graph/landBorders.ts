@@ -269,7 +269,7 @@ function measureLine(
 type Edge = { polygon: number; from: Position; to: Position };
 
 /** Polygons with their edges in a spatial index, for crossings and point-in-polygon tests. */
-class PolygonIndex {
+export class PolygonIndex {
   private readonly edges: Edge[] = [];
   private readonly index: Flatbush | undefined;
   private maxX = -Infinity;

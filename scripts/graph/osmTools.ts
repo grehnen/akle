@@ -52,7 +52,7 @@ export async function extractLayers({
   const layersDirectory = `${cacheDirectory}/${graphVersionId}`;
   const hasLand = await Bun.file(`${layersDirectory}/land.geojsonseq`).exists();
   const hasLinks =
-    (await Bun.file(`${layersDirectory}/links.geojsonseq`).exists()) &&
+    (await Bun.file(`${layersDirectory}/ways.geojsonseq`).exists()) &&
     (await Bun.file(`${layersDirectory}/roads.geojsonseq`).exists());
   if (hasLand && hasLinks) return;
   logBuildStep("Building the OSM tools image");
@@ -110,10 +110,14 @@ async function runTool(script: string, ...args: string[]): Promise<void> {
   await Bun.$`docker run --rm --user ${user} --volume ${cacheDirectory}:/work --volume ${repositoryRoot}scripts/osm:/scripts:ro ${toolsImage} sh /scripts/${script} ${args}`;
 }
 
-/** The features of a GeoJSON text sequence whose geometry is one of `geometryTypes`. */
+/**
+ * The features of a GeoJSON text sequence whose geometry is one of `geometryTypes` and that `keep`
+ * accepts. The file is streamed, so only the kept features are held in memory.
+ */
 export async function readFeatures<Geometry extends { type: string } = AreaGeometry>(
   path: string,
   geometryTypes: readonly Geometry["type"][] = ["Polygon", "MultiPolygon"],
+  keep: (feature: Feature<Geometry>) => boolean = () => true,
 ): Promise<Feature<Geometry>[]> {
   const features: Feature<Geometry>[] = [];
   const recordSeparator = String.fromCharCode(0x1e);
@@ -133,6 +137,6 @@ export async function readFeatures<Geometry extends { type: string } = AreaGeome
     const json = (line.startsWith(recordSeparator) ? line.slice(1) : line).trim();
     if (json === "") return;
     const feature = JSON.parse(json) as Feature<Geometry>;
-    if (geometryTypes.includes(feature.geometry?.type)) features.push(feature);
+    if (geometryTypes.includes(feature.geometry?.type) && keep(feature)) features.push(feature);
   }
 }

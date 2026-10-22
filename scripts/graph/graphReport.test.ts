@@ -78,6 +78,8 @@ const review: NeighborReview = {
       kinds: ["exclave-border"],
       landLength: 1003,
       exclaveOf: ["1462"],
+      ways: [1001],
+      failures: [{ way: 1001, reasons: ["exclave-end"] }],
       at: [12.41988, 58.05616],
       built: ["land"],
       verdict: { action: "keep", reason: "Lilla Edet's exclave." },
@@ -132,12 +134,18 @@ describe("graphReport", () => {
     );
   });
 
+  test("says when a way's end reaches land only off a kommun's main part", () => {
+    expect(report).toContain(
+      "not qualifying: [1001](https://www.openstreetmap.org/way/1001) an end on land off the main part of its kommun, such as an exclave |",
+    );
+  });
+
   test("splits a land border between the mainland and islands, and names whose exclave holds it", () => {
     expect(report).toContain(
       "| Strängnäs–Västerås | 0486-1980 | island-border | land border 328 m (0 m mainland, 328 m islands) |",
     );
     expect(report).toContain(
-      "| Lilla Edet–Alingsås | 1462-1489 | exclave-border | land border 1003 m; all on an exclave of Lilla Edet |",
+      "| Lilla Edet–Alingsås | 1462-1489 | exclave-border | land border 1003 m; all on an exclave of Lilla Edet; ways",
     );
   });
 
