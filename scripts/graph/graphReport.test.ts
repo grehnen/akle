@@ -14,6 +14,7 @@ const kommuner = [
   { code: "1462", name: "Lilla Edet" },
   { code: "1489", name: "Alingsås" },
   { code: "1440", name: "Ale" },
+  { code: "0484", name: "Eskilstuna" },
   { code: "1482", name: "Kungälv" },
 ];
 
@@ -44,11 +45,23 @@ const review: NeighborReview = {
       between: ["0305", "0330"],
       kinds: ["non-qualifying-link"],
       landLength: 0,
-      ways: [956692672, 956692673],
+      ways: [956692672],
       failures: [{ way: 956692672, reasons: ["service=driveway", "no-land-end"] }],
       at: [17.64847, 59.72217],
       built: [],
       verdict: { action: "keep", reason: "A driveway bridge to an islet." },
+    },
+    {
+      between: ["0484", "1980"],
+      kinds: ["scb-mismatch"],
+      landLength: 1336,
+      mainlandLength: 0,
+      islandLength: 1336,
+      ways: [48675096, 196169497],
+      failures: [{ way: 196169497, reasons: ["no-land-end"] }],
+      at: [16.65422, 59.48786],
+      built: ["land", "fixed"],
+      verdict: { action: "keep", reason: "Kvicksundsbron." },
     },
     {
       between: ["0486", "1980"],
@@ -109,7 +122,13 @@ describe("graphReport", () => {
 
   test("shows which ways keep a fixed link from qualifying, and why", () => {
     expect(report).toContain(
-      "| Håbo–Knivsta | 0305-0330 | non-qualifying-link | land border 0 m; ways [956692672](https://www.openstreetmap.org/way/956692672) [956692673](https://www.openstreetmap.org/way/956692673); not qualifying: [956692672](https://www.openstreetmap.org/way/956692672) service=driveway, an end off the mainland and islands of 1 km² or more | [map](https://www.openstreetmap.org/?mlat=59.72217&mlon=17.64847#map=17/59.72217/17.64847) | not neighbors | keep: A driveway bridge to an islet. |",
+      "| Håbo–Knivsta | 0305-0330 | non-qualifying-link | land border 0 m; ways [956692672](https://www.openstreetmap.org/way/956692672); not qualifying: [956692672](https://www.openstreetmap.org/way/956692672) service=driveway, an end off the mainland and islands of 1 km² or more | [map](https://www.openstreetmap.org/?mlat=59.72217&mlon=17.64847#map=17/59.72217/17.64847) | not neighbors | keep: A driveway bridge to an islet. |",
+    );
+  });
+
+  test("lists the failing ways of a fixed link that qualifies through another way", () => {
+    expect(report).toContain(
+      "| Eskilstuna–Västerås | 0484-1980 | scb-mismatch | land border 1336 m (0 m mainland, 1336 m islands); ways [48675096](https://www.openstreetmap.org/way/48675096) [196169497](https://www.openstreetmap.org/way/196169497); failing ways, the link qualifies through the others: [196169497](https://www.openstreetmap.org/way/196169497) an end off the mainland and islands of 1 km² or more | [map](https://www.openstreetmap.org/?mlat=59.48786&mlon=16.65422#map=17/59.48786/16.65422) | neighbors (land, fixed) | keep: Kvicksundsbron. |",
     );
   });
 
@@ -129,7 +148,7 @@ describe("graphReport", () => {
   });
 
   test("counts the flags and lists the problems that fail the check", () => {
-    expect(report).toContain("6 flagged pairs, 1 without a verdict.");
+    expect(report).toContain("7 flagged pairs, 1 without a verdict.");
     expect(report).toContain(
       "- 0125-0180 (Ekerö–Stockholm) is flagged short-border but has no verdict",
     );
