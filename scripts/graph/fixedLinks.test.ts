@@ -48,6 +48,13 @@ describe("findFixedLinks", () => {
     expect(findFixedLinks([border], [way(7, 2)], mask)).toEqual([]);
   });
 
+  test("a way crossing the border on an island under 1 km² crosses water", () => {
+    const islet = box(-0.004, 4.998, 0.004, 5.002);
+    expect(findFixedLinks([border], [way(7, 5)], { ...mask, land: [...mask.land, islet] })).toEqual(
+      [{ between: ["0001", "0002"], ways: [7] }],
+    );
+  });
+
   test.each([
     { highway: "construction" },
     { highway: "proposed" },

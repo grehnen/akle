@@ -2,11 +2,20 @@ import Flatbush from "flatbush";
 import type { KommunCode } from "../../src/graph/graphVersion";
 import type { AreaGeometry, Line, Position, SharedBorder } from "./sharedBorders";
 
-/** Where land is: land polygons (everything outside them is sea) and the lakes to leave out. */
+/**
+ * Where land is: land polygons (everything outside them is sea) and the lakes to leave out. Each
+ * land polygon must be a whole landmass, so its area is the island's.
+ */
 export type LandWaterMask = {
   land: readonly AreaGeometry[];
   lakes: readonly AreaGeometry[];
 };
+
+/**
+ * Islands smaller than this (m²), in the sea or in a lake, aren't meaningful land: a border on one
+ * doesn't count, and the drawn shapes leave them out.
+ */
+export const minIslandArea = 1_000_000;
 
 export type LandBorder = {
   between: readonly [KommunCode, KommunCode];
@@ -21,18 +30,19 @@ export type LandBorder = {
 
 const earthRadius = 6_371_008.8;
 
-/** Measures how much of each shared border lies on land: inside the land mask, outside every lake. */
+/**
+ * Measures how much of each shared border lies on land: inside the land mask, outside every lake,
+ * and not on an island under {@link minIslandArea}.
+ */
 export function measureLandBorders(
   borders: readonly SharedBorder[],
   mask: LandWaterMask,
 ): LandBorder[] {
-  const land = new PolygonIndex(mask.land);
-  const lakes = new PolygonIndex(mask.lakes);
-  const isOnLand = landTest(land, lakes);
+  const { indexes, isOnLand } = landIndexes(mask);
   return borders.map((border) => {
     const longest: Longest = { land: undefined, any: undefined };
     const length = border.lines.reduce(
-      (sum, line) => sum + lineLengthOnLand(line, [land, lakes], isOnLand, longest),
+      (sum, line) => sum + lineLengthOnLand(line, indexes, isOnLand, longest),
       0,
     );
     const piece = longest.land ?? longest.any;
@@ -48,9 +58,58 @@ export function measureLandBorders(
 type Piece = { from: Position; to: Position; length: number };
 type Longest = { land: Piece | undefined; any: Piece | undefined };
 
-/** Whether a point is on land: inside the land mask, outside every lake. */
+/**
+ * Whether a point is on land: inside the land mask, outside every lake, and not on an island under
+ * {@link minIslandArea}.
+ */
 export function pointOnLand(mask: LandWaterMask): (point: Position) => boolean {
-  return landTest(new PolygonIndex(mask.land), new PolygonIndex(mask.lakes));
+  return landIndexes(mask).isOnLand;
+}
+
+function landIndexes(mask: LandWaterMask): {
+  indexes: PolygonIndex[];
+  isOnLand: (point: Position) => boolean;
+} {
+  const land = new PolygonIndex(mask.land);
+  const lakes = new PolygonIndex(mask.lakes);
+  const islets = new PolygonIndex(smallIslands(mask));
+  return {
+    indexes: [land, lakes, islets],
+    isOnLand: (point) => land.contains(point) && !lakes.contains(point) && !islets.contains(point),
+  };
+}
+
+/** Islands under {@link minIslandArea}: small land polygons, and small holes in lakes. */
+function smallIslands(mask: LandWaterMask): AreaGeometry[] {
+  const inSea = mask.land.flatMap(polygonsOf).map(([outer]) => outer);
+  const inLakes = mask.lakes.flatMap(polygonsOf).flatMap(([, ...holes]) => holes);
+  return [...inSea, ...inLakes]
+    .filter((ring) => ringArea(ring) < minIslandArea)
+    .map((ring) => ({ type: "Polygon", coordinates: [ring] }));
+}
+
+function polygonsOf(geometry: AreaGeometry): Position[][][] {
+  return geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
+}
+
+/** Area in m² on a sphere; outer rings minus holes. */
+export function sphericalArea(geometry: AreaGeometry): number {
+  return polygonsOf(geometry).reduce(
+    (total, [outer, ...holes]) =>
+      total + ringArea(outer) - holes.reduce((sum, hole) => sum + ringArea(hole), 0),
+    0,
+  );
+}
+
+function ringArea(ring: readonly Position[]): number {
+  const radians = Math.PI / 180;
+  let sum = 0;
+  for (let index = 0; index + 1 < ring.length; index++) {
+    const [lon1, lat1] = ring[index];
+    const [lon2, lat2] = ring[index + 1];
+    sum += (lon2 - lon1) * radians * (2 + Math.sin(lat1 * radians) + Math.sin(lat2 * radians));
+  }
+  return Math.abs((sum * earthRadius * earthRadius) / 2);
 }
 
 /** Whether a geometry's bounding box overlaps any shared-border segment's. */
@@ -88,10 +147,6 @@ function bounds(geometry: AreaGeometry): [number, number, number, number] {
     }
   }
   return box;
-}
-
-function landTest(land: PolygonIndex, lakes: PolygonIndex): (point: Position) => boolean {
-  return (point) => land.contains(point) && !lakes.contains(point);
 }
 
 /**

@@ -10,9 +10,10 @@ osmium removeid --overwrite -i "$out/coastline-dropped.txt" "$out/coastline.pbf"
 osmium sort --overwrite "$out/coastline-kept.pbf" "$out/coastline-closure.opl" \
   -o "$out/coastline-closed.pbf"
 
-# Exit code 1 means warnings only.
+# Exit code 1 means warnings only. --max-points=0 keeps each landmass one polygon, so the build
+# can tell a small island by its area.
 status=0
-osmcoastline --overwrite --close-distance=0 --output-polygons=land \
+osmcoastline --overwrite --close-distance=0 --max-points=0 --output-polygons=land \
   --output-database="$out/coastline.db" "$out/coastline-closed.pbf" \
   > "$out/osmcoastline.log" 2>&1 || status=$?
 if [ "$status" -gt 1 ]; then
