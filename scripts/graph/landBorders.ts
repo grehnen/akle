@@ -1,10 +1,11 @@
 import Flatbush from "flatbush";
 import type { KommunCode } from "../../src/graph/graphVersion";
+import { compareCodes } from "../../src/graph/kommunPair";
 import type { AreaGeometry, Line, Position, SharedBorder } from "./sharedBorders";
 
 /**
  * Where land is: land polygons (everything outside them is sea) and the lakes to leave out. Each
- * land polygon must be a whole landmass, so its area is the island's.
+ * land polygon must be a whole landmass, so its area is the island's; the largest is the mainland.
  */
 export type LandWaterMask = {
   land: readonly AreaGeometry[];
@@ -21,6 +22,12 @@ export type LandBorder = {
   between: readonly [KommunCode, KommunCode];
   /** Length of the shared border on land, in whole metres. */
   landLength: number;
+  /** The part of it on the mainland: the largest land polygon, outside the islands in its lakes. */
+  mainlandLength: number;
+  /** The part of it on islands of {@link minIslandArea} or more, in the sea or in a lake. */
+  islandLength: number;
+  /** The kommuner, by code, whose exclaves hold the whole border on land; empty without land. */
+  exclaveOf: KommunCode[];
   /**
    * Where to look, rounded to 5 decimals: the middle of the longest piece on land, or of the
    * longest segment when none is on land.
@@ -32,31 +39,56 @@ const earthRadius = 6_371_008.8;
 
 /**
  * Measures how much of each shared border lies on land: inside the land mask, outside every lake,
- * and not on an island under {@link minIslandArea}.
+ * and not on an island under {@link minIslandArea}. It splits that between the mainland and the
+ * islands, and checks it against `onExclave`, which tells whether an edge of the border lies on
+ * an exclave of a kommun (see `exclaveEdges`).
  */
 export function measureLandBorders(
   borders: readonly SharedBorder[],
   mask: LandWaterMask,
+  onExclave: (code: KommunCode, from: Position, to: Position) => boolean = () => false,
 ): LandBorder[] {
-  const { indexes, isOnLand } = landIndexes(mask);
+  const { indexes, landKind } = landIndexes(mask);
   return borders.map((border) => {
-    const longest: Longest = { land: undefined, any: undefined };
-    const length = border.lines.reduce(
-      (sum, line) => sum + lineLengthOnLand(line, indexes, isOnLand, longest),
-      0,
-    );
-    const piece = longest.land ?? longest.any;
+    const tally: Tally = {
+      mainland: 0,
+      island: 0,
+      offExclave: [0, 0],
+      longest: { land: undefined, any: undefined },
+    };
+    const exclaveSides = (from: Position, to: Position) =>
+      [onExclave(border.between[0], from, to), onExclave(border.between[1], from, to)] as const;
+    for (const line of border.lines) {
+      measureLine(line, indexes, landKind, exclaveSides, tally);
+    }
+    const land = tally.mainland + tally.island;
+    const piece = tally.longest.land ?? tally.longest.any;
     const middle = piece ? interpolate(piece.from, piece.to, 0.5) : [0, 0];
     return {
       between: border.between,
-      landLength: Math.round(length),
+      landLength: Math.round(land),
+      mainlandLength: Math.round(tally.mainland),
+      islandLength: Math.round(tally.island),
+      exclaveOf:
+        land > 0
+          ? border.between
+              .filter((_, side) => Math.round(tally.offExclave[side]) === 0)
+              .sort(compareCodes)
+          : [],
       at: roundedPoint(middle),
     };
   });
 }
 
 type Piece = { from: Position; to: Position; length: number };
-type Longest = { land: Piece | undefined; any: Piece | undefined };
+type LandKind = "mainland" | "island";
+/** What a border's pieces on land add up to; `offExclave` per side of the pair. */
+type Tally = {
+  mainland: number;
+  island: number;
+  offExclave: [number, number];
+  longest: { land: Piece | undefined; any: Piece | undefined };
+};
 
 /**
  * Whether a point is on land: inside the land mask, outside every lake, and not on an island under
@@ -69,23 +101,48 @@ export function pointOnLand(mask: LandWaterMask): (point: Position) => boolean {
 function landIndexes(mask: LandWaterMask): {
   indexes: PolygonIndex[];
   isOnLand: (point: Position) => boolean;
+  landKind: (point: Position) => LandKind | undefined;
 } {
   const land = new PolygonIndex(mask.land);
   const lakes = new PolygonIndex(mask.lakes);
   const islets = new PolygonIndex(smallIslands(mask));
+  const isOnLand = (point: Position) =>
+    land.contains(point) && !lakes.contains(point) && !islets.contains(point);
+  const largest = mask.land.reduce<AreaGeometry | undefined>(
+    (max, geometry) =>
+      max === undefined || sphericalArea(geometry) > sphericalArea(max) ? geometry : max,
+    undefined,
+  );
+  const mainland = new PolygonIndex(largest ? [largest] : []);
+  // The mainland polygon covers its lakes, so the islands in them are holes of the lakes.
+  const lakeIslands = new PolygonIndex(asPolygons(lakeHoles(mask).filter(isBigIsland)));
   return {
+    // Every mainland and lake island edge is a land or lake edge, so these find all the crossings.
     indexes: [land, lakes, islets],
-    isOnLand: (point) => land.contains(point) && !lakes.contains(point) && !islets.contains(point),
+    isOnLand,
+    landKind: (point) => {
+      if (!isOnLand(point)) return undefined;
+      return mainland.contains(point) && !lakeIslands.contains(point) ? "mainland" : "island";
+    },
   };
 }
 
 /** Islands under {@link minIslandArea}: small land polygons, and small holes in lakes. */
 function smallIslands(mask: LandWaterMask): AreaGeometry[] {
   const inSea = mask.land.flatMap(polygonsOf).map(([outer]) => outer);
-  const inLakes = mask.lakes.flatMap(polygonsOf).flatMap(([, ...holes]) => holes);
-  return [...inSea, ...inLakes]
-    .filter((ring) => ringArea(ring) < minIslandArea)
-    .map((ring) => ({ type: "Polygon", coordinates: [ring] }));
+  return asPolygons([...inSea, ...lakeHoles(mask)].filter((ring) => !isBigIsland(ring)));
+}
+
+function lakeHoles(mask: LandWaterMask): Position[][] {
+  return mask.lakes.flatMap(polygonsOf).flatMap(([, ...holes]) => holes);
+}
+
+function isBigIsland(ring: readonly Position[]): boolean {
+  return ringArea(ring) >= minIslandArea;
+}
+
+function asPolygons(rings: Position[][]): AreaGeometry[] {
+  return rings.map((ring) => ({ type: "Polygon", coordinates: [ring] }));
 }
 
 function polygonsOf(geometry: AreaGeometry): Position[][][] {
@@ -147,24 +204,26 @@ function bounds(geometry: AreaGeometry): [number, number, number, number] {
 }
 
 /**
- * Splits each segment where it crosses a mask edge and measures the pieces whose midpoint is on
- * land. Between two crossings a line can't change sides, so a piece's status is reused until the
- * next crossing.
+ * Splits each segment where it crosses a mask edge and adds up the pieces whose midpoint is on
+ * land. Between two crossings a line can't change sides, so a piece's kind of land is reused until
+ * the next crossing.
  */
-function lineLengthOnLand(
+function measureLine(
   line: Line,
   indexes: readonly PolygonIndex[],
-  isOnLand: (point: Position) => boolean,
-  longest: Longest,
-): number {
-  let total = 0;
-  let status: boolean | undefined;
+  landKind: (point: Position) => LandKind | undefined,
+  exclaveSides: (from: Position, to: Position) => readonly [boolean, boolean],
+  tally: Tally,
+): void {
+  const { longest } = tally;
+  let status: LandKind | "water" | undefined;
   for (let index = 0; index + 1 < line.length; index++) {
     const [from, to] = [line[index], line[index + 1]];
     const segmentLength = haversine(from, to);
     if (segmentLength > (longest.any?.length ?? -1)) {
       longest.any = { from, to, length: segmentLength };
     }
+    const onExclave = exclaveSides(from, to);
     const contacts = indexes.flatMap((polygons) => polygons.crossings(from, to));
     const cuts = [...new Set(contacts)].filter((t) => t > 0 && t < 1).sort((a, b) => a - b);
     const stops = [0, ...cuts, 1];
@@ -176,11 +235,14 @@ function lineLengthOnLand(
         interpolate(from, to, stops[piece + 1]),
       ];
       if (status === undefined || piece > 0) {
-        status = isOnLand(interpolate(start, end, 0.5));
+        status = landKind(interpolate(start, end, 0.5)) ?? "water";
       }
-      if (status) {
+      if (status !== "water") {
         const pieceLength = haversine(start, end);
-        total += pieceLength;
+        tally[status] += pieceLength;
+        onExclave.forEach((isOnExclave, side) => {
+          if (!isOnExclave) tally.offExclave[side] += pieceLength;
+        });
         if (pieceLength > (longest.land?.length ?? -1)) {
           longest.land = { from: start, to: end, length: pieceLength };
         }
@@ -188,7 +250,6 @@ function lineLengthOnLand(
     }
     if (contacts.length > 0) status = undefined;
   }
-  return total;
 }
 
 type Edge = { polygon: number; from: Position; to: Position };

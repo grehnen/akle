@@ -50,7 +50,7 @@ overrides:
 reviewed:
   - keep: ["0882", "0980"]
     names: [Oskarshamn, Gotland]
-    kinds: [short-border, scb-mismatch]
+    kinds: [short-border, scb-mismatch, island-border, exclave-border]
     reason: Checked on the map.
 `;
     const read = readNeighborOverrides(yaml, kommuner);
@@ -73,7 +73,7 @@ reviewed:
     expect(read.reviewed).toEqual([
       {
         between: ["0882", "0980"],
-        kinds: ["short-border", "scb-mismatch"],
+        kinds: ["short-border", "scb-mismatch", "island-border", "exclave-border"],
         reason: "Checked on the map.",
       },
     ]);
@@ -169,7 +169,7 @@ reviewed:
     reason: Fine.
 `;
     expect(() => readNeighborOverrides(yaml, kommuner)).toThrow(
-      /reviewed\[0\]: kinds must list flag kinds from scb-mismatch, short-border, point-touch, non-qualifying-link/,
+      /reviewed\[0\]: kinds must list flag kinds from scb-mismatch, short-border, point-touch, non-qualifying-link, island-border, exclave-border/,
     );
   });
 

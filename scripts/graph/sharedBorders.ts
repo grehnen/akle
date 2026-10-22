@@ -1,5 +1,6 @@
 import type { KommunCode } from "../../src/graph/graphVersion";
 import { compareCodes, comparePairs, pairKey } from "../../src/graph/kommunPair";
+import { sphericalArea } from "./landBorders";
 
 export type Position = number[];
 export type Line = Position[];
@@ -103,6 +104,36 @@ export function sharedVertices(
       points: pair.points.sort((a, b) => a[0] - b[0] || a[1] - b[1]),
     }))
     .sort(comparePairs);
+}
+
+/**
+ * Whether an edge, in either direction, lies on one of a kommun's exclaves: any part of its
+ * boundary other than the largest. The boundary includes the water, so an island inside it isn't
+ * a part of its own.
+ */
+export function exclaveEdges(
+  areas: readonly KommunArea[],
+): (code: KommunCode, from: Position, to: Position) => boolean {
+  const edgesByCode = new Map<KommunCode, Set<string>>();
+  for (const { code, geometry } of areas) {
+    if (geometry.type === "Polygon") continue;
+    const parts = geometry.coordinates.map((coordinates) => ({
+      coordinates,
+      area: sphericalArea({ type: "Polygon", coordinates }),
+    }));
+    const largest = parts.reduce((max, part) => (part.area > max.area ? part : max));
+    const edges = new Set<string>();
+    for (const part of parts) {
+      if (part === largest) continue;
+      for (const ring of part.coordinates) {
+        for (let index = 0; index + 1 < ring.length; index++) {
+          edges.add(edgeKey(ring[index], ring[index + 1]));
+        }
+      }
+    }
+    edgesByCode.set(code, edges);
+  }
+  return (code, from, to) => edgesByCode.get(code)?.has(edgeKey(from, to)) ?? false;
 }
 
 /** A run that wraps past the ring's start point is one line, not two. */

@@ -23,6 +23,7 @@ import { readScbBoundaries } from "./scbBoundaries";
 import { readScbKommunWorkbook } from "./scbKommuner";
 import { drawShapes, isBigLake, isLake } from "./shapes";
 import {
+  exclaveEdges,
   sharedBorders,
   sharedVertices,
   type AreaGeometry,
@@ -90,7 +91,7 @@ const mask = {
     .filter((feature) => nearBorders(feature.geometry))
     .map((feature) => feature.geometry),
 };
-const measured = measureLandBorders(borders, mask);
+const measured = measureLandBorders(borders, mask, exclaveEdges(areas));
 await Bun.write(
   `${layersDirectory}/land-borders.csv`,
   `a,b,landLength\n${measured.map((border) => `${border.between.join(",")},${border.landLength}`).join("\n")}\n`,
@@ -130,11 +131,7 @@ const overrides = readNeighborOverrides(await Bun.file(overridesFile).text(), sc
 const ferryLinks = overrides.ferries;
 const evidence: Omit<BuildEvidence, "shapeCodes"> = {
   kommuner: scbKommuner,
-  landBorders: measured.map((border) => ({
-    between: border.between,
-    landLength: border.landLength,
-    at: [border.at[0], border.at[1]],
-  })),
+  landBorders: measured.map((border) => ({ ...border, at: [border.at[0], border.at[1]] })),
   pointTouches,
   fixedLinks,
   scbPairs,

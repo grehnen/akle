@@ -9,6 +9,10 @@ const kommuner = [
   { code: "0127", name: "Botkyrka" },
   { code: "0305", name: "Håbo" },
   { code: "0330", name: "Knivsta" },
+  { code: "0486", name: "Strängnäs" },
+  { code: "1980", name: "Västerås" },
+  { code: "1462", name: "Lilla Edet" },
+  { code: "1489", name: "Alingsås" },
 ];
 
 const review: NeighborReview = {
@@ -46,6 +50,25 @@ const review: NeighborReview = {
       built: [],
       verdict: { action: "keep", reason: "A driveway bridge to an islet." },
     },
+    {
+      between: ["0486", "1980"],
+      kinds: ["island-border"],
+      landLength: 328,
+      mainlandLength: 0,
+      islandLength: 328,
+      at: [16.91903, 59.48324],
+      built: ["land"],
+      verdict: { action: "keep", reason: "An island in Mälaren." },
+    },
+    {
+      between: ["1462", "1489"],
+      kinds: ["exclave-border"],
+      landLength: 1003,
+      exclaveOf: ["1462"],
+      at: [12.41988, 58.05616],
+      built: ["land"],
+      verdict: { action: "keep", reason: "Lilla Edet's exclave." },
+    },
   ],
   problems: ["0125-0180 (Ekerö–Stockholm) is flagged short-border but has no verdict"],
   graphProblems: [],
@@ -81,8 +104,17 @@ describe("graphReport", () => {
     );
   });
 
+  test("splits a land border between the mainland and islands, and names whose exclave holds it", () => {
+    expect(report).toContain(
+      "| Strängnäs–Västerås | 0486-1980 | island-border | land border 328 m (0 m mainland, 328 m islands) |",
+    );
+    expect(report).toContain(
+      "| Lilla Edet–Alingsås | 1462-1489 | exclave-border | land border 1003 m; all on an exclave of Lilla Edet |",
+    );
+  });
+
   test("counts the flags and lists the problems that fail the check", () => {
-    expect(report).toContain("3 flagged pairs, 1 without a verdict.");
+    expect(report).toContain("5 flagged pairs, 1 without a verdict.");
     expect(report).toContain(
       "- 0125-0180 (Ekerö–Stockholm) is flagged short-border but has no verdict",
     );

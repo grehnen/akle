@@ -27,9 +27,30 @@ const built = graphVersionFileContents({
   },
   evidence: {
     landBorders: [
-      { between: ["0125", "0127"], landLength: 9000, at: [17.8, 59.25] },
-      { between: ["0125", "0180"], landLength: 42, at: [17.83261, 59.3684] },
-      { between: ["0127", "0180"], landLength: 4000, at: [17.9, 59.25] },
+      {
+        between: ["0125", "0127"],
+        landLength: 9000,
+        mainlandLength: 9000,
+        islandLength: 0,
+        exclaveOf: [],
+        at: [17.8, 59.25],
+      },
+      {
+        between: ["0125", "0180"],
+        landLength: 42,
+        mainlandLength: 42,
+        islandLength: 0,
+        exclaveOf: [],
+        at: [17.83261, 59.3684],
+      },
+      {
+        between: ["0127", "0180"],
+        landLength: 4000,
+        mainlandLength: 4000,
+        islandLength: 0,
+        exclaveOf: [],
+        at: [17.9, 59.25],
+      },
     ],
     pointTouches: [],
     scbPairs: [

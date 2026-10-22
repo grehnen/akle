@@ -28,8 +28,12 @@ _Avoid_: Crossing, connection
 A kommun linked to others only by ferry; a route may begin or end there but never pass through it.
 _Avoid_: Island, leaf
 
+**Exclave**:
+Any part of a kommun's boundary, water included, other than its largest part; an island inside the boundary is not one.
+_Avoid_: Enclave, detached part
+
 **Flagged pair**:
-A pair of kommuner the graph build can't decide on alone, such as a very short land border or a disagreement with SCB's map, so a human must give it a verdict.
+A pair of kommuner the graph build can't decide on alone, such as a very short land border, a land border only on small islands or only on an exclave, or a disagreement with SCB's map, so a human must give it a verdict.
 _Avoid_: Warning, suspect pair
 
 **Verdict**:

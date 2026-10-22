@@ -27,11 +27,16 @@ export function readBuildEvidence(files: Record<string, string>): BuildEvidence 
       name,
     })),
     shapeCodes: (shapes.features ?? []).map((feature) => feature.properties.code),
-    landBorders: rows("land-borders.csv", "a,b,land,at").map(([a, b, land, at]) => ({
-      between: pair(a, b),
-      landLength: Number(land),
-      at: point(at),
-    })),
+    landBorders: rows("land-borders.csv", "a,b,land,mainland,island,exclave,at").map(
+      ([a, b, land, mainland, island, exclave, at]) => ({
+        between: pair(a, b),
+        landLength: Number(land),
+        mainlandLength: Number(mainland),
+        islandLength: Number(island),
+        exclaveOf: exclave === "-" ? [] : exclave.split(" "),
+        at: point(at),
+      }),
+    ),
     pointTouches: rows("point-touches.csv", "a,b,at").map(([a, b, at]) => ({
       between: pair(a, b),
       at: point(at),
