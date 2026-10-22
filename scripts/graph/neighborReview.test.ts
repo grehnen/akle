@@ -78,7 +78,7 @@ describe("reviewNeighborGraph", () => {
     expect(review.links).toHaveLength(3);
   });
 
-  test("flags a pair linked only by a fixed link, with its way ids", () => {
+  test("a qualifying fixed link makes a neighbor without a flag, even with no land border", () => {
     const review = reviewNeighborGraph(
       evidence({
         landBorders: [
@@ -87,8 +87,8 @@ describe("reviewNeighborGraph", () => {
           { between: ["0003", "0004"], landLength: 2000, at: [18.2, 59] },
         ],
         fixedLinks: [
-          { between: ["0002", "0003"], ways: [7, 9] },
-          { between: ["0003", "0004"], ways: [11] },
+          { between: ["0002", "0003"], ways: [7, 9], failures: [] },
+          { between: ["0003", "0004"], ways: [11], failures: [] },
         ],
       }),
       noOverrides,
@@ -99,16 +99,107 @@ describe("reviewNeighborGraph", () => {
       { between: ["0003", "0004"], kind: "fixed" },
       { between: ["0003", "0004"], kind: "land" },
     ]);
+    expect(review.flaggedPairs).toEqual([]);
+    expect(review.problems).toEqual([]);
+  });
+
+  /** 0002–0003 share only a water border, crossed by a driveway bridge to an islet. */
+  const driveway = {
+    between: ["0003", "0002"] as const,
+    ways: [7, 9],
+    failures: [{ way: 9, reasons: ["service=driveway" as const, "no-land-end" as const] }],
+  };
+  const waterBorders: BuildEvidence["landBorders"] = [
+    { between: ["0001", "0002"], landLength: 5000, at: [18, 59] },
+    { between: ["0002", "0003"], landLength: 0, at: [18.1, 59] },
+    { between: ["0003", "0004"], landLength: 2000, at: [18.2, 59] },
+  ];
+
+  test("drops a non-qualifying fixed link and flags the pair with the failing ways", () => {
+    const review = reviewNeighborGraph(
+      evidence({
+        landBorders: waterBorders,
+        fixedLinks: [driveway],
+        scbPairs: [
+          { between: ["0001", "0002"], at: [18, 59] },
+          { between: ["0003", "0004"], at: [18.2, 59] },
+        ],
+      }),
+      noOverrides,
+    );
+    expect(review.links).toEqual([
+      { between: ["0001", "0002"], kind: "land" },
+      { between: ["0003", "0004"], kind: "land" },
+    ]);
     expect(review.flaggedPairs).toEqual([
       {
         between: ["0002", "0003"],
-        kinds: ["fixed-only"],
+        kinds: ["non-qualifying-link"],
         landLength: 0,
         ways: [7, 9],
+        failures: [{ way: 9, reasons: ["service=driveway", "no-land-end"] }],
         at: [18.1, 59],
-        built: ["fixed"],
+        built: [],
       },
     ]);
+  });
+
+  test("a pair SCB joins but linked only by a non-qualifying link is also an SCB mismatch", () => {
+    const review = reviewNeighborGraph(
+      evidence({ landBorders: waterBorders, fixedLinks: [driveway] }),
+      noOverrides,
+    );
+    expect(review.flaggedPairs.map(({ between, kinds, scb }) => ({ between, kinds, scb }))).toEqual(
+      [
+        {
+          between: ["0002", "0003"],
+          kinds: ["scb-mismatch", "non-qualifying-link"],
+          scb: "only SCB",
+        },
+      ],
+    );
+  });
+
+  test("a non-qualifying link next to a land border adds no fixed link and no flag", () => {
+    const review = reviewNeighborGraph(
+      evidence({ fixedLinks: [{ ...driveway, between: ["0001", "0002"] }] }),
+      noOverrides,
+    );
+    expect(review.links).toEqual([
+      { between: ["0001", "0002"], kind: "land" },
+      { between: ["0002", "0003"], kind: "land" },
+      { between: ["0003", "0004"], kind: "land" },
+    ]);
+    expect(review.flaggedPairs).toEqual([]);
+  });
+
+  test("an add with link fixed puts a non-qualifying link back in the graph", () => {
+    const review = reviewNeighborGraph(
+      evidence({
+        landBorders: waterBorders,
+        fixedLinks: [driveway],
+        scbPairs: [
+          { between: ["0001", "0002"], at: [18, 59] },
+          { between: ["0003", "0004"], at: [18.2, 59] },
+        ],
+      }),
+      {
+        ...noOverrides,
+        overrides: [
+          {
+            between: ["0002", "0003"],
+            action: "add",
+            link: "fixed",
+            reason: "A public road after all.",
+            evidence: "https://example.org",
+          },
+        ],
+      },
+    );
+    expect(review.links).toContainEqual({ between: ["0002", "0003"], kind: "fixed" });
+    expect(review.flaggedPairs[0].built).toEqual([]);
+    expect(review.flaggedPairs[0].verdict?.action).toBe("add");
+    expect(review.problems).toEqual([]);
   });
 
   test("flags pairs found only by SCB or only by OSM", () => {

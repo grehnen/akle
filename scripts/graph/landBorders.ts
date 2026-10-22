@@ -112,13 +112,10 @@ function ringArea(ring: readonly Position[]): number {
   return Math.abs((sum * earthRadius * earthRadius) / 2);
 }
 
-/** Whether a geometry's bounding box overlaps any shared-border segment's. */
-export function borderProximity(
-  shared: readonly SharedBorder[],
-): (geometry: AreaGeometry) => boolean {
-  const segments = shared.flatMap((border) =>
-    border.lines.flatMap((line) => line.slice(1).map((to, index) => [line[index], to])),
-  );
+/** Whether a geometry's bounding box overlaps any segment's of the lines. */
+export function lineProximity(lines: readonly Line[]): (geometry: AreaGeometry) => boolean {
+  const segments = lines.flatMap((line) => line.slice(1).map((to, index) => [line[index], to]));
+  if (segments.length === 0) return () => false;
   const index = new Flatbush(segments.length);
   for (const [from, to] of segments) {
     index.add(

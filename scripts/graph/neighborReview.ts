@@ -4,7 +4,7 @@ import {
   type KommunCode,
   type NeighborLink,
 } from "../../src/graph/graphVersion";
-import type { FixedLink } from "./fixedLinks";
+import type { FixedLink, WayFailure } from "./fixedLinks";
 import { compareCodes, type Pair, pairKey, sortedPair } from "../../src/graph/kommunPair";
 import { pairFlagKinds, type NeighborOverrides, type PairFlagKind } from "./neighborOverrides";
 
@@ -36,6 +36,8 @@ export type FlaggedPair = {
   landLength?: number;
   /** OSM way ids of the detected fixed link. */
   ways?: number[];
+  /** The ways that keep the fixed link from qualifying, so it isn't in the graph. */
+  failures?: WayFailure[];
   /** Where to look on the map. */
   at: Point;
   /** The links the build generated for the pair, before any verdict; empty when it isn't a neighbor. */
@@ -74,10 +76,9 @@ export function reviewNeighborGraph(
     ...evidence.landBorders
       .filter((border) => border.landLength > 0)
       .map((border) => ({ between: sortedPair(border.between), kind: "land" as const })),
-    ...evidence.fixedLinks.map((link) => ({
-      between: sortedPair(link.between),
-      kind: "fixed" as const,
-    })),
+    ...evidence.fixedLinks
+      .filter((link) => link.failures.length === 0)
+      .map((link) => ({ between: sortedPair(link.between), kind: "fixed" as const })),
   ];
   const generatedPairs = new Set(generated.map((link) => pairKey(link.between)));
 
@@ -91,26 +92,28 @@ export function reviewNeighborGraph(
     if (border.landLength > 0 && border.landLength < shortBorderLength) flag(key, "short-border");
   }
   for (const key of touches.keys()) flag(key, "point-touch");
-  for (const key of fixed.keys()) {
-    if (!((borders.get(key)?.landLength ?? 0) > 0)) flag(key, "fixed-only");
+  for (const [key, link] of fixed) {
+    const hasLandBorder = (borders.get(key)?.landLength ?? 0) > 0;
+    if (link.failures.length > 0 && !hasLandBorder) flag(key, "non-qualifying-link");
   }
 
   const flaggedPairs = [...flagKinds]
     .sort(([a], [b]) => compareCodes(a, b))
     .map(([key, kinds]): FlaggedPair => {
       const border = borders.get(key);
-      const ways = fixed.get(key)?.ways;
+      const link = fixed.get(key);
       const at = (border ?? touches.get(key) ?? scb.get(key))?.at ?? [0, 0];
       return {
         between: sortedPair(key.split("-")),
         kinds: pairFlagKinds.filter((kind) => kinds.has(kind)),
         ...(kinds.has("scb-mismatch") && { scb: scb.has(key) ? "only SCB" : "only OSM" }),
         ...(border && { landLength: border.landLength }),
-        ...(ways && { ways }),
+        ...(link && { ways: link.ways }),
+        ...(link && link.failures.length > 0 && { failures: link.failures }),
         at,
         built: [
           ...((border?.landLength ?? 0) > 0 ? ["land" as const] : []),
-          ...(ways ? ["fixed" as const] : []),
+          ...(link && link.failures.length === 0 ? ["fixed" as const] : []),
         ],
       };
     });

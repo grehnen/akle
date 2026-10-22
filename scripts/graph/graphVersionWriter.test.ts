@@ -41,7 +41,7 @@ describe("graphVersionFileContents", () => {
     ).toEqual(["0114", "0180"]);
   });
 
-  test("records the OSM way ids of the detected fixed links", () => {
+  test("records the OSM way ids of the detected fixed links and why a link doesn't qualify", () => {
     const withFixedLinks = graphVersionFileContents({
       version: { id: "osm-test", startsAtPuzzle: 3 },
       kommuner: [
@@ -54,14 +54,18 @@ describe("graphVersionFileContents", () => {
         { between: ["0180", "0125"], kind: "land" },
       ],
       fixedLinks: [
-        { between: ["0186", "0180"], ways: [4054906, 23353186] },
-        { between: ["0125", "0180"], ways: [30961374] },
+        { between: ["0186", "0180"], ways: [4054906, 23353186], failures: [] },
+        {
+          between: ["0125", "0180"],
+          ways: [30961374, 30961375],
+          failures: [{ way: 30961375, reasons: ["service=driveway", "no-land-end"] }],
+        },
       ],
       shapes: { type: "FeatureCollection", features: [] },
     });
     expect(withFixedLinks["neighbors.csv"]).toBe("a,b,link\n0125,0180,land\n0180,0186,fixed\n");
     expect(withFixedLinks["fixed-links.csv"]).toBe(
-      "a,b,ways\n0125,0180,30961374\n0180,0186,4054906 23353186\n",
+      "a,b,ways,failures\n0125,0180,30961374 30961375,30961375:service=driveway+no-land-end\n0180,0186,4054906 23353186,-\n",
     );
   });
 

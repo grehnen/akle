@@ -7,7 +7,7 @@ import buildConfig from "./build-config.json";
 import { reportBuild } from "./buildReport";
 import { findFixedLinks, type LinkWay } from "./fixedLinks";
 import { graphVersionFileContents } from "./graphVersionWriter";
-import { borderProximity, measureLandBorders, pointOnLand, roundedPoint } from "./landBorders";
+import { lineProximity, measureLandBorders, pointOnLand, roundedPoint } from "./landBorders";
 import { readNeighborOverrides } from "./neighborOverrides";
 import { reviewNeighborGraph, type BuildEvidence } from "./neighborReview";
 import {
@@ -22,7 +22,13 @@ import {
 import { readScbBoundaries } from "./scbBoundaries";
 import { readScbKommunWorkbook } from "./scbKommuner";
 import { drawShapes, isBigLake, isLake } from "./shapes";
-import { sharedBorders, sharedVertices, type KommunArea, type Line } from "./sharedBorders";
+import {
+  sharedBorders,
+  sharedVertices,
+  type AreaGeometry,
+  type KommunArea,
+  type Line,
+} from "./sharedBorders";
 
 /**
  * Rebuilds the graph version described in `build-config.json` from its pinned OSM extract:
@@ -68,12 +74,9 @@ const borderPairs = new Set(borders.map((border) => pairKey(border.between)));
 const touchCandidates = sharedVertices(areas).filter(
   (pair) => !borderPairs.has(pairKey(pair.between)),
 );
-const nearBorders = borderProximity([
-  ...borders,
-  ...touchCandidates.map((pair) => ({
-    between: pair.between,
-    lines: pair.points.map((point) => [point, point]),
-  })),
+const nearBorders = lineProximity([
+  ...borders.flatMap((border) => border.lines),
+  ...touchCandidates.flatMap((pair) => pair.points.map((point) => [point, point])),
 ]);
 
 logBuildStep("Reading land and lakes");
@@ -102,17 +105,21 @@ const landLinks: NeighborLink[] = measured
   .map((border) => ({ between: border.between, kind: "land" }));
 
 logBuildStep("Finding fixed links");
-const linkWays: LinkWay[] = (
-  await readFeatures<{ type: "LineString"; coordinates: Line }>(
-    `${layersDirectory}/links.geojsonseq`,
-    ["LineString"],
-  )
-).map((feature) => ({
-  id: Number(feature.properties["@id"]),
-  tags: feature.properties,
-  line: feature.geometry.coordinates,
-}));
-const fixedLinks = findFixedLinks(borders, linkWays, mask);
+const linkWays = await readLinkWays("links.geojsonseq");
+// The ends of a link may reach land well away from the border, so its mask also covers the land
+// and lakes around the candidate ways.
+const nearLinks = lineProximity(linkWays.map((way) => way.line));
+const near = (feature: { geometry: AreaGeometry }) =>
+  nearBorders(feature.geometry) || nearLinks(feature.geometry);
+const fixedLinks = findFixedLinks(
+  borders,
+  linkWays,
+  {
+    land: land.filter(near).map((feature) => feature.geometry),
+    lakes: lakes.filter(near).map((feature) => feature.geometry),
+  },
+  await readLinkWays("roads.geojsonseq"),
+);
 
 logBuildStep("Cross-checking with SCB's boundaries");
 const scbPairs = sharedVertices(
@@ -176,6 +183,19 @@ reportBuild({
 });
 logBuildStep("Reviewing flagged pairs");
 await Bun.$`bun ${repositoryRoot}scripts/graph/review.ts`.cwd(repositoryRoot).nothrow();
+
+async function readLinkWays(fileName: string): Promise<LinkWay[]> {
+  return (
+    await readFeatures<{ type: "LineString"; coordinates: Line }>(
+      `${layersDirectory}/${fileName}`,
+      ["LineString"],
+    )
+  ).map((feature) => ({
+    id: Number(feature.properties["@id"]),
+    tags: feature.properties,
+    line: feature.geometry.coordinates,
+  }));
+}
 
 async function readKommunAreas(): Promise<KommunArea[]> {
   const byCode = new Map<string, KommunArea>();

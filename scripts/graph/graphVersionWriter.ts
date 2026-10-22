@@ -15,7 +15,7 @@ export type GraphVersionOutput = {
   kommuner: readonly Kommun[];
   /** The shipped links, with the overrides applied. */
   links: readonly NeighborLink[];
-  /** The detected fixed links, with their OSM way ids for `fixed-links.csv`. */
+  /** The detected fixed links, with their OSM way ids and failures for `fixed-links.csv`. */
   fixedLinks?: readonly FixedLink[];
   shapes: KommunShapes;
   /** What the build found, for the review of flagged pairs (ADR 0003). */
@@ -26,7 +26,7 @@ export type GraphVersionOutput = {
 export function graphVersionFileContents(output: GraphVersionOutput): Record<string, string> {
   const kommuner = [...output.kommuner].sort((a, b) => compareCodes(a.code, b.code));
   const fixedLinks = (output.fixedLinks ?? [])
-    .map((link) => ({ between: sortedPair(link.between), ways: link.ways }))
+    .map((link) => ({ ...link, between: sortedPair(link.between) }))
     .sort(comparePairs);
   const features = [...output.shapes.features].sort((a, b) =>
     compareCodes(a.properties.code, b.properties.code),
@@ -39,8 +39,12 @@ export function graphVersionFileContents(output: GraphVersionOutput): Record<str
     ),
     [graphVersionFileNames.neighbors]: neighborsFileContent(output.links),
     "fixed-links.csv": csv(
-      "a,b,ways",
-      fixedLinks.map((link) => [...link.between, link.ways.join(" ")]),
+      "a,b,ways,failures",
+      fixedLinks.map((link) => [
+        ...link.between,
+        link.ways.join(" "),
+        link.failures.map(({ way, reasons }) => `${way}:${reasons.join("+")}`).join(" ") || "-",
+      ]),
     ),
     ...(output.evidence && evidenceFiles(output.evidence)),
     // One feature per line keeps the file diffable without bloating it.
