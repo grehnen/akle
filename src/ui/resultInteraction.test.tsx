@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { JSDOM } from "jsdom";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { buildGraphVersion } from "../graph/graphVersion";
 import { saveGame } from "../progress/savedGame";
 import { type KeyValueStorage, memoryStorage } from "../progress/storage";
@@ -16,6 +16,8 @@ Object.assign(globalThis, {
   document: dom.window.document,
   IS_REACT_ACT_ENVIRONMENT: true,
 });
+// Imported only now: react-dom checks for a DOM once, when it loads, to pick its event handling.
+const { createRoot } = await import("react-dom/client");
 afterAll(() => {
   for (const name of ["window", "document", "IS_REACT_ACT_ENVIRONMENT"]) {
     Reflect.deleteProperty(globalThis, name);

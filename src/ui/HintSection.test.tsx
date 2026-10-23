@@ -1,7 +1,6 @@
 import { afterAll, expect, test } from "bun:test";
 import { JSDOM } from "jsdom";
 import { act, createRef, useState } from "react";
-import { createRoot } from "react-dom/client";
 import { HintSection } from "./HintSection";
 
 const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>');
@@ -10,6 +9,8 @@ Object.assign(globalThis, {
   document: dom.window.document,
   IS_REACT_ACT_ENVIRONMENT: true,
 });
+// Imported only now: react-dom checks for a DOM once, when it loads, to pick its event handling.
+const { createRoot } = await import("react-dom/client");
 afterAll(() => {
   for (const name of ["window", "document", "IS_REACT_ACT_ENVIRONMENT"]) {
     Reflect.deleteProperty(globalThis, name);
