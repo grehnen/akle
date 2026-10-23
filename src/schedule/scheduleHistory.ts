@@ -1,5 +1,5 @@
 import { type GraphVersion, type KommunCode, lanOf } from "../graph/graphVersion";
-import { type PairKey, pairKey } from "../graph/kommunPair";
+import { type PairKey, pairEndpoints, pairKey } from "../graph/kommunPair";
 import { shortestRouteLengthsFrom } from "../graph/routes";
 import { type Cooldown, cooldownDaysOn, lanCooldownDaysOn, type ScheduledPuzzle } from "./schedule";
 
@@ -45,47 +45,49 @@ export class ScheduleHistory {
     return this.pairUses.get(key) ?? 0;
   }
 
-  /** The pairs in a group that are used least so far; only these may come next. */
-  leastUsed(pairs: readonly PairKey[]): PairKey[] {
-    const fewestUses = Math.min(...pairs.map((key) => this.uses(key)));
-    return pairs.filter((key) => this.uses(key) === fewestUses);
+  /**
+   * The pairs in a group that may come next: of those whose endpoints are outside both
+   * cooldowns, the ones used least so far. So a pair repeats before a less-used one only
+   * while every less-used one is in cooldown.
+   */
+  candidates(pairs: readonly PairKey[], puzzleNumber: number, graph: GraphVersion): PairKey[] {
+    const blockedKommuner = new Set(
+      this.endpointsWithin(cooldownDaysOn(this.cooldown, graph.id), puzzleNumber),
+    );
+    const blockedLan = new Set(
+      this.endpointsWithin(lanCooldownDaysOn(this.cooldown, graph.id), puzzleNumber).map(lanOf),
+    );
+    const available = pairs.filter((key) =>
+      pairEndpoints(key).every(
+        (code) => !blockedKommuner.has(code) && !blockedLan.has(lanOf(code)),
+      ),
+    );
+    const fewestUses = Math.min(...available.map((key) => this.uses(key)));
+    return available.filter((key) => this.uses(key) === fewestUses);
   }
 
   /** The kommun was an endpoint within the cooldown of `graph` before this puzzle number. */
   inCooldown(code: KommunCode, puzzleNumber: number, graph: GraphVersion): boolean {
-    return this.endpointWithin(
-      cooldownDaysOn(this.cooldown, graph.id),
-      puzzleNumber,
-      (earlier) => earlier === code,
+    return this.endpointsWithin(cooldownDaysOn(this.cooldown, graph.id), puzzleNumber).includes(
+      code,
     );
   }
 
   /** A kommun in the same län was an endpoint within the län cooldown of `graph`. */
   inLanCooldown(code: KommunCode, puzzleNumber: number, graph: GraphVersion): boolean {
     const lan = lanOf(code);
-    return this.endpointWithin(
-      lanCooldownDaysOn(this.cooldown, graph.id),
-      puzzleNumber,
+    return this.endpointsWithin(lanCooldownDaysOn(this.cooldown, graph.id), puzzleNumber).some(
       (earlier) => lanOf(earlier) === lan,
     );
   }
 
-  /** The kommun may be an endpoint of this puzzle under both cooldowns. */
-  isAvailable(code: KommunCode, puzzleNumber: number, graph: GraphVersion): boolean {
-    return (
-      !this.inCooldown(code, puzzleNumber, graph) && !this.inLanCooldown(code, puzzleNumber, graph)
-    );
-  }
-
-  private endpointWithin(
-    days: number,
-    puzzleNumber: number,
-    matches: (earlier: KommunCode) => boolean,
-  ): boolean {
-    for (let earlier = puzzleNumber - days; earlier < puzzleNumber; earlier++) {
-      if (this.endpointsByPuzzle.get(earlier)?.some(matches)) return true;
+  /** The endpoints of the `days` puzzles before this puzzle number. */
+  private endpointsWithin(days: number, puzzleNumber: number): KommunCode[] {
+    const endpoints: KommunCode[] = [];
+    for (let earlier = Math.max(1, puzzleNumber - days); earlier < puzzleNumber; earlier++) {
+      endpoints.push(...(this.endpointsByPuzzle.get(earlier) ?? []));
     }
-    return false;
+    return endpoints;
   }
 
   /** Why `row` can't come next on `graph`, or an empty list when it can. */
@@ -107,25 +109,26 @@ export class ScheduleHistory {
     if (n < minimumN || n > maximumN) {
       return [`${where}: N is ${n}, outside ${minimumN}–${maximumN}`];
     }
-    const problems: string[] = [];
-    const key = pairKey([row.start, row.destination]);
-    const group = pairsByN(graph).get(n) ?? [];
-    if (!this.leastUsed(group).includes(key)) {
-      problems.push(
-        `${where}: ${key} repeats (used ${this.uses(key)} times) before every N ${n} pair is used as often`,
-      );
-    }
+    const cooldownProblems: string[] = [];
     for (const code of [row.start, row.destination]) {
       if (this.inCooldown(code, row.number, graph)) {
-        problems.push(
+        cooldownProblems.push(
           `${where}: ${code} was an endpoint within the last ${cooldownDaysOn(this.cooldown, graph.id)} puzzles`,
         );
       } else if (this.inLanCooldown(code, row.number, graph)) {
-        problems.push(
+        cooldownProblems.push(
           `${where}: ${code}'s län ${lanOf(code)} had an endpoint within the last ${lanCooldownDaysOn(this.cooldown, graph.id)} puzzles`,
         );
       }
     }
-    return problems;
+    if (cooldownProblems.length > 0) return cooldownProblems;
+    const key = pairKey([row.start, row.destination]);
+    const group = pairsByN(graph).get(n) ?? [];
+    if (!this.candidates(group, row.number, graph).includes(key)) {
+      return [
+        `${where}: ${key} repeats (used ${this.uses(key)} times) before every N ${n} pair outside the cooldowns is used as often`,
+      ];
+    }
+    return [];
   }
 }

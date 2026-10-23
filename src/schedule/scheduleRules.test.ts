@@ -119,7 +119,26 @@ describe("checkScheduleRules", () => {
 
   test("rejects a pair that repeats before every pair with its N is used", () => {
     expect(check([...validRows, row(4, "k04", "k00", 3)])).toEqual([
-      "Puzzle #4: k00-k04 repeats (used 1 times) before every N 3 pair is used as often",
+      "Puzzle #4: k00-k04 repeats (used 1 times) before every N 3 pair outside the cooldowns is used as often",
+    ]);
+  });
+
+  test("lets a pair repeat while every less-used pair with its N is in cooldown", () => {
+    // On a line of seven kommuner, N 3 has k00–k04, k01–k05 and k02–k06; N 4 has k01–k06.
+    const lineOfSeven = pathGraph(7);
+    const rows = [row(1, "k00", "k04", 3), row(2, "k01", "k06", 4), row(3, "k04", "k00", 3)];
+    const checkWith = (cooldownDays: number) =>
+      checkScheduleRules({
+        rows,
+        previousRows: [],
+        graphs: [lineOfSeven],
+        cooldownDays,
+        playedThrough: 0,
+      });
+    // k01 and k06 from puzzle #2 block k01–k05 and k02–k06, so k00–k04 may repeat.
+    expect(checkWith(1)).toEqual([]);
+    expect(checkWith(0)).toEqual([
+      "Puzzle #3: k00-k04 repeats (used 1 times) before every N 3 pair outside the cooldowns is used as often",
     ]);
   });
 

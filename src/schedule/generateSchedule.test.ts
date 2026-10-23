@@ -191,6 +191,30 @@ describe("generateSchedule", () => {
     ).toEqual([]);
   });
 
+  test("repeats a more-used pair instead of failing when the least-used ones are in cooldown", () => {
+    // Too small to always find a least-used pair outside a 1-puzzle län cooldown.
+    const lanGraph = lanPathGraph(6, 3);
+    const cooldown = { cooldownDays: 0, lanCooldownDays: 1 };
+    const { rows } = generateSchedule({
+      rows: [],
+      graphs: [lanGraph],
+      seed: "test",
+      ...cooldown,
+      playedThrough: 0,
+      chunks: 1,
+    });
+    expect(rows).toHaveLength(1000);
+    expect(
+      checkScheduleRules({
+        rows,
+        previousRows: [],
+        graphs: [lanGraph],
+        ...cooldown,
+        playedThrough: 0,
+      }),
+    ).toEqual([]);
+  });
+
   describe("least-used refilling", () => {
     // On a line of six kommuner: N 3 has k00–k04 and k01–k05; N 4 has only k00–k05.
     const short = pathGraph(6, "short", 1);

@@ -91,9 +91,9 @@ function sameRow(a: ScheduledPuzzle, b: ScheduledPuzzle): boolean {
 }
 
 /**
- * Draws N uniformly from 3–8, then a pair uniformly among the least-used pairs with that N
- * whose endpoints are outside the kommun and län cooldowns. Redraws with the next attempt
- * when none qualifies.
+ * Draws N uniformly from 3–8, then a pair uniformly among the least-used of the pairs with
+ * that N whose endpoints are outside the kommun and län cooldowns. Redraws with the next
+ * attempt when every pair with that N is in cooldown.
  */
 function drawRow(
   puzzleNumber: number,
@@ -105,11 +105,7 @@ function drawRow(
   for (let attempt = 0; attempt < maximumAttempts; attempt++) {
     const random = randomNumbers(seed, puzzleNumber, attempt);
     const n = minimumN + Number(random.next() % BigInt(maximumN - minimumN + 1));
-    const candidates = history
-      .leastUsed(groups.get(n) ?? [])
-      .filter((key) =>
-        pairEndpoints(key).every((code) => history.isAvailable(code, puzzleNumber, graph)),
-      );
+    const candidates = history.candidates(groups.get(n) ?? [], puzzleNumber, graph);
     if (candidates.length === 0) continue;
     const [a, b] = pairEndpoints(candidates[Number(random.next() % BigInt(candidates.length))]);
     const swap = random.next() % 2n === 1n;
