@@ -174,9 +174,12 @@ jobs:
     environment:
       name: preview
       url: ${{ steps.preview.outputs.url }}
+    # Shares the group with Preview cleanup, which cancels this job. This job only queues, so it
+    # can never cancel the cleanup; a new push cancels this PR's older CI runs anyway.
     concurrency:
       group: preview-pr-${{ github.event.pull_request.number }}
-      cancel-in-progress: true
+      cancel-in-progress: false
+      queue: max
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
