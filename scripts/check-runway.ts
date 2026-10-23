@@ -1,5 +1,6 @@
 // bun run runway:check [--now <ISO date>]
-// The required runway check (ADR 0001): fails when fewer than 30 days of puzzles are left.
+// The required runway check (ADR 0001): fails when fewer than `minimumRunwayDays` days of puzzles
+// are left (src/schedule/runway.ts).
 import { runwayDays, runwayViolation } from "../src/schedule/runway";
 import { argument, readScheduleConfig, readScheduleRows } from "./scheduleData";
 

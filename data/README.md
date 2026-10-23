@@ -150,5 +150,5 @@ The required schedule rules check, run in CI against the PR's base: N matches th
 
 The **runway** is the days of puzzles left: the scheduled puzzles after today's puzzle number in UTC+14 (`src/schedule/runway.ts`). Both commands take `--now <ISO date>` to try another day.
 
-- `bun run runway:check` is the required runway check. It fails when fewer than 30 days are left.
+- `bun run runway:check` is the required runway check. It fails when fewer than 40 days are left, the same point where the extension PR gets auto-merge.
 - `bun run schedule:extend` is what the monthly [Schedule extension](../.github/workflows/schedule-extension.yml) workflow runs on `main`. Under 90 days left, it runs `bun run schedule` on the `schedule/extend` branch, force-pushes it and opens the extension PR with the report as its body, or updates its own open one, so reruns never open a second PR. Under 40 days left, it also turns on auto-merge, so the PR merges once the checks pass. `--dry-run` only looks up the open PR (needs `gh`) and prints what it would do.

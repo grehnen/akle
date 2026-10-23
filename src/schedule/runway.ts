@@ -10,7 +10,7 @@ export function runwayDays(rows: readonly { number: number }[], now: Date, epoch
 }
 
 /** Below this many days left, the required runway check fails. */
-export const minimumRunwayDays = 30;
+export const minimumRunwayDays = 40;
 
 /** Why the runway check fails, or undefined when it passes. */
 export function runwayViolation(days: number): string | undefined {
@@ -20,8 +20,11 @@ export function runwayViolation(days: number): string | undefined {
 
 /** Below this many days left, the monthly cron opens or updates the extension PR. */
 export const extendBelowDays = 90;
-/** Below this many days left, the cron also turns on auto-merge for the extension PR. */
-export const autoMergeBelowDays = 40;
+/**
+ * Below this many days left, the cron also turns on auto-merge for the extension PR: the same
+ * point where the runway check starts failing.
+ */
+export const autoMergeBelowDays = minimumRunwayDays;
 
 export type ExtensionPlan =
   | { action: "none" }
