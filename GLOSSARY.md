@@ -52,6 +52,14 @@ _Avoid_: Day, index, id
 The predetermined list of daily puzzles, one per puzzle number.
 _Avoid_: Calendar, queue, rotation
 
+**Runway**:
+How many days of puzzles the schedule has left: the scheduled puzzles after today's puzzle number in the earliest time zone.
+_Avoid_: Buffer, remaining days, backlog
+
+**Extension PR**:
+The pull request the monthly cron opens to append puzzles to the schedule when the runway runs low; it may be curated by hand before it merges.
+_Avoid_: Schedule PR, refill, top-up
+
 **Guess**:
 A kommun the player names during a daily puzzle; only valid, new kommuner other than the start and destination count.
 _Avoid_: Step, move, attempt
