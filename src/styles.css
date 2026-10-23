@@ -56,9 +56,8 @@ h1 {
   align-items: center;
 }
 
-.stats-open {
+.header-button {
   position: absolute;
-  right: 0;
   width: 2.75rem;
   padding: 0;
   display: grid;
@@ -67,7 +66,15 @@ h1 {
   color: var(--text);
 }
 
-.stats-open:hover {
+.rules-open {
+  left: 0;
+}
+
+.stats-open {
+  right: 0;
+}
+
+.header-button:hover {
   color: var(--start);
 }
 

@@ -1,0 +1,100 @@
+.rules-heading {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.rules-intro {
+  margin: 0;
+  text-align: left;
+}
+
+.rules-start {
+  color: var(--start);
+}
+
+.rules-destination {
+  /* The flag blue is too dark to read as text on the surface. */
+  color: color-mix(in srgb, var(--destination) 55%, white);
+}
+
+.rules-sections {
+  width: 100%;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  text-align: left;
+}
+
+.rules-section + .rules-section {
+  border-top: 1px solid var(--rule);
+}
+
+.rules-section summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.rules-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.rules-section summary::after {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: -0.25rem;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  transition: transform 150ms ease;
+}
+
+.rules-section[open] summary::after {
+  margin-top: 0.25rem;
+  transform: rotate(-135deg);
+}
+
+.rules-section summary:hover {
+  color: var(--start);
+}
+
+.rules-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0 0.9rem 0.9rem;
+}
+
+.rules-section-body p,
+.rules-section-body ul {
+  margin: 0;
+}
+
+.rules-section-body ul {
+  padding-left: 1.25rem;
+}
+
+.rules-marks {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.rules-section-body .rules-marks {
+  padding: 0;
+}
+
+.rules-source {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}

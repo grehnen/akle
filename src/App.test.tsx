@@ -25,4 +25,12 @@ describe("App", () => {
       /<header[^>]*>.*<button[^>]*aria-label="Visa statistik"(?![^>]*disabled)/,
     );
   });
+
+  test("has a how-to-play button before the title, usable while the puzzle loads", () => {
+    const markup = renderToStaticMarkup(<App source={neverLoads} />);
+
+    expect(markup).toMatch(
+      /<header[^>]*><button[^>]*aria-label="Så spelar du"(?![^>]*disabled)[^>]*>.*<h1>/,
+    );
+  });
 });

@@ -4,6 +4,7 @@ import { readHistory } from "./progress/history";
 import { deriveStats } from "./progress/stats";
 import { browserStorage, type KeyValueStorage } from "./progress/storage";
 import { DailyPuzzleView } from "./ui/DailyPuzzleView";
+import { RulesDialog, RulesIcon } from "./ui/RulesDialog";
 import { StatsDialog, StatsIcon } from "./ui/StatsDialog";
 
 type AppProps = {
@@ -19,6 +20,7 @@ export function App({ source, now = () => new Date(), storage }: AppProps) {
   const [openedAt] = useState(now);
   const [progressStorage] = useState(() => storage ?? browserStorage());
   const [statsOpen, setStatsOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
   // Without today's puzzle (still loading, or no puzzle today) there is no streak to keep alive.
   const today = daily?.kind === "puzzle" ? daily.puzzle.number : Number.POSITIVE_INFINITY;
 
@@ -38,16 +40,25 @@ export function App({ source, now = () => new Date(), storage }: AppProps) {
   return (
     <main>
       <header className="site-header">
+        <button
+          type="button"
+          className="header-button rules-open"
+          aria-label="Så spelar du"
+          onClick={() => setRulesOpen(true)}
+        >
+          <RulesIcon />
+        </button>
         <h1>Åkle</h1>
         <button
           type="button"
-          className="stats-open"
+          className="header-button stats-open"
           aria-label="Visa statistik"
           onClick={() => setStatsOpen(true)}
         >
           <StatsIcon />
         </button>
       </header>
+      {rulesOpen && <RulesDialog onClose={() => setRulesOpen(false)} />}
       {statsOpen && (
         <StatsDialog
           stats={deriveStats(readHistory(progressStorage), today)}

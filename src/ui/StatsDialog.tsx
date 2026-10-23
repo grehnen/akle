@@ -1,35 +1,17 @@
-import { useEffect, useRef } from "react";
 import type { Stats } from "../progress/stats";
+import { Modal } from "./Modal";
 import { StatsPanel } from "./StatsPanel";
-import "./StatsDialog.css";
 
 type StatsDialogProps = {
   stats: Stats;
   onClose: () => void;
 };
 
-/** The stats as a modal, opened from the header; Escape, the backdrop or Stäng closes it. */
 export function StatsDialog({ stats, onClose }: StatsDialogProps) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const element = dialog.current;
-    if (element && !element.open) element.showModal();
-  }, []);
-
   return (
-    <dialog
-      ref={dialog}
-      className="stats-dialog"
-      aria-label="Statistik"
-      onClose={onClose}
-      onClick={(event) => event.target === dialog.current && dialog.current.close()}
-      onKeyDown={(event) => event.key === "Escape" && dialog.current?.close()}
-    >
+    <Modal label="Statistik" onClose={onClose}>
       <StatsPanel stats={stats} />
-      <button type="button" className="stats-close" onClick={() => dialog.current?.close()}>
-        Stäng
-      </button>
-    </dialog>
+    </Modal>
   );
 }
 
