@@ -21,7 +21,7 @@ bun run check    # every required check, as CI runs them
 - **Production:** a push to `main` deploys the build that passed the checks to `akle.grehn.net`. Production deploys run one at a time, in order, and are never cancelled. A deploy is skipped when `main` has already moved on, so a slow older run can't roll production back.
 - **Previews:** every PR from a branch in this repo gets a public Workers Preview named `pr-<number>` on `workers.dev`, linked from the PR as a deployment to the `preview` environment. `workers.dev` sends `X-Robots-Tag: noindex`, and `_headers` adds it too. [Preview cleanup](.github/workflows/preview-cleanup.yml) deletes the preview when the PR closes.
 - **Schedule extension:** a [monthly workflow](.github/workflows/schedule-extension.yml), also runnable by hand (with a dry-run option) from the Actions tab, opens or updates the PR that extends the schedule when fewer than 90 days of puzzles are left, and turns on its auto-merge under 40. The required runway check fails under 40 too, the same point, so other PRs are blocked until the extension merges. See [data/README.md](data/README.md#runway-bun-run-runwaycheck-and-bun-run-scheduleextend).
-- **Forks:** PRs from forks run the checks only. They get no preview and no secrets, and no workflow uses `pull_request_target`. Dependabot PRs get no environment secrets, so they get no preview either.
+- **Forks:** PRs from forks run the checks only. They get no preview and no secrets, and no workflow uses `pull_request_target`. Dependabot PRs deliberately get no preview either: they get no environment secrets, and their checks still run.
 
 ### One-time setup
 
@@ -32,7 +32,7 @@ Done by hand, never by CI:
    - a `CLOUDFLARE_API_TOKEN` secret: a separate token scoped to _Workers Scripts: Edit_, so it can be revoked on its own;
    - a `CLOUDFLARE_ACCOUNT_ID` variable, the same account ID as `production`.
 
-   This token can edit the production Worker too: the environment keeps forks away from it, but anyone who can push a branch here can use it.
+   This token can edit the production Worker too: the environment keeps forks away from it, but anyone who can push a branch here can use it. This is an accepted risk, recorded with the second token in [ADR 0005](docs/adr/0005-separate-preview-cloudflare-token.md).
 
 3. A GitHub App with _Contents_ and _Pull requests_ read and write, installed on this repo, with its credentials in the repo secrets `SCHEDULE_APP_ID` and `SCHEDULE_APP_PRIVATE_KEY`. The schedule extension pushes and opens its PR with the App's token, because PRs opened with `GITHUB_TOKEN` don't trigger the checks. Auto-merge is enabled in the repo settings.
 4. The `akle.grehn.net` custom domain and the `åkle.grehn.net` redirect are set up in the Cloudflare dashboard.
