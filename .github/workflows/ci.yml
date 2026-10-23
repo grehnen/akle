@@ -60,6 +60,9 @@ jobs:
           BASE_REVISION: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: bun run schedule:check --base "$BASE_REVISION"
 
+      - name: Runway check
+        run: bun run runway:check
+
       - name: Frozen graph versions check
         env:
           BASE_REVISION: ${{ github.event.pull_request.base.sha || github.event.before }}
