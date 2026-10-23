@@ -1,5 +1,5 @@
 import type { GraphVersion, KommunCode } from "../graph/graphVersion";
-import { cheapestRoute, routeCost, shortestRouteLength } from "../graph/routes";
+import { cheapestRoute, routeCost, shortestRoute, shortestRouteLength } from "../graph/routes";
 import { guessLimit } from "./guessLimit";
 import { resolveKommunName } from "./kommunNames";
 
@@ -41,10 +41,12 @@ export type GameReview = {
   limit: number;
   status: GameStatus;
   cards: GuessCard[];
-  /** Kommuner still missing from the cheapest route (the "k kvar" on a loss). */
+  /** Kommuner still missing from the cheapest route (the "k ifrån" on a loss). */
   away: number;
   /** Once the game is over, the cheapest route (tie-break as in `cheapestRoute`); the result view shows it. */
   cheapestRoute?: KommunCode[];
+  /** Once the game is over, the shortest route with the most guesses on it (as in `shortestRoute`). */
+  shortestRoute?: KommunCode[];
   /** On a loss, the kommuner on `cheapestRoute` that weren't guessed; empty otherwise. */
   missing: KommunCode[];
   /** On a win, guesses beyond N. */
@@ -117,6 +119,10 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
     cards,
     away,
     cheapestRoute: resultRoute,
+    shortestRoute:
+      status === "playing"
+        ? undefined
+        : shortestRoute(graph, start, destination, new Set(game.guesses)),
     missing,
     extra: status === "won" ? cards.length - n : undefined,
     perfect: status === "won" && hintsUsed === 0 && cards.every((card) => card.feedback === "✅"),

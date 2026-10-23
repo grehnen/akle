@@ -1,26 +1,21 @@
-.result-view {
+.result-view,
+.result-strip {
   --stop-guessed: #4ade80;
   --stop-missed: #f87171;
-  --score: var(--text);
+}
 
+.result-view {
+  position: relative;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.6rem;
   padding: 1.25rem 1rem 1rem;
-  border-top: 3px solid var(--score);
+  border-top: 3px solid var(--text);
   border-radius: 4px 4px 14px 14px;
   background: var(--surface);
   animation: result-arrive 320ms ease-out;
-}
-
-.result-view.result-perfect {
-  --score: var(--start);
-}
-
-.result-view.result-lost {
-  --score: var(--stop-missed);
 }
 
 @keyframes result-arrive {
@@ -36,32 +31,55 @@
   }
 }
 
-.result-view h2 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 400;
+/*
+ * The header, on a two-column grid kept short so the tabs stay in view: the outcome and the close
+ * button, the emoji line, then the countdown with sharing at the right edge.
+ */
+.result-header {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  text-align: start;
+}
+
+.result-close {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  /* Lines the icon, not the tap area, up with the card's edge. */
+  margin: -0.6rem -0.6rem -0.6rem 0;
+  padding: 0;
+  background: transparent;
   color: var(--muted);
 }
 
-.result-score {
-  margin: 0;
-  font-size: 4.5rem;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-  color: var(--score);
+.result-close:hover {
+  color: var(--text);
 }
 
-.result-missing {
-  margin: 0.4rem 0 0;
+.result-outcome {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
 }
 
 .result-emoji {
+  grid-column: 1 / -1;
   margin: 0;
   font-size: 1.5rem;
+  line-height: 1.2;
   letter-spacing: 0.1em;
   overflow-wrap: anywhere;
+}
+
+@media (max-width: 30rem) {
+  .result-emoji {
+    font-size: 1.2rem;
+  }
 }
 
 /* The route as a line of stops, echoing the map: filled for guessed, a dashed ring for missed. */
@@ -137,10 +155,65 @@
   background: var(--surface);
 }
 
-.result-view .stats {
-  margin-top: 0.75rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--rule);
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.result-header .result-actions {
+  grid-column: 1 / -1;
+}
+
+/* Sharing stays at the right edge, even when it wraps below the countdown. */
+.result-actions .share {
+  margin-left: auto;
+}
+
+.result-tabs {
+  width: 100%;
+  display: flex;
+  margin-top: 0.4rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.result-tabs [role="tab"] {
+  flex: 1;
+  padding-inline: 0.25rem;
+  white-space: nowrap;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.result-tabs [role="tab"]:hover {
+  color: var(--text);
+}
+
+.result-tabs [role="tab"][aria-selected="true"] {
+  color: var(--text);
+  font-weight: 700;
+  box-shadow: inset 0 -3px 0 var(--text);
+}
+
+.result-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.result-panel[hidden] {
+  display: none;
+}
+
+.result-note {
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
 }
 
 .share {
@@ -148,12 +221,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 0.25rem;
 }
 
 .share-button {
   padding-inline: 1.5rem;
-  background: var(--score);
+  background: var(--text);
   color: var(--night);
 }
 
@@ -184,7 +256,8 @@
 }
 
 .result-countdown {
-  margin: 0.25rem 0 0;
+  margin: 0;
+  font-size: 1.25rem;
   color: var(--muted);
 }
 
@@ -194,7 +267,27 @@
   font-variant-numeric: tabular-nums;
 }
 
-.result-close,
+/* The result view collapsed to one row over the board. */
+.result-strip {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-top: 3px solid var(--text);
+  border-radius: 4px 4px 14px 14px;
+  background: var(--surface);
+}
+
+.result-strip .result-outcome {
+  font-size: 1.125rem;
+}
+
+.result-strip .result-actions {
+  margin-left: auto;
+}
+
 .result-reopen {
   background: transparent;
   color: var(--text);

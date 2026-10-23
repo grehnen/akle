@@ -17,7 +17,7 @@ export function ShareButton({ text }: { text: string }) {
         className="share-button"
         onClick={() => void copyShareText(globalThis.navigator?.clipboard, text).then(setToast)}
       >
-        Kopiera resultat
+        Dela resultat
       </button>
       <p role="status" aria-live="polite" className="share-toast">
         {toast}

@@ -60,7 +60,7 @@ async function seriousViolations(body: ReactElement): Promise<string[]> {
     .map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.html).join(" ")}`);
 }
 
-function playScreen(guesses: string[], hintsTaken = 0) {
+function playScreen(guesses: string[], hintsTaken = 0, sessionStorage = memoryStorage()) {
   const storage = memoryStorage();
   const hints = hintsTaken > 0 ? { taken: hintsTaken, nextKommun: "0181" } : undefined;
   saveGame(storage, { puzzle, guesses, hints });
@@ -68,9 +68,17 @@ function playScreen(guesses: string[], hintsTaken = 0) {
     <DailyPuzzleView
       daily={{ kind: "puzzle", puzzle, graph }}
       storage={storage}
+      sessionStorage={sessionStorage}
       now={new Date(2026, 9, 21, 13, 5, 9)}
     />
   );
+}
+
+/** A session in which the player last picked `tab`, or collapsed today's result. */
+function sessionWith(key: "akle:result-tab" | "akle:result-closed", value: unknown) {
+  const sessionStorage = memoryStorage();
+  sessionStorage.setItem(key, JSON.stringify(value));
+  return sessionStorage;
 }
 
 describe("automated accessibility check", () => {
@@ -99,5 +107,18 @@ describe("automated accessibility check", () => {
     ["lost", ["0136", "0128", "0980", "0880", "0882"]],
   ])("the result view of a %s game has no serious violations", async (_, guesses) => {
     expect(await seriousViolations(playScreen(guesses))).toEqual([]);
+  });
+
+  test.each(["shortest", "stats"])(
+    "the result view on the %s tab has no serious violations",
+    async (tab) => {
+      const session = sessionWith("akle:result-tab", tab);
+      expect(await seriousViolations(playScreen(["0181"], 0, session))).toEqual([]);
+    },
+  );
+
+  test("the collapsed result over the board has no serious violations", async () => {
+    const session = sessionWith("akle:result-closed", puzzle.number);
+    expect(await seriousViolations(playScreen(["0181"], 0, session))).toEqual([]);
   });
 });

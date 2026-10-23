@@ -52,7 +52,32 @@ export function cheapestRoute(
   to: KommunCode,
   known: ReadonlySet<KommunCode>,
 ): KommunCode[] | undefined {
-  const { weightToEnd, canPassThrough, enterWeight } = searchTowards(graph, from, to, known);
+  return routeAlong(graph, from, to, searchTowards(graph, from, to, known));
+}
+
+/**
+ * One shortest route, as the list of kommuner from `from` to `to`. Among shortest routes it
+ * takes the one with the most `guesses` on it, then the one whose kommun codes come first,
+ * compared in route order from `from`.
+ */
+export function shortestRoute(
+  graph: GraphVersion,
+  from: KommunCode,
+  to: KommunCode,
+  guesses: ReadonlySet<KommunCode>,
+): KommunCode[] | undefined {
+  const stepWeight = graph.kommuner.size + 1;
+  const enterWeight = (code: KommunCode) => stepWeight + (code === to || guesses.has(code) ? 0 : 1);
+  return routeAlong(graph, from, to, dijkstraTowards(graph, from, to, enterWeight));
+}
+
+/** Walks a finished search from `from` to `to`, taking the first neighbor by code at each fork. */
+function routeAlong(
+  graph: GraphVersion,
+  from: KommunCode,
+  to: KommunCode,
+  { weightToEnd, canPassThrough, enterWeight }: ReturnType<typeof dijkstraTowards>,
+): KommunCode[] | undefined {
   if (!weightToEnd.has(from)) return undefined;
   const route = [from];
   let cursor = from;
@@ -71,9 +96,8 @@ export function cheapestRoute(
 }
 
 /**
- * Dijkstra outward from `to`, stopping once `from` is settled: the weight of the best route
- * from each settled kommun to `to`, where a route's weight orders by cost, then by length:
- * cost × stepsPerCost + steps.
+ * The search behind `routeCost` and `cheapestRoute`: a route's weight orders by cost, then by
+ * length: cost × stepsPerCost + steps.
  */
 function searchTowards(
   graph: GraphVersion,
@@ -82,8 +106,22 @@ function searchTowards(
   known: ReadonlySet<KommunCode>,
 ) {
   const stepsPerCost = graph.kommuner.size + 1;
-  const canPassThrough = (code: KommunCode) => code === to || !graph.deadEnds.has(code);
   const enterWeight = (code: KommunCode) => (code === to || known.has(code) ? 0 : stepsPerCost) + 1;
+  return { ...dijkstraTowards(graph, from, to, enterWeight), stepsPerCost };
+}
+
+/**
+ * Dijkstra outward from `to`, stopping once `from` is settled: the weight of the best route
+ * from each settled kommun to `to`, where entering a kommun costs `enterWeight`. Dead ends other
+ * than the endpoints are never passed through.
+ */
+function dijkstraTowards(
+  graph: GraphVersion,
+  from: KommunCode,
+  to: KommunCode,
+  enterWeight: (code: KommunCode) => number,
+) {
+  const canPassThrough = (code: KommunCode) => code === to || !graph.deadEnds.has(code);
 
   const weightToEnd = new Map<KommunCode, number>([[to, 0]]);
   const settled = new Set<KommunCode>();
@@ -106,5 +144,5 @@ function searchTowards(
     }
   }
 
-  return { weightToEnd, stepsPerCost, canPassThrough, enterWeight };
+  return { weightToEnd, canPassThrough, enterWeight };
 }

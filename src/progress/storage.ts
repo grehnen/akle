@@ -24,6 +24,20 @@ export function browserStorage(): KeyValueStorage {
   return memoryStorage();
 }
 
+/** sessionStorage when the browser allows it, for what should last only this browser session. */
+export function browserSessionStorage(): KeyValueStorage {
+  try {
+    const storage = globalThis.sessionStorage;
+    if (storage !== undefined) {
+      storage.getItem("akle:result-tab");
+      return storage;
+    }
+  } catch {
+    // Storage blocked, e.g. by privacy settings.
+  }
+  return memoryStorage();
+}
+
 export function readJson(storage: KeyValueStorage, key: string): unknown {
   try {
     const text = storage.getItem(key);

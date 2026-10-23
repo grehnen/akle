@@ -17,8 +17,11 @@ type SatelliteMapProps = {
   graph: GraphVersion;
   puzzle: Pick<Puzzle, "start" | "destination">;
   cards: readonly Pick<GuessCard, "code" | "connected">[];
-  /** Draws this cheapest route instead, with the guessed and missed kommuner on it marked. */
-  cheapestRoute?: readonly KommunCode[];
+  /**
+   * Draws this route instead, with the guessed and missed kommuner on it marked. The label names
+   * the map, and the map is fitted to the kommuner in `frame`.
+   */
+  route?: { kommuner: readonly KommunCode[]; label: string; frame: readonly KommunCode[] };
   /** Kommuner revealed by hints, drawn as unfilled outlines. */
   hintOutlines?: readonly KommunCode[];
   /** Hint 3: hint-outline tooltips show initials instead of `?`. */
@@ -36,34 +39,36 @@ export function SatelliteMap({
   graph,
   puzzle,
   cards,
-  cheapestRoute,
+  route,
   hintOutlines,
   initials = false,
   allOutlines = false,
 }: SatelliteMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap>();
+  const routeKommuner = route?.kommuner;
+  const routeFrame = route?.frame;
   const drawn = useMemo(
     () =>
-      cheapestRoute
-        ? routeFeatures(graph, puzzle, cheapestRoute, new Set(cards.map((card) => card.code)), {
+      routeKommuner
+        ? routeFeatures(graph, puzzle, routeKommuner, new Set(cards.map((card) => card.code)), {
             allOutlines,
           })
         : mapFeatures(graph, puzzle, cards, hintOutlines, { allOutlines }),
-    [graph, puzzle, cards, cheapestRoute, hintOutlines, allOutlines],
+    [graph, puzzle, cards, routeKommuner, hintOutlines, allOutlines],
   );
   const tooltipFor = useRef<(kommun: DrawnKommun) => string | undefined>(undefined);
   useEffect(() => {
     tooltipFor.current = (kommun) => tooltipText(graph, kommun, { initials });
   }, [graph, initials]);
   const descriptionId = useId();
-  const description = cheapestRoute
+  const description = route
     ? undefined
     : mapDescription(graph, puzzle, cards, hintOutlines, { allOutlines });
   const described = description !== undefined;
   const bounds = useMemo(
-    () => (cheapestRoute ? routeBounds(graph, cheapestRoute) : endpointBounds(graph, puzzle)),
-    [graph, puzzle, cheapestRoute],
+    () => (routeFrame ? routeBounds(graph, routeFrame) : endpointBounds(graph, puzzle)),
+    [graph, puzzle, routeFrame],
   );
 
   useEffect(() => {
@@ -84,11 +89,16 @@ export function SatelliteMap({
     ]).then(([maplibre, { default: workerUrl }]) => {
       if (cancelled || !container.current) return;
       maplibre.setWorkerUrl(workerUrl);
-      created = new maplibre.Map({
-        container: container.current,
-        style: satelliteMapStyle({ type: "FeatureCollection", features: [] }),
-        ...mapOptions(bounds, { touchScreen: touchScreen.matches }),
-      });
+      try {
+        created = new maplibre.Map({
+          container: container.current,
+          style: satelliteMapStyle({ type: "FeatureCollection", features: [] }),
+          ...mapOptions(bounds, { touchScreen: touchScreen.matches }),
+        });
+      } catch {
+        // Without WebGL MapLibre can't draw; the map stays empty and the game still plays.
+        return;
+      }
       if (described) created.getCanvas().setAttribute("aria-describedby", descriptionId);
       created.touchZoomRotate.disableRotation();
       created.keyboard.disableRotation();
@@ -137,8 +147,8 @@ export function SatelliteMap({
       className="satellite-map"
       role="region"
       aria-label={
-        cheapestRoute
-          ? `Bästa vägen med dina gissningar från ${kommunName(graph, puzzle.start)} till ${kommunName(graph, puzzle.destination)}`
+        route
+          ? `${route.label} från ${kommunName(graph, puzzle.start)} till ${kommunName(graph, puzzle.destination)}`
           : `Karta över ${kommunName(graph, puzzle.start)} och ${kommunName(graph, puzzle.destination)}`
       }
     >

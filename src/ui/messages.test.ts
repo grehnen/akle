@@ -14,28 +14,28 @@ describe("rejectionMessage", () => {
 
 describe("resultOutcome", () => {
   test("a Perfect win", () => {
-    expect(resultOutcome({ status: "won", extra: 0, perfect: true, away: 0 })).toEqual({
-      headline: "Framme!",
-      score: "Perfekt",
-    });
+    expect(resultOutcome({ status: "won", extra: 0, perfect: true, away: 0 })).toBe("Perfekt!");
   });
 
   test("a win with extra guesses", () => {
-    expect(resultOutcome({ status: "won", extra: 2, perfect: false, away: 0 })?.score).toBe("+2");
-    expect(resultOutcome({ status: "won", extra: 0, perfect: false, away: 0 })?.score).toBe("+0");
+    expect(resultOutcome({ status: "won", extra: 2, perfect: false, away: 0 })).toBe(
+      "Framme! (+2)",
+    );
+    expect(resultOutcome({ status: "won", extra: 0, perfect: false, away: 0 })).toBe(
+      "Framme! (+0)",
+    );
   });
 
-  test("a win with hints shows them, as the share text does", () => {
-    expect(
-      resultOutcome({ status: "won", extra: 0, perfect: false, away: 0, hintsUsed: 2 })?.score,
-    ).toBe("+0 (2 ledtrådar)");
+  test("a win with hints shows them", () => {
+    expect(resultOutcome({ status: "won", extra: 1, perfect: false, away: 0, hintsUsed: 1 })).toBe(
+      "Framme! (+1, 1 ledtråd)",
+    );
   });
 
-  test("a loss counts the kommuner still missing", () => {
-    expect(resultOutcome({ status: "lost", perfect: false, away: 3 })).toEqual({
-      headline: "Slut på gissningar",
-      score: "3 kvar",
-    });
+  test("a loss counts how many kommuner away the player ended", () => {
+    expect(resultOutcome({ status: "lost", perfect: false, away: 3 })).toBe(
+      "Slut på gissningar (3 ifrån)",
+    );
   });
 
   test("nothing while playing", () => {

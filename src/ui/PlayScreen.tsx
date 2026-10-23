@@ -9,7 +9,7 @@ import { gameOutcome } from "../progress/outcome";
 import { loadSavedGame, saveGame } from "../progress/savedGame";
 import { shareText } from "../progress/shareText";
 import { deriveStats } from "../progress/stats";
-import type { KeyValueStorage } from "../progress/storage";
+import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
 import { GuessInput } from "./GuessInput";
 import { HintSection } from "./HintSection";
 import {
@@ -20,17 +20,18 @@ import {
 } from "./guessSession";
 import { guessCardText } from "./messages";
 import { reportIssueUrl } from "./reportIssue";
-import { ResultView } from "./ResultView";
+import { ResultStrip, ResultView } from "./ResultView";
 import { UsedCounter } from "./UsedCounter";
 
 type PlayScreenProps = {
   graph: GraphVersion;
   puzzle: Puzzle;
   storage: KeyValueStorage;
+  sessionStorage: KeyValueStorage;
   now: Date;
 };
 
-export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
+export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: PlayScreenProps) {
   const [session, setSession] = useState<GuessSession>(() => ({
     game: loadSavedGame(storage, graph, puzzle),
     text: "",
@@ -40,15 +41,23 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
   const review = useMemo(() => reviewGame(graph, game), [graph, game]);
   const reveals = useMemo(() => hintReveals(graph, game), [graph, game]);
   const finished = review.status !== "playing";
-  const [resultClosed, setResultClosed] = useState(false);
-  const resultOpen = finished && !resultClosed;
   // Focus follows the result view when it opens or closes by the player's hand, not on reload.
   const [resultToggled, setResultToggled] = useState(false);
+  const [resultClosed, setResultClosed] = useState(
+    () => readJson(sessionStorage, CLOSED_RESULT_KEY) === puzzle.number,
+  );
+  const closeResult = (closed: boolean) => {
+    setResultToggled(true);
+    setResultClosed(closed);
+    if (closed) writeJson(sessionStorage, CLOSED_RESULT_KEY, puzzle.number);
+    else sessionStorage.removeItem(CLOSED_RESULT_KEY);
+  };
+  const resultOpen = finished && !resultClosed;
   const reopenButton = useRef<HTMLButtonElement>(null);
   const guessInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (resultClosed) reopenButton.current?.focus();
-  }, [resultClosed]);
+    if (resultClosed && resultToggled) reopenButton.current?.focus();
+  }, [resultClosed, resultToggled]);
   const nameOf = (code: string) => kommunName(graph, code);
   const history = useMemo(
     () => withFinishedGame(readHistory(storage), graph, game),
@@ -56,7 +65,11 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
   );
   const todayEntry = history[puzzle.number];
   const outcome = gameOutcome(review);
-  const showResult = resultOpen && todayEntry !== undefined && outcome !== undefined;
+  const share =
+    todayEntry !== undefined && outcome !== undefined
+      ? shareText({ puzzleNumber: puzzle.number, outcome, emojiLine: todayEntry.emojiLine })
+      : undefined;
+  const showResult = resultOpen && share !== undefined;
 
   useEffect(() => {
     saveGame(storage, game);
@@ -78,17 +91,23 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
           review={review}
           now={now}
           stats={deriveStats(history, puzzle.number)}
-          shareText={shareText({
-            puzzleNumber: puzzle.number,
-            outcome,
-            emojiLine: todayEntry.emojiLine,
-          })}
-          onClose={() => setResultClosed(true)}
+          shareText={share}
+          sessionStorage={sessionStorage}
+          onClose={() => closeResult(true)}
           focusOnOpen={resultToggled || announcement !== undefined}
         />
       )}
 
-      {/* The board steps aside while the result view is open; Stäng brings it back. */}
+      {finished && !resultOpen && share !== undefined && (
+        <ResultStrip
+          review={review}
+          shareText={share}
+          onOpen={() => closeResult(false)}
+          openButtonRef={reopenButton}
+        />
+      )}
+
+      {/* The board steps aside while the result view is open; closing it brings the board back. */}
       {!showResult && (
         <>
           <SatelliteMap
@@ -150,20 +169,6 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
         </>
       )}
 
-      {finished && !resultOpen && (
-        <button
-          ref={reopenButton}
-          type="button"
-          className="result-reopen"
-          onClick={() => {
-            setResultToggled(true);
-            setResultClosed(false);
-          }}
-        >
-          Visa resultat
-        </button>
-      )}
-
       <footer className="credits">
         <a href={reportIssueUrl({ puzzleNumber: puzzle.number, graphVersion: graph.id })}>
           Rapportera fel
@@ -176,3 +181,6 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
     </section>
   );
 }
+
+/** The puzzle number whose result the player collapsed this session. */
+const CLOSED_RESULT_KEY = "akle:result-closed";

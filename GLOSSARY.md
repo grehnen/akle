@@ -73,11 +73,11 @@ Said of a guess linked to the start kommun through an unbroken chain of neighbor
 _Avoid_: Reached, linked, on the route
 
 **Shortest route**:
-A route with the fewest intermediate kommuner; a daily puzzle may have several.
+A route with the fewest intermediate kommuner; a daily puzzle may have several. In the UI: _Kortaste rutt_, showing the one with the most guesses on it.
 _Avoid_: Optimal path, solution
 
 **Cheapest route**:
-A route through the fewest kommuner the player hasn't guessed, with guessed kommuner free; it can be longer than a shortest route. In the UI: _bästa vägen med dina gissningar_.
+A route through the fewest kommuner the player hasn't guessed, with guessed kommuner free; it can be longer than a shortest route. In the UI: _Min rutt_.
 _Avoid_: Shortest route (for this), best route, kortaste vägen
 
 **Guess limit**:

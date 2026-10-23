@@ -72,8 +72,9 @@ export function mapFeatures(
 }
 
 /**
- * The result view's map: the endpoints, then the route's kommuner, guessed or missed, over the
- * outlines of every other kommun when `allOutlines` is set.
+ * The result view's map: guesses off the route underneath, drawn like unconnected guesses, then the endpoints, then the
+ * route's kommuner, guessed or missed, over the outlines of every other kommun when
+ * `allOutlines` is set.
  */
 export function routeFeatures(
   graph: GraphVersion,
@@ -82,7 +83,16 @@ export function routeFeatures(
   guesses: ReadonlySet<KommunCode>,
   { allOutlines = false }: FeatureOptions = {},
 ): DrawnFeatures {
+  const onRoute = new Set(route);
   const drawn: DrawnKommun[] = [
+    ...[...guesses]
+      .filter((code) => !onRoute.has(code))
+      .map((code) => ({
+        code,
+        kind: "guess" as const,
+        color: UNCONNECTED_COLOR,
+        connected: false,
+      })),
     { code: puzzle.start, kind: "start", color: START_COLOR, connected: true },
     { code: puzzle.destination, kind: "destination", color: DESTINATION_COLOR, connected: true },
     ...routeStops(puzzle, route, guesses).flatMap(({ code, kind }): DrawnKommun[] => {

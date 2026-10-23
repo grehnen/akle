@@ -24,6 +24,6 @@ function resultLabel({ outcome }: ShareResult): string {
     case "won":
       return `+${outcome.extra}${hintsNote(outcome.hintsUsed)}`;
     case "lost":
-      return `(${outcome.away} kvar)${hintsNote(outcome.hintsUsed)}`;
+      return `(${outcome.away} ifrån)${hintsNote(outcome.hintsUsed)}`;
   }
 }

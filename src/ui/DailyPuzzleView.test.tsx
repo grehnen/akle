@@ -114,7 +114,7 @@ describe("DailyPuzzleView", () => {
     test("a finished game reopens with the result view open", () => {
       const markup = renderWith(["0181"]);
       expect(markup).toContain('aria-labelledby="result-heading"');
-      expect(markup).toContain(">Perfekt<");
+      expect(markup).toContain(">Perfekt!</h2>");
       expect(markup).toContain("10:54:51");
     });
 
@@ -217,7 +217,7 @@ describe("DailyPuzzleView", () => {
 
     test("a win with a hint is not Perfekt", () => {
       const markup = renderWith(["0181"], puzzle, 1);
-      expect(markup).toContain('<p class="result-score">+0 (1 ledtråd)</p>');
+      expect(markup).toContain(">Framme! (+0, 1 ledtråd)</h2>");
     });
   });
 });

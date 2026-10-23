@@ -17,22 +17,26 @@ export function rejectionMessage(reason: RejectionReason, input: string): string
   }
 }
 
-/** The result view's outcome: `+2`, `+1 (1 ledtråd)`, `Perfekt` or `3 kvar`, under a short headline. */
+/** The result view's outcome: `Framme! (+2)`, `Framme! (+1, 1 ledtråd)`, `Perfekt!` or `Slut på gissningar (3 ifrån)`. */
 export function resultOutcome(
   review: Pick<GameReview, "status" | "extra" | "perfect" | "away"> &
     Partial<Pick<GameReview, "hintsUsed">>,
-): { headline: string; score: string } | undefined {
+): string | undefined {
   const outcome = gameOutcome(review);
   switch (outcome?.kind) {
     case undefined:
       return undefined;
     case "perfect":
-      return { headline: "Framme!", score: "Perfekt" };
+      return "Perfekt!";
     case "won":
-      return { headline: "Framme!", score: `+${outcome.extra}${hintsNote(outcome.hintsUsed)}` };
+      return `Framme! (+${outcome.extra}${hintsSuffix(outcome.hintsUsed)})`;
     case "lost":
-      return { headline: "Slut på gissningar", score: `${outcome.away} kvar` };
+      return `Slut på gissningar (${outcome.away} ifrån${hintsSuffix(outcome.hintsUsed)})`;
   }
+}
+
+function hintsSuffix(hintsUsed: number): string {
+  return hintsUsed > 0 ? `, ${hintCount(hintsUsed)}` : "";
 }
 
 /** ` (2 ledtrådar)` after a result when hints were used, else nothing. */

@@ -29,7 +29,7 @@ describe("the share text", () => {
         outcome: { kind: "lost", away: 3, hintsUsed: 0 },
         emojiLine: "🟧🟥🟥🟥🟥",
       }),
-    ).toBe("#åkle #40 (3 kvar)\n🟧🟥🟥🟥🟥\nhttps://akle.grehn.net");
+    ).toBe("#åkle #40 (3 ifrån)\n🟧🟥🟥🟥🟥\nhttps://akle.grehn.net");
   });
 
   test("a win with hints shows them where (Perfekt) would go", () => {
@@ -45,10 +45,10 @@ describe("the share text", () => {
   test("a loss with hints shows them after the kommuner still missing", () => {
     const lost = { puzzleNumber: 40, emojiLine: "🟥🟥" };
     expect(shareText({ ...lost, outcome: { kind: "lost", away: 2, hintsUsed: 1 } })).toBe(
-      "#åkle #40 (2 kvar) (1 ledtråd)\n🟥🟥\nhttps://akle.grehn.net",
+      "#åkle #40 (2 ifrån) (1 ledtråd)\n🟥🟥\nhttps://akle.grehn.net",
     );
     expect(shareText({ ...lost, outcome: { kind: "lost", away: 2, hintsUsed: 2 } })).toBe(
-      "#åkle #40 (2 kvar) (2 ledtrådar)\n🟥🟥\nhttps://akle.grehn.net",
+      "#åkle #40 (2 ifrån) (2 ledtrådar)\n🟥🟥\nhttps://akle.grehn.net",
     );
   });
 });

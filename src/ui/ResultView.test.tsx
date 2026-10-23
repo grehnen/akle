@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { type Game, reviewGame } from "../engine/game";
 import { buildGraphVersion, type GraphVersion } from "../graph/graphVersion";
 import { deriveStats } from "../progress/stats";
+import { type KeyValueStorage, memoryStorage } from "../progress/storage";
 import { ResultView } from "./ResultView";
 
 // Nynäshamn ── Södertälje ── Trosa, or Nynäshamn ── Haninge ── Salem ── Trosa; the rest far away.
@@ -34,19 +35,37 @@ const graph = buildGraphVersion({
 const puzzle = { number: 21, start: "0192", destination: "0488" };
 const now = new Date(2026, 9, 21, 13, 5, 9);
 
-function routeItems(markup: string): string[] {
-  const route =
-    markup.match(/<ol aria-label="Bästa vägen med dina gissningar"[^>]*>(.*?)<\/ol>/)?.[1] ?? "";
+function routeItems(markup: string, label = "Bästa vägen med dina gissningar"): string[] {
+  const route = markup.match(new RegExp(`<ol aria-label="${label}"[^>]*>(.*?)</ol>`))?.[1] ?? "";
   return [...route.matchAll(/<li[^>]*>(.*?)<\/li>/g)].map((item) =>
     (item[1] ?? "").replace(/<[^>]+>/g, ""),
   );
+}
+
+function tabs(markup: string): { name: string; selected: boolean }[] {
+  return [...markup.matchAll(/<button[^>]*role="tab"[^>]*>(.*?)<\/button>/g)].map((tab) => ({
+    name: tab[1] ?? "",
+    selected: tab[0].includes('aria-selected="true"'),
+  }));
 }
 
 function render(...guesses: string[]) {
   return renderOn(graph, puzzle, guesses);
 }
 
-function renderOn(onGraph: GraphVersion, onPuzzle: Game["puzzle"], guesses: string[]) {
+/** Renders as if the player last picked `tab` this session. */
+function renderOnTab(tab: string, ...guesses: string[]) {
+  const sessionStorage = memoryStorage();
+  sessionStorage.setItem("akle:result-tab", JSON.stringify(tab));
+  return renderOn(graph, puzzle, guesses, sessionStorage);
+}
+
+function renderOn(
+  onGraph: GraphVersion,
+  onPuzzle: Game["puzzle"],
+  guesses: string[],
+  sessionStorage: KeyValueStorage = memoryStorage(),
+) {
   const game: Game = { puzzle: onPuzzle, guesses };
   return renderToStaticMarkup(
     <ResultView
@@ -59,6 +78,7 @@ function renderOn(onGraph: GraphVersion, onPuzzle: Game["puzzle"], guesses: stri
         21,
       )}
       shareText="#åkle #21 +1"
+      sessionStorage={sessionStorage}
     />,
   );
 }
@@ -67,9 +87,8 @@ describe("the result view", () => {
   describe("after a win", () => {
     const markup = render("0136", "0181");
 
-    test("shows the outcome as +extra", () => {
-      expect(markup).toContain("Framme!");
-      expect(markup).toContain(">+1<");
+    test("shows the outcome as Framme! (+extra)", () => {
+      expect(markup).toContain(">Framme! (+1)</h2>");
     });
 
     test("shows the emoji line", () => {
@@ -86,13 +105,20 @@ describe("the result view", () => {
       expect(routeItems(markup)).toEqual(["Nynäshamn", "Södertälje (gissad)", "Trosa"]);
     });
 
-    test("embeds the stats", () => {
-      expect(markup).toContain("Statistik");
-      expect(markup).toContain("<dt>Spelade</dt><dd>1</dd>");
+    test("has the tabs Min rutt, Kortaste rutt and Statistik, opening on Min rutt", () => {
+      expect(tabs(markup)).toEqual([
+        { name: "Min rutt", selected: true },
+        { name: "Kortaste rutt", selected: false },
+        { name: "Statistik", selected: false },
+      ]);
     });
 
-    test("offers to copy the share text", () => {
-      expect(markup).toMatch(/<button[^>]*>Kopiera resultat<\/button>/);
+    test("keeps the stats out of the Min rutt tab", () => {
+      expect(markup).not.toContain("<dt>Spelade</dt>");
+    });
+
+    test("offers to share the result", () => {
+      expect(markup).toMatch(/<button[^>]*>Dela resultat<\/button>/);
     });
 
     test("counts down to the next puzzle at midnight", () => {
@@ -101,17 +127,16 @@ describe("the result view", () => {
     });
   });
 
-  test("a Perfect win shows Perfekt", () => {
-    expect(render("0181")).toContain(">Perfekt<");
+  test("a Perfect win shows Perfekt!", () => {
+    expect(render("0181")).toContain(">Perfekt!</h2>");
   });
 
   describe("after a loss", () => {
     const markup = render("0136", "0980", "0880", "0882", "0883");
 
-    test("shows how many kommuner were missing, and which", () => {
-      expect(markup).toContain("Slut på gissningar");
-      expect(markup).toContain(">1 kvar<");
-      expect(markup).toContain("Saknades: Södertälje");
+    test("shows how many kommuner were missing, leaving which to the route", () => {
+      expect(markup).toContain(">Slut på gissningar (1 ifrån)</h2>");
+      expect(markup).not.toContain("Saknades");
     });
 
     test("shows the emoji line", () => {
@@ -123,7 +148,7 @@ describe("the result view", () => {
     });
   });
 
-  test("after a loss, names the same missed kommuner in the count, the list and the cheapest route", () => {
+  test("after a loss, marks the same missed kommuner in the count and the cheapest route", () => {
     // S ── A ── B ── T is shortest, but the guesses X and Y leave only Z missing on S ── X ── Y ── Z ── T.
     const detour = buildGraphVersion({
       id: "detour",
@@ -153,8 +178,7 @@ describe("the result view", () => {
       "F3",
       "F4",
     ]);
-    expect(markup).toContain(">1 kvar<");
-    expect(markup).toContain("Saknades: Kommun Z");
+    expect(markup).toContain("(1 ifrån)");
     expect(routeItems(markup)).toEqual([
       "Kommun S",
       "Kommun X (gissad)",
@@ -162,5 +186,44 @@ describe("the result view", () => {
       "Kommun Z (missad)",
       "Kommun T",
     ]);
+  });
+
+  describe("on the Kortaste rutt tab", () => {
+    test("shows the shortest route on the map and lists it, marking the guesses on it", () => {
+      // Haninge and Salem win by a detour; Södertälje is the shortest way.
+      const markup = renderOnTab("shortest", "0136", "0128");
+      expect(tabs(markup).find((tab) => tab.selected)?.name).toBe("Kortaste rutt");
+      expect(markup).toContain('aria-label="Kortaste rutten från Nynäshamn till Trosa"');
+      expect(routeItems(markup, "Kortaste rutten")).toEqual([
+        "Nynäshamn",
+        "Södertälje (missad)",
+        "Trosa",
+      ]);
+      expect(routeItems(markup)).toEqual([]);
+      expect(markup).not.toContain("Din rutt var en av de kortaste!");
+    });
+
+    test("marks a guess on the shortest route as guessed", () => {
+      expect(routeItems(renderOnTab("shortest", "0136", "0181"), "Kortaste rutten")).toEqual([
+        "Nynäshamn",
+        "Södertälje (gissad)",
+        "Trosa",
+      ]);
+    });
+
+    test("says so when Min rutt is already a shortest route", () => {
+      expect(renderOnTab("shortest", "0181")).toContain("Din rutt var en av de kortaste!");
+    });
+  });
+
+  test("the Statistik tab shows the stats and no route", () => {
+    const markup = renderOnTab("stats", "0181");
+    expect(tabs(markup).find((tab) => tab.selected)?.name).toBe("Statistik");
+    expect(markup).toContain("<dt>Spelade</dt><dd>1</dd>");
+    expect(markup).not.toContain("satellite-map");
+  });
+
+  test("ignores a stored tab it doesn't know, opening on Min rutt", () => {
+    expect(tabs(renderOnTab("karta", "0181")).find((tab) => tab.selected)?.name).toBe("Min rutt");
   });
 });
