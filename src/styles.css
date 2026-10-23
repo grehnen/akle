@@ -219,17 +219,21 @@ a {
   border-left-color: var(--night);
 }
 
-/* The toast and the hint buttons share a row, as on phones (#35). */
-.hint-row {
+/* Past guesses and hints sit in left-aligned, headed sections, as on travle.earth. */
+.past-guesses,
+.hint-section {
+  width: 100%;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem 0.75rem;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  text-align: left;
 }
 
-.hint-row:has(> .toast:empty):not(:has(> .hint-buttons)) {
-  display: none;
+.section-heading {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 400;
 }
 
 /* One button per hint, stacked as on travle.earth; only the topmost not yet taken is enabled. */
@@ -237,12 +241,12 @@ a {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.25rem;
+  gap: 0.4rem;
 }
 
 /* The hint buttons are drawn like a hint outline: unfilled, with a thin white edge. */
 .hint-button {
-  min-width: 2.75rem;
+  width: 100%;
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--hint-outline);
   color: var(--text);
@@ -324,7 +328,6 @@ ol[aria-label="Gissningar"] {
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 0.4rem;
 }
 
