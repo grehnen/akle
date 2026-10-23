@@ -1,4 +1,4 @@
-import { type KeyboardEvent, type ReactNode, type Ref, useState } from "react";
+import { type KeyboardEvent, type ReactNode, type Ref, useEffect, useRef, useState } from "react";
 import type { KommunCode } from "../graph/graphVersion";
 import "./GuessInput.css";
 import {
@@ -38,6 +38,14 @@ export function GuessInput({
   const expanded = !dismissed && suggestions.length > 0;
   // While the on-screen keyboard is open, the suggestions open upward (see GuessInput.css).
   const listOpensUpward = useOnScreenKeyboard();
+  const listRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    if (!expanded || !highlighted) return;
+    const option = listRef.current?.querySelector<HTMLElement>(`#${optionId(highlighted)}`);
+    // jsdom has no scrollIntoView.
+    option?.scrollIntoView?.({ block: "nearest" });
+  }, [expanded, highlighted]);
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -88,7 +96,13 @@ export function GuessInput({
           onKeyDown={handleKeyDown}
         />
         {expanded && (
-          <ul id={LISTBOX_ID} role="listbox" aria-label="Förslag" className="guess-input__list">
+          <ul
+            ref={listRef}
+            id={LISTBOX_ID}
+            role="listbox"
+            aria-label="Förslag"
+            className="guess-input__list"
+          >
             {suggestions.map((suggestion) => (
               <li
                 key={suggestion.code}
