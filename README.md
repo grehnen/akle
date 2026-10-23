@@ -1,54 +1,59 @@
 # Åkle
 
-A daily puzzle about Swedish kommuner, live at [akle.grehn.net](https://akle.grehn.net). Domain terms are in [GLOSSARY.md](GLOSSARY.md), decisions in [docs/adr/](docs/adr/), and the committed data in [data/README.md](data/README.md).
+Travel across Sweden one kommun at a time. A new puzzle every day at **[akle.grehn.net](https://akle.grehn.net)**.
 
-## Development
+![A game of Åkle in progress: a satellite map of Sweden with the start kommun in yellow, the destination in blue, and the guessed kommuner in green between them](docs/images/screenshot.png)
 
-Needs the Bun version in `package.json` and the Node version in `.node-version`: the Cloudflare Vite plugin and the `cf` CLI load `cloudflare.config.ts` with Node, because it can't load on Bun.
+## How to play
+
+Every day, everyone gets the same start and destination kommun. Name the kommuner that connect them, one neighbor after another, and get from start to destination in as few guesses as possible.
+
+Each guess shows on the map and gets a mark:
+
+- ✅ on a shortest route and connected to the start
+- 🟩 on a shortest route, but not yet connected to the start
+- 🟧 close to a shortest route
+- 🟥 far from a shortest route
+
+How many guesses you get depends on how long the shortest route is. Finish with more guesses than the shortest route needs and your result shows the difference, like **+2**. Finish with nothing but ✅ and no hints, and it's **Perfekt**.
+
+Stuck? There are three hints (_ledtrådar_): the outline of the next kommun on a shortest route, the outlines of every kommun, and then their initials. Hints don't cost guesses, but a game with hints can't be Perfekt.
+
+Win on consecutive days to build a streak, and share a spoiler-free result with your friends. A new puzzle starts at midnight, your local time.
+
+## What counts as a neighbor?
+
+Two kommuner are neighbors when you could get from one to the other:
+
+- **over land**, by a shared border, even if they only touch at a single point;
+- **over a bridge or through a tunnel**, by a public road, path or railway.
+
+Borders along a river count too, as long as they are at least a kilometer long. Tiny islets, short river borders and detached bits of a kommun (exclaves) don't.
+
+Gotland and Öckerö have no bridge or land border, so they are linked by ferry. They are dead ends: a route can start or end there, but never pass through.
+
+Every borderline case was checked by hand. Think two kommuner should (or shouldn't) be neighbors? Use the _Rapportera fel_ link in the game.
+
+## Behind the scenes
+
+- Each day's puzzle is picked in advance from a reviewed schedule, so it's the same for everyone and never changes.
+- The kommun borders come from [OpenStreetMap](https://www.openstreetmap.org/), and the neighbors are computed from them.
+- No account, no tracking: your stats and streak stay in your browser.
+
+## Inspiration and credits
+
+Åkle is inspired by [Travle](https://travle.earth/), which does the same with countries, and [Kommunle](https://kommunle.se/), which put Swedish kommuner on a satellite map.
+
+- Satellite imagery: [EOxCloudless](https://cloudless.eox.at) 2016 by [EOX IT Services GmbH](https://eox.at) (CC BY 4.0), containing modified Copernicus Sentinel data.
+- Kommun borders and neighbors: © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), licensed under the [ODbL](https://opendatacommons.org/licenses/odbl/1-0/).
+
+## For developers
+
+You need [Bun](https://bun.sh/) (the version in `package.json`, currently 1.3) and [Node.js](https://nodejs.org/) (the version in `.node-version`, currently 24). Then:
 
 ```sh
 bun install
-bun run dev      # Vite dev server
-bun run check    # every required check, as CI runs them
+bun run dev
 ```
 
-## Deployment
-
-Åkle is one Cloudflare Worker, `akle`, that serves static assets only. [`cloudflare.config.ts`](cloudflare.config.ts) configures it, and the [`cf` CLI](https://developers.cloudflare.com/cf/) builds and deploys it. `vite build` writes the Worker's Build Output to `.cloudflare/output/`. [`public/_headers`](public/_headers) sets the caching: hashed files under `/assets/` (graph version data included) are `immutable`, and `index.html` is `no-cache`. `bun run headers:check` checks the build against it.
-
-[CI](.github/workflows/ci.yml) runs the required checks on every PR and every push to `main`, then:
-
-- **Production:** a push to `main` deploys the build that passed the checks to `akle.grehn.net`. Production deploys run one at a time, in order, and are never cancelled. A deploy is skipped when `main` has already moved on, so a slow older run can't roll production back.
-- **Previews:** every PR from a branch in this repo gets a public Workers Preview named `pr-<number>` on `workers.dev`, linked from the PR as a deployment to the `preview` environment. `workers.dev` sends `X-Robots-Tag: noindex`, and `_headers` adds it too. [Preview cleanup](.github/workflows/preview-cleanup.yml) deletes the preview when the PR closes.
-- **Schedule extension:** a [quarterly workflow](.github/workflows/schedule-extension.yml), also runnable by hand (with a dry-run option) from the Actions tab, opens or updates the PR that extends the schedule when fewer than 2 years (730 days) of puzzles are left, and turns on its auto-merge under 1 year (365 days). The required runway check fails under 100 days, blocking other PRs until the extension merges. It's only a backstop: launch generates about 27 years of puzzles, so the deployed site keeps working even if nobody touches the repo and GitHub disables the cron for inactivity. See [data/README.md](data/README.md#runway-bun-run-runwaycheck-and-bun-run-scheduleextend).
-- **Forks:** PRs from forks run the checks only. They get no preview and no secrets, and no workflow uses `pull_request_target`. Dependabot PRs deliberately get no preview either: they get no environment secrets, and their checks still run.
-
-### One-time setup
-
-Done by hand, never by CI:
-
-1. The **`production`** environment, limited to `main`, holds the `CLOUDFLARE_API_TOKEN` secret and the `CLOUDFLARE_ACCOUNT_ID` variable.
-2. Create a **`preview`** environment for the PR previews. The `production` environment only allows `main`, so previews from PR branches can't use its secret. Give it no branch restriction, and add:
-   - a `CLOUDFLARE_API_TOKEN` secret: a separate token scoped to _Workers Scripts: Edit_, so it can be revoked on its own;
-   - a `CLOUDFLARE_ACCOUNT_ID` variable, the same account ID as `production`.
-
-   This token can edit the production Worker too: the environment keeps forks away from it, but anyone who can push a branch here can use it. This is an accepted risk, recorded with the second token in [ADR 0005](docs/adr/0005-separate-preview-cloudflare-token.md).
-
-3. A GitHub App with _Contents_ and _Pull requests_ read and write, installed on this repo, with its Client ID in the repo variable `SCHEDULE_APP_CLIENT_ID` and its private key in the repo secret `SCHEDULE_APP_PRIVATE_KEY`. The schedule extension pushes and opens its PR with the App's token, because PRs opened with `GITHUB_TOKEN` don't trigger the checks. Auto-merge is enabled in the repo settings.
-4. The `akle.grehn.net` custom domain and the `åkle.grehn.net` redirect are set up in the Cloudflare dashboard.
-
-### Rollback
-
-**By default, revert the commit** (`git revert`, through a PR) and let the pipeline deploy `main` again. This keeps `main` and production the same.
-
-**Instant rollback is for emergencies only**, when production is broken and a revert would take too long. Find the last good version (each deploy is tagged with its short commit SHA), then deploy it:
-
-```sh
-bunx cf workers versions list --worker-id akle
-bunx cf workers deployments create --worker akle --strategy percentage \
-  --versions '[{"version_id":"<VERSION_ID>","percentage":100}]'
-```
-
-The Cloudflare dashboard (Workers → `akle` → Deployments) can do the same. Then revert or fix the commit on `main`, because the next push to `main` deploys over the rollback.
-
-**Never roll back across a graph version already in effect.** If a graph version has started (today's puzzle number has reached its `startsAtPuzzle`, see [ADR 0004](docs/adr/0004-versioned-graphs-keyed-by-puzzle-number.md)), never deploy a build from before that version was added: the puzzles that use it would break. Revert or fix forward instead.
+Deployment, CI and rollback are in [docs/development.md](docs/development.md). The game's vocabulary is in [GLOSSARY.md](GLOSSARY.md), and the design decisions in [docs/adr/](docs/adr/).
