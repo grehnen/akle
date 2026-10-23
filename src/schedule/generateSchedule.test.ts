@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { buildGraphVersion, type GraphVersion } from "../graph/graphVersion";
+import { buildGraphVersion, type GraphVersion, lanOf } from "../graph/graphVersion";
 import { generateSchedule } from "./generateSchedule";
 import type { ScheduledPuzzle } from "./schedule";
 import { checkScheduleRules } from "./scheduleRules";
-import { pathCode, pathGraph } from "./testGraphs";
+import { lanPathGraph, pathCode, pathGraph } from "./testGraphs";
 
 const row = (number: number, start: string, destination: string, n: number): ScheduledPuzzle => ({
   number,
@@ -159,6 +159,32 @@ describe("generateSchedule", () => {
         rows,
         previousRows: [],
         graphs: [fixture, real],
+        ...cooldown,
+        playedThrough: 0,
+      }),
+    ).toEqual([]);
+  });
+
+  test("keeps endpoints out of a län that had an endpoint within the län cooldown", () => {
+    const lanGraph = lanPathGraph(8, 4);
+    const cooldown = { cooldownDays: 0, lanCooldownDays: 1 };
+    const { rows } = generateSchedule({
+      rows: [],
+      graphs: [lanGraph],
+      seed: "test",
+      ...cooldown,
+      playedThrough: 0,
+      chunks: 1,
+    });
+    const lans = (puzzle: ScheduledPuzzle) => [puzzle.start, puzzle.destination].map(lanOf);
+    for (let i = 1; i < rows.length; i++) {
+      expect(lans(rows[i]).some((lan) => lans(rows[i - 1]).includes(lan))).toBe(false);
+    }
+    expect(
+      checkScheduleRules({
+        rows,
+        previousRows: [],
+        graphs: [lanGraph],
         ...cooldown,
         playedThrough: 0,
       }),

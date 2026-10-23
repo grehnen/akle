@@ -92,7 +92,8 @@ function sameRow(a: ScheduledPuzzle, b: ScheduledPuzzle): boolean {
 
 /**
  * Draws N uniformly from 3–8, then a pair uniformly among the least-used pairs with that N
- * whose endpoints are outside the cooldown. Redraws with the next attempt when none qualifies.
+ * whose endpoints are outside the kommun and län cooldowns. Redraws with the next attempt
+ * when none qualifies.
  */
 function drawRow(
   puzzleNumber: number,
@@ -107,7 +108,7 @@ function drawRow(
     const candidates = history
       .leastUsed(groups.get(n) ?? [])
       .filter((key) =>
-        pairEndpoints(key).every((code) => !history.inCooldown(code, puzzleNumber, graph)),
+        pairEndpoints(key).every((code) => history.isAvailable(code, puzzleNumber, graph)),
       );
     if (candidates.length === 0) continue;
     const [a, b] = pairEndpoints(candidates[Number(random.next() % BigInt(candidates.length))]);
@@ -115,7 +116,7 @@ function drawRow(
     return { number: puzzleNumber, start: swap ? b : a, destination: swap ? a : b, n };
   }
   throw new Error(
-    `No pair qualifies for puzzle #${puzzleNumber} on graph version ${graph.id} after ${maximumAttempts} attempts; is the cooldown too long for the graph?`,
+    `No pair qualifies for puzzle #${puzzleNumber} on graph version ${graph.id} after ${maximumAttempts} attempts; is a cooldown too long for the graph?`,
   );
 }
 

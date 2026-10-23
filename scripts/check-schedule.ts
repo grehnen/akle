@@ -23,6 +23,8 @@ const violations = checkScheduleRules({
   graphs: await readGraphVersions(),
   cooldownDays: config.cooldownDays,
   cooldownDaysByGraphVersion: config.cooldownDaysByGraphVersion,
+  lanCooldownDays: config.lanCooldownDays,
+  lanCooldownDaysByGraphVersion: config.lanCooldownDaysByGraphVersion,
   playedThrough,
 });
 

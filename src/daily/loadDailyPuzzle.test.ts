@@ -25,6 +25,8 @@ function fakeSource() {
       seed: "test",
       cooldownDays: 30,
       cooldownDaysByGraphVersion: {},
+      lanCooldownDays: 3,
+      lanCooldownDaysByGraphVersion: {},
     }),
     graphVersions: async () => [
       { id: "old", startsAtPuzzle: 1 },

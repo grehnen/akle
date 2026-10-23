@@ -8,6 +8,10 @@ A daily geography game: find a chain of neighboring kommuner from a start kommun
 One of Sweden's municipalities, the unit the whole game is played in.
 _Avoid_: Municipality, county, region
 
+**Län**:
+One of Sweden's counties; every kommun lies in exactly one.
+_Avoid_: County, region, province
+
 **Neighbor**:
 A kommun connected to another for gameplay purposes, so a route may pass directly between them: by a land border on the mainland or on an island of at least 1 km², by a fixed link, or by ferry when a kommun has no other link. A corner touch, where two borders meet at a single point on such land, counts as a land border. A border with no land, only river water, counts as a land border when it is 1000 m or more. A land border only on islands and under 1000 m, a river border under 1000 m, or a land border wholly on an exclave, doesn't count; such a pair is a neighbor only through a fixed link or a human's verdict.
 _Avoid_: Adjacent, bordering
@@ -51,6 +55,14 @@ _Avoid_: Day, index, id
 **Schedule**:
 The predetermined list of daily puzzles, one per puzzle number.
 _Avoid_: Calendar, queue, rotation
+
+**Cooldown**:
+The number of daily puzzles after one with a given kommun as start or destination before that kommun can be one again.
+_Avoid_: Quarantine, rest period, gap
+
+**Län cooldown**:
+The number of daily puzzles after one with a start or destination in a given län before any kommun in that län can be one again.
+_Avoid_: County cooldown, regional cooldown
 
 **Runway**:
 How many days of puzzles the schedule has left: the scheduled puzzles after today's puzzle number in the earliest time zone.

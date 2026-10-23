@@ -1,7 +1,7 @@
-import type { GraphVersion, KommunCode } from "../graph/graphVersion";
+import { type GraphVersion, type KommunCode, lanOf } from "../graph/graphVersion";
 import { type PairKey, pairKey } from "../graph/kommunPair";
 import { shortestRouteLengthsFrom } from "../graph/routes";
-import { type Cooldown, cooldownDaysOn, type ScheduledPuzzle } from "./schedule";
+import { type Cooldown, cooldownDaysOn, lanCooldownDaysOn, type ScheduledPuzzle } from "./schedule";
 
 export const minimumN = 3;
 export const maximumN = 8;
@@ -53,9 +53,37 @@ export class ScheduleHistory {
 
   /** The kommun was an endpoint within the cooldown of `graph` before this puzzle number. */
   inCooldown(code: KommunCode, puzzleNumber: number, graph: GraphVersion): boolean {
-    const cooldownDays = cooldownDaysOn(this.cooldown, graph.id);
-    for (let earlier = puzzleNumber - cooldownDays; earlier < puzzleNumber; earlier++) {
-      if (this.endpointsByPuzzle.get(earlier)?.includes(code)) return true;
+    return this.endpointWithin(
+      cooldownDaysOn(this.cooldown, graph.id),
+      puzzleNumber,
+      (earlier) => earlier === code,
+    );
+  }
+
+  /** A kommun in the same län was an endpoint within the län cooldown of `graph`. */
+  inLanCooldown(code: KommunCode, puzzleNumber: number, graph: GraphVersion): boolean {
+    const lan = lanOf(code);
+    return this.endpointWithin(
+      lanCooldownDaysOn(this.cooldown, graph.id),
+      puzzleNumber,
+      (earlier) => lanOf(earlier) === lan,
+    );
+  }
+
+  /** The kommun may be an endpoint of this puzzle under both cooldowns. */
+  isAvailable(code: KommunCode, puzzleNumber: number, graph: GraphVersion): boolean {
+    return (
+      !this.inCooldown(code, puzzleNumber, graph) && !this.inLanCooldown(code, puzzleNumber, graph)
+    );
+  }
+
+  private endpointWithin(
+    days: number,
+    puzzleNumber: number,
+    matches: (earlier: KommunCode) => boolean,
+  ): boolean {
+    for (let earlier = puzzleNumber - days; earlier < puzzleNumber; earlier++) {
+      if (this.endpointsByPuzzle.get(earlier)?.some(matches)) return true;
     }
     return false;
   }
@@ -91,6 +119,10 @@ export class ScheduleHistory {
       if (this.inCooldown(code, row.number, graph)) {
         problems.push(
           `${where}: ${code} was an endpoint within the last ${cooldownDaysOn(this.cooldown, graph.id)} puzzles`,
+        );
+      } else if (this.inLanCooldown(code, row.number, graph)) {
+        problems.push(
+          `${where}: ${code}'s län ${lanOf(code)} had an endpoint within the last ${lanCooldownDaysOn(this.cooldown, graph.id)} puzzles`,
         );
       }
     }

@@ -103,7 +103,43 @@ describe("parseScheduleConfig", () => {
       seed: "s",
       cooldownDays: 30,
       cooldownDaysByGraphVersion: { fixture: 3 },
+      lanCooldownDays: 3,
+      lanCooldownDaysByGraphVersion: {},
     });
+  });
+
+  test("defaults the län cooldown to 3 days, and reads one per graph version", () => {
+    expect(parseScheduleConfig({ epoch: "2026-10-01", seed: "s" }).lanCooldownDays).toBe(3);
+    expect(
+      parseScheduleConfig({
+        epoch: "2026-10-01",
+        seed: "s",
+        lanCooldownDays: 2,
+        lanCooldownDaysByGraphVersion: { fixture: 0 },
+      }),
+    ).toMatchObject({ lanCooldownDays: 2, lanCooldownDaysByGraphVersion: { fixture: 0 } });
+  });
+
+  test("rejects a län cooldown that is not a whole number of days", () => {
+    expect(() =>
+      parseScheduleConfig({ epoch: "2026-10-01", seed: "s", lanCooldownDays: 0.5 }),
+    ).toThrow(/lanCooldownDays/);
+    expect(() =>
+      parseScheduleConfig({
+        epoch: "2026-10-01",
+        seed: "s",
+        lanCooldownDaysByGraphVersion: { fixture: -1 },
+      }),
+    ).toThrow(/lanCooldownDaysByGraphVersion/);
+  });
+
+  test("rejects a län cooldown for a graph version that doesn't exist", () => {
+    expect(() =>
+      parseScheduleConfig(
+        { epoch: "2026-10-01", seed: "s", lanCooldownDaysByGraphVersion: { other: 1 } },
+        { graphVersionIds: ["fixture"] },
+      ),
+    ).toThrow(/lanCooldownDaysByGraphVersion names graph versions that don't exist: other/);
   });
 
   test("rejects a cooldown that is not a whole number of days", () => {

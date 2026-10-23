@@ -3,6 +3,14 @@ import { comparePairs } from "./kommunPair";
 /** SCB kommun code, e.g. "0180" for Stockholm. */
 export type KommunCode = string;
 
+/** SCB län code, e.g. "01" for Stockholms län. */
+export type LanCode = string;
+
+/** The län a kommun lies in: SCB kommun codes begin with their län's two-digit code. */
+export function lanOf(code: KommunCode): LanCode {
+  return code.slice(0, 2);
+}
+
 export type Kommun = {
   code: KommunCode;
   name: string;

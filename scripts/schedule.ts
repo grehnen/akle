@@ -26,6 +26,8 @@ const schedule = generateSchedule({
   seed: config.seed,
   cooldownDays: config.cooldownDays,
   cooldownDaysByGraphVersion: config.cooldownDaysByGraphVersion,
+  lanCooldownDays: config.lanCooldownDays,
+  lanCooldownDaysByGraphVersion: config.lanCooldownDaysByGraphVersion,
   playedThrough: playedThroughAtBase(now, config.epoch, readScheduleRowsAt("HEAD")),
   chunks,
 });

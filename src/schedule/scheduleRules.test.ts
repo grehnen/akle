@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { ScheduledPuzzle } from "./schedule";
 import { checkScheduleRules } from "./scheduleRules";
-import { pathGraph } from "./testGraphs";
+import { lanPathGraph, pathGraph } from "./testGraphs";
 
 const row = (number: number, start: string, destination: string, n: number): ScheduledPuzzle => ({
   number,
@@ -79,6 +79,42 @@ describe("checkScheduleRules", () => {
         playedThrough: 0,
       }),
     ).toEqual(["Puzzle #3: k00 was an endpoint within the last 2 puzzles"]);
+  });
+
+  test("rejects an endpoint whose län held an endpoint within the län cooldown", () => {
+    // Län 01 is 0100–0102, län 02 is 0200–0202, … along one line.
+    const lanGraph = lanPathGraph(5, 3);
+    const checkLan = (rows: ScheduledPuzzle[], lanCooldownDaysByGraphVersion = {}) =>
+      checkScheduleRules({
+        rows,
+        previousRows: [],
+        graphs: [lanGraph],
+        cooldownDays: 0,
+        lanCooldownDays: 1,
+        lanCooldownDaysByGraphVersion,
+        playedThrough: 0,
+      });
+    const first = row(1, "0100", "0201", 3);
+    expect(checkLan([first, row(2, "0102", "0300", 3)])).toEqual([
+      "Puzzle #2: 0102's län 01 had an endpoint within the last 1 puzzles",
+    ]);
+    expect(checkLan([first, row(2, "0300", "0401", 3)])).toEqual([]);
+    expect(checkLan([first, row(2, "0300", "0401", 3), row(3, "0202", "0500", 6)])).toEqual([]);
+    expect(checkLan([first, row(2, "0102", "0300", 3)], { "lan-path": 0 })).toEqual([]);
+  });
+
+  test("allows both endpoints of one puzzle in the same län", () => {
+    const lanGraph = lanPathGraph(1, 6);
+    expect(
+      checkScheduleRules({
+        rows: [row(1, "0100", "0104", 3)],
+        previousRows: [],
+        graphs: [lanGraph],
+        cooldownDays: 0,
+        lanCooldownDays: 3,
+        playedThrough: 0,
+      }),
+    ).toEqual([]);
   });
 
   test("rejects a pair that repeats before every pair with its N is used", () => {

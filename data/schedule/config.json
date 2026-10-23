@@ -1,5 +1,6 @@
 {
   "epoch": "2026-10-01",
   "seed": "fixture",
-  "cooldownDaysByGraphVersion": { "fixture": 3 }
+  "cooldownDaysByGraphVersion": { "fixture": 3 },
+  "lanCooldownDaysByGraphVersion": { "fixture": 0 }
 }
