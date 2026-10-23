@@ -121,7 +121,7 @@ const MAP_LOCALE = {
 export function mapOptions(
   bounds: Bounds | undefined,
   { touchScreen = false }: { touchScreen?: boolean } = {},
-): Omit<MapOptions, "container" | "style"> {
+) {
   return {
     bounds: bounds ?? [10.9, 55.3, 24.2, 69.1],
     fitBoundsOptions: { padding: 40 },
@@ -134,5 +134,5 @@ export function mapOptions(
     attributionControl: { compact: true },
     cooperativeGestures: touchScreen,
     locale: MAP_LOCALE,
-  };
+  } satisfies Omit<MapOptions, "container" | "style">;
 }

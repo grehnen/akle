@@ -175,6 +175,15 @@ a {
   min-height: 0;
 }
 
+.satellite-map__zoom-reset[hidden] {
+  display: none;
+}
+
+.satellite-map__zoom-reset svg {
+  display: block;
+  margin: auto;
+}
+
 @media (pointer: coarse) {
   .satellite-map .maplibregl-ctrl-group button {
     width: 2.75rem;

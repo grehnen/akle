@@ -12,6 +12,7 @@ import {
 import { mapDescription } from "./mapDescription";
 import { mapOptions, satelliteMapStyle, TOOLTIP_LAYER, TOUCH_SCREEN_QUERY } from "./mapStyle";
 import { tooltipText } from "./tooltip";
+import { zoomResetControl } from "./zoomResetControl";
 
 type SatelliteMapProps = {
   graph: GraphVersion;
@@ -106,6 +107,7 @@ export function SatelliteMap({
         new maplibre.NavigationControl({ showCompass: false, visualizePitch: false }),
         "top-right",
       );
+      created.addControl(zoomResetControl(bounds), "top-right");
       showTooltips(
         created,
         new maplibre.Popup({
