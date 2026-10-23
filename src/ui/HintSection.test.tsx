@@ -2,7 +2,7 @@ import { afterAll, expect, test } from "bun:test";
 import { JSDOM } from "jsdom";
 import { act, createRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { HintRow } from "./HintRow";
+import { HintSection } from "./HintSection";
 
 const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>');
 Object.assign(globalThis, {
@@ -23,8 +23,7 @@ function Row({ hintsTaken }: { hintsTaken: number }) {
   return (
     <>
       <input ref={guessInput} id="guess-input" />
-      <HintRow
-        finished={false}
+      <HintSection
         hintsUsed={hintsUsed}
         onTakeHint={() => setHintsUsed((used) => used + 1)}
         focusAfterLastHint={guessInput}

@@ -11,7 +11,7 @@ import { shareText } from "../progress/shareText";
 import { deriveStats } from "../progress/stats";
 import type { KeyValueStorage } from "../progress/storage";
 import { GuessInput } from "./GuessInput";
-import { HintRow } from "./HintRow";
+import { HintSection } from "./HintSection";
 import {
   applyGuessInput,
   type GuessSession,
@@ -106,30 +106,39 @@ export function PlayScreen({ graph, puzzle, storage, now }: PlayScreenProps) {
         inputRef={guessInput}
       />
 
-      <HintRow
-        toast={toast}
-        finished={finished}
-        hintsUsed={review.hintsUsed}
-        onTakeHint={() => setSession((current) => takeSessionHint(graph, current))}
-        focusAfterLastHint={guessInput}
-      />
+      <p role="alert" className="toast">
+        {toast}
+      </p>
 
       <p className="visually-hidden" aria-live="polite">
         {announcement}
       </p>
 
-      <ol aria-label="Gissningar">
-        {review.cards.map((card, index) => (
-          <li key={card.code}>
-            <span aria-hidden="true">
-              {card.feedback} {nameOf(card.code)}
-            </span>
-            <span className="visually-hidden">
-              {guessCardText(card, { number: index + 1, name: nameOf(card.code) })}
-            </span>
-          </li>
-        ))}
-      </ol>
+      <section className="past-guesses" aria-labelledby="guesses-heading">
+        <h3 id="guesses-heading" className="section-heading">
+          Tidigare gissningar:
+        </h3>
+        <ol aria-label="Gissningar">
+          {review.cards.map((card, index) => (
+            <li key={card.code}>
+              <span aria-hidden="true">
+                {card.feedback} {nameOf(card.code)}
+              </span>
+              <span className="visually-hidden">
+                {guessCardText(card, { number: index + 1, name: nameOf(card.code) })}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {!finished && (
+        <HintSection
+          hintsUsed={review.hintsUsed}
+          onTakeHint={() => setSession((current) => takeSessionHint(graph, current))}
+          focusAfterLastHint={guessInput}
+        />
+      )}
 
       {finished && !resultOpen && (
         <button

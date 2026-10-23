@@ -123,10 +123,15 @@ describe("DailyPuzzleView", () => {
       expect(markup).toMatch(/<button type="submit"(?![^>]*disabled)[^>]*>/);
     });
 
-    test("shows the toast in the hint row, also once the game has ended", () => {
+    test("shows the toast right under the guess input, also once the game has ended", () => {
       for (const guesses of [[], ["0181"]]) {
-        expect(renderWith(guesses)).toMatch(/<div class="hint-row"><p role="alert" class="toast">/);
+        expect(renderWith(guesses)).toMatch(/<\/form><p role="alert" class="toast">/);
       }
+    });
+
+    test("lists past guesses under a heading, before the hints", () => {
+      const markup = renderWith(["0136"]);
+      expect(visibleText(markup)).toMatch(/Tidigare gissningar:.*Haninge.*Ledtrådar \(0\/3\):/s);
     });
 
     test("offers three stacked hint buttons before the first guess, only the topmost enabled", () => {
