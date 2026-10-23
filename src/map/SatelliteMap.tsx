@@ -3,8 +3,9 @@ import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent, Popup } from "ma
 import type { GuessCard, Puzzle } from "../engine/game";
 import { type GraphVersion, type KommunCode, kommunName } from "../graph/graphVersion";
 import {
+  defaultBounds,
   type DrawnKommun,
-  endpointBounds,
+  guessViewBounds,
   mapFeatures,
   routeBounds,
   routeFeatures,
@@ -12,15 +13,16 @@ import {
 import { mapDescription } from "./mapDescription";
 import { mapOptions, satelliteMapStyle, TOOLTIP_LAYER, TOUCH_SCREEN_QUERY } from "./mapStyle";
 import { tooltipText } from "./tooltip";
-import { zoomResetControl } from "./zoomResetControl";
+import { animateToBounds, zoomResetControl } from "./zoomResetControl";
 
 type SatelliteMapProps = {
   graph: GraphVersion;
   puzzle: Pick<Puzzle, "start" | "destination">;
-  cards: readonly Pick<GuessCard, "code" | "connected">[];
+  cards: readonly Pick<GuessCard, "code" | "feedback" | "connected">[];
   /**
    * Draws this route instead, with the guessed and missed kommuner on it marked. The label names
-   * the map, and the map is fitted to the kommuner in `frame`.
+   * the map, and the map is fitted to the kommuner in `frame`. Without a route, the map is fitted
+   * to `defaultBounds`, and each new guess eases it to `guessViewBounds`.
    */
   route?: { kommuner: readonly KommunCode[]; label: string; frame: readonly KommunCode[] };
   /** Kommuner revealed by hints, drawn as unfilled outlines. */
@@ -67,10 +69,26 @@ export function SatelliteMap({
     ? undefined
     : mapDescription(graph, puzzle, cards, hintOutlines, { allOutlines });
   const described = description !== undefined;
-  const bounds = useMemo(
-    () => (routeFrame ? routeBounds(graph, routeFrame) : endpointBounds(graph, puzzle)),
-    [graph, puzzle, routeFrame],
+  const resetBounds = useMemo(
+    () => (routeFrame ? routeBounds(graph, routeFrame) : defaultBounds(graph, puzzle, cards)),
+    [graph, puzzle, routeFrame, cards],
   );
+  const viewBounds = useMemo(
+    () => (routeFrame ? resetBounds : guessViewBounds(graph, puzzle, cards)),
+    [graph, puzzle, routeFrame, cards, resetBounds],
+  );
+  // What the map is framed for: a new guess, puzzle or route eases the map to `viewBounds`.
+  const { start, destination } = puzzle;
+  const framing = useMemo(
+    () => ({ start, destination, routeFrame, guessCount: cards.length }),
+    [start, destination, routeFrame, cards.length],
+  );
+  const latest = useRef({ framing, resetBounds, viewBounds });
+  useEffect(() => {
+    latest.current = { framing, resetBounds, viewBounds };
+  }, [framing, resetBounds, viewBounds]);
+  const fittedFor = useRef(framing);
+  const resetControl = useRef<ReturnType<typeof zoomResetControl>>(undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,6 +100,8 @@ export function SatelliteMap({
     };
     touchScreen.addEventListener("change", followTouchScreen);
     // MapLibre is heavy and needs WebGL, so it loads in its own chunk on the client only.
+    const opening = latest.current;
+    fittedFor.current = opening.framing;
     void Promise.all([
       import("maplibre-gl"),
       // MapLibre looks for its worker next to its own module, which the build moves and renames.
@@ -94,7 +114,13 @@ export function SatelliteMap({
         created = new maplibre.Map({
           container: container.current,
           style: satelliteMapStyle({ type: "FeatureCollection", features: [] }),
-          ...mapOptions(bounds, { touchScreen: touchScreen.matches }),
+          ...mapOptions(opening.viewBounds, {
+            touchScreen: touchScreen.matches,
+            size: {
+              width: container.current.clientWidth,
+              height: container.current.clientHeight,
+            },
+          }),
         });
       } catch {
         // Without WebGL MapLibre can't draw; the map stays empty and the game still plays.
@@ -107,7 +133,8 @@ export function SatelliteMap({
         new maplibre.NavigationControl({ showCompass: false, visualizePitch: false }),
         "top-right",
       );
-      created.addControl(zoomResetControl(bounds), "top-right");
+      resetControl.current = zoomResetControl(opening.resetBounds);
+      created.addControl(resetControl.current, "top-right");
       showTooltips(
         created,
         new maplibre.Popup({
@@ -136,8 +163,20 @@ export function SatelliteMap({
       cancelled = true;
       touchScreen.removeEventListener("change", followTouchScreen);
       created?.remove();
+      resetControl.current = undefined;
+      setMap(undefined);
     };
-  }, [bounds, described, descriptionId]);
+  }, [described, descriptionId]);
+
+  useEffect(() => {
+    if (map) resetControl.current?.setBounds(resetBounds);
+  }, [map, resetBounds]);
+
+  useEffect(() => {
+    if (!map || framing === fittedFor.current) return;
+    fittedFor.current = framing;
+    animateToBounds(map, viewBounds);
+  }, [map, framing, viewBounds]);
 
   useEffect(() => {
     const source = map?.getSource<GeoJSONSource>("kommuner");

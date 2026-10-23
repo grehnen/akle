@@ -34,8 +34,21 @@ const FILLED: ExpressionSpecification = [
   ["in", ["get", "kind"], ["literal", ["hint", "other"]]],
 ];
 
-/** Keeps players near Sweden. */
-const SWEDEN_SURROUNDINGS: Bounds = [4, 53, 32, 71];
+/**
+ * Keeps players near Sweden, while leaving room to zoom out until the whole length of Sweden fits,
+ * with the fit padding, in a 4:3 map.
+ */
+const SWEDEN_SURROUNDINGS: Bounds = [-5, 54, 40, 70];
+
+/** Fitted views keep this share of the map's smaller side clear around what they frame. */
+const FIT_PADDING_SHARE = 0.05;
+
+export type MapSize = { width: number; height: number };
+
+/** The padding around a fitted view, in pixels, scaled to the map so small maps lose little. */
+export function fitPadding({ width, height }: MapSize): number {
+  return Math.round(Math.min(width, height) * FIT_PADDING_SHARE);
+}
 
 /** The endpoints' sign-coloured edges are drawn a little heavier than other outlines. */
 const ENDPOINT_OR_ONE_PX: ExpressionSpecification = [
@@ -149,11 +162,14 @@ const MAP_LOCALE = {
  */
 export function mapOptions(
   bounds: Bounds | undefined,
-  { touchScreen = false }: { touchScreen?: boolean } = {},
+  {
+    touchScreen = false,
+    size = { width: 0, height: 0 },
+  }: { touchScreen?: boolean; size?: MapSize } = {},
 ) {
   return {
     bounds: bounds ?? [10.9, 55.3, 24.2, 69.1],
-    fitBoundsOptions: { padding: 40 },
+    fitBoundsOptions: { padding: fitPadding(size) },
     maxBounds: SWEDEN_SURROUNDINGS,
     dragRotate: false,
     pitchWithRotate: false,

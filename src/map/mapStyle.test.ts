@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { mapOptions, SATELLITE_TILE_URL, satelliteMapStyle, TOOLTIP_LAYER } from "./mapStyle";
+import {
+  fitPadding,
+  mapOptions,
+  SATELLITE_TILE_URL,
+  satelliteMapStyle,
+  TOOLTIP_LAYER,
+} from "./mapStyle";
 import { DESTINATION_EDGE_COLOR, START_EDGE_COLOR } from "./mapFeatures";
 
 const empty = { type: "FeatureCollection" as const, features: [] };
@@ -112,6 +118,36 @@ describe("mapOptions", () => {
 
   test("starts fitted to the endpoints", () => {
     expect(options.bounds).toEqual([12, 56, 17, 59]);
+  });
+
+  test.each([270, 360, 864, 1200])(
+    "leaves room for the whole length of Sweden in a 4:3 map %ipx wide",
+    (width) => {
+      const sweden = [10.98, 55.34, 24.16, 69.06];
+      const mercatorY = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+      const latitudeOf = (y: number) =>
+        ((2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180) / Math.PI;
+      const height = (width * 3) / 4;
+      const padding = fitPadding({ width, height });
+      const radiansPerPixel =
+        (mercatorY(sweden[3]!) - mercatorY(sweden[1]!)) / (height - 2 * padding);
+      const centerY = (mercatorY(sweden[1]!) + mercatorY(sweden[3]!)) / 2;
+      const halfWidthDegrees = ((width / 2) * radiansPerPixel * 180) / Math.PI;
+      const centerLongitude = (sweden[0]! + sweden[2]!) / 2;
+      const [west, south, east, north] = options.maxBounds;
+      expect(west).toBeLessThanOrEqual(centerLongitude - halfWidthDegrees);
+      expect(east).toBeGreaterThanOrEqual(centerLongitude + halfWidthDegrees);
+      expect(south).toBeLessThanOrEqual(latitudeOf(centerY - (height / 2) * radiansPerPixel));
+      expect(north).toBeGreaterThanOrEqual(latitudeOf(centerY + (height / 2) * radiansPerPixel));
+    },
+  );
+
+  test("pads fitted views by 5% of the map's smaller side", () => {
+    expect(fitPadding({ width: 864, height: 648 })).toBe(32);
+    expect(fitPadding({ width: 272, height: 204 })).toBe(10);
+    expect(mapOptions(undefined, { size: { width: 400, height: 300 } }).fitBoundsOptions).toEqual({
+      padding: 15,
+    });
   });
 
   test("can't be rotated or tilted", () => {

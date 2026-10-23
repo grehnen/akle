@@ -2,7 +2,7 @@ import { afterAll, afterEach, describe, expect, mock, test } from "bun:test";
 import { JSDOM } from "jsdom";
 import { LngLat, Point, type Map as MapLibreMap } from "maplibre-gl";
 import type { Bounds } from "./mapFeatures";
-import { mapOptions } from "./mapStyle";
+import { fitPadding, mapOptions } from "./mapStyle";
 import { zoomResetControl } from "./zoomResetControl";
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>");
@@ -21,6 +21,7 @@ function setup(bounds?: Bounds) {
     fitBounds: mock<MapLibreMap["fitBounds"]>(),
     getCanvas: mock(() => canvas),
     getCenter: mock(() => new LngLat(14, 58)),
+    getContainer: mock(() => ({ clientWidth: 864, clientHeight: 648 }) as HTMLElement),
     getZoom: mock(() => 7),
     on: mock<(type: string, listener: () => void) => void>(),
     off: mock<(type: string, listener: () => void) => void>(),
@@ -69,7 +70,7 @@ describe("zoomResetControl", () => {
     expect(container.hidden).toBe(false);
     button.click();
     expect(map.fitBounds).toHaveBeenCalledWith(bounds, {
-      ...mapOptions(bounds).fitBoundsOptions,
+      padding: fitPadding({ width: 864, height: 648 }),
       duration: 500,
       linear: true,
     });
@@ -120,6 +121,16 @@ describe("zoomResetControl", () => {
     const { map, button } = setup(bounds);
     button.click();
     expect(map.fitBounds.mock.calls[0]?.[0]).toEqual(mapOptions(bounds).bounds);
+  });
+
+  test("after setBounds, resets to the new default bounds and shows when the map is elsewhere", () => {
+    const { map, control, container, button } = setup([12, 56, 17, 59]);
+    const grown: Bounds = [12, 56, 21, 66];
+    map.cameraForBounds.mockReturnValue({ center: [16, 61], zoom: 5 });
+    control.setBounds(grown);
+    expect(container.hidden).toBe(false);
+    button.click();
+    expect(map.fitBounds.mock.calls[0]?.[0]).toEqual(grown);
   });
 
   test("removes the control and all its listeners when the map is removed", () => {

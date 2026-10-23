@@ -1,4 +1,4 @@
-import type { GuessCard, Puzzle } from "../engine/game";
+import { connectedTo, type Feedback, type GuessCard, type Puzzle } from "../engine/game";
 import { routeStops } from "../engine/routeStops";
 import type { GraphVersion, KommunCode } from "../graph/graphVersion";
 
@@ -131,12 +131,60 @@ function withShapes(graph: GraphVersion, drawn: readonly DrawnKommun[]): DrawnFe
   return { type: "FeatureCollection", features };
 }
 
-/** The box around the start and destination shapes, which the map starts fitted to. */
-export function endpointBounds(
+type FramedCard = Pick<GuessCard, "code" | "feedback" | "connected">;
+
+const FRAMED_FEEDBACK: ReadonlySet<Feedback> = new Set(["✅", "🟩", "🟧"]);
+
+/**
+ * The box the reset button returns to: the endpoints, every ✅/🟩/🟧 guess, and every guess
+ * linked to the start or the destination through guesses.
+ */
+export function defaultBounds(
   graph: GraphVersion,
   puzzle: Pick<Puzzle, "start" | "destination">,
+  cards: readonly FramedCard[],
 ): Bounds | undefined {
-  return routeBounds(graph, [puzzle.start, puzzle.destination]);
+  return routeBounds(graph, [
+    puzzle.start,
+    puzzle.destination,
+    ...framedGuesses(graph, puzzle, cards),
+  ]);
+}
+
+/**
+ * The box the map is fitted to after a guess: the default bounds, plus the latest guess even when
+ * it doesn't belong to them.
+ */
+export function guessViewBounds(
+  graph: GraphVersion,
+  puzzle: Pick<Puzzle, "start" | "destination">,
+  cards: readonly FramedCard[],
+): Bounds | undefined {
+  const latest = cards.at(-1)?.code;
+  return routeBounds(graph, [
+    puzzle.start,
+    puzzle.destination,
+    ...framedGuesses(graph, puzzle, cards),
+    ...(latest === undefined ? [] : [latest]),
+  ]);
+}
+
+function framedGuesses(
+  graph: GraphVersion,
+  puzzle: Pick<Puzzle, "start" | "destination">,
+  cards: readonly FramedCard[],
+): KommunCode[] {
+  const toDestination = connectedTo(
+    graph,
+    puzzle.destination,
+    cards.map((card) => card.code),
+  );
+  return cards
+    .filter(
+      (card) =>
+        FRAMED_FEEDBACK.has(card.feedback) || card.connected || toDestination.has(card.code),
+    )
+    .map((card) => card.code);
 }
 
 export function routeBounds(graph: GraphVersion, route: readonly KommunCode[]): Bounds | undefined {

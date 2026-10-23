@@ -97,7 +97,7 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
     known.add(guess);
   }
 
-  const connected = connectedToStart(graph, start, game.guesses);
+  const connected = connectedTo(graph, start, game.guesses);
   const cards = game.guesses.map((code, index) => ({
     code,
     feedback: feedbacks[index] as Feedback,
@@ -145,7 +145,7 @@ function rateGuess(
   const distanceAfter = routeCost(graph, start, destination, knownAfter);
   if (distanceAfter < distanceBefore) {
     const guessesAfter = [...knownAfter].filter((code) => code !== start && code !== destination);
-    const connectedNow = connectedToStart(graph, start, guessesAfter).has(guess);
+    const connectedNow = connectedTo(graph, start, guessesAfter).has(guess);
     return { feedback: connectedNow ? "✅" : "🟩", distanceAfter };
   }
 
@@ -154,15 +154,15 @@ function rateGuess(
   return { feedback: detour <= distanceBefore + 1 ? "🟧" : "🟥", distanceAfter };
 }
 
-/** Guesses connected to the start through an unbroken chain of guesses (dead ends link nothing). */
-function connectedToStart(
+/** Guesses connected to an endpoint through an unbroken chain of guesses (dead ends link nothing). */
+export function connectedTo(
   graph: GraphVersion,
-  start: KommunCode,
+  endpoint: KommunCode,
   guesses: readonly KommunCode[],
 ): Set<KommunCode> {
   const passable = new Set(guesses.filter((code) => !graph.deadEnds.has(code)));
   const connected = new Set<KommunCode>();
-  const queue = [start];
+  const queue = [endpoint];
   while (queue.length > 0) {
     const current = queue.shift() as KommunCode;
     for (const next of graph.neighbors.get(current) ?? []) {

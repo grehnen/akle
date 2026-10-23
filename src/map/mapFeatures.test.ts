@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { newGame, reviewGame, submitGuess, type Game } from "../engine/game";
 import { buildGraphVersion, type KommunCode } from "../graph/graphVersion";
-import { endpointBounds, mapFeatures, routeBounds, routeFeatures } from "./mapFeatures";
+import {
+  defaultBounds,
+  guessViewBounds,
+  mapFeatures,
+  routeBounds,
+  routeFeatures,
+} from "./mapFeatures";
 
 function square(code: KommunCode, west: number, south: number) {
   return {
@@ -131,13 +137,73 @@ describe("mapFeatures", () => {
   });
 });
 
-describe("endpointBounds", () => {
-  test("spans both endpoint shapes as [west, south, east, north]", () => {
-    expect(endpointBounds(graph, puzzle)).toEqual([12, 56, 17, 59]);
+describe("defaultBounds", () => {
+  test("without guesses, spans both endpoint shapes as [west, south, east, north]", () => {
+    expect(defaultBounds(graph, puzzle, [])).toEqual([12, 56, 17, 59]);
   });
 
   test("is undefined when the endpoints have no shapes", () => {
-    expect(endpointBounds(shapeless, puzzle)).toBeUndefined();
+    expect(defaultBounds(shapeless, puzzle, [])).toBeUndefined();
+  });
+
+  test.each(["✅", "🟩", "🟧"] as const)("takes in an unlinked %s guess", (feedback) => {
+    expect(defaultBounds(graph, puzzle, [{ code: "F", feedback, connected: false }])).toEqual([
+      12, 56, 21, 66,
+    ]);
+  });
+
+  test("leaves out an unlinked 🟥 guess", () => {
+    expect(defaultBounds(graph, puzzle, [{ code: "F", feedback: "🟥", connected: false }])).toEqual(
+      [12, 56, 17, 59],
+    );
+  });
+
+  test("takes in a 🟥 guess linked to the start", () => {
+    const sparse = buildGraphVersion({
+      ...graphSource,
+      shapes: { type: "FeatureCollection", features: [square("A", 12, 56), square("B", 9, 50)] },
+    });
+    expect(defaultBounds(sparse, puzzle, [{ code: "B", feedback: "🟥", connected: true }])).toEqual(
+      [9, 50, 13, 57],
+    );
+  });
+
+  test("takes in 🟥 guesses linked to the destination, directly or through other guesses", () => {
+    const cards = [
+      { code: "C", feedback: "🟥", connected: false },
+      { code: "D", feedback: "🟥", connected: false },
+    ] as const;
+    const sparse = buildGraphVersion({
+      ...graphSource,
+      shapes: {
+        type: "FeatureCollection",
+        features: [
+          square("A", 12, 56),
+          square("E", 16, 58),
+          square("C", 30, 60),
+          square("D", 25, 70),
+        ],
+      },
+    });
+    expect(defaultBounds(sparse, puzzle, cards)).toEqual([12, 56, 31, 71]);
+    expect(defaultBounds(sparse, puzzle, cards.slice(0, 1))).toEqual([12, 56, 17, 59]);
+  });
+});
+
+describe("guessViewBounds", () => {
+  test("adds the latest guess to the default bounds even when it isn't part of them", () => {
+    expect(
+      guessViewBounds(graph, puzzle, [{ code: "F", feedback: "🟥", connected: false }]),
+    ).toEqual([12, 56, 21, 66]);
+  });
+
+  test("drops an earlier guess that isn't part of the default bounds", () => {
+    expect(
+      guessViewBounds(graph, puzzle, [
+        { code: "F", feedback: "🟥", connected: false },
+        { code: "C", feedback: "🟩", connected: false },
+      ]),
+    ).toEqual([12, 56, 17, 59]);
   });
 });
 
