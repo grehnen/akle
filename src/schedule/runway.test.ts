@@ -24,15 +24,15 @@ describe("runwayDays", () => {
 });
 
 describe("runwayViolation", () => {
-  test("fails the runway check below 30 days", () => {
-    expect(runwayViolation(29)).toBe(
-      "Only 29 days of puzzles left; the runway check needs at least 30. Run `bun run schedule` and merge the extension.",
+  test("fails the runway check below 40 days", () => {
+    expect(runwayViolation(39)).toBe(
+      "Only 39 days of puzzles left; the runway check needs at least 40. Run `bun run schedule` and merge the extension.",
     );
     expect(runwayViolation(0)).toBeDefined();
   });
 
-  test("passes from 30 days", () => {
-    expect(runwayViolation(30)).toBeUndefined();
+  test("passes from 40 days", () => {
+    expect(runwayViolation(40)).toBeUndefined();
     expect(runwayViolation(1000)).toBeUndefined();
   });
 });

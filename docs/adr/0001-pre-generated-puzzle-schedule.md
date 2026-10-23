@@ -7,5 +7,5 @@ The schedule is stored in chunks of 1,000 puzzles (`data/schedule/0001.csv`, `00
 ## Consequences
 
 - Anyone reading the bundle can see future puzzles. We accept this, as Kommunle and early Wordle did.
-- The schedule has to be extended before it runs out. A monthly job opens an extension PR when fewer than 90 days remain and turns on auto-merge when fewer than 40 remain. CI fails when fewer than 30 remain.
+- The schedule has to be extended before it runs out. A monthly job opens an extension PR when fewer than 90 days remain and turns on auto-merge when fewer than 40 remain. CI fails when fewer than 40 remain, the same point where auto-merge turns on. (This was originally 30; it was raised to 40 so the runway check and auto-merge share one threshold.)
 - The app fetches only the chunk holding today's puzzle, so the download doesn't grow as the schedule does.
