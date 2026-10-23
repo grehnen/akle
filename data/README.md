@@ -128,7 +128,7 @@ The required frozen graph versions check, run in CI against the PR's base (`HEAD
 
 ### Played puzzles
 
-A puzzle is **played** when its number is at most today's puzzle number in UTC+14, the earliest time zone, and the base revision scheduled it. The base is the `--base` revision for the checks and `HEAD` for the generator. So a base with no schedule (bootstrapping the data) has nothing played, and nothing frozen. The generator, `schedule:check` and `graph-versions:check` all use this one rule (`scripts/playedThrough.ts`).
+A puzzle is **played** when its number is at most today's puzzle number in UTC+14, the earliest time zone, and the base revision scheduled it, counting from the base's epoch, not the one being checked, so moving the epoch can't make a played puzzle unplayed. The base is the `--base` revision for the checks and `HEAD` for the generator. So a base with no schedule (bootstrapping the data) has nothing played, and nothing frozen. The generator, `schedule:check` and `graph-versions:check` all use this one rule (`scripts/playedThrough.ts`).
 
 ### Generating: `bun run schedule [--chunks k] [--now <ISO date>]`
 
@@ -140,7 +140,7 @@ Reconciles every unplayed row against the graph version for its puzzle number (u
 
 ### Checking: `bun run schedule:check [--base <git revision>]`
 
-The required schedule rules check, run in CI against the PR's base: N matches the row's graph version, N is 3–8, no pair repeats before every pair with its N that is outside the cooldowns is used as often, no endpoint repeats within the cooldown of the row's graph version, no endpoint's län held an endpoint within its län cooldown, puzzle numbers run 1, 2, 3, … and each row sits in its own chunk, and [played](#played-puzzles) rows, counted against the base (`HEAD` by default), are unchanged from it. Played rows are exempt from the other rules.
+The required schedule rules check, run in CI against the PR's base: N matches the row's graph version, N is 3–8, no pair repeats before every pair with its N that is outside the cooldowns is used as often, no endpoint repeats within the cooldown of the row's graph version, no endpoint's län held an endpoint within its län cooldown, puzzle numbers run 1, 2, 3, … and each row sits in its own chunk, and [played](#played-puzzles) rows, counted against the base (`HEAD` by default), are unchanged from it. Played rows are exempt from the other rules. The epoch may not differ from the base's once the base has a played puzzle: after launch, moving it would renumber every puzzle and break players' saved games and streaks.
 
 ### Runway: `bun run runway:check` and `bun run schedule:extend`
 

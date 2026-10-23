@@ -13,6 +13,7 @@ import {
   type ScheduledPuzzle,
   scheduleChunkFor,
 } from "../src/schedule/schedule";
+import type { ScheduleAtBase } from "./playedThrough";
 
 const dataDirectory = new URL("../data/", import.meta.url).pathname;
 export const scheduleDirectory = `${dataDirectory}schedule/`;
@@ -74,6 +75,21 @@ export function readScheduleRowsAt(revision: string): ScheduledPuzzle[] {
       csv: git(["show", `${revision}:data/schedule/${fileName}`]),
     })),
   );
+}
+
+/**
+ * The epoch and schedule rows at a git revision, for counting played puzzles. A revision without
+ * a schedule config has no played puzzle, so `currentEpoch` stands in for its epoch.
+ */
+export function readScheduleAt(
+  revision: string,
+  currentEpoch: string,
+): ScheduleAtBase & { rows: ScheduledPuzzle[] } {
+  const hasConfig = git(["ls-tree", "--name-only", revision, "data/schedule/config.json"]) !== "";
+  const epoch = hasConfig
+    ? parseScheduleConfig(JSON.parse(git(["show", `${revision}:data/schedule/config.json`]))).epoch
+    : currentEpoch;
+  return { epoch, rows: readScheduleRowsAt(revision) };
 }
 
 /** Writes every chunk that holds a row; earlier chunk files stay as they are when unchanged. */
