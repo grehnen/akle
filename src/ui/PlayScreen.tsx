@@ -15,6 +15,7 @@ import { HintSection } from "./HintSection";
 import {
   applyGuessInput,
   type GuessSession,
+  enterTarget,
   suggestKommuner,
   takeSessionHint,
 } from "./guessSession";
@@ -41,6 +42,14 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
   const review = useMemo(() => reviewGame(graph, game), [graph, game]);
   const reveals = useMemo(() => hintReveals(graph, game), [graph, game]);
   const finished = review.status !== "playing";
+  // A game finished just now keeps the board up for a moment, so the last guess is seen landing.
+  const [boardLingered, setBoardLingered] = useState(finished);
+  useEffect(() => {
+    if (!finished || boardLingered) return;
+    const timer = setTimeout(() => setBoardLingered(true), FINISH_LINGER_MS);
+    return () => clearTimeout(timer);
+  }, [finished, boardLingered]);
+  const settled = finished && boardLingered;
   // Focus follows the result view when it opens or closes by the player's hand, not on reload.
   const [resultToggled, setResultToggled] = useState(false);
   const [resultClosed, setResultClosed] = useState(
@@ -52,7 +61,7 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
     if (closed) writeJson(sessionStorage, CLOSED_RESULT_KEY, puzzle.number);
     else sessionStorage.removeItem(CLOSED_RESULT_KEY);
   };
-  const resultOpen = finished && !resultClosed;
+  const resultOpen = settled && !resultClosed;
   const reopenButton = useRef<HTMLButtonElement>(null);
   const guessInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -80,8 +89,8 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
     <section className="play-screen" aria-labelledby="puzzle-heading">
       <p className="puzzle-number">Dagens pussel #{puzzle.number}</p>
       <h2 id="puzzle-heading">
-        Res från <strong>{nameOf(puzzle.start)}</strong> till{" "}
-        <strong>{nameOf(puzzle.destination)}</strong>
+        Res från <strong className="sign sign--start">{nameOf(puzzle.start)}</strong> till{" "}
+        <strong className="sign sign--destination">{nameOf(puzzle.destination)}</strong>
       </h2>
 
       {showResult && (
@@ -98,7 +107,7 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
         />
       )}
 
-      {finished && !resultOpen && share !== undefined && (
+      {settled && !resultOpen && share !== undefined && (
         <ResultStrip
           review={review}
           shareText={share}
@@ -116,14 +125,14 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
             cards={review.cards}
             hintOutlines={reveals.outlines}
             initials={reveals.initials}
-            allOutlines={finished}
+            allOutlines={settled}
           />
 
           <GuessInput
             text={session.text}
             exactMatch={resolveKommunName(graph, session.text) !== undefined}
             suggestions={suggestKommuner(graph, game, session.text)}
-            highlighted={session.highlighted}
+            highlighted={enterTarget(graph, session)}
             counter={<UsedCounter label="Gissa" used={review.cards.length} limit={review.limit} />}
             onEvent={(event) => setSession((current) => applyGuessInput(graph, current, event))}
             inputRef={guessInput}
@@ -143,8 +152,13 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
         <>
           <section className="past-guesses" aria-labelledby="guesses-heading">
             <h3 id="guesses-heading" className="section-heading">
-              Tidigare gissningar:
+              Tidigare gissningar
             </h3>
+            {review.cards.length === 0 && (
+              <p className="section-empty">
+                Inga gissningar än. Börja med en granne till {nameOf(puzzle.start)}.
+              </p>
+            )}
             <ol aria-label="Gissningar">
               {review.cards.map((card, index) => (
                 <li key={card.code}>
@@ -174,13 +188,16 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
           Rapportera fel
         </a>
         <p>
-          Satellitbild: EOxCloudless 2016 av EOX IT Services GmbH (CC BY 4.0). Kommungränser och
-          grannar bygger på data från © OpenStreetMap-bidragsgivare och är licensierade under ODbL.
+          Kommungränser och grannar bygger på data från{" "}
+          <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a> och är
+          licensierade under ODbL.
         </p>
       </footer>
     </section>
   );
 }
+
+const FINISH_LINGER_MS = 1500;
 
 /** The puzzle number whose result the player collapsed this session. */
 const CLOSED_RESULT_KEY = "akle:result-closed";

@@ -1,5 +1,5 @@
 import { type RefObject, useEffect, useRef } from "react";
-import { HINT_LABELS, hintRevealed } from "./messages";
+import { HINT_LABELS } from "./messages";
 
 type HintSectionProps = {
   hintsUsed: number;
@@ -9,8 +9,8 @@ type HintSectionProps = {
 };
 
 /**
- * A headed section with one full-width button per hint, stacked as on travle.earth: only the
- * topmost hint not yet taken is enabled. Under them, what the latest hint revealed.
+ * A headed section with one numbered button per hint, side by side when they fit and stacked
+ * when they don't. Hints are taken in order: only the first one not yet taken is enabled.
  */
 export function HintSection({ hintsUsed, onTakeHint, focusAfterLastHint }: HintSectionProps) {
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
@@ -28,7 +28,7 @@ export function HintSection({ hintsUsed, onTakeHint, focusAfterLastHint }: HintS
       <h3 id="hints-heading" className="section-heading">
         Ledtrådar{" "}
         <span aria-hidden="true">
-          ({hintsUsed}/{HINT_LABELS.length}):
+          ({hintsUsed}/{HINT_LABELS.length})
         </span>
         <span className="visually-hidden">
           ({hintsUsed} av {HINT_LABELS.length} använda)
@@ -52,18 +52,15 @@ export function HintSection({ hintsUsed, onTakeHint, focusAfterLastHint }: HintS
                 onTakeHint();
               }}
             >
+              <span className="hint-step" aria-hidden="true">
+                {taken ? "✓" : index + 1}
+              </span>
               {label}
-              {taken && (
-                <>
-                  <span aria-hidden="true"> ✓</span>
-                  <span className="visually-hidden"> (använd)</span>
-                </>
-              )}
+              {taken && <span className="visually-hidden"> (använd)</span>}
             </button>
           );
         })}
       </div>
-      <p className="hint-note">{hintRevealed(hintsUsed)}</p>
     </section>
   );
 }

@@ -62,7 +62,7 @@ export function applyGuessInput(
     case "type":
       return { ...session, text: event.text, highlighted: undefined };
     case "arrow":
-      return moveHighlight(pickable(graph, session), session, event.direction);
+      return moveHighlight(graph, session, event.direction);
     case "pick": {
       const suggestion = pickable(graph, session).find((s) => s.code === event.code);
       return suggestion ? fill(session, suggestion) : session;
@@ -84,13 +84,27 @@ function pressEnter(graph: GraphVersion, session: GuessSession): GuessSession {
   return top ? fill(session, top) : submit(graph, session);
 }
 
+/**
+ * The suggestion Enter acts on, so the list can highlight it before any arrow key is pressed:
+ * the arrow highlight, else an exact match, else the best suggestion not already guessed.
+ * Undefined when Enter would submit something the list doesn't offer, such as a guessed kommun.
+ */
+export function enterTarget(graph: GraphVersion, session: GuessSession): KommunCode | undefined {
+  const options = pickable(graph, session);
+  if (options.some((s) => s.code === session.highlighted)) return session.highlighted;
+  const exact = resolveKommunName(graph, session.text);
+  if (exact !== undefined) return options.some((s) => s.code === exact) ? exact : undefined;
+  return options[0]?.code;
+}
+
 function moveHighlight(
-  options: readonly Suggestion[],
+  graph: GraphVersion,
   session: GuessSession,
   direction: "up" | "down",
 ): GuessSession {
+  const options = pickable(graph, session);
   if (options.length === 0) return session;
-  const current = options.findIndex((s) => s.code === session.highlighted);
+  const current = options.findIndex((s) => s.code === enterTarget(graph, session));
   const step = direction === "down" ? 1 : -1;
   const next =
     current === -1

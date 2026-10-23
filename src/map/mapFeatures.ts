@@ -4,6 +4,9 @@ import type { GraphVersion, KommunCode } from "../graph/graphVersion";
 
 export const START_COLOR = "#fecc02";
 export const DESTINATION_COLOR = "#006aa7";
+/** The endpoints' outlines match their road signs: red around the start, white around the destination. */
+export const START_EDGE_COLOR = "#ed1c24";
+export const DESTINATION_EDGE_COLOR = "#ffffff";
 export const CONNECTED_COLOR = "#4ade80";
 export const UNCONNECTED_COLOR = "#9ca3af";
 export const MISSED_COLOR = "#f87171";

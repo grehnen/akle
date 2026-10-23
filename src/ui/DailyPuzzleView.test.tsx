@@ -51,7 +51,9 @@ describe("DailyPuzzleView", () => {
         }}
       />,
     );
-    expect(markup).toContain("Res från <strong>Nynäshamn</strong> till <strong>Trosa</strong>");
+    expect(markup).toContain(
+      'Res från <strong class="sign sign--start">Nynäshamn</strong> till <strong class="sign sign--destination">Trosa</strong>',
+    );
     expect(markup).toContain("#21");
     expect(visibleText(markup)).toContain("Gissa (0/5)");
   });
@@ -136,31 +138,33 @@ describe("DailyPuzzleView", () => {
 
     test("lists past guesses under a heading, before the hints", () => {
       const markup = renderWith(["0136"]);
-      expect(visibleText(markup)).toMatch(/Tidigare gissningar:.*Haninge.*Ledtrådar \(0\/3\):/s);
+      expect(visibleText(markup)).toMatch(/Tidigare gissningar.*Haninge.*Ledtrådar \(0\/3\)/s);
     });
 
-    test("offers three stacked hint buttons before the first guess, only the topmost enabled", () => {
+    test("offers three numbered hint buttons before the first guess, only the first enabled", () => {
       const markup = renderWith([]);
       expect(markup).toContain('<div role="group" aria-label="Ledtrådar" class="hint-buttons">');
       expect(markup).toMatch(
-        /<button[^>]*class="hint-button"(?![^>]*disabled)[^>]*>Visa nästa kommun</,
+        /<button[^>]*class="hint-button"(?![^>]*disabled)[^>]*><span class="hint-step" aria-hidden="true">1<\/span>Visa nästa kommun</,
       );
       expect(markup).toMatch(
-        /<button[^>]*class="hint-button"[^>]*disabled=""[^>]*>Visa alla kommuner</,
+        /<button[^>]*class="hint-button"[^>]*disabled=""[^>]*><span class="hint-step" aria-hidden="true">2<\/span>Visa alla kommuner</,
       );
       expect(markup).toMatch(
-        /<button[^>]*class="hint-button"[^>]*disabled=""[^>]*>Visa initialer</,
+        /<button[^>]*class="hint-button"[^>]*disabled=""[^>]*><span class="hint-step" aria-hidden="true">3<\/span>Visa initialer</,
       );
     });
 
-    test("restores the hints taken, and says what the last one revealed", () => {
+    test("restores the hints taken, ticked off", () => {
       const markup = renderWith(["0136"], puzzle, 2);
-      expect(visibleText(markup)).toContain("Visa nästa kommun ✓");
-      expect(visibleText(markup)).toContain("Visa alla kommuner ✓");
+      expect(
+        markup.match(
+          /<button[^>]*class="hint-button taken"[^>]*disabled=""[^>]*><span class="hint-step" aria-hidden="true">✓<\/span>/g,
+        ),
+      ).toHaveLength(2);
       expect(markup).toMatch(
-        /<button[^>]*class="hint-button"(?![^>]*disabled)[^>]*>Visa initialer</,
+        /<button[^>]*class="hint-button"(?![^>]*disabled)[^>]*><span class="hint-step" aria-hidden="true">3<\/span>Visa initialer</,
       );
-      expect(markup).toContain("Alla kommuner syns nu på kartan.");
     });
 
     test("disables every hint button once all three are taken", () => {
@@ -189,7 +193,7 @@ describe("DailyPuzzleView", () => {
       const markup = renderWith(["0136"], puzzle, 1);
       expect(markup).toMatch(/<button type="submit"[^>]*>.*?1 av 5 använda.*?<\/button>/);
       expect(markup).toMatch(
-        /<button[^>]*class="hint-button taken"[^>]*>Visa nästa kommun.*?\(använd\).*?<\/button>/,
+        /<button[^>]*class="hint-button taken"[^>]*>.*?Visa nästa kommun.*?\(använd\).*?<\/button>/,
       );
     });
 

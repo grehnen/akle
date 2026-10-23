@@ -49,7 +49,7 @@ function hintCount(hints: number): string {
   return hints === 1 ? "1 ledtråd" : `${hints} ledtrådar`;
 }
 
-/** The hint buttons, top to bottom: what each hint reveals. */
+/** The hint buttons, in the order they're taken: what each hint reveals. */
 export const HINT_LABELS = [
   "Visa nästa kommun",
   "Visa alla kommuner",
@@ -57,20 +57,6 @@ export const HINT_LABELS = [
 ] as const satisfies readonly string[] & {
   length: typeof HINT_COUNT;
 };
-
-/** What the latest hint revealed, under the hint buttons. */
-export function hintRevealed(hintsUsed: number): string {
-  switch (hintsUsed) {
-    case 0:
-      return "";
-    case 1:
-      return "Nästa kommun är markerad på kartan.";
-    case 2:
-      return "Alla kommuner syns nu på kartan.";
-    default:
-      return "Peka på eller tryck på en kommun för att se dess initialer.";
-  }
-}
 
 const FEEDBACK_TEXTS: Record<Feedback, string> = {
   "✅": "på kortaste vägen och ansluten",

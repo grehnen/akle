@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { mapOptions, SATELLITE_TILE_URL, satelliteMapStyle, TOOLTIP_LAYER } from "./mapStyle";
+import { DESTINATION_EDGE_COLOR, START_EDGE_COLOR } from "./mapFeatures";
 
 const empty = { type: "FeatureCollection" as const, features: [] };
 
@@ -27,19 +28,35 @@ describe("satelliteMapStyle", () => {
     );
   });
 
-  test("fills drawn kommuner at 0.25 opacity with a 1 px opaque outline in the same hue", () => {
+  test("fills drawn kommuner at 0.25 opacity, start and destination at 0.4, with a 1 px opaque outline in the same hue", () => {
     const fill = style.layers.find((layer) => layer.type === "fill");
-    expect(fill?.paint).toEqual({ "fill-color": ["get", "color"], "fill-opacity": 0.25 });
-    const lines = style.layers.filter(
-      (layer) => layer.type === "line" && !["hint-outline", "other-outline"].includes(layer.id),
-    );
-    for (const line of lines) {
-      expect(line.paint).toMatchObject({
-        "line-color": ["get", "color"],
-        "line-width": 1,
-        "line-opacity": 1,
-      });
-    }
+    expect(fill?.paint).toEqual({
+      "fill-color": ["get", "color"],
+      "fill-opacity": ["match", ["get", "kind"], ["start", "destination"], 0.4, 0.25],
+    });
+    const dashed = style.layers.find((layer) => layer.id === "kommun-outline-dashed");
+    expect(dashed?.paint).toMatchObject({
+      "line-color": ["get", "color"],
+      "line-width": 1,
+      "line-opacity": 1,
+    });
+  });
+
+  test("edges start in red and destination in white, 2 px, like their road signs", () => {
+    const solid = style.layers.find((layer) => layer.id === "kommun-outline-solid");
+    expect(solid?.paint).toEqual({
+      "line-color": [
+        "match",
+        ["get", "kind"],
+        "start",
+        START_EDGE_COLOR,
+        "destination",
+        DESTINATION_EDGE_COLOR,
+        ["get", "color"],
+      ],
+      "line-width": ["match", ["get", "kind"], ["start", "destination"], 2, 1],
+      "line-opacity": 1,
+    });
   });
 
   test("outlines connected kommuner solid and unconnected guesses dashed", () => {

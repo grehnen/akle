@@ -5,17 +5,22 @@ import type {
   MapOptions,
   StyleSpecification,
 } from "maplibre-gl";
-import type { Bounds, DrawnFeatures } from "./mapFeatures";
+import {
+  type Bounds,
+  DESTINATION_EDGE_COLOR,
+  type DrawnFeatures,
+  START_EDGE_COLOR,
+} from "./mapFeatures";
 
 /**
- * The satellite background: EOX Sentinel-2 cloudless 2016 (CC BY 4.0), loaded live from EOX.
+ * The satellite background: EOxCloudless 2016, made from 2016 & 2017 Sentinel-2 data (CC BY 4.0), loaded live from EOX.
  * Change this one value to switch to self-hosted tiles.
  */
 export const SATELLITE_TILE_URL =
   "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg";
 
 const EOX_ATTRIBUTION =
-  '<a href="https://cloudless.eox.at">EOxCloudless</a> by <a href="https://eox.at">EOX IT Services GmbH</a> (Contains modified Copernicus Sentinel data 2016 &amp; 2017)';
+  '<a href="https://cloudless.eox.at">EOxCloudless</a> by <a href="https://eox.at">EOX IT Services GmbH</a> (Contains modified Copernicus Sentinel data 2016 &amp; 2017), <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>';
 
 const OSM_ATTRIBUTION =
   '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -32,6 +37,15 @@ const FILLED: ExpressionSpecification = [
 /** Keeps players near Sweden. */
 const SWEDEN_SURROUNDINGS: Bounds = [4, 53, 32, 71];
 
+/** The endpoints' sign-coloured edges are drawn a little heavier than other outlines. */
+const ENDPOINT_OR_ONE_PX: ExpressionSpecification = [
+  "match",
+  ["get", "kind"],
+  ["start", "destination"],
+  2,
+  1,
+];
+
 export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
   const layers: LayerSpecification[] = [
     { id: "satellite", type: "raster", source: "satellite" },
@@ -40,7 +54,10 @@ export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
       type: "fill",
       source: "kommuner",
       filter: FILLED,
-      paint: { "fill-color": ["get", "color"], "fill-opacity": 0.25 },
+      paint: {
+        "fill-color": ["get", "color"],
+        "fill-opacity": ["match", ["get", "kind"], ["start", "destination"], 0.4, 0.25],
+      },
     },
     // Once the game is finished, every other kommun is outlined too: unfilled and fainter still.
     {
@@ -63,7 +80,19 @@ export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
       type: "line",
       source: "kommuner",
       filter: ["all", FILLED, ["==", ["get", "connected"], true]],
-      paint: { "line-color": ["get", "color"], "line-width": 1, "line-opacity": 1 },
+      paint: {
+        "line-color": [
+          "match",
+          ["get", "kind"],
+          "start",
+          START_EDGE_COLOR,
+          "destination",
+          DESTINATION_EDGE_COLOR,
+          ["get", "color"],
+        ],
+        "line-width": ENDPOINT_OR_ONE_PX,
+        "line-opacity": 1,
+      },
     },
     {
       id: "kommun-outline-dashed",

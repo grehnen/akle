@@ -5,6 +5,7 @@ import {
   applyGuessInput,
   arrowDirection,
   type GuessInputEvent,
+  enterTarget,
   type GuessSession,
   suggestKommuner,
   takeSessionHint,
@@ -152,15 +153,27 @@ describe("applyGuessInput", () => {
     const options = suggestKommuner(graph, newGame(puzzle), "o").filter((s) => !s.disabled);
     expect(options.map((s) => s.name)).toEqual(["Örebro", "Habo", "Upplands-Bro"]);
 
-    expect(highlights([down])).toBe("1880");
-    expect(highlights([down, down])).toBe("0643");
-    expect(highlights([down, down, down])).toBe("0139");
-    expect(highlights([down, down, down, down])).toBe("1880");
+    // Örebro is already highlighted as Enter's target, so the first step moves past it.
+    expect(highlights([down])).toBe("0643");
+    expect(highlights([down, down])).toBe("0139");
+    expect(highlights([down, down, down])).toBe("1880");
     expect(highlights([up])).toBe("0139");
   });
 
+  test("Enter's target is highlighted before any arrow key: the best suggestion not yet guessed", () => {
+    const target = (text: string, session?: GuessSession) =>
+      enterTarget(graph, play([type(text)], session));
+    expect(target("o")).toBe("1880");
+    const guessed = { game: { ...newGame(puzzle), guesses: ["1880"] }, text: "" };
+    expect(target("o", guessed)).toBe("0643");
+    expect(target("upplands bro")).toBe("0139");
+    expect(target("Örebro", guessed)).toBeUndefined();
+    expect(target("")).toBeUndefined();
+    expect(enterTarget(graph, play([type("o"), down, down]))).toBe("0139");
+  });
+
   test("Enter on a highlighted suggestion only fills the field", () => {
-    const filled = play([type("o"), down, down, enter]);
+    const filled = play([type("o"), down, enter]);
     expect(filled.text).toBe("Habo");
     expect(filled.highlighted).toBeUndefined();
     expect(filled.game.guesses).toEqual([]);
@@ -294,19 +307,13 @@ describe("arrowDirection", () => {
   });
 
   test("moves the highlight the way the arrow points when the list opens upward", () => {
-    // Upward, the best match sits nearest the input, at the bottom of the list.
+    // Upward, the best match sits nearest the input, at the bottom of the list, already highlighted.
     const fromInput = (key: "ArrowDown" | "ArrowUp") =>
       play([
         type("o"),
         { type: "arrow", direction: arrowDirection(key, { listOpensUpward: true }) },
       ]);
-    expect(fromInput("ArrowUp").highlighted).toBe("1880");
-    const nextUp = play([
-      type("o"),
-      { type: "arrow", direction: arrowDirection("ArrowUp", { listOpensUpward: true }) },
-      { type: "arrow", direction: arrowDirection("ArrowUp", { listOpensUpward: true }) },
-      { type: "arrow", direction: arrowDirection("ArrowDown", { listOpensUpward: true }) },
-    ]);
-    expect(nextUp.highlighted).toBe("1880");
+    expect(fromInput("ArrowUp").highlighted).toBe("0643");
+    expect(fromInput("ArrowDown").highlighted).toBe("0139");
   });
 });

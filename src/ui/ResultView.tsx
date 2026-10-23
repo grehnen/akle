@@ -124,7 +124,7 @@ export function ResultView({
               />
             </>
           )}
-          {id === tab && id === "stats" && <StatsPanel stats={stats} />}
+          {id === tab && id === "stats" && <StatsPanel stats={stats} hideHeading />}
         </div>
       ))}
     </section>

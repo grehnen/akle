@@ -5,8 +5,15 @@ import "./StatsPanel.css";
 /**
  * Spelade, Vinst %, the two streaks, and the distribution with today's row highlighted. Each
  * row's games with hints end its bar as an unfilled outline, like hint outlines on the map.
+ * Inside the result view's Statistik tab the tab already names it, so the heading is only read out.
  */
-export function StatsPanel({ stats }: { stats: Stats }) {
+export function StatsPanel({
+  stats,
+  hideHeading = false,
+}: {
+  stats: Stats;
+  hideHeading?: boolean;
+}) {
   const headingId = useId();
   const most = Math.max(1, ...stats.distribution.map((row) => row.games));
   const anyHints = stats.distribution.some((row) => row.withHints > 0);
@@ -19,7 +26,9 @@ export function StatsPanel({ stats }: { stats: Stats }) {
 
   return (
     <section className="stats" aria-labelledby={headingId}>
-      <h3 id={headingId}>Statistik</h3>
+      <h3 id={headingId} className={hideHeading ? "visually-hidden" : undefined}>
+        Statistik
+      </h3>
       <dl className="stats-figures">
         {figures.map(([label, value]) => (
           <div key={label}>

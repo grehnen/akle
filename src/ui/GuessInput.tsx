@@ -1,4 +1,4 @@
-import type { KeyboardEvent, ReactNode, Ref } from "react";
+import { type KeyboardEvent, type ReactNode, type Ref, useState } from "react";
 import type { KommunCode } from "../graph/graphVersion";
 import "./GuessInput.css";
 import { arrowDirection, type GuessInputEvent, type Suggestion } from "./guessSession";
@@ -28,7 +28,9 @@ export function GuessInput({
   onEvent,
   inputRef,
 }: GuessInputProps) {
-  const expanded = suggestions.length > 0;
+  // Leaving the input closes the list; coming back or typing opens it again.
+  const [dismissed, setDismissed] = useState(false);
+  const expanded = !dismissed && suggestions.length > 0;
   // While the on-screen keyboard is open, the suggestions open upward (see GuessInput.css).
   const listOpensUpward = useOnScreenKeyboard();
 
@@ -39,6 +41,9 @@ export function GuessInput({
     } else if (event.key === "Enter") {
       event.preventDefault();
       onEvent({ type: "enter" });
+    } else if (event.key === "Escape" && expanded) {
+      event.preventDefault();
+      setDismissed(true);
     }
   }
 
@@ -59,6 +64,7 @@ export function GuessInput({
           id="guess-input"
           type="text"
           role="combobox"
+          placeholder="Skriv en kommun"
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -68,7 +74,12 @@ export function GuessInput({
           aria-expanded={expanded}
           aria-activedescendant={expanded && highlighted ? optionId(highlighted) : undefined}
           value={text}
-          onChange={(event) => onEvent({ type: "type", text: event.target.value })}
+          onChange={(event) => {
+            setDismissed(false);
+            onEvent({ type: "type", text: event.target.value });
+          }}
+          onFocus={() => setDismissed(false)}
+          onBlur={() => setDismissed(true)}
           onKeyDown={handleKeyDown}
         />
         {expanded && (

@@ -101,10 +101,12 @@
   text-align: right;
 }
 
+/* An empty row is just its count on the bare track; the surface behind the number breaks the line. */
 .row-empty {
   background: var(--surface);
-  box-shadow: inset 0 0 0 1px var(--rule);
   color: var(--muted);
+  font-weight: 400;
+  text-align: center;
 }
 
 .row-win {

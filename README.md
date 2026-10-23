@@ -44,7 +44,8 @@ Every borderline case was checked by hand. Think two kommuner should (or shouldn
 
 Åkle is inspired by [Travle](https://travle.earth/), which does the same with countries, and [Kommunle](https://kommunle.se/), which put Swedish kommuner on a satellite map.
 
-- Satellite imagery: [EOxCloudless](https://cloudless.eox.at) 2016 by [EOX IT Services GmbH](https://eox.at) (CC BY 4.0), containing modified Copernicus Sentinel data.
+- Satellite imagery: [EOxCloudless https://cloudless.eox.at](https://cloudless.eox.at) by [EOX IT Services GmbH](https://eox.at) (Contains modified Copernicus Sentinel data 2016 & 2017), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- Road-sign lettering: Tratex, the Swedish road-sign typeface, from [Transportstyrelsen](https://www.transportstyrelsen.se/).
 - Kommun borders and neighbors: © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), licensed under the [ODbL](https://opendatacommons.org/licenses/odbl/1-0/).
 
 ## For developers
