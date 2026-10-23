@@ -34,7 +34,7 @@ Done by hand, never by CI:
 
    This token can edit the production Worker too: the environment keeps forks away from it, but anyone who can push a branch here can use it. This is an accepted risk, recorded with the second token in [ADR 0005](docs/adr/0005-separate-preview-cloudflare-token.md).
 
-3. A GitHub App with _Contents_ and _Pull requests_ read and write, installed on this repo, with its credentials in the repo secrets `SCHEDULE_APP_ID` and `SCHEDULE_APP_PRIVATE_KEY`. The schedule extension pushes and opens its PR with the App's token, because PRs opened with `GITHUB_TOKEN` don't trigger the checks. Auto-merge is enabled in the repo settings.
+3. A GitHub App with _Contents_ and _Pull requests_ read and write, installed on this repo, with its Client ID in the repo variable `SCHEDULE_APP_CLIENT_ID` and its private key in the repo secret `SCHEDULE_APP_PRIVATE_KEY`. The schedule extension pushes and opens its PR with the App's token, because PRs opened with `GITHUB_TOKEN` don't trigger the checks. Auto-merge is enabled in the repo settings.
 4. The `akle.grehn.net` custom domain and the `åkle.grehn.net` redirect are set up in the Cloudflare dashboard.
 
 ### Rollback
