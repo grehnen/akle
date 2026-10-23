@@ -33,7 +33,7 @@ export function GuessInput({
   onEvent,
   inputRef,
 }: GuessInputProps) {
-  // Leaving the input closes the list; coming back or typing opens it again.
+  // Enter, Escape or leaving the input closes the list; coming back, typing or an arrow key opens it again.
   const [dismissed, setDismissed] = useState(false);
   const expanded = !dismissed && suggestions.length > 0;
   // While the on-screen keyboard is open, the suggestions open upward (see GuessInput.css).
@@ -50,9 +50,11 @@ export function GuessInput({
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
+      setDismissed(false);
       onEvent({ type: "arrow", direction: arrowDirection(event.key, { listOpensUpward }) });
     } else if (event.key === "Enter") {
       event.preventDefault();
+      setDismissed(true);
       onEvent({ type: "enter" });
     } else if (event.key === "Escape" && expanded) {
       event.preventDefault();
