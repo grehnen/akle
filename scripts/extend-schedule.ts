@@ -1,5 +1,5 @@
 // bun run schedule:extend [--dry-run] [--now <ISO date>]
-// The monthly cron (ADR 0001). Under `extendBelowDays` days left, it regenerates the schedule from
+// The quarterly cron (ADR 0001). Under `extendBelowDays` days left, it regenerates the schedule from
 // HEAD on the extension branch and opens the extension PR, or updates its own open one. A
 // hand-edited extension PR is never regenerated: the cron only comments on it. Under
 // `autoMergeBelowDays` days left, it also turns on auto-merge (thresholds in

@@ -19,7 +19,7 @@ export function runwayViolation(days: number): string | undefined {
 }
 
 /**
- * Below this many days left, the monthly cron opens or updates the extension PR. Launch generates
+ * Below this many days left, the quarterly cron opens or updates the extension PR. Launch generates
  * about 27 years of puzzles (ADR 0001), so the cron is only a backstop.
  */
 export const extendBelowDays = 730;
@@ -39,7 +39,7 @@ export type ExtensionPlan =
   | { action: "comment"; pullRequest: number; autoMerge: boolean };
 
 /**
- * What the monthly cron does, given the days left and its own open extension PR, if any. A
+ * What the quarterly cron does, given the days left and its own open extension PR, if any. A
  * hand-edited PR is never regenerated, so the hand edits survive; the cron only comments on it.
  */
 export function extensionPlan(
