@@ -1,10 +1,10 @@
 name: Schedule extension
 
-# Monthly, and by hand: opens or updates the extension PR when the schedule runs low (ADR 0001).
+# Quarterly (1 January, April, July and October), and by hand: opens or updates the extension PR when the schedule runs low (ADR 0001).
 # The decisions live in scripts/extend-schedule.ts.
 on:
   schedule:
-    - cron: "17 6 1 * *"
+    - cron: "17 6 1 1,4,7,10 *"
   workflow_dispatch:
     inputs:
       dry-run:

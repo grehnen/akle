@@ -57,7 +57,7 @@ How many days of puzzles the schedule has left: the scheduled puzzles after toda
 _Avoid_: Buffer, remaining days, backlog
 
 **Extension PR**:
-The pull request the monthly cron opens to append puzzles to the schedule when the runway runs low; it may be curated by hand before it merges.
+The pull request the quarterly cron opens to append puzzles to the schedule when the runway runs low; it may be curated by hand before it merges.
 _Avoid_: Schedule PR, refill, top-up
 
 **Guess**:
