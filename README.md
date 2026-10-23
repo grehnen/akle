@@ -2,7 +2,7 @@
 
 Travel across Sweden one kommun at a time. A new puzzle every day at **[akle.grehn.net](https://akle.grehn.net)**.
 
-![A game of Åkle in progress: a satellite map of Sweden with the start kommun in yellow, the destination in blue, and the guessed kommuner in green between them](docs/images/screenshot.png)
+![A game of Åkle in progress, travelling from Östhammar to Linköping: a satellite map of Sweden with the start kommun in yellow, the destination in blue, connected guesses in green, and guesses not yet connected in grey](docs/images/screenshot.png)
 
 ## How to play
 
