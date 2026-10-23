@@ -23,11 +23,7 @@ A version built from OSM also holds the **build evidence**: what the build measu
 
 A kommun whose links are all `ferry` is a **dead end**; this is derived, not stored.
 
-`graphs/fixture/` is a small hand-made version for development. Its borders and shapes are not real. It applies to puzzles #1–#30.
-
-`graphs/osm-2026-10-01/` is built from OpenStreetMap and starts at puzzle #24. It has all 290 kommuner with land, fixed-link and ferry neighbors; Gotland and Öckerö are linked only by ferry, so they are dead ends. Its `version.json` records the extract and the SCB names file it was built from. Borders and shapes © OpenStreetMap contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
-
-`graphs/osm-2026-10-01-b/` is built from the same extract and starts at puzzle #25. Its kommuner and neighbors are the same; only its shapes differ: a big lake inside one kommun, and every river area, stays part of the shapes instead of being cut out.
+`graphs/osm-2026-10-01/` is built from OpenStreetMap and starts at puzzle #1, launch day. It has all 290 kommuner with land, fixed-link and ferry neighbors; Gotland and Öckerö are linked only by ferry, so they are dead ends. Its `version.json` records the extract and the SCB names file it was built from. Borders and shapes © OpenStreetMap contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
 
 ### Rebuilding a graph version from OSM
 
@@ -127,8 +123,8 @@ The required frozen graph versions check, run in CI against the PR's base (`HEAD
 
 ## Schedule: `schedule/`
 
-- `config.json`: `{ "epoch": "YYYY-MM-DD", "seed": "…", "cooldownDays": 30, "cooldownDaysByGraphVersion": { "<id>": <days> }, "lanCooldownDays": 3, "lanCooldownDaysByGraphVersion": { "<id>": <days> } }`. The epoch is puzzle #1. Each row's endpoint cooldown comes from its graph version: its entry in `cooldownDaysByGraphVersion`, else `cooldownDays`, which defaults to 30. The län cooldown works the same way: no endpoint may lie in a län (the first two digits of its kommun code) that held either endpoint of a puzzle within the last `lanCooldownDaysByGraphVersion` entry, else `lanCooldownDays`, which defaults to 3; a puzzle's start and destination may share a län. Every id in the `…ByGraphVersion` maps must be a graph version under `data/graphs/`; the schedule scripts reject the config otherwise. The fixture graph version gets a 3-day endpoint cooldown, because a 30-day cooldown can't be met with its 21 kommuner, and no län cooldown, because its kommuner span only 5 län.
-- `0001.csv`, `0002.csv`, …: chunks of 1,000 puzzles with the header `puzzle,start,destination,n` ([ADR 0001](../docs/adr/0001-pre-generated-puzzle-schedule.md)).
+- `config.json`: `{ "epoch": "YYYY-MM-DD", "seed": "…", "cooldownDays": 30, "cooldownDaysByGraphVersion": { "<id>": <days> }, "lanCooldownDays": 3, "lanCooldownDaysByGraphVersion": { "<id>": <days> } }`. The epoch is puzzle #1. Each row's endpoint cooldown comes from its graph version: its entry in `cooldownDaysByGraphVersion`, else `cooldownDays`, which defaults to 30. The län cooldown works the same way: no endpoint may lie in a län (the first two digits of its kommun code) that held either endpoint of a puzzle within the last `lanCooldownDaysByGraphVersion` entry, else `lanCooldownDays`, which defaults to 3; a puzzle's start and destination may share a län. Every id in the `…ByGraphVersion` maps must be a graph version under `data/graphs/`; the schedule scripts reject the config otherwise.
+- `0001.csv`, `0002.csv`, …: chunks of 1,000 puzzles with the header `puzzle,start,destination,n` ([ADR 0001](../docs/adr/0001-pre-generated-puzzle-schedule.md)). Åkle launches on 26 October 2026 with puzzle #1, Östhammar to Linköping, set by hand; `bun run schedule --chunks 10` drew #2–#10,000 around it, in `0001.csv`–`0010.csv`.
 
 ### Played puzzles
 

@@ -1,8 +1,8 @@
-# Neighbor graph report: osm-2026-10-01-b
+# Neighbor graph report: osm-2026-10-01
 
 Written by `bun run graph:build` and `bun run graph:review` from the graph version and `data/neighbor-overrides.yaml` (ADR 0003). Don't edit it by hand: `bun run graph:check` fails when it's out of date.
 
-Graph version `osm-2026-10-01-b` starts at puzzle #25. 290 kommuner, 709 neighbor pairs: 695 land, 696 fixed, 3 ferry links.
+Graph version `osm-2026-10-01` starts at puzzle #1. 290 kommuner, 709 neighbor pairs: 695 land, 696 fixed, 3 ferry links.
 
 ## Problems
 
@@ -34,12 +34,6 @@ The pairs are split by what the build decided on its own; a keep verdict leaves 
 | Lilla Edet–Alingsås | 1462-1489 | exclave-border | land border 1003 m; all on an exclave of Lilla Edet | [map](https://www.openstreetmap.org/?mlat=58.05616&mlon=12.41988#map=17/58.05616/12.41988) | not neighbors | keep: Their 1003 m land border lies wholly on an exclave of Lilla Edet, away from its main part, and no fixed link joins them, so they aren't neighbors. |
 | Smedjebacken–Borlänge | 2061-2081 | exclave-border | land border 2968 m; all on an exclave of Borlänge | [map](https://www.openstreetmap.org/?mlat=60.27258&mlon=15.40611#map=17/60.27258/15.40611) | not neighbors | keep: Their 2968 m land border lies wholly on an exclave of Borlänge, away from its main part, and no fixed link joins them, so they aren't neighbors. |
 
-## Changes since the previous graph version (osm-2026-10-01)
+## Changes since the previous graph version
 
-### Added (0)
-
-None.
-
-### Removed (0)
-
-None.
+No previous graph version.
