@@ -7,7 +7,7 @@ import {
   readGraphVersions,
   readScheduleConfig,
   readScheduleRows,
-  readScheduleRowsAt,
+  readScheduleAt,
   writeScheduleRows,
 } from "./scheduleData";
 import { playedThroughAtBase } from "./playedThrough";
@@ -28,7 +28,7 @@ const schedule = generateSchedule({
   cooldownDaysByGraphVersion: config.cooldownDaysByGraphVersion,
   lanCooldownDays: config.lanCooldownDays,
   lanCooldownDaysByGraphVersion: config.lanCooldownDaysByGraphVersion,
-  playedThrough: playedThroughAtBase(now, config.epoch, readScheduleRowsAt("HEAD")),
+  playedThrough: playedThroughAtBase(now, readScheduleAt("HEAD", config.epoch)),
   chunks,
 });
 await writeScheduleRows(schedule.rows);

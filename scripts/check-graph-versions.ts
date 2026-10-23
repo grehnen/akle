@@ -5,12 +5,12 @@
 import { frozenGraphVersionViolations } from "../src/graph/frozenGraphVersions";
 import { readCommittedGraphVersions, readCommittedGraphVersionsAt } from "./graphVersionData";
 import { playedThroughAtBase } from "./playedThrough";
-import { checkArguments, readScheduleConfig, readScheduleRowsAt } from "./scheduleData";
+import { checkArguments, readScheduleAt, readScheduleConfig } from "./scheduleData";
 
 const { base, now } = checkArguments();
 
 const config = await readScheduleConfig();
-const playedThrough = playedThroughAtBase(now, config.epoch, readScheduleRowsAt(base));
+const playedThrough = playedThroughAtBase(now, readScheduleAt(base, config.epoch));
 const current = await readCommittedGraphVersions();
 const violations = frozenGraphVersionViolations({
   previous: await readCommittedGraphVersionsAt(base),
