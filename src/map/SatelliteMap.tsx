@@ -107,14 +107,18 @@ export function SatelliteMap({
         (kommun) => tooltipFor.current?.(kommun),
       );
       const loaded = created;
-      loaded.once("load", () => {
-        // Start with the attribution folded to its ⓘ button so it doesn't cover the endpoints.
-        loaded
-          .getContainer()
-          .querySelector(".maplibregl-ctrl-attrib")
-          ?.classList.remove("maplibregl-compact-show");
-        setMap(loaded);
-      });
+      // MapLibre expands the compact attribution as soon as the map gets credits; fold it to
+      // its ⓘ button in that same event so it never flashes open over the endpoints.
+      const foldAttribution = () => {
+        const attribution = loaded.getContainer().querySelector(".maplibregl-ctrl-attrib");
+        if (!attribution?.classList.contains("maplibregl-compact")) return;
+        attribution.classList.remove("maplibregl-compact-show");
+        loaded.off("styledata", foldAttribution);
+        loaded.off("sourcedata", foldAttribution);
+      };
+      loaded.on("styledata", foldAttribution);
+      loaded.on("sourcedata", foldAttribution);
+      loaded.once("load", () => setMap(loaded));
     });
     return () => {
       cancelled = true;
