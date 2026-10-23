@@ -8,6 +8,7 @@
     "preview": "vite preview",
     "schedule": "bun scripts/schedule.ts",
     "schedule:check": "bun scripts/check-schedule.ts",
+    "runway:check": "bun scripts/check-runway.ts",
     "graph-versions:check": "bun scripts/check-graph-versions.ts",
     "headers:check": "bun scripts/check-static-headers.ts",
     "test": "bun test",
@@ -18,7 +19,7 @@
     "graph:build": "bun scripts/graph/build.ts",
     "graph:review": "bun scripts/graph/review.ts",
     "graph:check": "bun scripts/graph/review.ts --check",
-    "check": "oxfmt --check && oxlint --deny-warnings && tsc --noEmit && bun test && bun run schedule:check && bun run graph-versions:check && vite build && bun run headers:check && bun run graph:check"
+    "check": "oxfmt --check && oxlint --deny-warnings && tsc --noEmit && bun test && bun run schedule:check && bun run runway:check && bun run graph-versions:check && vite build && bun run headers:check && bun run graph:check"
   },
   "dependencies": {
     "maplibre-gl": "^6.15.0",
