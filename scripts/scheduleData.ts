@@ -100,9 +100,17 @@ function rowsFromChunkFiles(files: { fileName: string; csv: string }[]): Schedul
 }
 
 export function git(args: string[]): string {
-  const result = Bun.spawnSync(["git", ...args], { stderr: "pipe" });
+  return run(["git", ...args]);
+}
+
+/** Runs a command, with `stdin` as its input if given, and returns its output; throws if it fails. */
+export function run(command: string[], stdin?: string): string {
+  const result = Bun.spawnSync(command, {
+    stdin: stdin === undefined ? "ignore" : new TextEncoder().encode(stdin),
+    stderr: "pipe",
+  });
   if (result.exitCode !== 0) {
-    throw new Error(`git ${args.join(" ")} failed: ${result.stderr.toString()}`);
+    throw new Error(`${command.join(" ")} failed: ${result.stderr.toString()}`);
   }
   return result.stdout.toString();
 }

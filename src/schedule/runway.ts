@@ -26,16 +26,29 @@ export const extendBelowDays = 90;
  */
 export const autoMergeBelowDays = minimumRunwayDays;
 
+/** The cron's own open extension PR, and whether anyone but the cron has committed to it. */
+export type ExtensionPullRequest = { number: number; handEdited: boolean };
+
 export type ExtensionPlan =
   | { action: "none" }
   | { action: "open"; autoMerge: boolean }
-  | { action: "update"; pullRequest: number; autoMerge: boolean };
+  | { action: "update"; pullRequest: number; autoMerge: boolean }
+  | { action: "comment"; pullRequest: number; autoMerge: boolean };
 
-/** What the monthly cron does, given the days left and its own open extension PR, if any. */
-export function extensionPlan(days: number, openPullRequest: number | undefined): ExtensionPlan {
+/**
+ * What the monthly cron does, given the days left and its own open extension PR, if any. A
+ * hand-edited PR is never regenerated, so the hand edits survive; the cron only comments on it.
+ */
+export function extensionPlan(
+  days: number,
+  openPullRequest: ExtensionPullRequest | undefined,
+): ExtensionPlan {
   if (days >= extendBelowDays) return { action: "none" };
   const autoMerge = days < autoMergeBelowDays;
-  return openPullRequest === undefined
-    ? { action: "open", autoMerge }
-    : { action: "update", pullRequest: openPullRequest, autoMerge };
+  if (openPullRequest === undefined) return { action: "open", autoMerge };
+  return {
+    action: openPullRequest.handEdited ? "comment" : "update",
+    pullRequest: openPullRequest.number,
+    autoMerge,
+  };
 }
