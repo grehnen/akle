@@ -60,6 +60,16 @@
   border-left-color: transparent;
 }
 
+.guess-input__match {
+  background: none;
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: var(--destination);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.15em;
+}
+
 .guess-input__tag {
   font-size: 0.85em;
   font-style: italic;

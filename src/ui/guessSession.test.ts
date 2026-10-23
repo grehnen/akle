@@ -7,6 +7,7 @@ import {
   type GuessInputEvent,
   enterTarget,
   type GuessSession,
+  matchedSegments,
   suggestKommuner,
   takeSessionHint,
 } from "./guessSession";
@@ -63,6 +64,32 @@ describe("suggestKommuner", () => {
     expect(tagOf("Håbo")).toBe("start");
     expect(tagOf("Stockholm")).toBe("mål");
     expect(tagOf("Habo")).toBeUndefined();
+  });
+});
+
+describe("matchedSegments", () => {
+  const marked = (name: string, text: string) =>
+    matchedSegments(name, text)
+      .map((segment) => (segment.matched ? `[${segment.text}]` : segment.text))
+      .join("");
+
+  test("marks a prefix or substring as one run", () => {
+    expect(marked("Stockholm", "sto")).toBe("[Sto]ckholm");
+    expect(marked("Stockholm", "holm")).toBe("Stock[holm]");
+  });
+
+  test("marks the scattered letters of a subsequence match", () => {
+    expect(marked("Habo", "hbo")).toBe("[H]a[bo]");
+  });
+
+  test("maps accent-folded, spaced and hyphenated matches back onto the name", () => {
+    expect(marked("Örebro", "ore")).toBe("[Öre]bro");
+    expect(marked("Upplands-Bro", "ds b")).toBe("Upplan[ds]-[B]ro");
+  });
+
+  test("marks nothing for blank or unmatched text", () => {
+    expect(marked("Habo", " ")).toBe("Habo");
+    expect(marked("Habo", "xyz")).toBe("Habo");
   });
 });
 

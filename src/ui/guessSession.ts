@@ -181,22 +181,65 @@ function disabledTag(game: Game, code: KommunCode): SuggestionTag | undefined {
   return undefined;
 }
 
+/** A run of a suggestion's name, marked when the typed text matched it. */
+export type NameSegment = { text: string; matched: boolean };
+
+/** Splits `name` into runs, marking the letters that made it match `text` in `suggestKommuner`. */
+export function matchedSegments(name: string, text: string): NameSegment[] {
+  const chars = Array.from(name);
+  // Folds each character on its own, remembering which character each folded letter came from.
+  const origins: number[] = [];
+  let folded = "";
+  chars.forEach((char, index) => {
+    for (const foldedChar of foldKommunName(char)) {
+      folded += foldedChar;
+      origins.push(index);
+    }
+  });
+
+  const query = foldKommunName(text);
+  const positions = query === "" ? undefined : subsequenceMatch(folded, query)?.positions;
+  const matched = new Set(positions?.map((position) => origins[position]));
+
+  const segments: NameSegment[] = [];
+  chars.forEach((char, index) => {
+    const isMatched = matched.has(index);
+    const last = segments.at(-1);
+    if (last && last.matched === isMatched) last.text += char;
+    else segments.push({ text: char, matched: isMatched });
+  });
+  return segments;
+}
+
+function subsequenceScore(target: string, query: string): number | undefined {
+  return subsequenceMatch(target, query)?.score;
+}
+
 /**
- * Scores `query` as a subsequence of `target`, or undefined when it isn't one.
+ * Scores `query` as a subsequence of `target`, with the matched positions in `target`,
+ * or undefined when it isn't one.
  * Like fuzzysort, a prefix beats a substring, and runs of consecutive letters beat scattered ones.
  */
-function subsequenceScore(target: string, query: string): number | undefined {
+function subsequenceMatch(
+  target: string,
+  query: string,
+): { score: number; positions: number[] } | undefined {
   const substringAt = target.indexOf(query);
-  if (substringAt === 0) return 1000 - target.length;
-  if (substringAt > 0) return 500 - substringAt;
+  if (substringAt >= 0) {
+    const positions = Array.from(query, (_, offset) => substringAt + offset);
+    const score = substringAt === 0 ? 1000 - target.length : 500 - substringAt;
+    return { score, positions };
+  }
 
   let score = 0;
   let position = -1;
+  const positions: number[] = [];
   for (const char of query) {
     const next = target.indexOf(char, position + 1);
     if (next === -1) return undefined;
     score += next === position + 1 ? 10 : -(next - position);
     position = next;
+    positions.push(next);
   }
-  return score;
+  return { score, positions };
 }

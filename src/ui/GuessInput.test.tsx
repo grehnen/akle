@@ -36,6 +36,18 @@ describe("GuessInput", () => {
     expect(markup).toContain("Gissa (1/5)");
   });
 
+  test("marks the letters of each suggestion that the typed text matched", () => {
+    const markup = renderToStaticMarkup(
+      <GuessInput
+        text="ore"
+        suggestions={[{ code: "1880", name: "Örebro" }]}
+        counter="Gissa (0/5)"
+        onEvent={noop}
+      />,
+    );
+    expect(markup).toContain('<span><mark class="guess-input__match">Öre</mark>bro</span>');
+  });
+
   test("shows no list without suggestions", () => {
     const markup = renderToStaticMarkup(
       <GuessInput text="" suggestions={[]} counter="Gissa (0/5)" onEvent={noop} />,

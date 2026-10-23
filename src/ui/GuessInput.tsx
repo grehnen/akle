@@ -1,7 +1,12 @@
 import { type KeyboardEvent, type ReactNode, type Ref, useState } from "react";
 import type { KommunCode } from "../graph/graphVersion";
 import "./GuessInput.css";
-import { arrowDirection, type GuessInputEvent, type Suggestion } from "./guessSession";
+import {
+  arrowDirection,
+  type GuessInputEvent,
+  matchedSegments,
+  type Suggestion,
+} from "./guessSession";
 import { useOnScreenKeyboard } from "./onScreenKeyboard";
 
 type GuessInputProps = {
@@ -96,7 +101,17 @@ export function GuessInput({
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => onEvent({ type: "pick", code: suggestion.code })}
               >
-                <span>{suggestion.name}</span>
+                <span>
+                  {matchedSegments(suggestion.name, text).map((segment, index) =>
+                    segment.matched ? (
+                      <mark key={index} className="guess-input__match">
+                        {segment.text}
+                      </mark>
+                    ) : (
+                      segment.text
+                    ),
+                  )}
+                </span>
                 {suggestion.disabled && (
                   <span className="guess-input__tag">{suggestion.disabled}</span>
                 )}
