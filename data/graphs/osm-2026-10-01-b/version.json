@@ -1,0 +1,16 @@
+{
+  "id": "osm-2026-10-01-b",
+  "startsAtPuzzle": 25,
+  "source": {
+    "extract": {
+      "url": "https://download.geofabrik.de/europe/sweden-261001.osm.pbf",
+      "sha256": "ad58f31ec6b7a092cdfd4da965c38be08dd078cf96c2f33028c9d507027532da",
+      "timestamp": "2026-10-01T20:22:06Z"
+    },
+    "names": {
+      "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkopplingar_2026.xlsx",
+      "sha256": "893b45248dd6bd243843ba829ae62514aaf082c2ec7a9e9bbfa0a73b1f56e2c5"
+    },
+    "license": "Borders and shapes © OpenStreetMap contributors, ODbL 1.0"
+  }
+}

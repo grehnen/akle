@@ -27,6 +27,8 @@ A kommun whose links are all `ferry` is a **dead end**; this is derived, not sto
 
 `graphs/osm-2026-10-01/` is built from OpenStreetMap and starts at puzzle #24. It has all 290 kommuner with land, fixed-link and ferry neighbors; Gotland and Öckerö are linked only by ferry, so they are dead ends. Its `version.json` records the extract and the SCB names file it was built from. Borders and shapes © OpenStreetMap contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
 
+`graphs/osm-2026-10-01-b/` is built from the same extract and starts at puzzle #25. Its kommuner and neighbors are the same; only its shapes differ: a big lake inside one kommun, and every river area, stays part of the shapes instead of being cut out.
+
 ### Rebuilding a graph version from OSM
 
 ```sh
@@ -57,7 +59,7 @@ How the graph is built:
 
 - **Ferries:** the `ferries` in `neighbor-overrides.yaml`, keyed by SCB codes with names that must match: Gotland–Nynäshamn, Gotland–Oskarshamn and Öckerö–Göteborg.
 - **Overrides:** the `overrides` in `neighbor-overrides.yaml` add or remove a pair after review (see below).
-- **Shapes:** the boundaries clipped to land, with lakes and river areas of 10 km² or more cut out, simplified (Visvalingam, 250 m) and with islands under 1 km² dropped.
+- **Shapes:** the boundaries clipped to land, with lakes of 10 km² or more cut out when two or more kommuner each hold at least 1% of them (river areas are never cut out), simplified (Visvalingam, 250 m) and with islands under 1 km² dropped.
 
 ### Reviewing flagged pairs
 

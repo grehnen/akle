@@ -20,7 +20,7 @@ import {
   repositoryRoot,
 } from "./osmTools";
 import { readScbKommunWorkbook } from "./scbKommuner";
-import { drawShapes, isBigWater, isInlandWater, isRiver } from "./shapes";
+import { drawShapes, isBigLake, isInlandWater, isRiver } from "./shapes";
 import {
   exclaveEdges,
   mainPartContains,
@@ -135,7 +135,7 @@ const evidence: Omit<BuildEvidence, "shapeCodes"> = {
 };
 
 logBuildStep("Drawing shapes");
-const shapes = await drawShapes(areas, land, lakes.filter(isBigWater));
+const shapes = await drawShapes(areas, land, lakes.filter(isBigLake));
 
 const review = reviewNeighborGraph(
   { ...evidence, shapeCodes: shapes.features.map((feature) => feature.properties.code) },
