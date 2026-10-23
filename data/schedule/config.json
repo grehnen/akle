@@ -1,6 +1,4 @@
 {
-  "epoch": "2026-10-01",
-  "seed": "fixture",
-  "cooldownDaysByGraphVersion": { "fixture": 3 },
-  "lanCooldownDaysByGraphVersion": { "fixture": 0 }
+  "epoch": "2026-10-26",
+  "seed": "kachow"
 }

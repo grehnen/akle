@@ -32,11 +32,14 @@ function dayOf(puzzleNumber: number): Date {
 }
 
 describe("graph version boundaries in the committed data", () => {
-  test("there is at least one boundary to check", () => {
-    expect(boundaries.length).toBeGreaterThan(0);
+  test("puzzle #1 loads the first graph version", async () => {
+    const { source, fetched } = recordingSource();
+    const daily = await loadDailyPuzzle(source, dayOf(1));
+    expect(daily.kind === "puzzle" && daily.puzzle.number).toBe(1);
+    expect(fetched).toEqual([versions[0].id]);
   });
 
-  test.each(boundaries)(
+  test.skipIf(boundaries.length === 0).each(boundaries)(
     "puzzle #$puzzle loads $after and the puzzle before it loads $before",
     async ({ before, after, puzzle }) => {
       for (const [puzzleNumber, expected] of [
