@@ -1,7 +1,6 @@
+import { SITE_URL } from "../siteUrl";
 import { hintsNote } from "../ui/messages";
 import type { Outcome } from "./outcome";
-
-export const SITE_URL = "https://akle.grehn.net";
 
 /** A finished game as the share text needs it. */
 export type ShareResult = {

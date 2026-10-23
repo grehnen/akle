@@ -2,6 +2,8 @@
 // headers each built file and host will get:
 // https://developers.cloudflare.com/workers/static-assets/headers/
 
+import { SITE_URL } from "../../src/siteUrl";
+
 type HeaderRule = { pattern: string; headers: [name: string, value: string][] };
 
 export function parseHeaderRules(rulesText: string): HeaderRule[] {
@@ -64,7 +66,7 @@ export function headersFor(rulesText: string, url: string): Record<string, strin
  */
 export function cacheViolations(rulesText: string, builtFiles: string[]): string[] {
   const cacheControl = (path: string) =>
-    headersFor(rulesText, `https://akle.grehn.net${path}`)["cache-control"] ?? "";
+    headersFor(rulesText, `${SITE_URL}${path}`)["cache-control"] ?? "";
   const violations: string[] = [];
   for (const file of builtFiles) {
     if (file === "index.html") {
