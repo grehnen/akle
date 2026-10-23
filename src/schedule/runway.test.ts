@@ -24,15 +24,15 @@ describe("runwayDays", () => {
 });
 
 describe("runwayViolation", () => {
-  test("fails the runway check below 40 days", () => {
-    expect(runwayViolation(39)).toBe(
-      "Only 39 days of puzzles left; the runway check needs at least 40. Run `bun run schedule` and merge the extension.",
+  test("fails the runway check below 100 days", () => {
+    expect(runwayViolation(99)).toBe(
+      "Only 99 days of puzzles left; the runway check needs at least 100. Run `bun run schedule` and merge the extension.",
     );
     expect(runwayViolation(0)).toBeDefined();
   });
 
-  test("passes from 40 days", () => {
-    expect(runwayViolation(40)).toBeUndefined();
+  test("passes from 100 days", () => {
+    expect(runwayViolation(100)).toBeUndefined();
     expect(runwayViolation(1000)).toBeUndefined();
   });
 });
@@ -40,26 +40,26 @@ describe("runwayViolation", () => {
 describe("extensionPlan", () => {
   const own = (number: number) => ({ number, handEdited: false });
 
-  test("does nothing from 90 days, even with an extension PR open", () => {
-    expect(extensionPlan(90, undefined)).toEqual({ action: "none" });
-    expect(extensionPlan(400, own(12))).toEqual({ action: "none" });
+  test("does nothing from 730 days, even with an extension PR open", () => {
+    expect(extensionPlan(730, undefined)).toEqual({ action: "none" });
+    expect(extensionPlan(4000, own(12))).toEqual({ action: "none" });
   });
 
-  test("below 90 days, opens an extension PR without auto-merge", () => {
-    expect(extensionPlan(89, undefined)).toEqual({ action: "open", autoMerge: false });
-    expect(extensionPlan(40, undefined)).toEqual({ action: "open", autoMerge: false });
+  test("below 730 days, opens an extension PR without auto-merge", () => {
+    expect(extensionPlan(729, undefined)).toEqual({ action: "open", autoMerge: false });
+    expect(extensionPlan(365, undefined)).toEqual({ action: "open", autoMerge: false });
   });
 
   test("updates its own open extension PR instead of opening a second", () => {
-    expect(extensionPlan(60, own(12))).toEqual({
+    expect(extensionPlan(500, own(12))).toEqual({
       action: "update",
       pullRequest: 12,
       autoMerge: false,
     });
   });
 
-  test("below 40 days, also turns on auto-merge", () => {
-    expect(extensionPlan(39, undefined)).toEqual({ action: "open", autoMerge: true });
+  test("below 365 days, also turns on auto-merge", () => {
+    expect(extensionPlan(364, undefined)).toEqual({ action: "open", autoMerge: true });
     expect(extensionPlan(5, own(12))).toEqual({
       action: "update",
       pullRequest: 12,
@@ -69,16 +69,16 @@ describe("extensionPlan", () => {
 
   test("leaves a hand-edited extension PR alone and only comments on it", () => {
     const handEdited = { number: 12, handEdited: true };
-    expect(extensionPlan(60, handEdited)).toEqual({
+    expect(extensionPlan(500, handEdited)).toEqual({
       action: "comment",
       pullRequest: 12,
       autoMerge: false,
     });
-    expect(extensionPlan(39, handEdited)).toEqual({
+    expect(extensionPlan(364, handEdited)).toEqual({
       action: "comment",
       pullRequest: 12,
       autoMerge: true,
     });
-    expect(extensionPlan(90, handEdited)).toEqual({ action: "none" });
+    expect(extensionPlan(730, handEdited)).toEqual({ action: "none" });
   });
 });
