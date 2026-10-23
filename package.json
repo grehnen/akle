@@ -8,6 +8,7 @@
     "preview": "vite preview",
     "schedule": "bun scripts/schedule.ts",
     "schedule:check": "bun scripts/check-schedule.ts",
+    "schedule:extend": "bun scripts/extend-schedule.ts",
     "runway:check": "bun scripts/check-runway.ts",
     "graph-versions:check": "bun scripts/check-graph-versions.ts",
     "headers:check": "bun scripts/check-static-headers.ts",
