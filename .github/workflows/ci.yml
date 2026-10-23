@@ -97,6 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
+      # The same URL as SITE_URL in src/siteUrl.ts.
       url: https://akle.grehn.net
     # Production deploys run one at a time, in order, and are never cancelled.
     concurrency:
