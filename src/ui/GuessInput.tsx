@@ -50,7 +50,9 @@ export function GuessInput({
         onEvent({ type: "gissa" });
       }}
     >
-      <label htmlFor="guess-input">Kommun</label>
+      <label htmlFor="guess-input" className="visually-hidden">
+        Kommun
+      </label>
       <div className="guess-input__field">
         <input
           ref={inputRef}
