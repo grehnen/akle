@@ -12,6 +12,7 @@ import { endpointSuggestions, pickedTrip, resolveEndpoint } from "../freePlay/en
 import type { LinkedTrip } from "../freePlay/linkPayload";
 import { freePlayShareText } from "../freePlay/shareText";
 import { tripLinkPath } from "../freePlay/tripLink";
+import { saveTripSlot } from "../freePlay/tripSlot";
 import type { GraphVersion } from "../graph/graphVersion";
 import { emojiLine } from "../progress/history";
 import { gameOutcome } from "../progress/outcome";
@@ -23,36 +24,51 @@ import { ShareButton } from "./ShareButton";
 import { TripBoard } from "./TripBoard";
 import "./FreePlayScreen.css";
 
-/** Shows a trip's link, `/fri?r=…`, in the address bar while the trip is played. */
-export type ShowTripLink = (link: string) => void;
+/**
+ * Shows a trip's link, `/fri?r=…`, in the address bar while the trip is played. `replace` asks
+ * for it to stand in for the current address, as for a trip resumed on `/fri`.
+ */
+export type ShowTripLink = (link: string, replace?: boolean) => void;
+
+/** The stored game of a trip opened again, and whether it was drawn. */
+export type ResumedTrip = { game: Game; drawn: boolean };
 
 type FreePlayScreenProps = {
   /** The version trips are played on: the current one, or the one a trip link pins. */
   graph: GraphVersion;
   /** The version's ordinal, which a trip's link pins it by. */
   ordinal: number;
-  /** A trip link's trip, played at once instead of the setup screen. */
+  /** A trip link's or the stored trip's trip, played at once instead of the setup screen. */
   linkedTrip?: LinkedTrip;
+  /** The linked trip's game, when it is the stored trip, picked up where it was left. */
+  resumed?: ResumedTrip;
   onShowTripLink?: ShowTripLink;
-  /** For the board's view choices, such as the result tab; free play keeps no progress. */
+  /** Where the trip slot is kept, the only free-play record. */
+  storage: KeyValueStorage;
+  /** For the board's view choices, such as the result tab. */
   sessionStorage: KeyValueStorage;
 };
 
-/** The trip on the board, and whether it was drawn, which lets its result draw another. */
-type Played = { trip: LinkedTrip; game: Game; drawn: boolean; count: number };
+/**
+ * The trip on the board, and whether it was drawn, which lets its result draw another. `opened`
+ * marks the trip the screen opened with, from a link or the slot, rather than one started here.
+ */
+type Played = { trip: LinkedTrip; game: Game; drawn: boolean; count: number; opened: boolean };
 
 const standard = (trip: Trip): LinkedTrip => ({ ...trip, mode: { kind: "standard" } });
 
 /**
- * Free play: the Fri resa setup screen, or a trip link's trip, then the drawn, picked or linked
- * trip on the board in standard mode, with its score and share text in the result. Nothing here
- * reads or writes daily progress.
+ * Free play: the Fri resa setup screen, or a trip link's or the stored trip, then the drawn,
+ * picked or linked trip on the board in standard mode, with its score and share text in the
+ * result. The trip on the board is kept in the trip slot; nothing here touches daily progress.
  */
 export function FreePlayScreen({
   graph,
   ordinal,
   linkedTrip,
+  resumed,
   onShowTripLink = () => {},
+  storage,
   sessionStorage,
 }: FreePlayScreenProps) {
   const pairs = useMemo(() => tripPairs(graph), [graph]);
@@ -62,16 +78,26 @@ export function FreePlayScreen({
     () =>
       linkedTrip && {
         trip: linkedTrip,
-        game: newGame(linkedTrip, STANDARD_RULES),
-        drawn: false,
+        game: resumed?.game ?? newGame(linkedTrip, STANDARD_RULES),
+        drawn: resumed?.drawn ?? false,
         count: 1,
+        opened: true,
       },
   );
   const link = played && tripLinkPath(ordinal, played.trip);
+  const opened = played?.opened ?? false;
 
   useEffect(() => {
-    if (link !== undefined) onShowTripLink(link);
-  }, [link, onShowTripLink]);
+    if (link !== undefined) onShowTripLink(link, opened);
+  }, [link, opened, onShowTripLink]);
+
+  // A trip takes the slot as it starts, when the board first shows its ends, and keeps it
+  // up to date as it is played.
+  useEffect(() => {
+    if (played === undefined) return;
+    const { trip, game, drawn } = played;
+    saveTripSlot(storage, { versionOrdinal: ordinal, trip, game, drawn });
+  }, [storage, ordinal, played]);
 
   const play = (trip: Trip, drawn: boolean) =>
     setPlayed((last) => ({
@@ -79,6 +105,7 @@ export function FreePlayScreen({
       game: newGame(trip, STANDARD_RULES),
       drawn,
       count: (last?.count ?? 0) + 1,
+      opened: false,
     }));
   const draw = (previous?: Trip) => {
     const trip = drawTrip(pairs, range, Math.random, previous);
