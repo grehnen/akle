@@ -706,3 +706,138 @@ describe("giving up", () => {
     expect(reloaded.container.querySelector("#guess-input")).toBeNull();
   });
 });
+
+describe("Läge", () => {
+  const modeRadios = (container: HTMLElement) => [
+    ...container.querySelectorAll<HTMLInputElement>('.free-play-modes input[type="radio"]'),
+  ];
+  const modeCards = (container: HTMLElement) =>
+    modeRadios(container).map((radio) => ({
+      name: radio.closest("label")?.querySelector(".free-play-mode-name")?.textContent,
+      description: radio.closest("label")?.querySelector(".free-play-mode-description")
+        ?.textContent,
+      checked: radio.checked,
+      disabled: radio.disabled,
+    }));
+  const modeRadio = (container: HTMLElement, name: string) =>
+    modeRadios(container).find(
+      (radio) =>
+        radio.closest("label")?.querySelector(".free-play-mode-name")?.textContent === name,
+    ) as HTMLInputElement;
+
+  test("four mode cards sit above the tabs, Standard chosen, the timed two not yet playable", async () => {
+    const { container } = await mountApp("/fri");
+
+    const modes = query(container, "fieldset.free-play-modes");
+    expect(modes.querySelector("legend")?.textContent).toBe("Läge");
+    expect(
+      modes.compareDocumentPosition(query(container, '[role="tablist"]')) &
+        dom.window.Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(modeCards(container)).toEqual([
+      {
+        name: "Standard",
+        description: "Som dagens resa: gissningarna räcker till avståndet och lite till.",
+        checked: true,
+        disabled: false,
+      },
+      {
+        name: "Obegränsad",
+        description: "Gissa hur många gånger du vill. Ge upp när du vill.",
+        checked: false,
+        disabled: false,
+      },
+      {
+        name: "Tidspress",
+        description: "Varje gissning måste göras inom betänketiden.",
+        checked: false,
+        disabled: true,
+      },
+      {
+        name: "Tidtagning",
+        description: "Tiden tas. Vid lika poäng vinner den snabbaste.",
+        checked: false,
+        disabled: true,
+      },
+    ]);
+  });
+
+  const guessButton = (container: HTMLElement) =>
+    query(container, '.guess-input button[type="submit"]');
+  const unlimitedLink = (start: string, destination: string) =>
+    tripLinkPath(0, { start, destination, mode: { kind: "unlimited" } });
+
+  test("Obegränsad picks the mode for a picked trip: its label, link and plain guess count", async () => {
+    const { container } = await mountApp("/fri");
+    await click(modeRadio(container, "Obegränsad"));
+    expect(modeRadio(container, "Obegränsad").checked).toBe(true);
+
+    await click(query(container, "#free-play-tab-pick"));
+    await pick(container, "Nynäshamn", "Trosa");
+    expect(container.textContent).toContain("Fri resa · Obegränsad");
+    expect(address()).toBe(unlimitedLink("0192", "0488"));
+
+    await guess(container, "Haninge");
+    const counter = guessButton(container);
+    expect(counter.querySelector('[aria-hidden="true"]')?.textContent).toBe("(2)");
+    expect(counter.querySelector(".visually-hidden")?.textContent).toBe("(gissning 2)");
+  });
+
+  test("a drawn trip takes the mode, and Slumpa ny resa keeps it", async () => {
+    const { container } = await mountApp("/fri");
+    await click(modeRadio(container, "Obegränsad"));
+    const { min, max } = distanceThumbs(container);
+    await type(min, "1");
+    await type(max, "1");
+
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+    expect(container.textContent).toContain("Fri resa · Obegränsad");
+    await winDistanceOneTrip(container);
+    await click(buttonNamed(container, "Slumpa ny resa") as HTMLElement);
+
+    expect(container.textContent).toContain("Fri resa · Obegränsad");
+    const code: Record<string, string> = {
+      Nynäshamn: "0192",
+      Haninge: "0136",
+      Salem: "0128",
+      Trosa: "0488",
+    };
+    const [, start, destination] =
+      /^Res från (.+) till (.+)$/.exec(query(container, "#trip-heading").textContent ?? "") ?? [];
+    expect(address()).toBe(unlimitedLink(code[start], code[destination]));
+  });
+
+  test("an unlimited trip's link opens it in its mode, and a reload resumes it", async () => {
+    const storage = memoryStorage();
+    const link = unlimitedLink("0192", "0488");
+    const { container } = await mountApp(link, storage);
+    expect(query(container, "#trip-heading").textContent).toBe("Res från Nynäshamn till Trosa");
+    expect(container.textContent).toContain("Fri resa · Obegränsad");
+    await guess(container, "Haninge");
+
+    const reloaded = await reopen("/fri", storage);
+    expect(reloaded.container.textContent).toContain("Fri resa · Obegränsad");
+    expect(guessNames(reloaded.container)).toEqual(["1. Haninge ✅"]);
+    expect(address()).toBe(link);
+  });
+
+  test("the share text names the mode", async () => {
+    const { container } = await mountApp(unlimitedLink("0192", "0488"));
+    await playToTheEnd(container, "Haninge", "Salem");
+
+    await click(query(container, ".share-button"));
+    expect(copied).toEqual([
+      `#åkle Fri resa · Obegränsad\n+0 (Perfekt) · −1 poäng\n✅✅\nhttps://akle.grehn.net${unlimitedLink("0192", "0488")}`,
+    ]);
+  });
+
+  test("a link in a mode not yet playable still shows the error screen", async () => {
+    const timed = tripLinkPath(0, {
+      start: "0192",
+      destination: "0488",
+      mode: { kind: "timed", thinkingTime: 10 },
+    });
+    const { container } = await mountApp(timed);
+    expect(query(container, "#free-play-error-heading").textContent).toBe("Länken fungerar inte");
+  });
+});
