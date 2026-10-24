@@ -148,9 +148,21 @@ _Avoid_: Practice, training, sandbox
 One of a fixed set of named rule sets a free-play trip is played under: standard, unlimited, timed or tie-breaker.
 _Avoid_: Variant, ruleset, settings
 
-**Standard mode**:
+**Standard mode** (in the UI: _Standard_):
 The default mode, played by the daily-trip rules with no time kept.
 _Avoid_: Classic, normal, daily mode
+
+**Unlimited mode** (in the UI: _Obegränsad_):
+The mode with no guess limit, otherwise played like standard mode.
+_Avoid_: Endless, infinite, free mode
+
+**Timed mode** (in the UI: _Tidspress_):
+The mode in which every guess must be made within the thinking time.
+_Avoid_: Speed mode, blitz, countdown
+
+**Tie-breaker mode** (in the UI: _Tidtagning_):
+The mode in which time is kept, so a win's time can separate equal scores.
+_Avoid_: Race, time trial, stopwatch mode
 
 **Free-play trip**:
 A trip played in free play rather than taken from the schedule, whether picked or drawn at random.
