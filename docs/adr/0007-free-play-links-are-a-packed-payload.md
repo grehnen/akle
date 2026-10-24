@@ -7,7 +7,8 @@ Every free-play link, for one trip or an itinerary, carries its trips as a bit-p
 - Kommuner stay SCB codes rather than indices, as ADR 0006 requires, at a cost of about 30 characters on 20 trips.
 - The count and checksum turn a truncated or garbled link into an error instead of a silently different trip or itinerary. A bad checksum, count, format version, ordinal or code shows the same clear error as any invalid free-play link.
 - `/fri` without `r` is not an invalid link but the free-play setup screen, and `/resplan` without `r` is the itinerary builder. Other parameters are ignored.
-- The format version lets a later codec be added. Every format ever shipped must stay decodable, because links live on in chats.
+- The format version keeps the codec backward compatible, because links live on in chats. The first 4 bits are the format version, and everything after them, the checksum included, belongs to that version's layout. Decoding reads the version first and hands the rest to that version's decoder. Once released, a version's layout and decoder are frozen: a new layout gets a new version and a new decoder, and old decoders are never removed. Every decoder returns today's trip and itinerary model, the encoder always writes the latest version (1 so far), and committed golden links of each version must keep decoding. A version not yet released is an invalid link, never a fallback, and version 15 is reserved as an escape to a longer version field, so it is rejected until one is needed.
+- Version 1 stores thinking time as its raw seconds (5–60, any other value is invalid) and the checksum as CRC-8 (polynomial 0x07, initial value 0, no reflection or final xor) over all bits before it, zero-padded to whole bytes.
 
 ## Considered Options
 
