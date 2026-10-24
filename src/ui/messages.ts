@@ -33,14 +33,14 @@ export function resultOutcome(
     case "perfect":
       return "Perfekt!";
     case "won":
-      return `Framme! (+${outcome.extra}${penaltiesSuffix(outcome.hintsUsed, outcome.timeouts)})`;
+      return `Framme! (+${outcome.extra}${costsSuffix(outcome.hintsUsed, outcome.timeouts)})`;
     case "lost":
-      return `${outcome.givenUp ? "Gav upp" : "Slut på gissningar"} (${outcome.away} ifrån${penaltiesSuffix(outcome.hintsUsed, outcome.timeouts)})`;
+      return `${outcome.givenUp ? "Gav upp" : "Slut på gissningar"} (${outcome.away} ifrån${costsSuffix(outcome.hintsUsed, outcome.timeouts)})`;
   }
 }
 
 /** The hints and timeouts a result counts: `1 ledtråd`, `2 ⏱`; none when there are none. */
-function penalties(hintsUsed: number, timeouts = 0): string[] {
+function costs(hintsUsed: number, timeouts = 0): string[] {
   return [
     ...(hintsUsed > 0 ? [hintCount(hintsUsed)] : []),
     ...(timeouts > 0 ? [`${timeouts} ⏱`] : []),
@@ -48,15 +48,15 @@ function penalties(hintsUsed: number, timeouts = 0): string[] {
 }
 
 /** `, 2 ledtrådar`, `, 1 ledtråd, 2 ⏱` to close a bracket with, else nothing. */
-export function penaltiesSuffix(hintsUsed: number, timeouts?: number): string {
-  return penalties(hintsUsed, timeouts)
-    .map((penalty) => `, ${penalty}`)
+export function costsSuffix(hintsUsed: number, timeouts?: number): string {
+  return costs(hintsUsed, timeouts)
+    .map((cost) => `, ${cost}`)
     .join("");
 }
 
 /** ` (2 ledtrådar)`, ` (1 ledtråd, 2 ⏱)` after a result with hints or timeouts, else nothing. */
-export function penaltiesNote(hintsUsed: number, timeouts?: number): string {
-  const counted = penalties(hintsUsed, timeouts);
+export function costsNote(hintsUsed: number, timeouts?: number): string {
+  const counted = costs(hintsUsed, timeouts);
   return counted.length > 0 ? ` (${counted.join(", ")})` : "";
 }
 
@@ -79,7 +79,7 @@ export function modeName(mode: ModeSetting): string {
   }
 }
 
-/** The running clock, in whole seconds: `1:23`, or `1:02:05` past an hour. */
+/** A running time, in whole seconds: `1:23`, or `1:02:05` past an hour. */
 export function clockText(milliseconds: number): string {
   return hoursMinutesSeconds(Math.floor(milliseconds / 1000));
 }

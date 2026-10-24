@@ -1,7 +1,7 @@
 import type { Outcome } from "../progress/outcome";
 import { resultLabel } from "../progress/shareText";
 import { SITE_URL } from "../siteUrl";
-import { modeName, penaltiesSuffix, scoreText, timeText, totalTimeText } from "../ui/messages";
+import { modeName, costsSuffix, scoreText, timeText, totalTimeText } from "../ui/messages";
 import type { ItinerarySummary } from "./itinerarySummary";
 import type { ModeSetting } from "./linkPayload";
 
@@ -57,7 +57,7 @@ function tripLabel({
  */
 function outcomeLabel(outcome: Outcome): string {
   if (outcome.kind !== "lost") return resultLabel(outcome);
-  const away = `${outcome.away} ifrån${penaltiesSuffix(outcome.hintsUsed, outcome.timeouts)}`;
+  const away = `${outcome.away} ifrån${costsSuffix(outcome.hintsUsed, outcome.timeouts)}`;
   return `${outcome.givenUp ? "Gav upp " : ""}(${away})`;
 }
 

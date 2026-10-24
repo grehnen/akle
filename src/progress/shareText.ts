@@ -1,5 +1,5 @@
 import { SITE_URL } from "../siteUrl";
-import { penaltiesNote } from "../ui/messages";
+import { costsNote } from "../ui/messages";
 import type { Outcome } from "./outcome";
 
 /** A finished game as the share text needs it. */
@@ -28,8 +28,8 @@ export function resultLabel(outcome: Outcome): string {
     case "perfect":
       return `+${outcome.extra} (Perfekt)`;
     case "won":
-      return `+${outcome.extra}${penaltiesNote(outcome.hintsUsed, outcome.timeouts)}`;
+      return `+${outcome.extra}${costsNote(outcome.hintsUsed, outcome.timeouts)}`;
     case "lost":
-      return `(${outcome.away} ifrån)${penaltiesNote(outcome.hintsUsed, outcome.timeouts)}`;
+      return `(${outcome.away} ifrån)${costsNote(outcome.hintsUsed, outcome.timeouts)}`;
   }
 }
