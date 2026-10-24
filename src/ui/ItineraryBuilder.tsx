@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import type { Trip } from "../engine/game";
 import {
   defaultDistanceRange,
@@ -33,6 +33,8 @@ type ItineraryBuilderProps = {
   onPlay: (link: string) => void;
   /** What drawn trips are drawn with; `Math.random` by default. */
   random?: RandomSource;
+  /** Shown under the heading: the way back to an unfinished itinerary, when there is one. */
+  banner?: ReactNode;
 };
 
 /** A trip in the itinerary being built, with a key for its row and whether it was drawn. */
@@ -54,6 +56,7 @@ export function ItineraryBuilder({
   ordinal,
   onPlay,
   random = Math.random,
+  banner,
 }: ItineraryBuilderProps) {
   const [title, setTitle] = useState("");
   const [trips, setTrips] = useState<readonly BuilderTrip[]>([]);
@@ -100,6 +103,7 @@ export function ItineraryBuilder({
     <section className="itinerary-builder" aria-labelledby="itinerary-heading">
       <p className="trip-number">Resplan</p>
       <h2 id="itinerary-heading">Bygg en resplan</h2>
+      {banner}
       <TitleField title={title} onChange={setTitle} />
       {trips.length === 0 ? (
         <p className="itinerary-empty">Inga resor än. Lägg till minst två nedan.</p>

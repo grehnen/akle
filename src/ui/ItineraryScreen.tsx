@@ -32,6 +32,10 @@ type ItineraryScreenProps = {
   sessionStorage: KeyValueStorage;
   /** What a trip's time is read from; the system clock by default. */
   clock?: Clock;
+  /** Where the itinerary stands when it opens, its intro by default. */
+  initialPlay?: ItineraryPlay;
+  /** Told where the itinerary stands whenever that changes, from the start. */
+  onPlayChange?: (play: ItineraryPlay) => void;
 };
 
 /**
@@ -47,8 +51,11 @@ export function ItineraryScreen({
   link,
   sessionStorage,
   clock = systemClock,
+  initialPlay = NEW_ITINERARY_PLAY,
+  onPlayChange,
 }: ItineraryScreenProps) {
-  const [play, setPlay] = useState<ItineraryPlay>(NEW_ITINERARY_PLAY);
+  const [play, setPlay] = useState<ItineraryPlay>(initialPlay);
+  useEffect(() => onPlayChange?.(play), [play, onPlayChange]);
   const stage = itineraryStage(graph, trips, play);
   const total = itineraryTotal(graph, play);
 

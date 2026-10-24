@@ -174,6 +174,7 @@ export function App({
           linkPayload={new URLSearchParams(search).get("r") ?? undefined}
           title={new URLSearchParams(search).get("namn") ?? undefined}
           onPlay={navigate}
+          storage={progressStorage}
           sessionStorage={sessionStorage}
           clock={clock}
         />

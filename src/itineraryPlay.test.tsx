@@ -6,6 +6,7 @@ import { App } from "./App";
 import type { DailyTripSource } from "./daily/loadDailyTrip";
 import { itineraryLinkPath } from "./freePlay/itineraryLink";
 import { encodeLinkPayload, type LinkedTrip } from "./freePlay/linkPayload";
+import { tripLinkPath } from "./freePlay/tripLink";
 import type { GraphVersionFiles } from "./graph/graphVersionFiles";
 import { type KeyValueStorage, memoryStorage } from "./progress/storage";
 
@@ -420,8 +421,199 @@ describe("an itinerary from its link", () => {
     await linger();
     await click(button(container, "Avsluta resplanen"));
 
-    expect(writes).toEqual([]);
+    // Only the itinerary slot is written.
+    expect(new Set(writes)).toEqual(new Set(["akle:itinerary"]));
     expect(storage.getItem("akle:free-play-trip")).toBe("a stored trip");
+  });
+});
+
+/** Leaves the page and opens `path` again on the same storage, as a reload does. */
+async function reopen(path: string, storage: KeyValueStorage) {
+  if (mounted) {
+    const { root, container } = mounted;
+    act(() => root.unmount());
+    container.remove();
+    mounted = undefined;
+  }
+  return mountApp(path, storage);
+}
+
+/** The board's guesses as shown, each its color square and name. */
+const guessNames = (container: HTMLElement) =>
+  [...container.querySelectorAll('ol[aria-label="Gissningar"] li span[aria-hidden="true"]')].map(
+    (span) => span.textContent,
+  );
+
+describe("resuming an itinerary", () => {
+  test("a reload mid-itinerary returns to its trip, with past results and the trip's guesses", async () => {
+    const storage = memoryStorage();
+    let container = await mountApp(fridayLink, storage);
+    await click(button(container, "Starta resplanen"));
+    await click(button(container, "Starta"));
+    await guess(container, "Haninge");
+    await linger();
+    await click(button(container, "Nästa resa"));
+    await click(button(container, "Starta"));
+    await guess(container, "Nynäshamn");
+
+    container = await reopen(fridayLink, storage);
+    expect(text(container, ".trip-number")).toBe("Resa 2 av 3 · Tidspress 10 s");
+    expect(text(container, "#trip-heading")).toContain("Haninge");
+    expect(guessNames(container)).toEqual(["🟧 Nynäshamn"]);
+    await guess(container, "Salem");
+    await linger();
+    // The first trip's −1 is still in the total: +1 for the wrong guess.
+    expect(text(container, ".result-score")).toBe("1 poäng");
+    expect(text(container, ".itinerary-total")).toBe("Totalt 0 poäng");
+  });
+
+  test("a reload on a trip's card returns to the card", async () => {
+    const storage = memoryStorage();
+    let container = await mountApp(fridayLink, storage);
+    await click(button(container, "Starta resplanen"));
+    container = await reopen(fridayLink, storage);
+    expect(text(container, ".start-gate .trip-number")).toBe("Resa 1 av 3 · Standard");
+    expect(button(container, "Starta resplanen")).toBeUndefined();
+  });
+
+  test("its exact link, once finished, shows the summary and share text again, with no replay", async () => {
+    const storage = memoryStorage();
+    const link = itineraryLinkPath(0, "Kort", [nynashamnSalem, haningeTrosa]);
+    let container = await mountApp(link, storage);
+    await click(button(container, "Starta resplanen"));
+    await click(button(container, "Starta"));
+    await guess(container, "Haninge");
+    await linger();
+    await click(button(container, "Nästa resa"));
+    await click(button(container, "Starta"));
+    await guess(container, "Salem");
+    await linger();
+    await click(button(container, "Avsluta resplanen"));
+
+    container = await reopen(link, storage);
+    expect(text(container, "#itinerary-summary-heading")).toBe("Kort");
+    expect(text(container, ".itinerary-summary-total")).toBe("Totalt −2 poäng");
+    expect(button(container, "Starta resplanen")).toBeUndefined();
+    expect(button(container, "Starta")).toBeUndefined();
+    await click(query(container, ".itinerary-summary .share-button"));
+    expect(copied[0]?.split("\n")[0]).toBe("#åkle Resplan · Kort · 2 resor");
+  });
+
+  test("another itinerary takes the slot only at Starta resplanen", async () => {
+    const storage = memoryStorage();
+    let container = await mountApp(fridayLink, storage);
+    await click(button(container, "Starta resplanen"));
+    await click(button(container, "Starta"));
+    await guess(container, "Trosa");
+
+    // Opened, not begun: the stored itinerary stays.
+    const other = itineraryLinkPath(0, "Lördag", [haningeTrosa, nynashamnSalem]);
+    container = await reopen(other, storage);
+    expect(button(container, "Starta resplanen")).toBeDefined();
+    container = await reopen(fridayLink, storage);
+    expect(guessNames(container)).toEqual(["🟧 Trosa"]);
+
+    // Begun: the other one replaces it, and the first one starts over from its intro.
+    container = await reopen(other, storage);
+    await click(button(container, "Starta resplanen"));
+    container = await reopen(fridayLink, storage);
+    expect(button(container, "Starta resplanen")).toBeDefined();
+    container = await reopen(other, storage);
+    expect(text(container, ".start-gate .trip-number")).toBe("Resa 1 av 2 · Tidspress 10 s");
+  });
+
+  test("a free-play trip never touches the itinerary slot", async () => {
+    const storage = memoryStorage();
+    let container = await mountApp(fridayLink, storage);
+    await click(button(container, "Starta resplanen"));
+    const stored = storage.getItem("akle:itinerary");
+
+    container = await reopen(tripLinkPath(0, nynashamnSalem), storage);
+    await guess(container, "Haninge");
+    await linger();
+    expect(text(container, "#result-heading")).toBe("Perfekt!");
+    expect(storage.getItem("akle:itinerary")).toBe(stored);
+  });
+
+  test("a tie-breaker trip's time runs on while the page is closed", async () => {
+    const storage = memoryStorage();
+    const link = itineraryLinkPath(0, "", [trosaHaninge, nynashamnSalem]);
+    let container = await mountApp(link, storage);
+    await click(button(container, "Starta resplanen"));
+    await click(button(container, "Starta"));
+    clockTime += 2_000;
+
+    container = await reopen(link, storage);
+    clockTime += 60_000;
+    await guess(container, "Salem");
+    await linger();
+    expect(text(container, ".result-time")).toBe("Tid 1:02,0");
+  });
+
+  test("every thinking time that ran out while away counts as a timeout", async () => {
+    const storage = memoryStorage();
+    const link = itineraryLinkPath(0, "", [haningeTrosa, nynashamnSalem]);
+    let container = await mountApp(link, storage);
+    await click(button(container, "Starta resplanen"));
+    await click(button(container, "Starta"));
+
+    container = await reopen(link, storage);
+    // Away for 15 minutes: 90 thinking times of 10 s, uncapped.
+    clockTime += 900_000;
+    await guess(container, "Salem");
+    await linger();
+    expect(text(container, ".result-score")).toBe("90 poäng");
+  });
+});
+
+describe("the builder's banner", () => {
+  const banner = (container: HTMLElement) =>
+    query<HTMLAnchorElement>(container, ".itinerary-resume");
+
+  test("links back to an unfinished itinerary, naming its title and trip", async () => {
+    const storage = memoryStorage();
+    let container = await mountApp(fridayLink, storage);
+    await click(button(container, "Starta resplanen"));
+    await click(button(container, "Starta"));
+    await guess(container, "Haninge");
+    await linger();
+    await click(button(container, "Nästa resa"));
+
+    container = await reopen("/resplan", storage);
+    expect(banner(container).textContent).toBe("Fortsätt resplanen: Fredagsresan, resa 2 av 3");
+    expect(banner(container).getAttribute("href")).toBe(fridayLink);
+    await click(banner(container));
+    expect(dom.window.location.pathname + dom.window.location.search).toBe(fridayLink);
+    expect(text(container, ".start-gate .trip-number")).toBe("Resa 2 av 3 · Tidspress 10 s");
+  });
+
+  test("names an untitled itinerary by its trip alone", async () => {
+    const storage = memoryStorage();
+    const link = itineraryLinkPath(0, "", [nynashamnSalem, haningeTrosa]);
+    let container = await mountApp(link, storage);
+    await click(button(container, "Starta resplanen"));
+    container = await reopen("/resplan", storage);
+    expect(banner(container).textContent).toBe("Fortsätt resplanen: resa 1 av 2");
+  });
+
+  test("is not there without an unfinished itinerary", async () => {
+    const storage = memoryStorage();
+    let container = await mountApp("/resplan", storage);
+    expect(banner(container)).toBeNull();
+
+    const link = itineraryLinkPath(0, "", [nynashamnSalem, haningeTrosa]);
+    container = await reopen(link, storage);
+    await click(button(container, "Starta resplanen"));
+    await click(button(container, "Starta"));
+    await guess(container, "Haninge");
+    await linger();
+    await click(button(container, "Nästa resa"));
+    await click(button(container, "Starta"));
+    await guess(container, "Salem");
+    await linger();
+    await click(button(container, "Avsluta resplanen"));
+    container = await reopen("/resplan", storage);
+    expect(banner(container)).toBeNull();
   });
 });
 
