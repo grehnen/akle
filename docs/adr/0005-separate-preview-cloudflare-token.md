@@ -1,6 +1,6 @@
 # PR previews deploy with a second Cloudflare token, in a `preview` environment
 
-Decision [#17](https://github.com/grehnen/akle/issues/17) settled on one Cloudflare API token, scoped to _Workers Scripts: Edit_ and stored in a GitHub `production` environment limited to `main`. This amends it. A preview per same-repo PR has to deploy from the PR's branch, which the `production` environment won't hand its secret to, so previews get their own `preview` environment with no branch restriction and a second token with the same scope. We chose a second token over lifting `production`'s branch limit, so production deploys still only happen from `main`, and so the preview token can be revoked on its own.
+Production deploys use a Cloudflare API token scoped to _Workers Scripts: Edit_, stored in a GitHub `production` environment limited to `main` ([#17](https://github.com/grehnen/akle/issues/17)). A preview per same-repo PR has to deploy from the PR's branch, which `production` won't hand its secret to, so previews get their own `preview` environment with no branch restriction and a second token with the same scope. We chose a second token over lifting `production`'s branch limit, so production deploys still only happen from `main`, and so the preview token can be revoked on its own.
 
 ## Consequences
 
