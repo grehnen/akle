@@ -38,6 +38,8 @@ export function App({
   const [daily, setDaily] = useState<DailyTripLoad>();
   const [failed, setFailed] = useState(false);
   const [openedAt] = useState(now);
+  // A free-play trip's time is read from `now` as it runs, not frozen at opening like the day.
+  const [clock] = useState(() => () => now().getTime());
   const [progressStorage] = useState(() => storage ?? browserStorage());
   const [statsOpen, setStatsOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -149,6 +151,7 @@ export function App({
           onShowTripLink={showTripLink}
           storage={progressStorage}
           sessionStorage={sessionStorage}
+          clock={clock}
         />
       ) : failed ? (
         <p role="alert">Kunde inte ladda dagens resa. Försök igen senare.</p>
