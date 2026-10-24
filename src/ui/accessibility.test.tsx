@@ -11,6 +11,7 @@ import { FreePlayLinkError } from "./FreePlayLinkError";
 import { FreePlayScreen } from "./FreePlayScreen";
 import { GuessInput } from "./GuessInput";
 import { ItineraryBuilder } from "./ItineraryBuilder";
+import { ItineraryScreen } from "./ItineraryScreen";
 import { ModeCards } from "./ModeCards";
 
 const graph = buildGraphVersion({
@@ -219,6 +220,21 @@ describe("automated accessibility check", () => {
   test("the itinerary builder has no serious violations", async () => {
     const builder = <ItineraryBuilder graph={graph} ordinal={0} onPlay={() => {}} />;
     expect(await seriousViolations(builder)).toEqual([]);
+  });
+
+  test("an itinerary's intro has no serious violations", async () => {
+    const intro = (
+      <ItineraryScreen
+        graph={graph}
+        title="Fredagsresan"
+        trips={[
+          { start: "0192", destination: "0488", mode: { kind: "standard" } },
+          { start: "0488", destination: "0192", mode: { kind: "timed", thinkingTime: 10 } },
+        ]}
+        sessionStorage={memoryStorage()}
+      />
+    );
+    expect(await seriousViolations(intro)).toEqual([]);
   });
 
   test("a Start field with its suggestions open has no serious violations", async () => {

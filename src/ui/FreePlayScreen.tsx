@@ -1,9 +1,7 @@
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { type Clock, systemClock } from "../engine/clock";
-import { type Game, newGame, reviewGame, type Trip } from "../engine/game";
-import { tripScore } from "../engine/score";
-import { timeoutRuns } from "../engine/thinkingTime";
-import { stampThinkingTime, startTime, stopTimeAtWin, tripTime } from "../engine/tripTime";
+import { type Game, newGame, type Trip } from "../engine/game";
+import { stampThinkingTime, startTime, stopTimeAtWin } from "../engine/tripTime";
 import {
   defaultDistanceRange,
   type DistanceRange,
@@ -13,19 +11,15 @@ import {
 } from "../freePlay/draw";
 import type { LinkedTrip, ModeSetting } from "../freePlay/linkPayload";
 import { DEFAULT_THINKING_TIME, freePlayRules, opensAtStarta } from "../freePlay/modeRules";
-import { freePlayShareText } from "../freePlay/shareText";
 import { tripLinkPath } from "../freePlay/tripLink";
 import { saveTripSlot } from "../freePlay/tripSlot";
 import type { GraphVersion } from "../graph/graphVersion";
-import { emojiLine } from "../progress/history";
-import { gameOutcome } from "../progress/outcome";
 import type { KeyValueStorage } from "../progress/storage";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
+import { FreePlayBoard } from "./FreePlayBoard";
 import { ModeCards } from "./ModeCards";
-import { modeName, scoreText, timeText } from "./messages";
-import { ShareButton } from "./ShareButton";
+import { modeName } from "./messages";
 import { StartGate } from "./StartGate";
-import { TripBoard } from "./TripBoard";
 import {
   PickTripForm,
   type TripChoiceTab,
@@ -33,9 +27,6 @@ import {
   tripChoicePanelId,
   tripChoiceTabId,
 } from "./TripChoice";
-import { ThinkingTimeBar } from "./ThinkingTimeBar";
-import { TripClock } from "./TripClock";
-import { useNow } from "./useNow";
 import "./FreePlayScreen.css";
 
 /**
@@ -180,7 +171,7 @@ export function FreePlayScreen({
       // A new trip gets a fresh board, so the last one's result state doesn't carry over.
       key={played.count}
       graph={graph}
-      trip={played.trip}
+      mode={played.trip.mode}
       game={played.game}
       link={link}
       label={label}
@@ -205,99 +196,6 @@ export function FreePlayScreen({
         )
       }
     />
-  );
-}
-
-function FreePlayBoard({
-  graph,
-  trip,
-  game,
-  link,
-  label,
-  clock,
-  focusGuessOnOpen,
-  onGameChange,
-  sessionStorage,
-  resultActions,
-}: {
-  graph: GraphVersion;
-  trip: LinkedTrip;
-  game: Game;
-  link: string;
-  label: ReactNode;
-  clock: Clock;
-  focusGuessOnOpen: boolean;
-  onGameChange: (game: Game) => void;
-  sessionStorage: KeyValueStorage;
-  resultActions: ReactNode;
-}) {
-  const review = useMemo(() => reviewGame(graph, game), [graph, game]);
-  // A timed trip's thinking time runs on real time, read again on each tick while it's played.
-  const timed = game.rules.thinkingTime !== undefined;
-  const thinking = timed && review.status === "playing";
-  const now = useNow(clock, thinking);
-  const score = tripScore(review);
-  const outcome = gameOutcome(review);
-  const time = tripTime(game);
-  const share =
-    score !== undefined && outcome !== undefined
-      ? freePlayShareText({
-          mode: trip.mode,
-          outcome,
-          score,
-          time,
-          emojiLine: emojiLine(review.cards),
-          link,
-        })
-      : undefined;
-  const scoreAndShare = score !== undefined && share !== undefined && (
-    <>
-      <p className="result-score">{scoreText(score)}</p>
-      {game.rules.keepsTime && <ResultTime time={time} />}
-      <ShareButton text={share} />
-    </>
-  );
-  return (
-    <TripBoard
-      graph={graph}
-      game={game}
-      onGameChange={onGameChange}
-      sessionStorage={sessionStorage}
-      label={label}
-      clock={
-        game.rules.keepsTime ? (
-          <TripClock game={game} clock={clock} />
-        ) : (
-          thinking && <ThinkingTimeBar game={game} now={now} />
-        )
-      }
-      timeouts={timed ? timeoutRuns(game, now) : undefined}
-      focusGuessOnOpen={focusGuessOnOpen}
-      resultActions={
-        <>
-          {scoreAndShare}
-          {resultActions}
-        </>
-      }
-      stripActions={scoreAndShare}
-    />
-  );
-}
-
-/** A tie-breaker trip's time in the result: a win's to tenths, or `–` for a loss, which has none. */
-function ResultTime({ time }: { time?: number }) {
-  return (
-    <p className="result-time">
-      Tid{" "}
-      {time === undefined ? (
-        <>
-          <span aria-hidden="true">–</span>
-          <span className="visually-hidden">saknas, bara en vinst får tid</span>
-        </>
-      ) : (
-        timeText(time)
-      )}
-    </p>
   );
 }
 
