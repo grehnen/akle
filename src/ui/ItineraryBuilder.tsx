@@ -8,14 +8,14 @@ import {
   tripPairs,
 } from "../freePlay/draw";
 import { ITINERARY_TRIPS, itineraryLinkPath, MAX_ITINERARY_TITLE } from "../freePlay/itineraryLink";
-import { type LinkedTrip, type ModeSetting, THINKING_TIME_RANGE } from "../freePlay/linkPayload";
+import type { LinkedTrip, ModeSetting } from "../freePlay/linkPayload";
 import { DEFAULT_THINKING_TIME, PLAYABLE_MODES } from "../freePlay/modeRules";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { shortestRouteLength } from "../graph/routes";
 import { SITE_URL } from "../siteUrl";
 import { copyShareText } from "./copyShareText";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
-import { MODES } from "./ModeCards";
+import { MODES, ThinkingTimeField } from "./ModeCards";
 import {
   PickTripForm,
   type TripChoiceTab,
@@ -260,11 +260,6 @@ function TripRow({
   );
 }
 
-/** The thinking times a builder offers, within what a link carries. */
-const THINKING_TIME_CHOICES = [5, 10, 15, 20, 30, 45, 60].filter(
-  (seconds) => seconds >= THINKING_TIME_RANGE.min && seconds <= THINKING_TIME_RANGE.max,
-);
-
 /** A trip's mode as a dropdown, and for Tidspress its betänketid beside it. */
 function ModeSelect({
   id,
@@ -306,26 +301,12 @@ function ModeSelect({
         ))}
       </select>
       {mode.kind === "timed" && (
-        <>
-          <label htmlFor={`${id}-thinking-time`} className="visually-hidden">
-            Betänketid
-          </label>
-          <select
-            id={`${id}-thinking-time`}
-            value={mode.thinkingTime}
-            onChange={(event) =>
-              onChange({ kind: "timed", thinkingTime: Number(event.target.value) })
-            }
-          >
-            {[...new Set([...THINKING_TIME_CHOICES, mode.thinkingTime])]
-              .sort((a, b) => a - b)
-              .map((seconds) => (
-                <option key={seconds} value={seconds}>
-                  {seconds} s
-                </option>
-              ))}
-          </select>
-        </>
+        <ThinkingTimeField
+          id={`${id}-thinking-time`}
+          labelHidden
+          seconds={mode.thinkingTime}
+          onChange={(seconds) => onChange({ kind: "timed", thinkingTime: seconds })}
+        />
       )}
     </span>
   );
