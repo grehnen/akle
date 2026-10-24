@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { DailyTripSource } from "../daily/loadDailyTrip";
 import type { GraphVersionFiles } from "../graph/graphVersionFiles";
-import { loadCurrentGraphVersion } from "./currentVersion";
+import { loadCurrentVersion } from "./currentVersion";
 
 function graphFiles(id: string, startsAtTrip: number): GraphVersionFiles {
   return {
@@ -45,21 +45,24 @@ describe("the current version", () => {
   test("is the version today's trip number uses, not a newer one that hasn't started", async () => {
     const { source, fetched } = fakeSource();
     // 2026-10-19 is trip #19, the last day of "old".
-    const graph = await loadCurrentGraphVersion(source, new Date(2026, 9, 19, 23, 59));
+    const { graph, ordinal } = await loadCurrentVersion(source, new Date(2026, 9, 19, 23, 59));
     expect(graph.id).toBe("old");
+    expect(ordinal).toBe(0);
     expect(fetched).toEqual(["graph old"]);
   });
 
   test("moves on once today's trip number reaches a new version", async () => {
     const { source } = fakeSource();
-    const graph = await loadCurrentGraphVersion(source, new Date(2026, 9, 20, 0, 1));
+    const { graph, ordinal } = await loadCurrentVersion(source, new Date(2026, 9, 20, 0, 1));
     expect(graph.id).toBe("new");
+    expect(ordinal).toBe(1);
   });
 
   test("before launch day is the version trip #1 uses", async () => {
     const { source, fetched } = fakeSource();
-    const graph = await loadCurrentGraphVersion(source, new Date(2026, 8, 1, 12, 0));
+    const { graph, ordinal } = await loadCurrentVersion(source, new Date(2026, 8, 1, 12, 0));
     expect(graph.id).toBe("old");
+    expect(ordinal).toBe(0);
     // Free play never reads the schedule.
     expect(fetched).toEqual(["graph old"]);
   });
