@@ -137,7 +137,7 @@ The number of daily trips won on consecutive trip numbers; a loss or a daily tri
 _Avoid_: Run, chain, combo
 
 **Share text**:
-The short, spoiler-free summary of a finished daily trip that a player copies to post elsewhere.
+The short, spoiler-free summary of a finished daily trip, free-play trip or itinerary that a player copies to post elsewhere; only a daily one carries a trip number.
 _Avoid_: Score card, result string
 
 **Free play** (in the UI: _Fri resa_):
