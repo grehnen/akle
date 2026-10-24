@@ -103,6 +103,11 @@ const OPENED_AT = new Date(2026, 9, 24, 12, 0).getTime();
 /** The app's clock, which a test moves on to let real time pass. */
 let clockTime = OPENED_AT;
 
+/** Lingers and ticks shortened, so the tests wait on no real time to speak of. */
+const pacing = { finishLingerMs: 0, tickMs: 5 };
+/** Lets the shortened linger and a tick or two pass. */
+const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
+
 let mounted: { root: Root; container: HTMLElement } | undefined;
 
 afterEach(() => {
@@ -132,6 +137,7 @@ async function mountApp(path: string, storage: KeyValueStorage = memoryStorage()
         sessionStorage={memoryStorage()}
         path={pathname}
         search={search}
+        pacing={pacing}
       />,
     ),
   );
@@ -185,7 +191,6 @@ const summaryRows = (container: HTMLElement) =>
   });
 
 /** A finished trip keeps the board up for a moment before the result view opens. */
-const linger = () => act(async () => new Promise((resolve) => setTimeout(resolve, 1600)));
 
 const trip = (start: string, destination: string, mode: LinkedTrip["mode"]): LinkedTrip => ({
   start,
@@ -238,7 +243,7 @@ describe("an itinerary from its link", () => {
     // No way past a trip being played but to finish it.
     expect(button(container, "Nästa resa")).toBeUndefined();
     await guess(container, "Haninge");
-    await linger();
+    await settle();
 
     // Trip end: the result with the shortest route, the trip's score and the running total.
     expect(text(container, "#result-heading")).toBe("Perfekt!");
@@ -256,7 +261,7 @@ describe("an itinerary from its link", () => {
     // 25 s on one guess: two timeouts, +0 and 2 ⏱ = 2.
     clockTime += 25_000;
     await guess(container, "Salem");
-    await linger();
+    await settle();
     expect(text(container, ".result-score")).toBe("2 poäng");
     expect(text(container, ".itinerary-total")).toBe("Totalt 1 poäng");
     await click(button(container, "Nästa resa"));
@@ -268,7 +273,7 @@ describe("an itinerary from its link", () => {
     await guess(container, "Nynäshamn");
     await click(query(container, ".give-up-button"));
     await click(query(container, "dialog.give-up-dialog .give-up-confirm"));
-    await linger();
+    await settle();
     expect(text(container, "#result-heading")).toBe("Gav upp (1 ifrån)");
     expect(text(container, ".result-score")).toBe("3 poäng");
     expect(text(container, ".itinerary-total")).toBe("Totalt 4 poäng");
@@ -333,12 +338,12 @@ describe("an itinerary from its link", () => {
     await click(button(container, "Starta"));
     clockTime += 12_340;
     await guess(container, "Salem");
-    await linger();
+    await settle();
     await click(button(container, "Nästa resa"));
     await click(button(container, "Starta"));
     await click(query(container, ".hint-button"));
     await guess(container, "Haninge");
-    await linger();
+    await settle();
     await click(button(container, "Avsluta resplanen"));
 
     expect(text(container, "#itinerary-summary-heading")).toBe("Resplan");
@@ -373,11 +378,11 @@ describe("an itinerary from its link", () => {
     await click(button(container, "Starta resplanen"));
     await click(button(container, "Starta"));
     await guess(container, "Haninge");
-    await linger();
+    await settle();
     await click(button(container, "Nästa resa"));
     await click(button(container, "Starta"));
     await guess(container, "Salem");
-    await linger();
+    await settle();
     await click(button(container, "Avsluta resplanen"));
 
     expect(text(container, ".itinerary-summary-total")).toBe("Totalt −2 poäng");
@@ -398,7 +403,7 @@ describe("an itinerary from its link", () => {
     await click(button(container, "Starta resplanen"));
     await click(button(container, "Starta"));
     await guess(container, "Haninge");
-    await linger();
+    await settle();
     const labels = [...container.querySelectorAll("button")].map((b) => b.textContent?.trim());
     expect(labels).not.toContain("Starta");
     expect(labels).not.toContain("Slumpa ny resa");
@@ -414,11 +419,11 @@ describe("an itinerary from its link", () => {
     await click(button(container, "Starta resplanen"));
     await click(button(container, "Starta"));
     await guess(container, "Haninge");
-    await linger();
+    await settle();
     await click(button(container, "Nästa resa"));
     await click(button(container, "Starta"));
     await guess(container, "Salem");
-    await linger();
+    await settle();
     await click(button(container, "Avsluta resplanen"));
 
     // Only the itinerary slot is written.
@@ -451,7 +456,7 @@ describe("resuming an itinerary", () => {
     await click(button(container, "Starta resplanen"));
     await click(button(container, "Starta"));
     await guess(container, "Haninge");
-    await linger();
+    await settle();
     await click(button(container, "Nästa resa"));
     await click(button(container, "Starta"));
     await guess(container, "Nynäshamn");
@@ -461,7 +466,7 @@ describe("resuming an itinerary", () => {
     expect(text(container, "#trip-heading")).toContain("Haninge");
     expect(guessNames(container)).toEqual(["1. Nynäshamn 🟧"]);
     await guess(container, "Salem");
-    await linger();
+    await settle();
     // The first trip's −1 is still in the total: +1 for the wrong guess.
     expect(text(container, ".result-score")).toBe("1 poäng");
     expect(text(container, ".itinerary-total")).toBe("Totalt 0 poäng");
@@ -483,11 +488,11 @@ describe("resuming an itinerary", () => {
     await click(button(container, "Starta resplanen"));
     await click(button(container, "Starta"));
     await guess(container, "Haninge");
-    await linger();
+    await settle();
     await click(button(container, "Nästa resa"));
     await click(button(container, "Starta"));
     await guess(container, "Salem");
-    await linger();
+    await settle();
     await click(button(container, "Avsluta resplanen"));
 
     container = await reopen(link, storage);
@@ -530,7 +535,7 @@ describe("resuming an itinerary", () => {
 
     container = await reopen(tripLinkPath(0, nynashamnSalem), storage);
     await guess(container, "Haninge");
-    await linger();
+    await settle();
     expect(text(container, "#result-heading")).toBe("Perfekt!");
     expect(storage.getItem("akle:itinerary")).toBe(stored);
   });
@@ -546,7 +551,7 @@ describe("resuming an itinerary", () => {
     container = await reopen(link, storage);
     clockTime += 60_000;
     await guess(container, "Salem");
-    await linger();
+    await settle();
     expect(text(container, ".result-time")).toBe("Tid 1:02,0");
   });
 
@@ -561,7 +566,7 @@ describe("resuming an itinerary", () => {
     // Away for 15 minutes: 90 thinking times of 10 s, uncapped.
     clockTime += 900_000;
     await guess(container, "Salem");
-    await linger();
+    await settle();
     expect(text(container, ".result-score")).toBe("90 poäng");
   });
 });
@@ -576,7 +581,7 @@ describe("the builder's banner", () => {
     await click(button(container, "Starta resplanen"));
     await click(button(container, "Starta"));
     await guess(container, "Haninge");
-    await linger();
+    await settle();
     await click(button(container, "Nästa resa"));
 
     container = await reopen("/resplan", storage);
@@ -606,11 +611,11 @@ describe("the builder's banner", () => {
     await click(button(container, "Starta resplanen"));
     await click(button(container, "Starta"));
     await guess(container, "Haninge");
-    await linger();
+    await settle();
     await click(button(container, "Nästa resa"));
     await click(button(container, "Starta"));
     await guess(container, "Salem");
-    await linger();
+    await settle();
     await click(button(container, "Avsluta resplanen"));
     container = await reopen("/resplan", storage);
     expect(banner(container)).toBeNull();

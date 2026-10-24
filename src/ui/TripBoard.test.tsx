@@ -5,6 +5,7 @@ import type { Root } from "react-dom/client";
 import { type Game, newGame, type Trip } from "../engine/game";
 import { buildGraphVersion } from "../graph/graphVersion";
 import { memoryStorage } from "../progress/storage";
+import { PacingContext } from "./pacing";
 import { TripBoard } from "./TripBoard";
 
 const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>');
@@ -62,12 +63,18 @@ afterEach(() => {
   mounted = undefined;
 });
 
-async function mount(): Promise<HTMLElement> {
+async function mount(finishLingerMs = 0): Promise<HTMLElement> {
   const container = dom.window.document.createElement("div");
   dom.window.document.body.append(container);
   const root = createRoot(container);
   mounted = { root, container };
-  await act(async () => root.render(<BareBoard />));
+  await act(async () =>
+    root.render(
+      <PacingContext value={{ finishLingerMs, tickMs: 250 }}>
+        <BareBoard />
+      </PacingContext>,
+    ),
+  );
   return container;
 }
 
@@ -89,8 +96,7 @@ describe("the board on its own", () => {
 
     await guess(container, "Haninge");
     await guess(container, "Salem");
-    // A finished game keeps the board up for a moment before the result view opens.
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 1600)));
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
 
     expect(container.querySelector("#result-heading")?.textContent).toBe("Perfekt!");
     const tabs = [...container.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
@@ -98,5 +104,16 @@ describe("the board on its own", () => {
     expect(container.textContent).not.toContain("Dagens resa");
     expect(container.textContent).not.toContain("Rapportera fel");
     expect(container.textContent).not.toContain("Nästa resa om");
+  });
+
+  test("a game finished just now keeps the board up for the linger before the result opens", async () => {
+    const container = await mount(60);
+    await guess(container, "Haninge");
+    await guess(container, "Salem");
+
+    expect(container.querySelector("#result-heading")).toBeNull();
+    expect(container.querySelector("#trip-heading")).not.toBeNull();
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 100)));
+    expect(container.querySelector("#result-heading")?.textContent).toBe("Perfekt!");
   });
 });
