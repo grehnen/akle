@@ -10,9 +10,9 @@ import { SatelliteMap } from "../map/SatelliteMap";
 import { PrototypeSwitcher } from "./PrototypeSwitcher";
 import "./FreePlaySetupPrototype.css";
 
-type ModeKey = "standard" | "obegransad" | "tidspress" | "tidtagning";
+export type ModeKey = "standard" | "obegransad" | "tidspress" | "tidtagning";
 
-const MODES: readonly { key: ModeKey; name: string; blurb: string }[] = [
+export const MODES: readonly { key: ModeKey; name: string; blurb: string }[] = [
   {
     key: "standard",
     name: "Standard",
@@ -43,9 +43,9 @@ type Setup = {
 
 const INITIAL_SETUP: Setup = { drawn: false, range: [3, 8], mode: "standard", thinkingTime: 10 };
 
-type Pair = [KommunCode, KommunCode];
+export type Pair = [KommunCode, KommunCode];
 
-function pairsByDistance(graph: GraphVersion): Map<number, Pair[]> {
+export function pairsByDistance(graph: GraphVersion): Map<number, Pair[]> {
   const byDistance = new Map<number, Pair[]>();
   for (const from of graph.kommuner.keys()) {
     for (const [to, distance] of shortestRouteLengthsFrom(graph, from)) {
@@ -58,7 +58,11 @@ function pairsByDistance(graph: GraphVersion): Map<number, Pair[]> {
   return byDistance;
 }
 
-function drawPair(pairs: Map<number, Pair[]>, [min, max]: [number, number], previous?: Pair): Pair {
+export function drawPair(
+  pairs: Map<number, Pair[]>,
+  [min, max]: [number, number],
+  previous?: Pair,
+): Pair {
   const distances = [...pairs.keys()].filter((distance) => distance >= min && distance <= max);
   const distance = distances[Math.floor(Math.random() * distances.length)];
   const candidates = (pairs.get(distance) ?? []).filter(
@@ -242,7 +246,7 @@ type KommunPickerProps = {
   className?: string;
 };
 
-function KommunPicker({
+export function KommunPicker({
   graph,
   label,
   value,
@@ -332,7 +336,7 @@ function KommunPicker({
   );
 }
 
-function blockedBy(graph: GraphVersion, other: KommunCode | undefined) {
+export function blockedBy(graph: GraphVersion, other: KommunCode | undefined) {
   return (code: KommunCode) => {
     if (!other) return undefined;
     if (code === other) return "samma";
@@ -341,7 +345,7 @@ function blockedBy(graph: GraphVersion, other: KommunCode | undefined) {
   };
 }
 
-function ThinkingTimeField({
+export function ThinkingTimeField({
   value,
   onChange,
 }: {
@@ -763,7 +767,7 @@ function VariantModeFirst({
 }
 
 /** One track with two thumbs: two overlaid range inputs whose tracks ignore the pointer. */
-function DistanceRangeSlider({
+export function DistanceRangeSlider({
   min,
   max,
   limit,

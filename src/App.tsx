@@ -5,6 +5,7 @@ import { deriveStats } from "./progress/stats";
 import { browserStorage, type KeyValueStorage } from "./progress/storage";
 import { DailyTripView } from "./ui/DailyTripView";
 import { FreePlaySetupPrototypeLoader } from "./ui/FreePlaySetupPrototype";
+import { ItineraryBuilderPrototypeLoader } from "./ui/ItineraryBuilderPrototype";
 import { RulesDialog, RulesIcon } from "./ui/RulesDialog";
 import { StatsDialog, StatsIcon } from "./ui/StatsDialog";
 
@@ -23,7 +24,9 @@ export function App({ source, now = () => new Date(), storage }: AppProps) {
   const [statsOpen, setStatsOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   // Without today's trip (still loading, or no trip today) there is no streak to keep alive.
-  const inFreePlay = window.location.pathname === "/fri";
+  // PROTOTYPE (#67): the itinerary builder at /resplan shares the free-play header.
+  const inBuilder = window.location.pathname === "/resplan";
+  const inFreePlay = window.location.pathname === "/fri" || inBuilder;
   const today = daily?.kind === "trip" ? daily.trip.number : Number.POSITIVE_INFINITY;
 
   useEffect(() => {
@@ -83,6 +86,8 @@ export function App({ source, now = () => new Date(), storage }: AppProps) {
       )}
       {failed ? (
         <p role="alert">Kunde inte ladda dagens resa. Försök igen senare.</p>
+      ) : inBuilder ? (
+        <ItineraryBuilderPrototypeLoader source={source} />
       ) : inFreePlay ? (
         <FreePlaySetupPrototypeLoader source={source} />
       ) : (
