@@ -10,6 +10,7 @@ import { EndpointField } from "./EndpointField";
 import { FreePlayLinkError } from "./FreePlayLinkError";
 import { FreePlayScreen } from "./FreePlayScreen";
 import { GuessInput } from "./GuessInput";
+import { ModeCards } from "./ModeCards";
 
 const graph = buildGraphVersion({
   id: "test",
@@ -171,6 +172,40 @@ describe("automated accessibility check", () => {
       />
     );
     expect(await seriousViolations(board)).toEqual([]);
+  });
+
+  test("a timed trip in its warning third, after timeouts, has no serious violations", async () => {
+    const timedTrip = {
+      start: "0192",
+      destination: "0488",
+      mode: { kind: "timed", thinkingTime: 10 },
+    } as const;
+    const rules = {
+      guessLimit: "distance",
+      giveUp: true,
+      keepsTime: false,
+      thinkingTime: 10,
+    } as const;
+    const game = { trip: timedTrip, rules, guesses: [], startedAt: 0 } as const;
+    const board = (
+      <FreePlayScreen
+        graph={graph}
+        ordinal={0}
+        linkedTrip={timedTrip}
+        resumed={{ game, drawn: false }}
+        storage={memoryStorage()}
+        sessionStorage={memoryStorage()}
+        clock={() => 27_500}
+      />
+    );
+    expect(await seriousViolations(board)).toEqual([]);
+  });
+
+  test("the Tidspress card with its betänketid has no serious violations", async () => {
+    const cards = (
+      <ModeCards mode={{ kind: "timed", thinkingTime: 10 }} thinkingTime={10} onChange={() => {}} />
+    );
+    expect(await seriousViolations(cards)).toEqual([]);
   });
 
   test.each([
