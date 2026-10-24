@@ -9,8 +9,15 @@ export const ITINERARY_PATH = "/resplan";
 /** The fewest and most trips an itinerary has (ADR 0007). */
 export const ITINERARY_TRIPS = { min: 2, max: 20 } as const;
 
-/** The longest title an itinerary can have, in characters. */
+/** The longest title an itinerary can have, in characters (code points, so an emoji is one). */
 export const MAX_ITINERARY_TITLE = 40;
+
+/** A title's length in characters, as `MAX_ITINERARY_TITLE` counts them. */
+export const titleLength = (title: string): number => [...title].length;
+
+/** A title cut down to its first `MAX_ITINERARY_TITLE` characters, never splitting one. */
+export const capTitle = (title: string): string =>
+  [...title].slice(0, MAX_ITINERARY_TITLE).join("");
 
 /**
  * An itinerary's link (ADR 0007): `/resplan?namn=<title>&r=<payload>`, all its trips pinned to
@@ -53,7 +60,7 @@ export async function openItineraryLink(
   payloadText: string,
 ): Promise<OpenedItineraryLink> {
   const title = namn?.trim() || undefined;
-  if (title !== undefined && title.length > MAX_ITINERARY_TITLE) return { kind: "invalid" };
+  if (title !== undefined && titleLength(title) > MAX_ITINERARY_TITLE) return { kind: "invalid" };
   const decoded = decodeLinkPayload(payloadText);
   if (!decoded.ok) return { kind: "invalid" };
   const { versionOrdinal, trips } = decoded.payload;
