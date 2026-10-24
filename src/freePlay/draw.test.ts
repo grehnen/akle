@@ -53,13 +53,12 @@ describe("drawing a trip", () => {
     const pairs = tripPairs(graph);
     for (let draw = 0; draw < 200; draw++) {
       const values = [(draw % 7) / 7, ((draw * 13) % 29) / 29, (draw % 2) / 2];
-      const { start, destination } = drawTrip(
-        pairs,
-        { min: 1, max: 6 },
-        scripted(...values).random,
+      const trip = drawTrip(pairs, { min: 1, max: 6 }, scripted(...values).random);
+      // Positions on the path: at least two apart means a kommun between the ends.
+      const [start, destination] = [trip?.start, trip?.destination].map((code) =>
+        Number(code?.slice(1)),
       );
-      const positions = [start, destination].map((code) => Number(code.slice(1)));
-      expect(Math.abs(positions[0] - positions[1])).toBeGreaterThanOrEqual(2);
+      expect(Math.abs(start - destination)).toBeGreaterThanOrEqual(2);
     }
   });
 });
