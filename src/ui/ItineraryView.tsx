@@ -1,4 +1,4 @@
-import { type MouseEvent, useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import type { DailyTripSource } from "../daily/loadDailyTrip";
 import type { Clock } from "../engine/clock";
 import { loadCurrentVersion, type PinnedVersion } from "../freePlay/currentVersion";
@@ -15,6 +15,7 @@ import {
   unfinishedItinerary,
 } from "../freePlay/itinerarySlot";
 import { browserSessionStorage, browserStorage, type KeyValueStorage } from "../progress/storage";
+import { AppLink } from "./AppLink";
 import { FreePlayLinkError } from "./FreePlayLinkError";
 import { ItineraryBuilder } from "./ItineraryBuilder";
 import { ItineraryScreen } from "./ItineraryScreen";
@@ -121,10 +122,7 @@ export function ItineraryView({
   );
 }
 
-/**
- * The builder's way back to the unfinished itinerary, opened in place like `Spela`; a click that
- * asks for a new tab or window is left to the browser.
- */
+/** The builder's way back to the unfinished itinerary, opened in place like `Spela`. */
 function ResumeBanner({
   unfinished: { title, tripNumber, tripCount, link },
   onPlay,
@@ -132,17 +130,10 @@ function ResumeBanner({
   unfinished: UnfinishedItinerary;
   onPlay: (link: string) => void;
 }) {
-  const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-      return;
-    }
-    event.preventDefault();
-    onPlay(link);
-  };
   const named = title === undefined ? "" : `${title}, `;
   return (
-    <a className="itinerary-resume" href={link} onClick={onClick}>
+    <AppLink className="itinerary-resume" href={link} onNavigate={onPlay}>
       Fortsätt resplanen: {named}resa {tripNumber} av {tripCount}
-    </a>
+    </AppLink>
   );
 }
