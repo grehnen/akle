@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { giveUp, newGame } from "../engine/game";
+import { startTime, stopTimeAtWin, tripTime } from "../engine/tripTime";
 import { buildGraphVersion } from "../graph/graphVersion";
 import { memoryStorage } from "../progress/storage";
 import type { LinkedTrip } from "./linkPayload";
@@ -25,6 +26,7 @@ const graph = buildGraphVersion({
 const version = { graph, ordinal: 2 };
 
 const trip: LinkedTrip = { start: "0192", destination: "0488", mode: { kind: "standard" } };
+const startedAt = Date.UTC(2026, 9, 24, 12, 0, 0);
 
 describe("the trip slot", () => {
   test("resumes the stored trip's guesses, hints and whether it was drawn", () => {
@@ -80,11 +82,63 @@ describe("the trip slot", () => {
   test("compares a timed trip's thinking time", () => {
     const storage = memoryStorage();
     const timed: LinkedTrip = { ...trip, mode: { kind: "timed", thinkingTime: 10 } };
-    saveTripSlot(storage, { versionOrdinal: 2, trip: timed, game: newGame(timed), drawn: false });
+    const game = startTime(newGame(timed, freePlayRules(timed.mode)), startedAt);
+    saveTripSlot(storage, { versionOrdinal: 2, trip: timed, game, drawn: false });
     const slower: LinkedTrip = { ...trip, mode: { kind: "timed", thinkingTime: 20 } };
 
     expect(resumeTrip(storage, version, timed)).toBeDefined();
     expect(resumeTrip(storage, version, slower)).toBeUndefined();
+  });
+
+  describe("a tie-breaker trip", () => {
+    const tieBreaker: LinkedTrip = { ...trip, mode: { kind: "tie-breaker" } };
+    const started = startTime(newGame(tieBreaker, freePlayRules(tieBreaker.mode)), startedAt);
+
+    test("resumes with its start time, so the clock runs on across the gap", () => {
+      const storage = memoryStorage();
+      const game = { ...started, guesses: ["0136"] };
+      saveTripSlot(storage, { versionOrdinal: 2, trip: tieBreaker, game, drawn: false });
+
+      expect(resumeTrip(storage, version, tieBreaker)?.game).toEqual(game);
+    });
+
+    test("resumes a win with its time", () => {
+      const storage = memoryStorage();
+      const game = stopTimeAtWin(
+        graph,
+        { ...started, guesses: ["0136", "0128"] },
+        startedAt + 83_456,
+      );
+      saveTripSlot(storage, { versionOrdinal: 2, trip: tieBreaker, game, drawn: false });
+
+      const resumed = resumeTrip(storage, version, tieBreaker)?.game;
+      expect(resumed && tripTime(resumed)).toBe(834);
+    });
+
+    test.each([
+      ["no start time", {}],
+      ["a start time that isn't a number", { startedAt: "noon" }],
+    ])("isn't resumed with %s, as it never started", (_, times) => {
+      const storage = memoryStorage();
+      const slot = { format: 1, versionOrdinal: 2, trip: tieBreaker, drawn: false };
+      storage.setItem(
+        "akle:free-play-trip",
+        JSON.stringify({ ...slot, game: { guesses: ["0136"], ...times } }),
+      );
+
+      expect(resumeTrip(storage, version, tieBreaker)).toBeUndefined();
+    });
+
+    test("drops a win time that isn't a number, keeping no time", () => {
+      const storage = memoryStorage();
+      const slot = { format: 1, versionOrdinal: 2, trip: tieBreaker, drawn: false };
+      const game = { guesses: ["0136", "0128"], startedAt, wonAt: "later" };
+      storage.setItem("akle:free-play-trip", JSON.stringify({ ...slot, game }));
+
+      const resumed = resumeTrip(storage, version, tieBreaker)?.game;
+      expect(resumed?.startedAt).toBe(startedAt);
+      expect(resumed && tripTime(resumed)).toBeUndefined();
+    });
   });
 
   test("drops guesses and hints its version no longer allows", () => {

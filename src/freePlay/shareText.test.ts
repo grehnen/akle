@@ -62,6 +62,33 @@ describe("a free-play trip's share text", () => {
     );
   });
 
+  test("a tie-breaker win carries its time after the score", () => {
+    expect(
+      freePlayShareText({
+        mode: { kind: "tie-breaker" },
+        outcome: { kind: "won", extra: 1, hintsUsed: 0 },
+        score: 2,
+        time: 834,
+        emojiLine: "✅🟧✅",
+        link,
+      }),
+    ).toBe(
+      "#åkle Fri resa · Tidtagning\n+1 · 2 poäng · 1:23,4\n✅🟧✅\nhttps://akle.grehn.net" + link,
+    );
+  });
+
+  test("a tie-breaker loss has no time", () => {
+    expect(
+      freePlayShareText({
+        mode: { kind: "tie-breaker" },
+        outcome: { kind: "lost", away: 1, hintsUsed: 0, givenUp: true },
+        score: 3,
+        emojiLine: "🟧",
+        link,
+      }).split("\n")[1],
+    ).toBe("Gav upp (1 ifrån) · 3 poäng");
+  });
+
   test("names the mode, with a timed trip's thinking time", () => {
     const header = (mode: Parameters<typeof freePlayShareText>[0]["mode"]) =>
       freePlayShareText({

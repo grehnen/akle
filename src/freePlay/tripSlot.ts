@@ -1,10 +1,11 @@
 import { type Game, giveUp, newGame, type TakenHints } from "../engine/game";
+import { startTime, stopTimeAtWin } from "../engine/tripTime";
 import type { KommunCode } from "../graph/graphVersion";
 import { restoreGame } from "../progress/savedGame";
 import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
 import type { PinnedVersion } from "./currentVersion";
 import { type LinkedTrip, type ModeSetting, THINKING_TIME_RANGE } from "./linkPayload";
-import { freePlayRules } from "./modeRules";
+import { freePlayRules, opensAtStarta } from "./modeRules";
 
 const TRIP_SLOT_KEY = "akle:free-play-trip";
 
@@ -24,7 +25,14 @@ type StoredSlot = {
   versionOrdinal: number;
   trip: LinkedTrip;
   drawn: boolean;
-  game: { guesses: KommunCode[]; hints?: TakenHints; givenUp?: true };
+  game: {
+    guesses: KommunCode[];
+    hints?: TakenHints;
+    givenUp?: true;
+    /** Timestamps in milliseconds: when Starta was pressed, and when the winning guess was made. */
+    startedAt?: number;
+    wonAt?: number;
+  };
 };
 
 /** A free-play trip as the slot keeps it: its pinned version, its game and how it was set up. */
@@ -48,6 +56,8 @@ export function saveTripSlot(storage: KeyValueStorage, saved: SavedTrip): void {
       guesses: [...game.guesses],
       ...(game.hints && { hints: game.hints }),
       ...(game.givenUp && { givenUp: true }),
+      ...(game.startedAt !== undefined && { startedAt: game.startedAt }),
+      ...(game.wonAt !== undefined && { wonAt: game.wonAt }),
     },
   };
   writeJson(storage, TRIP_SLOT_KEY, stored);
@@ -78,11 +88,22 @@ export function resumeTrip(
   const slot = readSlot(storage);
   if (slot === undefined || slot.versionOrdinal !== version.ordinal) return undefined;
   if (!sameTrip(slot.trip, trip)) return undefined;
-  const game = restoreGame(version.graph, newGame(trip, freePlayRules(trip.mode)), slot.game);
-  // A give-up counts only where the restored game still allows one.
-  const resumed = slot.game.givenUp === true ? giveUp(version.graph, game) : game;
-  return { game: resumed, drawn: slot.drawn };
+  const { startedAt, wonAt, givenUp } = slot.game;
+  // A trip that opens at Starta is stored only once started, so one without a start is corrupt.
+  if (opensAtStarta(trip.mode) && !isTimestamp(startedAt)) return undefined;
+  const fresh = newGame(trip, freePlayRules(trip.mode));
+  const restored = restoreGame(version.graph, fresh, slot.game);
+  const game = isTimestamp(startedAt) ? startTime(restored, startedAt) : restored;
+  // A give-up counts only where the restored game still allows one, a win time only on a win.
+  const resumed = givenUp === true ? giveUp(version.graph, game) : game;
+  return {
+    game: isTimestamp(wonAt) ? stopTimeAtWin(version.graph, resumed, wonAt) : resumed,
+    drawn: slot.drawn,
+  };
 }
+
+const isTimestamp = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
 
 function sameTrip(a: LinkedTrip, b: LinkedTrip): boolean {
   return (
