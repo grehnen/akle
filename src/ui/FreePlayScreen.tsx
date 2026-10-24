@@ -1,9 +1,17 @@
-import { useMemo, useState } from "react";
-import { type Game, newGame, reviewGame, STANDARD_RULES } from "../engine/game";
+import { type KeyboardEvent, type ReactNode, useMemo, useRef, useState } from "react";
+import { type Game, newGame, reviewGame, STANDARD_RULES, type Trip } from "../engine/game";
 import { tripScore } from "../engine/score";
+import {
+  defaultDistanceRange,
+  type DistanceRange,
+  drawTrip,
+  largestDistance,
+  tripPairs,
+} from "../freePlay/draw";
 import { endpointSuggestions, pickedTrip, resolveEndpoint } from "../freePlay/endpoints";
 import type { GraphVersion } from "../graph/graphVersion";
 import type { KeyValueStorage } from "../progress/storage";
+import { DistanceRangeSlider } from "./DistanceRangeSlider";
 import { EndpointField } from "./EndpointField";
 import { scoreText } from "./messages";
 import { TripBoard } from "./TripBoard";
@@ -16,23 +24,57 @@ type FreePlayScreenProps = {
   sessionStorage: KeyValueStorage;
 };
 
+/** The trip on the board, and whether it was drawn, which lets its result draw another. */
+type Played = { game: Game; drawn: boolean; count: number };
+
 /**
- * Free play: the Fri resa setup screen, then the picked trip on the board in standard mode,
- * with its score in the result. Nothing here reads or writes daily progress.
+ * Free play: the Fri resa setup screen, then the drawn or picked trip on the board in
+ * standard mode, with its score in the result. Nothing here reads or writes daily progress.
  */
 export function FreePlayScreen({ graph, sessionStorage }: FreePlayScreenProps) {
-  const [game, setGame] = useState<Game>();
-  if (game === undefined) {
+  const pairs = useMemo(() => tripPairs(graph), [graph]);
+  const largest = largestDistance(pairs);
+  const [range, setRange] = useState(() => defaultDistanceRange(largest));
+  const [played, setPlayed] = useState<Played>();
+
+  const play = (trip: Trip, drawn: boolean) =>
+    setPlayed((last) => ({
+      game: newGame(trip, STANDARD_RULES),
+      drawn,
+      count: (last?.count ?? 0) + 1,
+    }));
+  const draw = (previous?: Trip) => {
+    const trip = drawTrip(pairs, range, Math.random, previous);
+    if (trip) play(trip, true);
+  };
+
+  if (played === undefined) {
     return (
-      <FreePlaySetup graph={graph} onStart={(trip) => setGame(newGame(trip, STANDARD_RULES))} />
+      <FreePlaySetup
+        graph={graph}
+        range={range}
+        largest={largest}
+        onRangeChange={setRange}
+        onDraw={() => draw()}
+        onPick={(trip) => play(trip, false)}
+      />
     );
   }
   return (
     <FreePlayBoard
+      // A new trip gets a fresh board, so the last one's result state doesn't carry over.
+      key={played.count}
       graph={graph}
-      game={game}
-      onGameChange={setGame}
+      game={played.game}
+      onGameChange={(game) => setPlayed({ ...played, game })}
       sessionStorage={sessionStorage}
+      resultActions={
+        played.drawn && (
+          <button type="button" className="free-play-redraw" onClick={() => draw(played.game.trip)}>
+            Slumpa ny resa
+          </button>
+        )
+      }
     />
   );
 }
@@ -42,11 +84,13 @@ function FreePlayBoard({
   game,
   onGameChange,
   sessionStorage,
+  resultActions,
 }: {
   graph: GraphVersion;
   game: Game;
   onGameChange: (game: Game) => void;
   sessionStorage: KeyValueStorage;
+  resultActions: ReactNode;
 }) {
   const score = useMemo(() => tripScore(reviewGame(graph, game)), [graph, game]);
   const scoreLine = score !== undefined && <p className="result-score">{scoreText(score)}</p>;
@@ -57,18 +101,123 @@ function FreePlayBoard({
       onGameChange={onGameChange}
       sessionStorage={sessionStorage}
       label={<p className="trip-number">Fri resa · Standard</p>}
-      resultActions={scoreLine}
+      resultActions={
+        <>
+          {scoreLine}
+          {resultActions}
+        </>
+      }
       stripActions={scoreLine}
     />
   );
 }
 
+const SETUP_TABS = [
+  { id: "draw", name: "Slumpa" },
+  { id: "pick", name: "Välj själv" },
+] as const;
+
+type SetupTab = (typeof SETUP_TABS)[number]["id"];
+
+const tabId = (tab: SetupTab) => `free-play-tab-${tab}`;
+const panelId = (tab: SetupTab) => `free-play-panel-${tab}`;
+
 function FreePlaySetup({
   graph,
-  onStart,
+  range,
+  largest,
+  onRangeChange,
+  onDraw,
+  onPick,
 }: {
   graph: GraphVersion;
-  onStart: (trip: { start: string; destination: string }) => void;
+  range: DistanceRange;
+  largest: number;
+  onRangeChange: (range: DistanceRange) => void;
+  onDraw: () => void;
+  onPick: (trip: Trip) => void;
+}) {
+  const [tab, setTab] = useState<SetupTab>("draw");
+  return (
+    <section className="free-play-setup" aria-labelledby="free-play-heading">
+      <h2 id="free-play-heading">Fri resa</h2>
+      <SetupTabs selected={tab} onSelect={setTab} />
+      <div
+        id={panelId("draw")}
+        role="tabpanel"
+        aria-labelledby={tabId("draw")}
+        className="free-play-panel"
+        hidden={tab !== "draw"}
+      >
+        <DistanceRangeSlider range={range} largest={largest} onChange={onRangeChange} />
+        <button type="button" className="free-play-go free-play-draw" onClick={onDraw}>
+          <span aria-hidden="true">🎲</span> Slumpa resa
+        </button>
+        <p className="free-play-note">Start och mål visas när resan börjar.</p>
+      </div>
+      <PickPanel graph={graph} hidden={tab !== "pick"} onPick={onPick} />
+    </section>
+  );
+}
+
+/** The tab row, following the WAI-ARIA tabs pattern: arrow keys, Home and End move between tabs. */
+function SetupTabs({
+  selected,
+  onSelect,
+}: {
+  selected: SetupTab;
+  onSelect: (tab: SetupTab) => void;
+}) {
+  const list = useRef<HTMLDivElement>(null);
+  const onKeyDown = (event: KeyboardEvent) => {
+    const current = SETUP_TABS.findIndex(({ id }) => id === selected);
+    const next = {
+      ArrowRight: current + 1,
+      ArrowLeft: current - 1,
+      Home: 0,
+      End: SETUP_TABS.length - 1,
+    }[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    const target = SETUP_TABS[(next + SETUP_TABS.length) % SETUP_TABS.length];
+    onSelect(target.id);
+    list.current?.querySelector<HTMLElement>(`#${tabId(target.id)}`)?.focus();
+  };
+
+  return (
+    <div
+      ref={list}
+      role="tablist"
+      aria-label="Välj resa"
+      className="free-play-tabs"
+      onKeyDown={onKeyDown}
+    >
+      {SETUP_TABS.map(({ id, name }) => (
+        <button
+          key={id}
+          type="button"
+          role="tab"
+          id={tabId(id)}
+          aria-selected={id === selected}
+          aria-controls={panelId(id)}
+          tabIndex={id === selected ? 0 : -1}
+          onClick={() => onSelect(id)}
+        >
+          {name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PickPanel({
+  graph,
+  hidden,
+  onPick,
+}: {
+  graph: GraphVersion;
+  hidden: boolean;
+  onPick: (trip: Trip) => void;
 }) {
   const [startText, setStartText] = useState("");
   const [destinationText, setDestinationText] = useState("");
@@ -85,52 +234,39 @@ function FreePlaySetup({
           : undefined;
 
   return (
-    <section className="free-play-setup" aria-labelledby="free-play-heading">
-      <h2 id="free-play-heading">Fri resa</h2>
-      <div role="tablist" aria-label="Välj resa" className="free-play-tabs">
-        <button
-          type="button"
-          role="tab"
-          id="free-play-tab-pick"
-          aria-selected="true"
-          aria-controls="free-play-panel-pick"
-        >
-          Välj själv
-        </button>
-      </div>
-      <form
-        id="free-play-panel-pick"
-        role="tabpanel"
-        aria-labelledby="free-play-tab-pick"
-        className="free-play-panel"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (picked) onStart(picked.trip);
-        }}
-      >
-        <EndpointField
-          id="free-play-start"
-          label="Start"
-          end="start"
-          text={startText}
-          suggestions={endpointSuggestions(graph, startText, destination)}
-          onTextChange={setStartText}
-        />
-        <EndpointField
-          id="free-play-destination"
-          label="Mål"
-          end="destination"
-          text={destinationText}
-          suggestions={endpointSuggestions(graph, destinationText, start)}
-          onTextChange={setDestinationText}
-        />
-        <p className="free-play-distance" aria-live="polite">
-          {picked !== undefined ? `Avstånd ${picked.distance}` : problem}
-        </p>
-        <button type="submit" className="free-play-go" disabled={picked === undefined}>
-          Res
-        </button>
-      </form>
-    </section>
+    <form
+      id={panelId("pick")}
+      role="tabpanel"
+      aria-labelledby={tabId("pick")}
+      className="free-play-panel"
+      hidden={hidden}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (picked) onPick(picked.trip);
+      }}
+    >
+      <EndpointField
+        id="free-play-start"
+        label="Start"
+        end="start"
+        text={startText}
+        suggestions={endpointSuggestions(graph, startText, destination)}
+        onTextChange={setStartText}
+      />
+      <EndpointField
+        id="free-play-destination"
+        label="Mål"
+        end="destination"
+        text={destinationText}
+        suggestions={endpointSuggestions(graph, destinationText, start)}
+        onTextChange={setDestinationText}
+      />
+      <p className="free-play-distance" aria-live="polite">
+        {picked !== undefined ? `Avstånd ${picked.distance}` : problem}
+      </p>
+      <button type="submit" className="free-play-go" disabled={picked === undefined}>
+        Res
+      </button>
+    </form>
   );
 }
