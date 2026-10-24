@@ -10,7 +10,6 @@ import {
   parseScheduleChunk,
   parseScheduleConfig,
   type ScheduleConfig,
-  scheduleHeader,
   type ScheduledTrip,
   scheduleChunkFor,
 } from "../src/schedule/schedule";
@@ -73,7 +72,7 @@ export function readScheduleRowsAt(revision: string): ScheduledTrip[] {
   return rowsFromChunkFiles(
     fileNames.map((fileName) => ({
       fileName,
-      csv: withTripHeader(git(["show", `${revision}:data/schedule/${fileName}`])),
+      csv: git(["show", `${revision}:data/schedule/${fileName}`]),
     })),
   );
 }
@@ -91,14 +90,6 @@ export function readScheduleAt(
     ? parseScheduleConfig(JSON.parse(git(["show", `${revision}:data/schedule/config.json`]))).epoch
     : currentEpoch;
   return { epoch, rows: readScheduleRowsAt(revision) };
-}
-
-/** Revisions from before the puzzle → trip rename head their chunks `puzzle,start,destination,n`. */
-function withTripHeader(csv: string): string {
-  const legacyHeader = "puzzle,start,destination,n";
-  return csv.startsWith(`${legacyHeader}\n`) || csv.startsWith(`${legacyHeader}\r\n`)
-    ? `${scheduleHeader}${csv.slice(legacyHeader.length)}`
-    : csv;
 }
 
 /** Writes every chunk that holds a row; earlier chunk files stay as they are when unchanged. */

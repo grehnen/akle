@@ -33,17 +33,8 @@ export async function readCommittedGraphVersionsAt(
       return { path, blobId: meta.split(" ")[2] };
     });
   return committedVersionsFrom(files, async (path) =>
-    withTripNames(JSON.parse(git(["show", `${revision}:${path}`]))),
+    JSON.parse(git(["show", `${revision}:${path}`])),
   );
-}
-
-/** Revisions from before the puzzle → trip rename name the start `startsAtPuzzle`. */
-function withTripNames(header: unknown): unknown {
-  if (typeof header !== "object" || header === null || !("startsAtPuzzle" in header)) {
-    return header;
-  }
-  const { startsAtPuzzle, ...rest } = header;
-  return { ...rest, startsAtTrip: startsAtPuzzle };
 }
 
 async function committedVersionsFrom(
