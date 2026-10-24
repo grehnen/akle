@@ -17,12 +17,19 @@ export type PinnedVersion = { graph: GraphVersion; ordinal: number };
 /**
  * Loads the current version (ADR 0006): the graph version today's trip number uses, or before
  * launch day the one trip #1 uses. Never a newer version whose first trip is still to come.
+ * A version already loaded is reused when it is the current one.
  */
-export async function loadCurrentVersion(source: VersionSource, now: Date): Promise<PinnedVersion> {
+export async function loadCurrentVersion(
+  source: VersionSource,
+  now: Date,
+  loaded?: PinnedVersion,
+): Promise<PinnedVersion> {
   const { versions, tripNumber } = await versionsByStart(source, now);
   const version = graphVersionFor(versions, tripNumber);
   if (version === undefined) throw new Error(`No graph version covers trip #${tripNumber}`);
-  return { graph: await loadGraphVersion(source, version), ordinal: versions.indexOf(version) };
+  const ordinal = versions.indexOf(version);
+  if (loaded?.ordinal === ordinal) return loaded;
+  return { graph: await loadGraphVersion(source, version), ordinal };
 }
 
 /**

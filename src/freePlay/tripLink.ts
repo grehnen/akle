@@ -31,7 +31,21 @@ export async function openTripLink(
   const decoded = decodeLinkPayload(payloadText);
   if (!decoded.ok || decoded.payload.trips.length !== 1) return { kind: "invalid" };
   const [trip] = decoded.payload.trips;
-  const version = await loadPinnedVersion(source, now, decoded.payload.versionOrdinal);
+  return openTrip(source, now, decoded.payload.versionOrdinal, trip);
+}
+
+/**
+ * Opens a trip on the version its ordinal pins, as a link would be opened: an ordinal no started
+ * version has, a code its version lacks, or a start that is the destination or its neighbor is
+ * invalid.
+ */
+export async function openTrip(
+  source: Pick<DailyTripSource, "scheduleConfig" | "graphVersions" | "graphVersionFiles">,
+  now: Date,
+  versionOrdinal: number,
+  trip: LinkedTrip,
+): Promise<OpenedTripLink> {
+  const version = await loadPinnedVersion(source, now, versionOrdinal);
   if (version === undefined) return { kind: "invalid" };
   const { graph } = version;
   if (!graph.kommuner.has(trip.start) || !graph.kommuner.has(trip.destination)) {
