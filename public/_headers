@@ -13,6 +13,10 @@
   Cache-Control: no-cache
 /fri.html
   Cache-Control: no-cache
+/resplan
+  Cache-Control: no-cache
+/resplan.html
+  Cache-Control: no-cache
 
 # Previews (and the Worker's own workers.dev URL) must stay out of search results.
 https://:preview.:subdomain.workers.dev/*

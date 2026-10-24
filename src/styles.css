@@ -93,11 +93,23 @@ h1 {
   right: 0;
 }
 
-.free-play-open {
+.free-play-open,
+.itinerary-open {
   right: 2.75rem;
   height: 2.75rem;
   font-size: 1.4rem;
   text-decoration: none;
+}
+
+.itinerary-open {
+  right: 5.5rem;
+}
+
+/* On a narrow screen the title centres between the buttons, so the three on the right clear it. */
+@media (max-width: 25rem) {
+  .site-header {
+    padding-inline: 2.75rem 8.25rem;
+  }
 }
 
 /* In free play the title leads back to today's trip. */
