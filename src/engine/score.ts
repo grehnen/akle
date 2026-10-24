@@ -12,7 +12,5 @@ export function tripScore(review: GameReview): number | undefined {
   if (review.status === "playing") return undefined;
   if (review.perfect) return -1;
   if (review.status === "won") return (review.extra ?? 0) + review.hintsUsed;
-  return (
-    review.cards.length - review.n + AWAY_WEIGHT_AT_LIMIT * review.away + review.hintsUsed
-  );
+  return review.cards.length - review.n + AWAY_WEIGHT_AT_LIMIT * review.away + review.hintsUsed;
 }
