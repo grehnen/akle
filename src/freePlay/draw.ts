@@ -61,6 +61,12 @@ export function largestDistance(pairs: TripPairs): number {
   return Math.max(0, ...pairs.keys());
 }
 
+/** The range a draw starts from: 3–8, cut down to fit 1 to the largest distance. */
+export function defaultDistanceRange(largest: number): DistanceRange {
+  const fit = (distance: number) => Math.max(1, Math.min(distance, largest));
+  return { min: fit(3), max: fit(8) };
+}
+
 function isPairOf([first, second]: TripPair, trip: Trip | undefined): boolean {
   if (trip === undefined) return false;
   return (
