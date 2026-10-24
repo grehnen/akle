@@ -613,6 +613,23 @@ describe("resuming the free-play trip", () => {
     expect(buttonNamed(reopened.container, "Slumpa ny resa")).toBeDefined();
   });
 
+  test("Slumpa ny resa on a reopened trip keeps the range it was drawn from", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    const { min, max } = distanceThumbs(container);
+    await type(min, "1");
+    await type(max, "1");
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+    await winDistanceOneTrip(container);
+
+    const reopened = await reopen(address(), storage);
+    await click(buttonNamed(reopened.container, "Slumpa ny resa") as HTMLElement);
+    // Still distance 1, not the default range's only pair, Nynäshamn–Trosa at distance 2.
+    const heading = query(reopened.container, "#trip-heading").textContent ?? "";
+    expect(pairIn(heading)).not.toEqual(["Nynäshamn", "Trosa"]);
+    expect(pairIn(heading)).toHaveLength(2);
+  });
+
   test.each([
     ["corrupt", "{not json"],
     [
