@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { newGame, STANDARD_RULES } from "../engine/game";
+import { giveUp, newGame } from "../engine/game";
 import { buildGraphVersion } from "../graph/graphVersion";
 import { memoryStorage } from "../progress/storage";
 import type { LinkedTrip } from "./linkPayload";
+import { freePlayRules } from "./modeRules";
 import { resumeTrip, saveTripSlot, storedTrip } from "./tripSlot";
 
 // Nynäshamn ── Haninge ── Salem ── Trosa.
@@ -29,14 +30,40 @@ describe("the trip slot", () => {
   test("resumes the stored trip's guesses, hints and whether it was drawn", () => {
     const storage = memoryStorage();
     const game = {
-      ...newGame(trip, STANDARD_RULES),
+      ...newGame(trip, freePlayRules(trip.mode)),
       guesses: ["0136"],
       hints: { taken: 1, nextKommun: "0128" },
     };
     saveTripSlot(storage, { versionOrdinal: 2, trip, game, drawn: true });
 
-    expect(resumeTrip(storage, version, trip, STANDARD_RULES)).toEqual({ game, drawn: true });
+    expect(resumeTrip(storage, version, trip)).toEqual({ game, drawn: true });
     expect(storedTrip(storage)).toEqual({ versionOrdinal: 2, trip });
+  });
+
+  test("resumes a given-up trip as given up", () => {
+    const storage = memoryStorage();
+    // Nynäshamn to Salem is a distance of 1; Trosa is off the route.
+    const toSalem: LinkedTrip = { ...trip, destination: "0128" };
+    const playing = { ...newGame(toSalem, freePlayRules(toSalem.mode)), guesses: ["0488"] };
+    const game = giveUp(graph, playing);
+    saveTripSlot(storage, { versionOrdinal: 2, trip: toSalem, game, drawn: false });
+
+    expect(resumeTrip(storage, version, toSalem)?.game).toEqual(game);
+    expect(game.givenUp).toBe(true);
+  });
+
+  test("ignores a give-up stored before the distance's worth of guesses", () => {
+    const storage = memoryStorage();
+    const slot = {
+      format: 1,
+      versionOrdinal: 2,
+      trip,
+      drawn: false,
+      game: { guesses: ["0128"], givenUp: true },
+    };
+    storage.setItem("akle:free-play-trip", JSON.stringify(slot));
+
+    expect(resumeTrip(storage, version, trip)?.game.givenUp).toBeUndefined();
   });
 
   test.each<[string, LinkedTrip, number]>([
@@ -47,7 +74,7 @@ describe("the trip slot", () => {
     const storage = memoryStorage();
     saveTripSlot(storage, { versionOrdinal: 2, trip, game: newGame(trip), drawn: false });
 
-    expect(resumeTrip(storage, { graph, ordinal }, other, STANDARD_RULES)).toBeUndefined();
+    expect(resumeTrip(storage, { graph, ordinal }, other)).toBeUndefined();
   });
 
   test("compares a timed trip's thinking time", () => {
@@ -56,8 +83,8 @@ describe("the trip slot", () => {
     saveTripSlot(storage, { versionOrdinal: 2, trip: timed, game: newGame(timed), drawn: false });
     const slower: LinkedTrip = { ...trip, mode: { kind: "timed", thinkingTime: 20 } };
 
-    expect(resumeTrip(storage, version, timed, STANDARD_RULES)).toBeDefined();
-    expect(resumeTrip(storage, version, slower, STANDARD_RULES)).toBeUndefined();
+    expect(resumeTrip(storage, version, timed)).toBeDefined();
+    expect(resumeTrip(storage, version, slower)).toBeUndefined();
   });
 
   test("drops guesses and hints its version no longer allows", () => {
@@ -71,8 +98,8 @@ describe("the trip slot", () => {
     };
     storage.setItem("akle:free-play-trip", JSON.stringify(slot));
 
-    expect(resumeTrip(storage, version, trip, STANDARD_RULES)?.game).toEqual({
-      ...newGame(trip),
+    expect(resumeTrip(storage, version, trip)?.game).toEqual({
+      ...newGame(trip, freePlayRules(trip.mode)),
       guesses: ["0136"],
     });
   });
@@ -108,7 +135,7 @@ describe("the trip slot", () => {
     storage.setItem("akle:free-play-trip", text);
 
     expect(storedTrip(storage)).toBeUndefined();
-    expect(resumeTrip(storage, version, trip, STANDARD_RULES)).toBeUndefined();
+    expect(resumeTrip(storage, version, trip)).toBeUndefined();
   });
 
   test("a new trip replaces the slot", () => {
@@ -118,6 +145,6 @@ describe("the trip slot", () => {
     saveTripSlot(storage, { versionOrdinal: 2, trip: next, game: newGame(next), drawn: true });
 
     expect(storedTrip(storage)).toEqual({ versionOrdinal: 2, trip: next });
-    expect(resumeTrip(storage, version, trip, STANDARD_RULES)).toBeUndefined();
+    expect(resumeTrip(storage, version, trip)).toBeUndefined();
   });
 });
