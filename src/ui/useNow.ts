@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import type { Clock } from "../engine/clock";
-
-const TICK_MS = 250;
+import { PacingContext } from "./pacing";
 
 /**
  * The time now, read from `clock` on every tick while `running` and whenever the page comes back
@@ -9,16 +8,17 @@ const TICK_MS = 250;
  * hidden or asleep.
  */
 export function useNow(clock: Clock, running: boolean): number {
+  const { tickMs } = useContext(PacingContext);
   const [now, setNow] = useState(clock);
   useEffect(() => {
     if (!running) return;
     const tick = () => setNow(clock());
-    const timer = setInterval(tick, TICK_MS);
+    const timer = setInterval(tick, tickMs);
     document.addEventListener("visibilitychange", tick);
     return () => {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", tick);
     };
-  }, [clock, running]);
+  }, [clock, running, tickMs]);
   return now;
 }
