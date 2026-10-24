@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { pathCode, pathGraph } from "../schedule/testGraphs";
-import { drawTrip, largestDistance, tripPairs } from "./draw";
+import { drawTrip, drawTrips, largestDistance, tripPairs } from "./draw";
 
 /** A random source that returns the given values in turn, and fails if asked for more. */
 function scripted(...values: number[]) {
@@ -83,6 +83,28 @@ describe("drawing again after a trip", () => {
     const lastTrip = { start: pathCode(3), destination: pathCode(0) };
     const trip = drawTrip(short, { min: 2, max: 2 }, scripted(0, 0, 0).random, lastTrip);
     expect(trip).toEqual({ start: pathCode(0), destination: pathCode(3) });
+  });
+});
+
+describe("drawing several trips at once", () => {
+  // k00 ─ k01 ─ k02 ─ k03: distance 1 has k00–k02 and k01–k03.
+  const short = tripPairs(pathGraph(4));
+  const first = { start: pathCode(0), destination: pathCode(2) };
+  const second = { start: pathCode(1), destination: pathCode(3) };
+
+  test("each trip skips the pair drawn just before it", () => {
+    const source = scripted(0, 0, 0, 0, 0, 0, 0, 0, 0);
+    expect(drawTrips(short, { min: 1, max: 1 }, 3, source.random)).toEqual([first, second, first]);
+    expect(source.calls()).toBe(9);
+  });
+
+  test("the first trip skips the pair drawn before the batch", () => {
+    const trips = drawTrips(short, { min: 1, max: 1 }, 1, scripted(0, 0, 0).random, first);
+    expect(trips).toEqual([second]);
+  });
+
+  test("a range without pairs draws none", () => {
+    expect(drawTrips(short, { min: 5, max: 8 }, 3, scripted(0, 0, 0).random)).toEqual([]);
   });
 });
 
