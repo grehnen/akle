@@ -27,5 +27,9 @@ export function opensAtStarta(mode: ModeSetting): boolean {
 export const PLAYABLE_MODES: ReadonlySet<ModeSetting["kind"]> = new Set([
   "standard",
   "unlimited",
+  "timed",
   "tie-breaker",
 ]);
+
+/** The thinking time, in whole seconds, a timed trip gets unless the player sets another. */
+export const DEFAULT_THINKING_TIME = 10;

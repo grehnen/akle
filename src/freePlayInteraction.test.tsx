@@ -731,7 +731,7 @@ describe("Läge", () => {
         radio.closest("label")?.querySelector(".free-play-mode-name")?.textContent === name,
     ) as HTMLInputElement;
 
-  test("four mode cards sit above the tabs, Standard chosen, Tidspress not yet playable", async () => {
+  test("four mode cards sit above the tabs, Standard chosen, all playable", async () => {
     const { container } = await mountApp("/fri");
 
     const modes = query(container, "fieldset.free-play-modes");
@@ -757,7 +757,7 @@ describe("Läge", () => {
         name: "Tidspress",
         description: "Varje gissning måste göras inom betänketiden.",
         checked: false,
-        disabled: true,
+        disabled: false,
       },
       {
         name: "Tidtagning",
@@ -835,16 +835,6 @@ describe("Läge", () => {
     expect(copied).toEqual([
       `#åkle Fri resa · Obegränsad\n+0 (Perfekt) · −1 poäng\n✅✅\nhttps://akle.grehn.net${unlimitedLink("0192", "0488")}`,
     ]);
-  });
-
-  test("a link in a mode not yet playable still shows the error screen", async () => {
-    const timed = tripLinkPath(0, {
-      start: "0192",
-      destination: "0488",
-      mode: { kind: "timed", thinkingTime: 10 },
-    });
-    const { container } = await mountApp(timed);
-    expect(query(container, "#free-play-error-heading").textContent).toBe("Länken fungerar inte");
   });
 });
 
@@ -987,5 +977,181 @@ describe("Tidtagning", () => {
     expect(query(container, '.result-time [aria-hidden="true"]').textContent).toBe("–");
     await click(query(container, ".share-button"));
     expect(copied[0]?.split("\n")[1]).toBe("Gav upp (1 ifrån) · 3 poäng");
+  });
+});
+
+describe("Tidspress", () => {
+  const timedLink = (start: string, destination: string, thinkingTime = 10) =>
+    tripLinkPath(0, { start, destination, mode: { kind: "timed", thinkingTime } });
+  const chooseTimed = (container: HTMLElement) =>
+    click(query(container, 'input[name="free-play-mode"][value="timed"]'));
+  const thinkingTimeField = (container: HTMLElement) =>
+    container.querySelector<HTMLInputElement>('.free-play-modes input[type="range"]');
+  const startaButton = (container: HTMLElement) => buttonNamed(container, "Starta") as HTMLElement;
+
+  test("choosing Tidspress shows its betänketid in its card: 5–60 whole seconds, 10 by default", async () => {
+    const { container } = await mountApp("/fri");
+    expect(thinkingTimeField(container)).toBeNull();
+
+    await chooseTimed(container);
+    const field = thinkingTimeField(container) as HTMLInputElement;
+    expect(field.closest(".free-play-mode")?.textContent).toContain("Tidspress");
+    expect(field.labels?.[0]?.textContent).toContain("Betänketid");
+    expect([field.min, field.max, field.step, field.value]).toEqual(["5", "60", "1", "10"]);
+    expect(query(container, ".free-play-thinking-time output").textContent).toBe("10 s");
+
+    await type(field, "25");
+    expect(query(container, ".free-play-thinking-time output").textContent).toBe("25 s");
+    // Another mode and back keeps the betänketid.
+    await click(query(container, 'input[name="free-play-mode"][value="standard"]'));
+    expect(thinkingTimeField(container)).toBeNull();
+    await chooseTimed(container);
+    expect(thinkingTimeField(container)?.value).toBe("25");
+  });
+
+  test("a picked trip carries its betänketid in its link and label, behind Starta", async () => {
+    const { container } = await mountApp("/fri");
+    await chooseTimed(container);
+    await type(thinkingTimeField(container) as HTMLInputElement, "25");
+    await click(query(container, "#free-play-tab-pick"));
+    await pick(container, "Nynäshamn", "Trosa");
+
+    expect(container.querySelector("#trip-heading")).toBeNull();
+    expect(container.textContent).toContain("Fri resa · Tidspress 25 s");
+    expect(address()).toBe(timedLink("0192", "0488", 25));
+    await click(startaButton(container));
+    expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
+  });
+
+  test("Slumpa ny resa keeps the betänketid", async () => {
+    const { container } = await mountApp("/fri");
+    await chooseTimed(container);
+    await type(thinkingTimeField(container) as HTMLInputElement, "15");
+    const { min, max } = distanceThumbs(container);
+    await type(min, "1");
+    await type(max, "1");
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+    await click(startaButton(container));
+    await winDistanceOneTrip(container);
+
+    await click(buttonNamed(container, "Slumpa ny resa") as HTMLElement);
+    expect(container.textContent).toContain("Fri resa · Tidspress 15 s");
+  });
+
+  /** Lets the injected clock's time pass, as the page sees it on coming back into view. */
+  async function awhile(milliseconds: number) {
+    passTime(milliseconds);
+    await act(async () => {
+      dom.window.document.dispatchEvent(new dom.window.Event("visibilitychange"));
+    });
+  }
+  const secondsLeft = (container: HTMLElement) =>
+    query(container, ".thinking-time-seconds [role='timer']").textContent;
+  const announced = (container: HTMLElement) =>
+    query(container, ".thinking-time [aria-live='polite']").textContent?.trim();
+  async function startedTimedTrip(storage?: KeyValueStorage) {
+    const mountedApp = await mountApp(timedLink("0192", "0488"), storage);
+    await click(startaButton(mountedApp.container));
+    return mountedApp;
+  }
+
+  test("Starta starts the thinking time: a countdown bar with the seconds left, above the input", async () => {
+    const { container } = await startedTimedTrip();
+    expect(secondsLeft(container)).toBe("10");
+    const bar = query(container, ".thinking-time");
+    expect(
+      bar.compareDocumentPosition(query(container, "#guess-input")) &
+        dom.window.Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    await awhile(3_200);
+    expect(secondsLeft(container)).toBe("7");
+    expect(bar.classList.contains("thinking-time--warning")).toBe(false);
+    // Timed mode keeps no total time.
+    expect(container.querySelector(".trip-clock")).toBeNull();
+  });
+
+  test("its last third turns a warning colour and bolds the seconds, announced once", async () => {
+    const { container } = await startedTimedTrip();
+    const bar = query(container, ".thinking-time");
+    await awhile(6_500);
+    expect(bar.classList.contains("thinking-time--warning")).toBe(false);
+    expect(announced(container)).toBe("");
+
+    await awhile(500);
+    expect(secondsLeft(container)).toBe("3");
+    expect(bar.classList.contains("thinking-time--warning")).toBe(true);
+    expect(announced(container)).toBe("3 sekunder kvar");
+    // Nothing is announced every second.
+    await awhile(1_000);
+    expect(secondsLeft(container)).toBe("2");
+    expect(announced(container)).toBe("3 sekunder kvar");
+  });
+
+  test("the bar moves smoothly, or in whole-second steps under reduced motion", async () => {
+    const { container } = await startedTimedTrip();
+    await awhile(7_400);
+    const fill = query(container, ".thinking-time-fill");
+    expect(fill.style.getPropertyValue("--thinking-time-left")).toBe("0.26");
+    expect(fill.style.getPropertyValue("--thinking-time-left-step")).toBe("0.3");
+  });
+
+  test("a timeout uses no guess, shows as ⏱ and restarts the thinking time", async () => {
+    const { container } = await startedTimedTrip();
+    await awhile(10_000);
+
+    expect(guessNames(container)).toEqual(["⏱ ×1"]);
+    expect(announced(container)).toBe("Tiden ute");
+    expect(secondsLeft(container)).toBe("10");
+    const counter = query(container, '.guess-input button[type="submit"]');
+    expect(counter.querySelector('[aria-hidden="true"]')?.textContent).toBe("(1/6)");
+  });
+
+  test("only a counted guess restarts it: not an unknown name, a repeat or a hint", async () => {
+    const { container } = await startedTimedTrip();
+    await awhile(2_000);
+    await guess(container, "Haninge");
+    expect(secondsLeft(container)).toBe("10");
+
+    await awhile(3_000);
+    await guess(container, "Atlantis");
+    await guess(container, "Haninge");
+    await click(query(container, ".hint-button"));
+    expect(secondsLeft(container)).toBe("7");
+    await awhile(7_000);
+    expect(guessNames(container)).toEqual(["1. Haninge ✅", "⏱ ×1"]);
+  });
+
+  test("timeouts while away count on return, as one ⏱ ×n row, and score without Perfect", async () => {
+    const link = timedLink("0192", "0488");
+    const { container } = await startedTimedTrip();
+    await guess(container, "Haninge");
+    // Hidden or asleep: five thinking times run out before the page is back.
+    await awhile(52_000);
+    expect(guessNames(container)).toEqual(["1. Haninge ✅", "⏱ ×5"]);
+    expect(secondsLeft(container)).toBe("8");
+    expect(announced(container)).toBe("Tiden ute 5 gånger");
+
+    await playToTheEnd(container, "Salem");
+    expect(query(container, "#result-heading").textContent).toBe("Framme! (+0, 5 ⏱)");
+    expect(query(container, ".result-score").textContent).toBe("5 poäng");
+    expect(container.querySelector(".result-time")).toBeNull();
+    await click(query(container, ".share-button"));
+    expect(copied).toEqual([
+      `#åkle Fri resa · Tidspress 10 s\n+0 (5 ⏱) · 5 poäng\n✅✅\nhttps://akle.grehn.net${link}`,
+    ]);
+  });
+
+  test("timeouts across a reload count from real time, and the thinking time carries on", async () => {
+    const storage = memoryStorage();
+    const { container } = await startedTimedTrip(storage);
+    await awhile(4_000);
+    await guess(container, "Haninge");
+    passTime(3600_000 + 2_500);
+
+    const reloaded = await reopen("/fri", storage);
+    expect(reloaded.container.querySelector(".start-gate")).toBeNull();
+    expect(guessNames(reloaded.container)).toEqual(["1. Haninge ✅", "⏱ ×360"]);
+    expect(secondsLeft(reloaded.container)).toBe("8");
   });
 });
