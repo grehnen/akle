@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { rejectionMessage, resultOutcome, scoreText } from "./messages";
+import { clockText, rejectionMessage, resultOutcome, scoreText, timeText } from "./messages";
 
 describe("scoreText", () => {
   test.each([
@@ -60,5 +60,30 @@ describe("resultOutcome", () => {
 
   test("nothing while playing", () => {
     expect(resultOutcome({ status: "playing", perfect: false, away: 3 })).toBeUndefined();
+  });
+});
+
+describe("clockText, the running clock in whole seconds", () => {
+  test.each([
+    [0, "0:00"],
+    [9_999, "0:09"],
+    [83_900, "1:23"],
+    [3_599_999, "59:59"],
+    [3_600_000, "1:00:00"],
+    [3_725_000, "1:02:05"],
+  ])("%p ms → %p", (milliseconds, text) => {
+    expect(clockText(milliseconds)).toBe(text);
+  });
+});
+
+describe("timeText, a win's time to tenths", () => {
+  test.each([
+    [0, "0:00,0"],
+    [834, "1:23,4"],
+    [35_999, "59:59,9"],
+    [36_000, "1:00:00,0"],
+    [72_012, "2:00:01,2"],
+  ])("%p tenths → %p", (tenths, text) => {
+    expect(timeText(tenths)).toBe(text);
   });
 });

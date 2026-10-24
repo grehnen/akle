@@ -723,7 +723,7 @@ describe("Läge", () => {
         radio.closest("label")?.querySelector(".free-play-mode-name")?.textContent === name,
     ) as HTMLInputElement;
 
-  test("four mode cards sit above the tabs, Standard chosen, the timed two not yet playable", async () => {
+  test("four mode cards sit above the tabs, Standard chosen, Tidspress not yet playable", async () => {
     const { container } = await mountApp("/fri");
 
     const modes = query(container, "fieldset.free-play-modes");
@@ -755,7 +755,7 @@ describe("Läge", () => {
         name: "Tidtagning",
         description: "Tiden tas. Vid lika poäng vinner den snabbaste.",
         checked: false,
-        disabled: true,
+        disabled: false,
       },
     ]);
   });
