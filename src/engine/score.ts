@@ -14,8 +14,8 @@ const AWAY_WEIGHT_GIVEN_UP = 3;
 export function tripScore(review: GameReview): number | undefined {
   if (review.status === "playing") return undefined;
   if (review.perfect) return -1;
-  const penalties = review.hintsUsed + review.timeouts;
-  if (review.status === "won") return (review.extra ?? 0) + penalties;
+  const costs = review.hintsUsed + review.timeouts;
+  if (review.status === "won") return (review.extra ?? 0) + costs;
   const awayWeight = review.givenUp ? AWAY_WEIGHT_GIVEN_UP : AWAY_WEIGHT_AT_LIMIT;
-  return review.cards.length - review.n + awayWeight * review.away + penalties;
+  return review.cards.length - review.n + awayWeight * review.away + costs;
 }
