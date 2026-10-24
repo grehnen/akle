@@ -1,5 +1,5 @@
 import type { DailyTrip } from "../daily/dailyTrip";
-import { type Game, newGame, type TakenHints } from "../engine/game";
+import { type Game, newGame, type TakenHints, type Trip } from "../engine/game";
 import { HINT_COUNT } from "../engine/hints";
 import type { GraphVersion, KommunCode } from "../graph/graphVersion";
 import { type KeyValueStorage, readJson, writeJson } from "./storage";
@@ -34,8 +34,21 @@ export function loadSavedGame(
   if (stored?.tripNumber !== trip.number || !Array.isArray(stored.guesses)) {
     return newGame(trip);
   }
+  return restoreGame(graph, newGame(trip), stored);
+}
+
+/**
+ * A fresh game with the stored guesses and hints put back, keeping only what is still valid on
+ * the graph: known, new kommuner other than the trip's ends, and a hint count in range.
+ */
+export function restoreGame<T extends Trip>(
+  graph: GraphVersion,
+  fresh: Game<T>,
+  stored: { guesses?: unknown; hints?: unknown },
+): Game<T> {
+  const { trip } = fresh;
   const guesses: KommunCode[] = [];
-  for (const code of stored.guesses as unknown[]) {
+  for (const code of Array.isArray(stored.guesses) ? (stored.guesses as unknown[]) : []) {
     if (
       typeof code === "string" &&
       graph.kommuner.has(code) &&
@@ -47,7 +60,7 @@ export function loadSavedGame(
     }
   }
   const hints = readHints(graph, stored.hints);
-  const game = { ...newGame(trip), guesses };
+  const game = { ...fresh, guesses };
   return hints ? { ...game, hints } : game;
 }
 
