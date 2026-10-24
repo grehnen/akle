@@ -173,11 +173,11 @@ An ordered list of free-play trips, each with its own mode, shared as a link.
 _Avoid_: Playlist, challenge, set, quiz, pack
 
 **Time**:
-The elapsed time from starting a tie-breaker-mode trip to winning it; only a won tie-breaker trip has a time.
+The elapsed real time from starting a tie-breaker-mode trip to winning it, including any time the player is away; only a won tie-breaker trip has a time.
 _Avoid_: Clock, timer, stopwatch
 
 **Thinking time** (in the UI: _betänketid_):
-The whole seconds a player has for each guess in a timed-mode trip, set per trip; each counted guess starts it again.
+The whole seconds a player has for each guess in a timed-mode trip, set per trip; each counted guess starts it again, and it keeps running while the player is away.
 _Avoid_: Clock, timer, time limit, shot clock
 
 **Timeout** (in the UI: _tiden ute_):
