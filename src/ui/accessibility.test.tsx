@@ -223,6 +223,18 @@ describe("automated accessibility check", () => {
     expect(await seriousViolations(builder)).toEqual([]);
   });
 
+  test("the itinerary builder with its resume banner has no serious violations", async () => {
+    const banner = (
+      <a className="itinerary-resume" href="/resplan?namn=Fredag&r=x">
+        Fortsätt resplanen: Fredag, resa 3 av 8
+      </a>
+    );
+    const builder = (
+      <ItineraryBuilder graph={graph} ordinal={0} onPlay={() => {}} banner={banner} />
+    );
+    expect(await seriousViolations(builder)).toEqual([]);
+  });
+
   test("an itinerary's intro has no serious violations", async () => {
     const intro = (
       <ItineraryScreen
