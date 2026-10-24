@@ -4,6 +4,7 @@ import { describe, expect, test } from "bun:test";
 const pages = [
   ["index.html", "Åkle"],
   ["fri.html", "Åkle – Fri resa"],
+  ["resplan.html", "Åkle – Resplan"],
 ] as const;
 
 describe.each(pages)("%s", (file, title) => {

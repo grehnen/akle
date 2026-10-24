@@ -40,6 +40,25 @@ describe("App", () => {
     expect(markup).toMatch(/<header[^>]*>.*<a href="\/fri"[^>]*aria-label="Fri resa"/);
   });
 
+  test("has an itinerary link in the header, beside the free-play one", () => {
+    const markup = renderToStaticMarkup(<App source={neverLoads} path="/" />);
+
+    expect(markup).toMatch(
+      /<header[^>]*>.*aria-label="Fri resa".*<a href="\/resplan"[^>]*aria-label="Resplan"/,
+    );
+  });
+
+  test.each(["/resplan", "/resplan/", "/resplan.html"])(
+    "at %p shows the itinerary builder, with the title linking back to today's trip",
+    (path) => {
+      const markup = renderToStaticMarkup(<App source={neverLoads} path={path} />);
+
+      expect(markup).toContain('<h1><a href="/">Åkle</a></h1>');
+      expect(markup).toContain("Laddar resplan…");
+      expect(markup).not.toContain("Laddar dagens resa");
+    },
+  );
+
   test.each(["/fri", "/fri/", "/fri.html"])(
     "at %p shows free play, with the title linking back to today's trip",
     (path) => {
