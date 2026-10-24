@@ -113,6 +113,16 @@ describe("opening an itinerary link", () => {
     );
     expect(itinerary.kind).toBe("itinerary");
   });
+
+  test("counts a title's characters, so 40 emoji fit though each takes two UTF-16 units", async () => {
+    const itinerary = await openItineraryLink(
+      fakeSource().source,
+      today,
+      "🚂".repeat(40),
+      packed(0, ...trips),
+    );
+    expect(itinerary.kind === "itinerary" && itinerary.title).toBe("🚂".repeat(40));
+  });
 });
 
 describe("an invalid itinerary link", () => {
@@ -140,6 +150,7 @@ describe("an invalid itinerary link", () => {
 
   test("with a title over 40 characters is invalid", async () => {
     expect(await open(packed(0, ...trips), "x".repeat(41))).toEqual({ kind: "invalid" });
+    expect(await open(packed(0, ...trips), "🚂".repeat(41))).toEqual({ kind: "invalid" });
   });
 
   test.each([
