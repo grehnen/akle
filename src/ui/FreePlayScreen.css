@@ -1,0 +1,81 @@
+.free-play-setup {
+  width: 100%;
+  max-width: 30rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.free-play-setup h2 {
+  margin: 0;
+}
+
+.free-play-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--rule);
+}
+
+.free-play-tabs [role="tab"] {
+  flex: 1;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.free-play-tabs [role="tab"][aria-selected="true"] {
+  color: var(--text);
+  font-weight: 700;
+  background: linear-gradient(var(--text), var(--text)) bottom / 100% 3px no-repeat;
+}
+
+.free-play-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.endpoint-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.endpoint-field label {
+  font-weight: 700;
+}
+
+/* Each end takes its road-sign colour: a yellow edge for Start, a blue one for Mål. */
+.endpoint-field input {
+  border-left: 6px solid var(--start);
+}
+
+.endpoint-field--destination input {
+  border-left-color: var(--destination);
+}
+
+.free-play-distance {
+  min-height: 1.45em;
+  margin: 0;
+  color: var(--muted);
+}
+
+.free-play-go {
+  align-self: center;
+  min-width: 8rem;
+  background: var(--start);
+  color: var(--night);
+  font-weight: 700;
+}
+
+.free-play-go:disabled {
+  background: var(--surface);
+  color: var(--muted);
+  cursor: default;
+}
+
+.result-score {
+  margin: 0;
+  font-weight: 700;
+}

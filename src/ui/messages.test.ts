@@ -1,5 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import { rejectionMessage, resultOutcome } from "./messages";
+import { rejectionMessage, resultOutcome, scoreText } from "./messages";
+
+describe("scoreText", () => {
+  test.each([
+    [3, "3 poäng"],
+    [1, "1 poäng"],
+    [0, "0 poäng"],
+    [-1, "−1 poäng"],
+  ])("%p → %p", (score, text) => {
+    expect(scoreText(score)).toBe(text);
+  });
+});
 
 describe("rejectionMessage", () => {
   test.each([
