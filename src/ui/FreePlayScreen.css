@@ -75,6 +75,105 @@
   cursor: default;
 }
 
+.free-play-draw {
+  min-height: 4rem;
+  min-width: 12rem;
+  font-size: 1.25rem;
+}
+
+.free-play-note {
+  margin: 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Two range inputs stacked on one track; only their thumbs take the pointer. */
+.distance-range p {
+  margin: 0 0 0.25rem;
+}
+
+.distance-range-track {
+  position: relative;
+  height: 2.75rem;
+}
+
+.distance-range-track::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: var(--rule);
+}
+
+.distance-range-fill {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  background: var(--start);
+}
+
+.distance-range-track input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  appearance: none;
+  pointer-events: none;
+}
+
+.distance-range-track input::-webkit-slider-runnable-track {
+  background: none;
+}
+
+.distance-range-track input::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 3px var(--start);
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.distance-range-track input::-moz-range-thumb {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 3px var(--start);
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.distance-range-track input:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--text);
+  outline-offset: 4px;
+}
+
+.distance-range-track input:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--text);
+  outline-offset: 4px;
+}
+
+.free-play-redraw {
+  margin-left: auto;
+  padding-inline: 1.5rem;
+  background: var(--start);
+  color: var(--night);
+  font-weight: 700;
+}
+
 .result-score {
   margin: 0;
   font-weight: 700;
