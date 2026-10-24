@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { buildGraphVersion, type GraphVersion, lanOf } from "../graph/graphVersion";
 import { generateSchedule } from "./generateSchedule";
-import type { ScheduledPuzzle } from "./schedule";
+import type { ScheduledTrip } from "./schedule";
 import { checkScheduleRules } from "./scheduleRules";
 import { lanPathGraph, pathCode, pathGraph } from "./testGraphs";
 
-const row = (number: number, start: string, destination: string, n: number): ScheduledPuzzle => ({
+const row = (number: number, start: string, destination: string, n: number): ScheduledTrip => ({
   number,
   start,
   destination,
@@ -15,7 +15,7 @@ const row = (number: number, start: string, destination: string, n: number): Sch
 const graph = pathGraph(14);
 
 function generate(
-  rows: readonly ScheduledPuzzle[],
+  rows: readonly ScheduledTrip[],
   options: {
     graphs?: GraphVersion[];
     chunks?: number;
@@ -34,7 +34,7 @@ function generate(
 }
 
 describe("generateSchedule", () => {
-  test("appends a 1,000-puzzle chunk that passes the schedule rules check", () => {
+  test("appends a 1,000-trip chunk that passes the schedule rules check", () => {
     const { rows } = generate([]);
     expect(rows.map((generated) => generated.number)).toEqual(
       Array.from({ length: 1000 }, (_, i) => i + 1),
@@ -83,11 +83,11 @@ describe("generateSchedule", () => {
   });
 
   describe("reconciles unplayed rows against their own graph version", () => {
-    // From puzzle #3 the line gets a shortcut k03–k05 and loses k13.
+    // From trip #3 the line gets a shortcut k03–k05 and loses k13.
     const before = pathGraph(14, "before", 1);
     const after = buildGraphVersion({
       id: "after",
-      startsAtPuzzle: 3,
+      startsAtTrip: 3,
       kommuner: Array.from({ length: 13 }, (_, i) => ({ code: pathCode(i), name: pathCode(i) })),
       links: [
         ...Array.from({ length: 12 }, (_, i) => ({
@@ -142,7 +142,7 @@ describe("generateSchedule", () => {
   });
 
   test("draws each row within the cooldown of its own graph version", () => {
-    // Six kommuner can't meet a 2-puzzle cooldown, so the first version waives it.
+    // Six kommuner can't meet a 2-trip cooldown, so the first version waives it.
     const fixture = pathGraph(6, "fixture", 1);
     const real = pathGraph(14, "real", 21);
     const cooldown = { cooldownDays: 2, cooldownDaysByGraphVersion: { fixture: 0 } };
@@ -176,7 +176,7 @@ describe("generateSchedule", () => {
       playedThrough: 0,
       chunks: 1,
     });
-    const lans = (puzzle: ScheduledPuzzle) => [puzzle.start, puzzle.destination].map(lanOf);
+    const lans = (trip: ScheduledTrip) => [trip.start, trip.destination].map(lanOf);
     for (let i = 1; i < rows.length; i++) {
       expect(lans(rows[i]).some((lan) => lans(rows[i - 1]).includes(lan))).toBe(false);
     }
@@ -192,7 +192,7 @@ describe("generateSchedule", () => {
   });
 
   test("repeats a more-used pair instead of failing when the least-used ones are in cooldown", () => {
-    // Too small to always find a least-used pair outside a 1-puzzle län cooldown.
+    // Too small to always find a least-used pair outside a 1-trip län cooldown.
     const lanGraph = lanPathGraph(6, 3);
     const cooldown = { cooldownDays: 0, lanCooldownDays: 1 };
     const { rows } = generateSchedule({
@@ -218,7 +218,7 @@ describe("generateSchedule", () => {
   describe("least-used refilling", () => {
     // On a line of six kommuner: N 3 has k00–k04 and k01–k05; N 4 has only k00–k05.
     const short = pathGraph(6, "short", 1);
-    const pairsWithN = (rows: readonly ScheduledPuzzle[], n: number) =>
+    const pairsWithN = (rows: readonly ScheduledTrip[], n: number) =>
       rows
         .filter((generated) => generated.n === n)
         .map((generated) => [generated.start, generated.destination].sort().join("-"));

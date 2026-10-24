@@ -2,28 +2,28 @@ import { createHash } from "node:crypto";
 import type { GraphVersion } from "../graph/graphVersion";
 import { graphVersionFor } from "../graph/graphVersionFiles";
 import { shortestRouteLengthsFrom } from "../graph/routes";
-import { type Cooldown, puzzlesPerChunk, type ScheduledPuzzle } from "./schedule";
+import { type Cooldown, tripsPerChunk, type ScheduledTrip } from "./schedule";
 import { pairEndpoints } from "../graph/kommunPair";
 import { maximumN, minimumN, pairsByN, ScheduleHistory } from "./scheduleHistory";
 
 export type GenerateScheduleInput = Cooldown & {
-  /** The committed schedule, in puzzle order. */
-  rows: readonly ScheduledPuzzle[];
+  /** The committed schedule, in trip order. */
+  rows: readonly ScheduledTrip[];
   graphs: readonly GraphVersion[];
   seed: string;
-  /** Rows up to this puzzle number are played and copied unchanged. */
+  /** Rows up to this trip number are played and copied unchanged. */
   playedThrough: number;
   /** How many chunks to complete or add after the last row; 0 only reconciles. */
   chunks: number;
 };
 
-export type ReconciledRow = { before: ScheduledPuzzle; after: ScheduledPuzzle };
+export type ReconciledRow = { before: ScheduledTrip; after: ScheduledTrip };
 
 export type GeneratedSchedule = {
-  rows: ScheduledPuzzle[];
+  rows: ScheduledTrip[];
   /** Unplayed rows whose N was updated or whose pair was replaced. */
   reconciled: ReconciledRow[];
-  added: ScheduledPuzzle[];
+  added: ScheduledTrip[];
 };
 
 const maximumAttempts = 1000;
@@ -31,19 +31,19 @@ const maximumAttempts = 1000;
 /**
  * `bun run schedule` (ADR 0001): reconciles unplayed rows against their graph versions,
  * then appends chunks. The committed rows are the only state, and each row's draws come
- * from hash(seed, puzzle number, attempt), so the same inputs always give the same output.
+ * from hash(seed, trip number, attempt), so the same inputs always give the same output.
  */
 export function generateSchedule(input: GenerateScheduleInput): GeneratedSchedule {
   const history = new ScheduleHistory(input);
-  const rows: ScheduledPuzzle[] = [];
+  const rows: ScheduledTrip[] = [];
   const reconciled: ReconciledRow[] = [];
-  const added: ScheduledPuzzle[] = [];
-  const graphFor = (puzzleNumber: number) => {
-    const graph = graphVersionFor(input.graphs, puzzleNumber);
-    if (!graph) throw new Error(`No graph version covers puzzle #${puzzleNumber}`);
+  const added: ScheduledTrip[] = [];
+  const graphFor = (tripNumber: number) => {
+    const graph = graphVersionFor(input.graphs, tripNumber);
+    if (!graph) throw new Error(`No graph version covers trip #${tripNumber}`);
     return graph;
   };
-  const keep = (row: ScheduledPuzzle) => {
+  const keep = (row: ScheduledTrip) => {
     rows.push(row);
     history.add(row);
   };
@@ -73,20 +73,20 @@ export function generateSchedule(input: GenerateScheduleInput): GeneratedSchedul
   return { rows, reconciled, added };
 }
 
-/** The last puzzle number once `chunks` chunks are completed or added after `lastNumber`. */
+/** The last trip number once `chunks` chunks are completed or added after `lastNumber`. */
 function scheduleEndAfter(lastNumber: number, chunks: number): number {
   if (chunks === 0) return lastNumber;
-  const partialChunkStart = Math.floor(lastNumber / puzzlesPerChunk) * puzzlesPerChunk;
-  return partialChunkStart + chunks * puzzlesPerChunk;
+  const partialChunkStart = Math.floor(lastNumber / tripsPerChunk) * tripsPerChunk;
+  return partialChunkStart + chunks * tripsPerChunk;
 }
 
-function withCurrentN(row: ScheduledPuzzle, graph: GraphVersion): ScheduledPuzzle {
+function withCurrentN(row: ScheduledTrip, graph: GraphVersion): ScheduledTrip {
   if (!graph.kommuner.has(row.start) || !graph.kommuner.has(row.destination)) return row;
   const n = shortestRouteLengthsFrom(graph, row.start).get(row.destination);
   return n === undefined ? row : { ...row, n };
 }
 
-function sameRow(a: ScheduledPuzzle, b: ScheduledPuzzle): boolean {
+function sameRow(a: ScheduledTrip, b: ScheduledTrip): boolean {
   return a.start === b.start && a.destination === b.destination && a.n === b.n;
 }
 
@@ -96,29 +96,29 @@ function sameRow(a: ScheduledPuzzle, b: ScheduledPuzzle): boolean {
  * attempt when every pair with that N is in cooldown.
  */
 function drawRow(
-  puzzleNumber: number,
+  tripNumber: number,
   graph: GraphVersion,
   history: ScheduleHistory,
   seed: string,
-): ScheduledPuzzle {
+): ScheduledTrip {
   const groups = pairsByN(graph);
   for (let attempt = 0; attempt < maximumAttempts; attempt++) {
-    const random = randomNumbers(seed, puzzleNumber, attempt);
+    const random = randomNumbers(seed, tripNumber, attempt);
     const n = minimumN + Number(random.next() % BigInt(maximumN - minimumN + 1));
-    const candidates = history.candidates(groups.get(n) ?? [], puzzleNumber, graph);
+    const candidates = history.candidates(groups.get(n) ?? [], tripNumber, graph);
     if (candidates.length === 0) continue;
     const [a, b] = pairEndpoints(candidates[Number(random.next() % BigInt(candidates.length))]);
     const swap = random.next() % 2n === 1n;
-    return { number: puzzleNumber, start: swap ? b : a, destination: swap ? a : b, n };
+    return { number: tripNumber, start: swap ? b : a, destination: swap ? a : b, n };
   }
   throw new Error(
-    `No pair qualifies for puzzle #${puzzleNumber} on graph version ${graph.id} after ${maximumAttempts} attempts; is a cooldown too long for the graph?`,
+    `No pair qualifies for trip #${tripNumber} on graph version ${graph.id} after ${maximumAttempts} attempts; is a cooldown too long for the graph?`,
   );
 }
 
-/** Successive 64-bit numbers from sha256("seed:puzzleNumber:attempt"). Changing this changes every future draw. */
-function randomNumbers(seed: string, puzzleNumber: number, attempt: number) {
-  const digest = createHash("sha256").update(`${seed}:${puzzleNumber}:${attempt}`).digest();
+/** Successive 64-bit numbers from sha256("seed:tripNumber:attempt"). Changing this changes every future draw. */
+function randomNumbers(seed: string, tripNumber: number, attempt: number) {
+  const digest = createHash("sha256").update(`${seed}:${tripNumber}:${attempt}`).digest();
   let offset = 0;
   return {
     next(): bigint {

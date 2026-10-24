@@ -23,7 +23,7 @@ export type Stats = {
   distribution: DistributionRow[];
 };
 
-/** The stats, derived from the history as seen on puzzle number `today`. */
+/** The stats, derived from the history as seen on trip number `today`. */
 export function deriveStats(history: History, today: number): Stats {
   const entries = Object.values(history);
   const wins = entries.filter((entry) => entry.won).length;
@@ -67,15 +67,15 @@ function distribution(entries: HistoryEntry[], todayEntry: HistoryEntry | undefi
   });
 }
 
-const wonPuzzle = (history: History, puzzleNumber: number) => history[puzzleNumber]?.won === true;
+const wonTrip = (history: History, tripNumber: number) => history[tripNumber]?.won === true;
 
-/** Today's puzzle may still be in play, so an unrecorded today doesn't end the streak; yesterday does. */
+/** Today's trip may still be in play, so an unrecorded today doesn't end the streak; yesterday does. */
 function currentStreak(history: History, today: number): number {
-  let puzzleNumber = history[today] === undefined ? today - 1 : today;
+  let tripNumber = history[today] === undefined ? today - 1 : today;
   let streak = 0;
-  while (wonPuzzle(history, puzzleNumber)) {
+  while (wonTrip(history, tripNumber)) {
     streak += 1;
-    puzzleNumber -= 1;
+    tripNumber -= 1;
   }
   return streak;
 }
@@ -83,10 +83,10 @@ function currentStreak(history: History, today: number): number {
 function longestStreak(history: History): number {
   let longest = 0;
   for (const key of Object.keys(history)) {
-    const puzzleNumber = Number(key);
-    if (!wonPuzzle(history, puzzleNumber) || wonPuzzle(history, puzzleNumber - 1)) continue;
+    const tripNumber = Number(key);
+    if (!wonTrip(history, tripNumber) || wonTrip(history, tripNumber - 1)) continue;
     let length = 0;
-    while (wonPuzzle(history, puzzleNumber + length)) length += 1;
+    while (wonTrip(history, tripNumber + length)) length += 1;
     longest = Math.max(longest, length);
   }
   return longest;

@@ -144,7 +144,7 @@ const review = reviewNeighborGraph(
 const files = graphVersionFileContents({
   version: {
     id: buildConfig.id,
-    startsAtPuzzle: buildConfig.startsAtPuzzle,
+    startsAtTrip: buildConfig.startsAtTrip,
     source: {
       extract: { url: buildConfig.extract.url, sha256: buildConfig.extract.sha256, timestamp },
       names: { url: buildConfig.scbKommuner.url, sha256: buildConfig.scbKommuner.sha256 },

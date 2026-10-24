@@ -31,7 +31,7 @@ function square(code: KommunCode, west: number, south: number) {
 // A row of kommuner: A – B – C – D – E, plus an unrelated F.
 const graphSource = {
   id: "test",
-  startsAtPuzzle: 1,
+  startsAtTrip: 1,
   kommuner: ["A", "B", "C", "D", "E", "F"].map((code) => ({ code, name: `Kommun ${code}` })),
   links: [
     { between: ["A", "B"], kind: "land" },
@@ -56,10 +56,10 @@ const graph = buildGraphVersion({
 });
 const shapeless = buildGraphVersion(graphSource);
 
-const puzzle = { number: 7, start: "A", destination: "E" };
+const trip = { number: 7, start: "A", destination: "E" };
 
 function play(...names: string[]): Game {
-  let game = newGame(puzzle);
+  let game = newGame(trip);
   for (const name of names) {
     const result = submitGuess(graph, game, name);
     if (result.kind !== "accepted") throw new Error(`guess ${name} was ${result.reason}`);
@@ -69,7 +69,7 @@ function play(...names: string[]): Game {
 }
 
 function drawn(game: Game) {
-  return mapFeatures(graph, puzzle, reviewGame(graph, game).cards).features.map(
+  return mapFeatures(graph, trip, reviewGame(graph, game).cards).features.map(
     (feature) => feature.properties,
   );
 }
@@ -100,7 +100,7 @@ describe("mapFeatures", () => {
 
   test("draws hint outlines first, white, skipping kommuner already drawn", () => {
     const cards = reviewGame(graph, play("Kommun C")).cards;
-    const properties = mapFeatures(graph, puzzle, cards, ["B", "A", "C", "F"]).features.map(
+    const properties = mapFeatures(graph, trip, cards, ["B", "A", "C", "F"]).features.map(
       (feature) => feature.properties,
     );
     expect(properties).toEqual([
@@ -114,7 +114,7 @@ describe("mapFeatures", () => {
 
   test("once finished, outlines every other kommun underneath, instead of the hint outlines", () => {
     const cards = reviewGame(graph, play("Kommun C")).cards;
-    const properties = mapFeatures(graph, puzzle, cards, ["B", "F"], {
+    const properties = mapFeatures(graph, trip, cards, ["B", "F"], {
       allOutlines: true,
     }).features.map((feature) => feature.properties);
     expect(properties).toEqual([
@@ -128,34 +128,34 @@ describe("mapFeatures", () => {
   });
 
   test("takes each feature's geometry from the graph version's shapes", () => {
-    const [start] = mapFeatures(graph, puzzle, []).features;
+    const [start] = mapFeatures(graph, trip, []).features;
     expect(start?.geometry).toEqual(square("A", 12, 56).geometry);
   });
 
   test("skips kommuner that have no shape", () => {
-    expect(mapFeatures(shapeless, puzzle, []).features).toEqual([]);
+    expect(mapFeatures(shapeless, trip, []).features).toEqual([]);
   });
 });
 
 describe("defaultBounds", () => {
   test("without guesses, spans both endpoint shapes as [west, south, east, north]", () => {
-    expect(defaultBounds(graph, puzzle, [])).toEqual([12, 56, 17, 59]);
+    expect(defaultBounds(graph, trip, [])).toEqual([12, 56, 17, 59]);
   });
 
   test("is undefined when the endpoints have no shapes", () => {
-    expect(defaultBounds(shapeless, puzzle, [])).toBeUndefined();
+    expect(defaultBounds(shapeless, trip, [])).toBeUndefined();
   });
 
   test.each(["✅", "🟩", "🟧"] as const)("takes in an unlinked %s guess", (feedback) => {
-    expect(defaultBounds(graph, puzzle, [{ code: "F", feedback, connected: false }])).toEqual([
+    expect(defaultBounds(graph, trip, [{ code: "F", feedback, connected: false }])).toEqual([
       12, 56, 21, 66,
     ]);
   });
 
   test("leaves out an unlinked 🟥 guess", () => {
-    expect(defaultBounds(graph, puzzle, [{ code: "F", feedback: "🟥", connected: false }])).toEqual(
-      [12, 56, 17, 59],
-    );
+    expect(defaultBounds(graph, trip, [{ code: "F", feedback: "🟥", connected: false }])).toEqual([
+      12, 56, 17, 59,
+    ]);
   });
 
   test("takes in a 🟥 guess linked to the start", () => {
@@ -163,9 +163,9 @@ describe("defaultBounds", () => {
       ...graphSource,
       shapes: { type: "FeatureCollection", features: [square("A", 12, 56), square("B", 9, 50)] },
     });
-    expect(defaultBounds(sparse, puzzle, [{ code: "B", feedback: "🟥", connected: true }])).toEqual(
-      [9, 50, 13, 57],
-    );
+    expect(defaultBounds(sparse, trip, [{ code: "B", feedback: "🟥", connected: true }])).toEqual([
+      9, 50, 13, 57,
+    ]);
   });
 
   test("takes in 🟥 guesses linked to the destination, directly or through other guesses", () => {
@@ -185,21 +185,21 @@ describe("defaultBounds", () => {
         ],
       },
     });
-    expect(defaultBounds(sparse, puzzle, cards)).toEqual([12, 56, 31, 71]);
-    expect(defaultBounds(sparse, puzzle, cards.slice(0, 1))).toEqual([12, 56, 17, 59]);
+    expect(defaultBounds(sparse, trip, cards)).toEqual([12, 56, 31, 71]);
+    expect(defaultBounds(sparse, trip, cards.slice(0, 1))).toEqual([12, 56, 17, 59]);
   });
 });
 
 describe("guessViewBounds", () => {
   test("adds the latest guess to the default bounds even when it isn't part of them", () => {
-    expect(
-      guessViewBounds(graph, puzzle, [{ code: "F", feedback: "🟥", connected: false }]),
-    ).toEqual([12, 56, 21, 66]);
+    expect(guessViewBounds(graph, trip, [{ code: "F", feedback: "🟥", connected: false }])).toEqual(
+      [12, 56, 21, 66],
+    );
   });
 
   test("drops an earlier guess that isn't part of the default bounds", () => {
     expect(
-      guessViewBounds(graph, puzzle, [
+      guessViewBounds(graph, trip, [
         { code: "F", feedback: "🟥", connected: false },
         { code: "C", feedback: "🟩", connected: false },
       ]),
@@ -211,7 +211,7 @@ describe("routeFeatures", () => {
   const route = ["A", "B", "C", "D", "E"];
 
   test("draws guesses off the route like unconnected guesses, then the endpoints, then the route's guessed kommuner green and missed ones red", () => {
-    const properties = routeFeatures(graph, puzzle, route, new Set(["C", "F"])).features.map(
+    const properties = routeFeatures(graph, trip, route, new Set(["C", "F"])).features.map(
       (feature) => feature.properties,
     );
     expect(properties).toEqual([
@@ -225,7 +225,7 @@ describe("routeFeatures", () => {
   });
 
   test("with allOutlines, outlines every kommun off the route underneath", () => {
-    const properties = routeFeatures(graph, puzzle, route, new Set(["C"]), {
+    const properties = routeFeatures(graph, trip, route, new Set(["C"]), {
       allOutlines: true,
     }).features.map((feature) => feature.properties);
     expect(properties.slice(0, 2)).toEqual([

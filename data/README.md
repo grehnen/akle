@@ -4,14 +4,14 @@ Committed data the app bundles and fetches on demand. Parsers live in `src/graph
 
 ## Graph versions: `graphs/<id>/`
 
-One directory per **graph version** ([ADR 0004](../docs/adr/0004-versioned-graphs-keyed-by-puzzle-number.md)), loaded as one unit:
+One directory per **graph version** ([ADR 0004](../docs/adr/0004-versioned-graphs-keyed-by-trip-number.md)), loaded as one unit:
 
-| File             | Content                                                                                     |
-| ---------------- | ------------------------------------------------------------------------------------------- |
-| `version.json`   | `{ "id": "<id>", "startsAtPuzzle": <puzzle number> }`; the id must match the directory name |
-| `kommuner.csv`   | `code,name`: SCB kommun code and official name without "kommun"                             |
-| `neighbors.csv`  | `a,b,link`: one neighbor pair per row; `link` is `land`, `fixed` or `ferry`                 |
-| `shapes.geojson` | A FeatureCollection with one feature per kommun, `properties.code` set to its SCB code      |
+| File             | Content                                                                                 |
+| ---------------- | --------------------------------------------------------------------------------------- |
+| `version.json`   | `{ "id": "<id>", "startsAtTrip": <trip number> }`; the id must match the directory name |
+| `kommuner.csv`   | `code,name`: SCB kommun code and official name without "kommun"                         |
+| `neighbors.csv`  | `a,b,link`: one neighbor pair per row; `link` is `land`, `fixed` or `ferry`             |
+| `shapes.geojson` | A FeatureCollection with one feature per kommun, `properties.code` set to its SCB code  |
 
 A version built from OSM also holds the **build evidence**: what the build measured, before the overrides. The app doesn't read these files; `bun run graph:check` reviews them (see below). `at` is a point as `lon lat`.
 
@@ -23,7 +23,7 @@ A version built from OSM also holds the **build evidence**: what the build measu
 
 A kommun whose links are all `ferry` is a **dead end**; this is derived, not stored.
 
-`graphs/osm-2026-10-01/` is built from OpenStreetMap and starts at puzzle #1, launch day. It has all 290 kommuner with land, fixed-link and ferry neighbors; Gotland and Öckerö are linked only by ferry, so they are dead ends. Its `version.json` records the extract and the SCB names file it was built from. Borders and shapes © OpenStreetMap contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
+`graphs/osm-2026-10-01/` is built from OpenStreetMap and starts at trip #1, launch day. It has all 290 kommuner with land, fixed-link and ferry neighbors; Gotland and Öckerö are linked only by ferry, so they are dead ends. Its `version.json` records the extract and the SCB names file it was built from. Borders and shapes © OpenStreetMap contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
 
 ### Rebuilding a graph version from OSM
 
@@ -34,7 +34,7 @@ bun run graph:build
 Needs Bun and Docker. The command reads `scripts/graph/build-config.json`, which pins:
 
 - the Geofabrik Sweden extract and the SCB kommun names file (`knkopplingar`), both by URL and sha256;
-- the version id and the puzzle it starts at;
+- the version id and the trip it starts at;
 - the route that closes the mainland coastline, which the extract cuts at the borders with Norway and Finland.
 
 It also reads the hand-kept ferries and overrides from `neighbor-overrides.yaml` ([ADR 0003](../docs/adr/0003-committed-human-reviewed-neighbor-graph.md)).
@@ -102,49 +102,49 @@ It rereads the build evidence of the newest version, so it needs no OSM, and rew
 
 ### Adding a graph version
 
-Every change to the kommuner, their names, neighbors or shapes, whether a kommun merger, a new bridge or ferry, or an error fix, goes into a **new graph version** that starts at a future puzzle number ([ADR 0004](../docs/adr/0004-versioned-graphs-keyed-by-puzzle-number.md)). It can be reviewed and merged well ahead of time: no deploy needs to be timed, and games in progress are never rescored.
+Every change to the kommuner, their names, neighbors or shapes, whether a kommun merger, a new bridge or ferry, or an error fix, goes into a **new graph version** that starts at a future trip number ([ADR 0004](../docs/adr/0004-versioned-graphs-keyed-by-trip-number.md)). It can be reviewed and merged well ahead of time: no deploy needs to be timed, and games in progress are never rescored.
 
-A version is **frozen** once a puzzle has used it, that is once its `startsAtPuzzle` is [played](#played-puzzles). Frozen versions are never edited, rebuilt or rechecked; a known error stays in the puzzles that already used it. Until its first puzzle is played, the newest version may still be rebuilt in place.
+A version is **frozen** once a trip has used it, that is once its `startsAtTrip` is [played](#played-trips). Frozen versions are never edited, rebuilt or rechecked; a known error stays in the trips that already used it. Until its first trip is played, the newest version may still be rebuilt in place.
 
-1. Pick the starting puzzle number: the first puzzle that should use the change. It must be after every played puzzle; leave time for review. For a merger on 1 January, it is the puzzle number of 1 January.
-2. In `scripts/graph/build-config.json`, set a new `id` (for example `osm-YYYY-MM-DD` after the extract date) and `startsAtPuzzle`, and pin a newer extract or SCB names file if needed. The overrides in `neighbor-overrides.yaml` apply to the new version only; an older version's overrides live only in git history.
+1. Pick the starting trip number: the first trip that should use the change. It must be after every played trip; leave time for review. For a merger on 1 January, it is the trip number of 1 January.
+2. In `scripts/graph/build-config.json`, set a new `id` (for example `osm-YYYY-MM-DD` after the extract date) and `startsAtTrip`, and pin a newer extract or SCB names file if needed. The overrides in `neighbor-overrides.yaml` apply to the new version only; an older version's overrides live only in git history.
 3. Run `bun run graph:build`. It writes `data/graphs/<new id>/` and leaves the older directories alone.
 4. Review the flagged pairs in `graph-report.md` as in [Reviewing flagged pairs](#reviewing-flagged-pairs). Only the newest version goes through these checks.
-5. Run `bun run schedule --chunks 0`. It reconciles every unplayed row from the new start onward against the new version, updating N or redrawing the pair when needed. Paste its report in the PR. The schedule must cover the new start: the version boundary test loads the puzzles on each side of it.
+5. Run `bun run schedule --chunks 0`. It reconciles every unplayed row from the new start onward against the new version, updating N or redrawing the pair when needed. Paste its report in the PR. The schedule must cover the new start: the version boundary test loads the trips on each side of it.
 6. Run `bun run check`.
 
 A **rename** is data only: the new version's `kommuner.csv` has the new name, and there is no alias for the old one.
 
-The app picks the version by puzzle number, never by the clock, and fetches only that version's files, on demand.
+The app picks the version by trip number, never by the clock, and fetches only that version's files, on demand.
 
 ### Checking: `bun run graph-versions:check [--base <git revision>]`
 
-The required frozen graph versions check, run in CI against the PR's base (`HEAD` by default): every version a played puzzle has used is byte for byte unchanged from the base, keeps its `startsAtPuzzle` and isn't removed, and no new or moved version starts at a [played](#played-puzzles) puzzle, counted against the base.
+The required frozen graph versions check, run in CI against the PR's base (`HEAD` by default): every version a played trip has used is byte for byte unchanged from the base, keeps its `startsAtTrip` and isn't removed, and no new or moved version starts at a [played](#played-trips) trip, counted against the base.
 
 ## Schedule: `schedule/`
 
-- `config.json`: `{ "epoch": "YYYY-MM-DD", "seed": "…", "cooldownDays": 30, "cooldownDaysByGraphVersion": { "<id>": <days> }, "lanCooldownDays": 3, "lanCooldownDaysByGraphVersion": { "<id>": <days> } }`. The epoch is puzzle #1. Each row's endpoint cooldown comes from its graph version: its entry in `cooldownDaysByGraphVersion`, else `cooldownDays`, which defaults to 30. The län cooldown works the same way: no endpoint may lie in a län (the first two digits of its kommun code) that held either endpoint of a puzzle within the last `lanCooldownDaysByGraphVersion` entry, else `lanCooldownDays`, which defaults to 3; a puzzle's start and destination may share a län. Every id in the `…ByGraphVersion` maps must be a graph version under `data/graphs/`; the schedule scripts reject the config otherwise.
-- `0001.csv`, `0002.csv`, …: chunks of 1,000 puzzles with the header `puzzle,start,destination,n` ([ADR 0001](../docs/adr/0001-pre-generated-puzzle-schedule.md)). Åkle launches on 26 October 2026 with puzzle #1, Östhammar to Linköping, set by hand; `bun run schedule --chunks 10` drew #2–#10,000 around it, in `0001.csv`–`0010.csv`.
+- `config.json`: `{ "epoch": "YYYY-MM-DD", "seed": "…", "cooldownDays": 30, "cooldownDaysByGraphVersion": { "<id>": <days> }, "lanCooldownDays": 3, "lanCooldownDaysByGraphVersion": { "<id>": <days> } }`. The epoch is trip #1. Each row's endpoint cooldown comes from its graph version: its entry in `cooldownDaysByGraphVersion`, else `cooldownDays`, which defaults to 30. The län cooldown works the same way: no endpoint may lie in a län (the first two digits of its kommun code) that held either endpoint of a trip within the last `lanCooldownDaysByGraphVersion` entry, else `lanCooldownDays`, which defaults to 3; a trip's start and destination may share a län. Every id in the `…ByGraphVersion` maps must be a graph version under `data/graphs/`; the schedule scripts reject the config otherwise.
+- `0001.csv`, `0002.csv`, …: chunks of 1,000 trips with the header `trip,start,destination,n` ([ADR 0001](../docs/adr/0001-pre-generated-trip-schedule.md)). Åkle launches on 26 October 2026 with trip #1, Östhammar to Linköping, set by hand; `bun run schedule --chunks 10` drew #2–#10,000 around it, in `0001.csv`–`0010.csv`.
 
-### Played puzzles
+### Played trips
 
-A puzzle is **played** when its number is at most today's puzzle number in UTC+14, the earliest time zone, and the base revision scheduled it, counting from the base's epoch, not the one being checked, so moving the epoch can't make a played puzzle unplayed. The base is the `--base` revision for the checks and `HEAD` for the generator. So a base with no schedule (bootstrapping the data) has nothing played, and nothing frozen. The generator, `schedule:check` and `graph-versions:check` all use this one rule (`scripts/playedThrough.ts`).
+A trip is **played** when its number is at most today's trip number in UTC+14, the earliest time zone, and the base revision scheduled it, counting from the base's epoch, not the one being checked, so moving the epoch can't make a played trip unplayed. The base is the `--base` revision for the checks and `HEAD` for the generator. So a base with no schedule (bootstrapping the data) has nothing played, and nothing frozen. The generator, `schedule:check` and `graph-versions:check` all use this one rule (`scripts/playedThrough.ts`).
 
 ### Generating: `bun run schedule [--chunks k] [--now <ISO date>]`
 
-Reconciles every unplayed row against the graph version for its puzzle number (updating N, or redrawing the pair when N leaves 3–8, an endpoint is gone or a rule is broken), then completes or adds `k` chunks (default 1; `0` only reconciles). It prints the Markdown report for the PR body. The same committed files, seed and date always give byte-identical chunks.
+Reconciles every unplayed row against the graph version for its trip number (updating N, or redrawing the pair when N leaves 3–8, an endpoint is gone or a rule is broken), then completes or adds `k` chunks (default 1; `0` only reconciles). It prints the Markdown report for the PR body. The same committed files, seed and date always give byte-identical chunks.
 
-- Each row's draws come from sha256 of `seed:puzzle:attempt`. N is drawn uniformly from 3–8, then a pair uniformly among the least-used of the pairs with that N whose endpoints are outside the endpoint and län cooldowns of the row's graph version; when every pair with that N is in cooldown, the next attempt redraws.
-- [Played](#played-puzzles) rows are never changed; the generator counts them against `HEAD`.
+- Each row's draws come from sha256 of `seed:trip:attempt`. N is drawn uniformly from 3–8, then a pair uniformly among the least-used of the pairs with that N whose endpoints are outside the endpoint and län cooldowns of the row's graph version; when every pair with that N is in cooldown, the next attempt redraws.
+- [Played](#played-trips) rows are never changed; the generator counts them against `HEAD`.
 - Rows may be curated by hand; a rerun keeps any unplayed row that still follows the rules.
 
 ### Checking: `bun run schedule:check [--base <git revision>]`
 
-The required schedule rules check, run in CI against the PR's base: N matches the row's graph version, N is 3–8, no pair repeats before every pair with its N that is outside the cooldowns is used as often, no endpoint repeats within the cooldown of the row's graph version, no endpoint's län held an endpoint within its län cooldown, puzzle numbers run 1, 2, 3, … and each row sits in its own chunk, and [played](#played-puzzles) rows, counted against the base (`HEAD` by default), are unchanged from it. Played rows are exempt from the other rules. The epoch may not differ from the base's once the base has a played puzzle: after launch, moving it would renumber every puzzle and break players' saved games and streaks.
+The required schedule rules check, run in CI against the PR's base: N matches the row's graph version, N is 3–8, no pair repeats before every pair with its N that is outside the cooldowns is used as often, no endpoint repeats within the cooldown of the row's graph version, no endpoint's län held an endpoint within its län cooldown, trip numbers run 1, 2, 3, … and each row sits in its own chunk, and [played](#played-trips) rows, counted against the base (`HEAD` by default), are unchanged from it. Played rows are exempt from the other rules. The epoch may not differ from the base's once the base has a played trip: after launch, moving it would renumber every trip and break players' saved games and streaks.
 
 ### Runway: `bun run runway:check` and `bun run schedule:extend`
 
-The **runway** is the days of puzzles left: the scheduled puzzles after today's puzzle number in UTC+14 (`src/schedule/runway.ts`). Both commands take `--now <ISO date>` to try another day.
+The **runway** is the days of trips left: the scheduled trips after today's trip number in UTC+14 (`src/schedule/runway.ts`). Both commands take `--now <ISO date>` to try another day.
 
 - `bun run runway:check` is the required runway check. It fails when fewer than 100 days are left.
 - `bun run schedule:extend` is what the quarterly [Schedule extension](../.github/workflows/schedule-extension.yml) workflow runs on `main`. Under 730 days left, it runs `bun run schedule` on the `schedule/extend` branch, force-pushes it and opens the extension PR with the report as its body, or updates its own open one, so reruns never open a second PR. Its own PR is one from this repo opened by the GitHub App it runs as (`APP_SLUG`); any other PR from a `schedule/extend` branch is ignored. Once anyone else has committed to its PR, the cron never regenerates or force-pushes it again: it only comments that the schedule needs extending, so hand curation is kept. Under 365 days left, it also turns on auto-merge, so the PR merges once the checks pass. `--dry-run` only looks up the open PR (needs `gh` and `APP_SLUG`) and prints what it would do.

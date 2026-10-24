@@ -41,7 +41,7 @@ export function RulesDialog({ onClose }: RulesDialogProps) {
           </p>
           <p>
             Vinn flera dagar i rad för att bygga en svit, och dela ett resultat utan spoilers med
-            dina vänner. Ett nytt pussel börjar vid midnatt, din lokala tid.
+            dina vänner. En ny resa börjar vid midnatt, din lokala tid.
           </p>
         </RulesSection>
         <RulesSection title="Ledtrådar">

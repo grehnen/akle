@@ -1,5 +1,5 @@
 // bun run runway:check [--now <ISO date>]
-// The required runway check (ADR 0001): fails when fewer than `minimumRunwayDays` days of puzzles
+// The required runway check (ADR 0001): fails when fewer than `minimumRunwayDays` days of trips
 // are left (src/schedule/runway.ts).
 import { runwayDays, runwayViolation } from "../src/schedule/runway";
 import { argument, readScheduleConfig, readScheduleRows } from "./scheduleData";
@@ -12,4 +12,4 @@ if (violation) {
   console.error(`Runway check failed: ${violation}`);
   process.exit(1);
 }
-console.log(`Runway check passed: ${days} days of puzzles left.`);
+console.log(`Runway check passed: ${days} days of trips left.`);

@@ -1,6 +1,6 @@
 // bun run schedule:check [--base <git revision>] [--now <ISO date>]
 // The schedule rules check (ADR 0001). Played rows (data/README.md) are compared with the base
-// revision (HEAD by default), and the epoch may not move once the base has a played puzzle.
+// revision (HEAD by default), and the epoch may not move once the base has a played trip.
 import { checkScheduleRules } from "../src/schedule/scheduleRules";
 import {
   checkArguments,
@@ -43,5 +43,5 @@ if (violations.length > 0) {
   process.exit(1);
 }
 console.log(
-  `Schedule rules check passed: ${rows.length} puzzles, played through #${playedThrough}, compared with ${base}.`,
+  `Schedule rules check passed: ${rows.length} trips, played through #${playedThrough}, compared with ${base}.`,
 );

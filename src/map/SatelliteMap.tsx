@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent, Popup } from "maplibre-gl";
-import type { GuessCard, Puzzle } from "../engine/game";
+import type { GuessCard, Trip } from "../engine/game";
 import { type GraphVersion, type KommunCode, kommunName } from "../graph/graphVersion";
 import {
   defaultBounds,
@@ -17,7 +17,7 @@ import { animateToBounds, zoomResetControl } from "./zoomResetControl";
 
 type SatelliteMapProps = {
   graph: GraphVersion;
-  puzzle: Pick<Puzzle, "start" | "destination">;
+  trip: Pick<Trip, "start" | "destination">;
   cards: readonly Pick<GuessCard, "code" | "feedback" | "connected">[];
   /**
    * Draws this route instead, with the guessed and missed kommuner on it marked. The label names
@@ -40,7 +40,7 @@ type SatelliteMapProps = {
  */
 export function SatelliteMap({
   graph,
-  puzzle,
+  trip,
   cards,
   route,
   hintOutlines,
@@ -54,11 +54,11 @@ export function SatelliteMap({
   const drawn = useMemo(
     () =>
       routeKommuner
-        ? routeFeatures(graph, puzzle, routeKommuner, new Set(cards.map((card) => card.code)), {
+        ? routeFeatures(graph, trip, routeKommuner, new Set(cards.map((card) => card.code)), {
             allOutlines,
           })
-        : mapFeatures(graph, puzzle, cards, hintOutlines, { allOutlines }),
-    [graph, puzzle, cards, routeKommuner, hintOutlines, allOutlines],
+        : mapFeatures(graph, trip, cards, hintOutlines, { allOutlines }),
+    [graph, trip, cards, routeKommuner, hintOutlines, allOutlines],
   );
   const tooltipFor = useRef<(kommun: DrawnKommun) => string | undefined>(undefined);
   useEffect(() => {
@@ -67,18 +67,18 @@ export function SatelliteMap({
   const descriptionId = useId();
   const description = route
     ? undefined
-    : mapDescription(graph, puzzle, cards, hintOutlines, { allOutlines });
+    : mapDescription(graph, trip, cards, hintOutlines, { allOutlines });
   const described = description !== undefined;
   const resetBounds = useMemo(
-    () => (routeFrame ? routeBounds(graph, routeFrame) : defaultBounds(graph, puzzle, cards)),
-    [graph, puzzle, routeFrame, cards],
+    () => (routeFrame ? routeBounds(graph, routeFrame) : defaultBounds(graph, trip, cards)),
+    [graph, trip, routeFrame, cards],
   );
   const viewBounds = useMemo(
-    () => (routeFrame ? resetBounds : guessViewBounds(graph, puzzle, cards)),
-    [graph, puzzle, routeFrame, cards, resetBounds],
+    () => (routeFrame ? resetBounds : guessViewBounds(graph, trip, cards)),
+    [graph, trip, routeFrame, cards, resetBounds],
   );
-  // What the map is framed for: a new guess, puzzle or route eases the map to `viewBounds`.
-  const { start, destination } = puzzle;
+  // What the map is framed for: a new guess, trip or route eases the map to `viewBounds`.
+  const { start, destination } = trip;
   const framing = useMemo(
     () => ({ start, destination, routeFrame, guessCount: cards.length }),
     [start, destination, routeFrame, cards.length],
@@ -189,8 +189,8 @@ export function SatelliteMap({
       role="region"
       aria-label={
         route
-          ? `${route.label} från ${kommunName(graph, puzzle.start)} till ${kommunName(graph, puzzle.destination)}`
-          : `Karta över ${kommunName(graph, puzzle.start)} och ${kommunName(graph, puzzle.destination)}`
+          ? `${route.label} från ${kommunName(graph, trip.start)} till ${kommunName(graph, trip.destination)}`
+          : `Karta över ${kommunName(graph, trip.start)} och ${kommunName(graph, trip.destination)}`
       }
     >
       {/* MapLibre owns this element's children, so the description sits beside it. */}

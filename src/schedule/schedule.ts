@@ -1,15 +1,15 @@
 import { readCsv } from "../data/csv";
-import type { Puzzle } from "../engine/game";
+import type { Trip } from "../engine/game";
 
-/** One schedule row (ADR 0001): the daily puzzle for a puzzle number. */
-export type ScheduledPuzzle = Puzzle & {
+/** One schedule row (ADR 0001): the daily trip for a trip number. */
+export type ScheduledTrip = Trip & {
   /** Shortest-route length when the row was generated. */
   n: number;
 };
 
 /**
- * Puzzles a kommun must wait before it can be an endpoint again: the graph version's own entry
- * in `cooldownDaysByGraphVersion`, else `cooldownDays`. Likewise, puzzles before any kommun in
+ * Trips a kommun must wait before it can be an endpoint again: the graph version's own entry
+ * in `cooldownDaysByGraphVersion`, else `cooldownDays`. Likewise, trips before any kommun in
  * the same län can be an endpoint again: `lanCooldownDaysByGraphVersion`, else
  * `lanCooldownDays`, else none. (`parseScheduleConfig` defaults `cooldownDays` to
  * `defaultCooldownDays` and `lanCooldownDays` to `defaultLanCooldownDays`.)
@@ -22,7 +22,7 @@ export type Cooldown = {
 };
 
 export type ScheduleConfig = Required<Cooldown> & {
-  /** Launch day, puzzle #1, as "YYYY-MM-DD". */
+  /** Launch day, trip #1, as "YYYY-MM-DD". */
   epoch: string;
   seed: string;
 };
@@ -30,23 +30,23 @@ export type ScheduleConfig = Required<Cooldown> & {
 export const defaultCooldownDays = 30;
 export const defaultLanCooldownDays = 3;
 
-export const puzzlesPerChunk = 1000;
-export const scheduleHeader = "puzzle,start,destination,n";
+export const tripsPerChunk = 1000;
+export const scheduleHeader = "trip,start,destination,n";
 
-/** The 1-based chunk (`data/schedule/0001.csv` is chunk 1) holding a puzzle number. */
-export function scheduleChunkFor(puzzleNumber: number): number {
-  return Math.ceil(puzzleNumber / puzzlesPerChunk);
+/** The 1-based chunk (`data/schedule/0001.csv` is chunk 1) holding a trip number. */
+export function scheduleChunkFor(tripNumber: number): number {
+  return Math.ceil(tripNumber / tripsPerChunk);
 }
 
 export function scheduleChunkFileName(chunk: number): string {
   return `${String(chunk).padStart(4, "0")}.csv`;
 }
 
-export function parseScheduleChunk(csv: string): ScheduledPuzzle[] {
+export function parseScheduleChunk(csv: string): ScheduledTrip[] {
   return readCsv(csv, scheduleHeader, "Schedule chunk", ([number, start, destination, n]) => {
     const row = { number: Number(number), start, destination, n: Number(n) };
     if (!Number.isInteger(row.number) || !Number.isInteger(row.n)) {
-      throw new Error("puzzle and n must be whole numbers");
+      throw new Error("trip and n must be whole numbers");
     }
     return row;
   });
@@ -54,8 +54,8 @@ export function parseScheduleChunk(csv: string): ScheduledPuzzle[] {
 
 export type ScheduleChunkFile = { fileName: string; csv: string };
 
-/** Writes rows, sorted by puzzle number, as one CSV per chunk that holds any of them. */
-export function formatScheduleChunks(rows: readonly ScheduledPuzzle[]): ScheduleChunkFile[] {
+/** Writes rows, sorted by trip number, as one CSV per chunk that holds any of them. */
+export function formatScheduleChunks(rows: readonly ScheduledTrip[]): ScheduleChunkFile[] {
   const chunks = new Map<number, string[]>();
   for (const row of [...rows].sort((a, b) => a.number - b.number)) {
     const chunk = scheduleChunkFor(row.number);
@@ -69,11 +69,11 @@ export function formatScheduleChunks(rows: readonly ScheduledPuzzle[]): Schedule
   }));
 }
 
-export function findScheduledPuzzle(
-  rows: readonly ScheduledPuzzle[],
-  puzzleNumber: number,
-): ScheduledPuzzle | undefined {
-  return rows.find((row) => row.number === puzzleNumber);
+export function findScheduledTrip(
+  rows: readonly ScheduledTrip[],
+  tripNumber: number,
+): ScheduledTrip | undefined {
+  return rows.find((row) => row.number === tripNumber);
 }
 
 export function cooldownDaysOn(cooldown: Cooldown, graphVersionId: string): number {

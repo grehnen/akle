@@ -12,7 +12,7 @@ import {
 
 const check = process.argv.includes("--check");
 const versions = (await readCommittedGraphVersions()).sort(
-  (a, b) => b.startsAtPuzzle - a.startsAtPuzzle,
+  (a, b) => b.startsAtTrip - a.startsAtTrip,
 );
 const [newest, previous] = versions;
 if (newest === undefined) throw new Error("No graph version in data/graphs/");

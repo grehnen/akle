@@ -10,13 +10,13 @@ The neighbor graph is built from a pinned OSM extract by a local script, then co
 
 Every flagged pair needs a recorded human verdict in one hand-kept file, `data/neighbor-overrides.yaml`. The file also holds the ferry list. A verdict is either a keep or an add/remove override, keyed by the pair's SCB kommun codes and backed by a reason (overrides also need an evidence link). The build fails on an unreviewed flag, a new flag kind on an already-reviewed pair, or a stale entry. A graph change ships only through a PR the owner approves.
 
-We chose this over rebuilding from Geofabrik in CI. A fresh OSM extract can silently add or drop neighbors and change every puzzle's N. With a committed graph, every change shows up as a reviewed diff, and the build is reproducible offline.
+We chose this over rebuilding from Geofabrik in CI. A fresh OSM extract can silently add or drop neighbors and change every trip's N. With a committed graph, every change shows up as a reviewed diff, and the build is reproducible offline.
 
 ## Consequences
 
 - Generated files (the graph, `data/graph-report.md`) live in the repo, and changing them means rerunning the script locally.
 - The first review pass covers about 90 SCB disagreements plus the other flags, and it blocks v1 launch. An agent may draft verdicts, but the owner signs them off.
-- The OSM extract is refreshed only when needed. Each refresh produces a new graph version, and only the newest version is checked ([ADR 0004](./0004-versioned-graphs-keyed-by-puzzle-number.md)).
+- The OSM extract is refreshed only when needed. Each refresh produces a new graph version, and only the newest version is checked ([ADR 0004](./0004-versioned-graphs-keyed-by-trip-number.md)).
 
 ## Amendment (2026-10-22)
 

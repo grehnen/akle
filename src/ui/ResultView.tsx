@@ -83,7 +83,7 @@ export function ResultView({
 
         <div className="result-actions">
           <p className="result-countdown">
-            Nästa pussel om <Countdown from={now} />
+            Nästa resa om <Countdown from={now} />
           </p>
           <ShareButton text={shareText} />
         </div>
@@ -244,13 +244,13 @@ function RoutePanel({ graph, game, review, route, label, frame }: RoutePanelProp
     <>
       <SatelliteMap
         graph={graph}
-        puzzle={game.puzzle}
+        trip={game.trip}
         cards={review.cards}
         route={mapRoute}
         allOutlines
       />
       <RouteLine
-        stops={routeStops(game.puzzle, route, guessed)}
+        stops={routeStops(game.trip, route, guessed)}
         label={label}
         nameOf={(code) => kommunName(graph, code)}
       />

@@ -5,7 +5,7 @@ describe("the share text", () => {
   test("a win shows +extra and the emoji line, then the site", () => {
     expect(
       shareText({
-        puzzleNumber: 12,
+        tripNumber: 12,
         outcome: { kind: "won", extra: 2, hintsUsed: 0 },
         emojiLine: "🟧✅🟥✅",
       }),
@@ -15,7 +15,7 @@ describe("the share text", () => {
   test("a Perfect win shows +0 (Perfekt)", () => {
     expect(
       shareText({
-        puzzleNumber: 3,
+        tripNumber: 3,
         outcome: { kind: "perfect", extra: 0 },
         emojiLine: "✅✅✅",
       }),
@@ -25,7 +25,7 @@ describe("the share text", () => {
   test("a loss shows how many kommuner were still missing", () => {
     expect(
       shareText({
-        puzzleNumber: 40,
+        tripNumber: 40,
         outcome: { kind: "lost", away: 3, hintsUsed: 0 },
         emojiLine: "🟧🟥🟥🟥🟥",
       }),
@@ -33,7 +33,7 @@ describe("the share text", () => {
   });
 
   test("a win with hints shows them where (Perfekt) would go", () => {
-    const won = { puzzleNumber: 5 };
+    const won = { tripNumber: 5 };
     expect(
       shareText({ ...won, outcome: { kind: "won", extra: 0, hintsUsed: 1 }, emojiLine: "✅✅" }),
     ).toBe("#åkle #5 +0 (1 ledtråd)\n✅✅\nhttps://akle.grehn.net");
@@ -43,7 +43,7 @@ describe("the share text", () => {
   });
 
   test("a loss with hints shows them after the kommuner still missing", () => {
-    const lost = { puzzleNumber: 40, emojiLine: "🟥🟥" };
+    const lost = { tripNumber: 40, emojiLine: "🟥🟥" };
     expect(shareText({ ...lost, outcome: { kind: "lost", away: 2, hintsUsed: 1 } })).toBe(
       "#åkle #40 (2 ifrån) (1 ledtråd)\n🟥🟥\nhttps://akle.grehn.net",
     );

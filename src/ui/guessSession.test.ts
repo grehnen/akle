@@ -14,7 +14,7 @@ import {
 
 const graph = buildGraphVersion({
   id: "test",
-  startsAtPuzzle: 1,
+  startsAtTrip: 1,
   kommuner: [
     { code: "0643", name: "Habo" },
     { code: "0305", name: "Håbo" },
@@ -28,9 +28,9 @@ const graph = buildGraphVersion({
   ],
 });
 
-const puzzle = { number: 1, start: "0305", destination: "0180" };
+const trip = { number: 1, start: "0305", destination: "0180" };
 
-const names = (text: string, game = newGame(puzzle)) =>
+const names = (text: string, game = newGame(trip)) =>
   suggestKommuner(graph, game, text).map((suggestion) => suggestion.name);
 
 describe("suggestKommuner", () => {
@@ -57,7 +57,7 @@ describe("suggestKommuner", () => {
   });
 
   test("guessed kommuner and the endpoints are suggested but disabled and tagged", () => {
-    const game = { ...newGame(puzzle), guesses: ["0139"] };
+    const game = { ...newGame(trip), guesses: ["0139"] };
     const suggestions = suggestKommuner(graph, game, "o");
     const tagOf = (name: string) => suggestions.find((s) => s.name === name)?.disabled;
     expect(tagOf("Upplands-Bro")).toBe("redan gissad");
@@ -93,10 +93,8 @@ describe("matchedSegments", () => {
   });
 });
 
-const play = (
-  events: GuessInputEvent[],
-  from: GuessSession = { game: newGame(puzzle), text: "" },
-) => events.reduce((session, event) => applyGuessInput(graph, session, event), from);
+const play = (events: GuessInputEvent[], from: GuessSession = { game: newGame(trip), text: "" }) =>
+  events.reduce((session, event) => applyGuessInput(graph, session, event), from);
 
 const type = (text: string): GuessInputEvent => ({ type: "type", text });
 const enter: GuessInputEvent = { type: "enter" };
@@ -118,7 +116,7 @@ describe("applyGuessInput", () => {
     ["the start", [], "håbo", "Det är start-/målkommunen: håbo", ""],
     ["the destination", [], "Stockholm", "Det är start-/målkommunen: Stockholm", ""],
   ])("submitting %s shows its toast and clears the field", (_, guesses, text, toast, kept) => {
-    const from = { game: { ...newGame(puzzle), guesses }, text: "" };
+    const from = { game: { ...newGame(trip), guesses }, text: "" };
     const session = play([type(text), enter], from);
     expect(session.toast).toBe(toast);
     expect(session.text).toBe(kept);
@@ -133,7 +131,7 @@ describe("applyGuessInput", () => {
   });
 
   test("submitting after the game is over shows its toast and clears the field", () => {
-    const won = { ...newGame(puzzle), guesses: ["0139"] };
+    const won = { ...newGame(trip), guesses: ["0139"] };
     const session = play([type("Habo"), enter], { game: won, text: "" });
     expect(session.toast).toBe("Spelet är slut");
     expect(session.text).toBe("");
@@ -160,7 +158,7 @@ describe("applyGuessInput", () => {
   });
 
   test("Enter never fills in a disabled suggestion", () => {
-    const guessed = { game: { ...newGame(puzzle), guesses: ["1880"] }, text: "" };
+    const guessed = { game: { ...newGame(trip), guesses: ["1880"] }, text: "" };
     const onlyGuessed = play([type("örebr"), enter], guessed);
     expect(onlyGuessed.text).toBe("örebr");
     expect(onlyGuessed.toast).toBe("Okänd kommun: örebr");
@@ -170,14 +168,14 @@ describe("applyGuessInput", () => {
   });
 
   test("Enter on an exact match of a guessed kommun still submits it", () => {
-    const guessed = { game: { ...newGame(puzzle), guesses: ["1880"] }, text: "" };
+    const guessed = { game: { ...newGame(trip), guesses: ["1880"] }, text: "" };
     expect(play([type("Örebro"), enter], guessed).toast).toBe("Redan gissad: Örebro");
   });
 
   test("the arrow keys skip disabled suggestions and wrap around", () => {
     // "o" suggests Örebro, Habo, Håbo (start), Stockholm (mål), Upplands-Bro.
     const highlights = (events: GuessInputEvent[]) => play([type("o"), ...events]).highlighted;
-    const options = suggestKommuner(graph, newGame(puzzle), "o").filter((s) => !s.disabled);
+    const options = suggestKommuner(graph, newGame(trip), "o").filter((s) => !s.disabled);
     expect(options.map((s) => s.name)).toEqual(["Örebro", "Habo", "Upplands-Bro"]);
 
     // Örebro is already highlighted as Enter's target, so the first step moves past it.
@@ -191,7 +189,7 @@ describe("applyGuessInput", () => {
     const target = (text: string, session?: GuessSession) =>
       enterTarget(graph, play([type(text)], session));
     expect(target("o")).toBe("1880");
-    const guessed = { game: { ...newGame(puzzle), guesses: ["1880"] }, text: "" };
+    const guessed = { game: { ...newGame(trip), guesses: ["1880"] }, text: "" };
     expect(target("o", guessed)).toBe("0643");
     expect(target("upplands bro")).toBe("0139");
     expect(target("Örebro", guessed)).toBeUndefined();
@@ -234,7 +232,7 @@ describe("applyGuessInput", () => {
   });
 
   test("Enter and Gissa on blank text do nothing", () => {
-    const from = { game: newGame(puzzle), text: " " };
+    const from = { game: newGame(trip), text: " " };
     expect(play([enter], from)).toEqual(from);
     expect(play([gissa], from)).toEqual(from);
   });
@@ -256,7 +254,7 @@ describe("announcements", () => {
   test("a guess off the shortest route that borders the start says it's connected", () => {
     const haboBordersStart = buildGraphVersion({
       id: "habo",
-      startsAtPuzzle: 1,
+      startsAtTrip: 1,
       kommuner: [...graph.kommuner.values()],
       links: [
         { between: ["0305", "0139"], kind: "land" },
@@ -266,7 +264,7 @@ describe("announcements", () => {
     });
     const session = [type("Habo"), enter].reduce(
       (current, event) => applyGuessInput(haboBordersStart, current, event),
-      { game: newGame(puzzle), text: "" } as GuessSession,
+      { game: newGame(trip), text: "" } as GuessSession,
     );
     expect(session.announcement).toBe(
       "Gissning 1 av 5: Habo, nära en kortaste väg, ansluten till start.",
@@ -277,7 +275,7 @@ describe("announcements", () => {
     const far = ["Ale", "Bjuv", "Dals-Ed", "Eda", "Falun"];
     const lossGraph = buildGraphVersion({
       id: "loss",
-      startsAtPuzzle: 1,
+      startsAtTrip: 1,
       kommuner: [
         ...graph.kommuner.values(),
         ...far.map((name, index) => ({ code: `990${index}`, name })),
@@ -290,7 +288,7 @@ describe("announcements", () => {
     const lost = far.reduce(
       (session, name) =>
         applyGuessInput(lossGraph, applyGuessInput(lossGraph, session, type(name)), enter),
-      { game: newGame(puzzle), text: "" } as GuessSession,
+      { game: newGame(trip), text: "" } as GuessSession,
     );
     expect(lost.announcement).toBe(
       "Gissning 5 av 5: Falun, långt från en kortaste väg. Slut på gissningar.",
@@ -308,7 +306,7 @@ describe("takeSessionHint", () => {
   const hints = (count: number) =>
     Array.from({ length: count }).reduce<GuessSession>(
       (session) => takeSessionHint(graph, session),
-      { game: newGame(puzzle), text: "" },
+      { game: newGame(trip), text: "" },
     );
 
   test("takes the next hint and announces what it shows", () => {

@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import type { GraphVersionFiles } from "../graph/graphVersionFiles";
-import { type DailyPuzzleSource, loadDailyPuzzle } from "./loadDailyPuzzle";
+import { type DailyTripSource, loadDailyTrip } from "./loadDailyTrip";
 
-function graphFiles(id: string, startsAtPuzzle: number): GraphVersionFiles {
+function graphFiles(id: string, startsAtTrip: number): GraphVersionFiles {
   return {
-    version: { id, startsAtPuzzle },
+    version: { id, startsAtTrip },
     kommuner: "code,name\n01,Ett\n02,Två\n03,Tre\n",
     neighbors: "a,b,link\n01,02,land\n02,03,land\n",
     shapes: { type: "FeatureCollection", features: [] },
@@ -15,11 +15,11 @@ function graphFiles(id: string, startsAtPuzzle: number): GraphVersionFiles {
 function fakeSource() {
   const fetched: string[] = [];
   const chunks: Record<number, string> = {
-    1: "puzzle,start,destination,n\n" + rows(1, 1000),
-    2: "puzzle,start,destination,n\n" + rows(1001, 1500),
+    1: "trip,start,destination,n\n" + rows(1, 1000),
+    2: "trip,start,destination,n\n" + rows(1001, 1500),
   };
   const versions = { old: graphFiles("old", 1), new: graphFiles("new", 1200) };
-  const source: DailyPuzzleSource = {
+  const source: DailyTripSource = {
     scheduleConfig: async () => ({
       epoch: "2026-10-01",
       seed: "test",
@@ -29,8 +29,8 @@ function fakeSource() {
       lanCooldownDaysByGraphVersion: {},
     }),
     graphVersions: async () => [
-      { id: "old", startsAtPuzzle: 1 },
-      { id: "new", startsAtPuzzle: 1200 },
+      { id: "old", startsAtTrip: 1 },
+      { id: "new", startsAtTrip: 1200 },
     ],
     scheduleChunk: async (chunk) => {
       fetched.push(`chunk ${chunk}`);
@@ -50,44 +50,44 @@ function rows(from: number, to: number): string {
   return csv;
 }
 
-const onDay = (puzzleNumber: number) => new Date(2026, 9, puzzleNumber, 12, 0);
+const onDay = (tripNumber: number) => new Date(2026, 9, tripNumber, 12, 0);
 
-describe("loadDailyPuzzle", () => {
+describe("loadDailyTrip", () => {
   test("loads only today's schedule chunk and graph version", async () => {
     const { source, fetched } = fakeSource();
-    const daily = await loadDailyPuzzle(source, onDay(21));
+    const daily = await loadDailyTrip(source, onDay(21));
     expect(daily).toMatchObject({
-      kind: "puzzle",
-      puzzle: { number: 21, start: "01", destination: "03", n: 1 },
+      kind: "trip",
+      trip: { number: 21, start: "01", destination: "03", n: 1 },
     });
-    expect(daily.kind === "puzzle" && daily.graph.id).toBe("old");
+    expect(daily.kind === "trip" && daily.graph.id).toBe("old");
     expect(fetched).toEqual(["chunk 1", "graph old"]);
   });
 
-  test("picks the chunk and version for later puzzle numbers", async () => {
+  test("picks the chunk and version for later trip numbers", async () => {
     const { source, fetched } = fakeSource();
-    const daily = await loadDailyPuzzle(source, onDay(1300));
-    expect(daily.kind === "puzzle" && daily.puzzle.number).toBe(1300);
+    const daily = await loadDailyTrip(source, onDay(1300));
+    expect(daily.kind === "trip" && daily.trip.number).toBe(1300);
     expect(fetched).toEqual(["chunk 2", "graph new"]);
   });
 
-  test("has no puzzle before the epoch", async () => {
+  test("has no trip before the epoch", async () => {
     const { source, fetched } = fakeSource();
-    expect(await loadDailyPuzzle(source, new Date(2026, 8, 30, 23, 59))).toEqual({
-      kind: "no-puzzle",
+    expect(await loadDailyTrip(source, new Date(2026, 8, 30, 23, 59))).toEqual({
+      kind: "no-trip",
       reason: "before-epoch",
     });
     expect(fetched).toEqual([]);
   });
 
-  test("has no puzzle once the schedule has run out", async () => {
+  test("has no trip once the schedule has run out", async () => {
     const { source } = fakeSource();
-    expect(await loadDailyPuzzle(source, onDay(1501))).toEqual({
-      kind: "no-puzzle",
+    expect(await loadDailyTrip(source, onDay(1501))).toEqual({
+      kind: "no-trip",
       reason: "schedule-ended",
     });
-    expect(await loadDailyPuzzle(source, onDay(2001))).toEqual({
-      kind: "no-puzzle",
+    expect(await loadDailyTrip(source, onDay(2001))).toEqual({
+      kind: "no-trip",
       reason: "schedule-ended",
     });
   });

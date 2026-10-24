@@ -1,7 +1,7 @@
 import { type GraphVersion, type KommunCode } from "../graph/graphVersion";
 import { graphVersionFor } from "../graph/graphVersionFiles";
 import type { GeneratedSchedule } from "./generateSchedule";
-import type { ScheduledPuzzle } from "./schedule";
+import type { ScheduledTrip } from "./schedule";
 import { pairKey } from "../graph/kommunPair";
 import { maximumN, minimumN, pairsByN } from "./scheduleHistory";
 
@@ -13,17 +13,17 @@ export function scheduleReport(
   const { rows, reconciled, added } = schedule;
   const lastNumber = rows.at(-1)?.number ?? 1;
   const newest = graphVersionFor(graphs, lastNumber);
-  if (!newest) throw new Error(`No graph version covers puzzle #${lastNumber}`);
-  const name = (code: KommunCode, puzzleNumber: number) =>
-    graphVersionFor(graphs, puzzleNumber)?.kommuner.get(code)?.name ?? code;
+  if (!newest) throw new Error(`No graph version covers trip #${lastNumber}`);
+  const name = (code: KommunCode, tripNumber: number) =>
+    graphVersionFor(graphs, tripNumber)?.kommuner.get(code)?.name ?? code;
   const allN = Array.from({ length: maximumN - minimumN + 1 }, (_, i) => minimumN + i);
 
   const sections = [`## Schedule report\n\n${summary(added, reconciled.length)}`];
 
   sections.push(
     table(
-      "N distribution of the added puzzles",
-      ["N", "Puzzles"],
+      "N distribution of the added trips",
+      ["N", "Trips"],
       allN.map((n) => [n, added.filter((row) => row.n === n).length]),
     ),
   );
@@ -39,7 +39,7 @@ export function scheduleReport(
   const kommunName = (code: KommunCode) => newest.kommuner.get(code)?.name ?? code;
   sections.push(
     table(
-      "Endpoint use per kommun in the added puzzles",
+      "Endpoint use per kommun in the added trips",
       ["Kommun", "Times"],
       [...endpointUses]
         .sort(
@@ -63,13 +63,13 @@ export function scheduleReport(
     ),
   );
 
-  const describe = (row: ScheduledPuzzle) =>
+  const describe = (row: ScheduledTrip) =>
     `${name(row.start, row.number)} → ${name(row.destination, row.number)} (N ${row.n})`;
   if (reconciled.length > 0) {
     sections.push(
       table(
-        "Reconciled puzzles",
-        ["Puzzle", "Before", "After"],
+        "Reconciled trips",
+        ["Trip", "Before", "After"],
         reconciled.map(({ before, after }) => [
           `#${before.number}`,
           describe(before),
@@ -81,8 +81,8 @@ export function scheduleReport(
   if (added.length > 0) {
     sections.push(
       table(
-        "Added puzzles",
-        ["Puzzle", "Start", "Destination", "N"],
+        "Added trips",
+        ["Trip", "Start", "Destination", "N"],
         added.map((row) => [
           `#${row.number}`,
           name(row.start, row.number),
@@ -95,15 +95,15 @@ export function scheduleReport(
   return `${sections.join("\n\n")}\n`;
 }
 
-function summary(added: readonly ScheduledPuzzle[], reconciledCount: number): string {
+function summary(added: readonly ScheduledTrip[], reconciledCount: number): string {
   const addedText =
     added.length === 0
-      ? "Added no puzzles"
-      : `Added ${added.length} ${added.length === 1 ? "puzzle" : "puzzles"} (#${added[0].number}–#${added.at(-1)?.number})`;
+      ? "Added no trips"
+      : `Added ${added.length} ${added.length === 1 ? "trip" : "trips"} (#${added[0].number}–#${added.at(-1)?.number})`;
   const reconciledText =
     reconciledCount === 0
-      ? "reconciled no unplayed puzzles"
-      : `reconciled ${reconciledCount} unplayed ${reconciledCount === 1 ? "puzzle" : "puzzles"}`;
+      ? "reconciled no unplayed trips"
+      : `reconciled ${reconciledCount} unplayed ${reconciledCount === 1 ? "trip" : "trips"}`;
   return `${addedText} and ${reconciledText}.`;
 }
 

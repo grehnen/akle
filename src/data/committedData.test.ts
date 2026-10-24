@@ -48,7 +48,7 @@ describe("committed data", () => {
   // ADR 0004: only the newest version goes through the ADR 0003 checks; older ones are frozen.
   test("the newest graph version has no names that collide after folding", () => {
     const graph = graphVersions.reduce((newest, version) =>
-      version.startsAtPuzzle > newest.startsAtPuzzle ? version : newest,
+      version.startsAtTrip > newest.startsAtTrip ? version : newest,
     );
     const names = [...graph.kommuner.values()].map((kommun) => kommun.name);
     expect(foldedNameCollisions(names)).toEqual([]);
@@ -61,7 +61,7 @@ describe("committed data", () => {
     expect(osmGraph?.kommuner.get("0360")?.name).toBe("Tierp");
   });
 
-  test("launch puzzle #1 is Östhammar to Linköping on the OSM graph version", () => {
+  test("launch trip #1 is Östhammar to Linköping on the OSM graph version", () => {
     expect(graphVersionFor(graphVersions, 1)?.id).toBe("osm-2026-10-01");
     expect(schedule[0]).toEqual({ number: 1, start: "0382", destination: "0580", n: 6 });
   });
@@ -144,7 +144,7 @@ describe("committed data", () => {
     const gotland = codeOf(graph, "Gotland")!;
     const withoutGotland = buildGraphVersion({
       id: graph.id,
-      startsAtPuzzle: graph.startsAtPuzzle,
+      startsAtTrip: graph.startsAtTrip,
       kommuner: [...graph.kommuner.values()],
       links: graph.links.filter((link) => !link.between.includes(gotland)),
     });

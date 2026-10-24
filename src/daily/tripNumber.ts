@@ -1,24 +1,24 @@
 const millisecondsPerDay = 24 * 60 * 60 * 1000;
 
 /**
- * The puzzle number for the player's local calendar day: days since the epoch, + 1.
+ * The trip number for the player's local calendar day: days since the epoch, + 1.
  * `epoch` is the launch day as "YYYY-MM-DD". Results below 1 mean the clock is before launch.
  */
-export function puzzleNumberOn(now: Date, epoch: string): number {
-  return puzzleNumberOnDay(now.getFullYear(), now.getMonth(), now.getDate(), epoch);
+export function tripNumberOn(now: Date, epoch: string): number {
+  return tripNumberOnDay(now.getFullYear(), now.getMonth(), now.getDate(), epoch);
 }
 
 const earliestTimeZoneOffsetMilliseconds = 14 * 60 * 60 * 1000;
 
 /**
- * The highest puzzle number anyone could have opened: today's number in UTC+14, the earliest
+ * The highest trip number anyone could have opened: today's number in UTC+14, the earliest
  * time zone. 0 before the epoch.
  */
-export function latestPlayedPuzzleNumber(now: Date, epoch: string): number {
+export function latestPlayedTripNumber(now: Date, epoch: string): number {
   const earliest = new Date(now.getTime() + earliestTimeZoneOffsetMilliseconds);
   return Math.max(
     0,
-    puzzleNumberOnDay(
+    tripNumberOnDay(
       earliest.getUTCFullYear(),
       earliest.getUTCMonth(),
       earliest.getUTCDate(),
@@ -27,8 +27,8 @@ export function latestPlayedPuzzleNumber(now: Date, epoch: string): number {
   );
 }
 
-/** The puzzle number of a calendar day; `month` is 0-based, as in `Date`. */
-function puzzleNumberOnDay(year: number, month: number, day: number, epoch: string): number {
+/** The trip number of a calendar day; `month` is 0-based, as in `Date`. */
+function tripNumberOnDay(year: number, month: number, day: number, epoch: string): number {
   const [epochYear, epochMonth, epochDay] = parseIsoDate(epoch);
   const days = Date.UTC(year, month, day) - Date.UTC(epochYear, epochMonth - 1, epochDay);
   return Math.round(days / millisecondsPerDay) + 1;

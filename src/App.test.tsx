@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { App } from "./App";
-import type { DailyPuzzleSource } from "./daily/loadDailyPuzzle";
+import type { DailyTripSource } from "./daily/loadDailyTrip";
 
-const neverLoads: DailyPuzzleSource = {
+const neverLoads: DailyTripSource = {
   scheduleConfig: () => new Promise(() => {}),
   scheduleChunk: () => new Promise(() => {}),
   graphVersions: () => new Promise(() => {}),
@@ -11,14 +11,14 @@ const neverLoads: DailyPuzzleSource = {
 };
 
 describe("App", () => {
-  test("shows the Åkle name while today's puzzle loads", () => {
+  test("shows the Åkle name while today's trip loads", () => {
     const markup = renderToStaticMarkup(<App source={neverLoads} />);
 
     expect(markup).toContain("<h1>Åkle</h1>");
     expect(markup).toContain("Laddar");
   });
 
-  test("has a stats button in the header, usable while the puzzle loads", () => {
+  test("has a stats button in the header, usable while the trip loads", () => {
     const markup = renderToStaticMarkup(<App source={neverLoads} />);
 
     expect(markup).toMatch(
@@ -26,7 +26,7 @@ describe("App", () => {
     );
   });
 
-  test("has a how-to-play button before the title, usable while the puzzle loads", () => {
+  test("has a how-to-play button before the title, usable while the trip loads", () => {
     const markup = renderToStaticMarkup(<App source={neverLoads} />);
 
     expect(markup).toMatch(

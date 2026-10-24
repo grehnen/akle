@@ -1,0 +1,40 @@
+import { describe, expect, test } from "bun:test";
+import { latestPlayedTripNumber, tripNumberOn } from "./tripNumber";
+
+const epoch = "2026-10-01";
+
+describe("tripNumberOn", () => {
+  test("the epoch day is trip #1 from local midnight to the last second", () => {
+    expect(tripNumberOn(new Date(2026, 9, 1, 0, 0, 0), epoch)).toBe(1);
+    expect(tripNumberOn(new Date(2026, 9, 1, 23, 59, 59, 999), epoch)).toBe(1);
+  });
+
+  test("the day before the epoch is trip #0, which does not exist", () => {
+    expect(tripNumberOn(new Date(2026, 8, 30, 23, 59, 59, 999), epoch)).toBe(0);
+    expect(tripNumberOn(new Date(2026, 0, 1, 12, 0), epoch)).toBeLessThan(1);
+  });
+
+  test("a new trip starts at each local midnight", () => {
+    expect(tripNumberOn(new Date(2026, 9, 21, 23, 59, 59, 999), epoch)).toBe(21);
+    expect(tripNumberOn(new Date(2026, 9, 22, 0, 0, 0), epoch)).toBe(22);
+  });
+
+  test("counts calendar days across daylight saving changes and years", () => {
+    expect(tripNumberOn(new Date(2026, 9, 25, 12, 0), epoch)).toBe(25);
+    expect(tripNumberOn(new Date(2027, 2, 28, 12, 0), epoch)).toBe(179);
+    expect(tripNumberOn(new Date(2027, 9, 1, 0, 0), epoch)).toBe(366);
+  });
+});
+
+describe("latestPlayedTripNumber", () => {
+  test("is today's trip number in UTC+14, the earliest time zone", () => {
+    // 09:59 UTC is 23:59 in UTC+14; 10:00 UTC is already the next day there.
+    expect(latestPlayedTripNumber(new Date("2026-10-21T09:59:59Z"), epoch)).toBe(21);
+    expect(latestPlayedTripNumber(new Date("2026-10-21T10:00:00Z"), epoch)).toBe(22);
+  });
+
+  test("is 0 before anyone anywhere has reached the epoch", () => {
+    expect(latestPlayedTripNumber(new Date("2026-09-30T09:00:00Z"), epoch)).toBe(0);
+    expect(latestPlayedTripNumber(new Date("2026-01-01T00:00:00Z"), epoch)).toBe(0);
+  });
+});

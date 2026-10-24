@@ -50,8 +50,8 @@ export async function readGraphVersionFiles(
 
 export type GraphVersionHeader = {
   id: string;
-  /** The first puzzle number this version applies to (ADR 0004). */
-  startsAtPuzzle: number;
+  /** The first trip number this version applies to (ADR 0004). */
+  startsAtTrip: number;
 };
 
 const linkKinds: readonly LinkKind[] = ["land", "fixed", "ferry"];
@@ -86,22 +86,22 @@ export function parseGraphVersionHeader(json: unknown): GraphVersionHeader {
   if (typeof header?.id !== "string" || header.id === "") {
     throw new Error("version.json needs an id");
   }
-  if (!Number.isInteger(header.startsAtPuzzle) || (header.startsAtPuzzle as number) < 1) {
-    throw new Error(`version.json for ${header.id} needs a startsAtPuzzle of 1 or more`);
+  if (!Number.isInteger(header.startsAtTrip) || (header.startsAtTrip as number) < 1) {
+    throw new Error(`version.json for ${header.id} needs a startsAtTrip of 1 or more`);
   }
-  return { id: header.id, startsAtPuzzle: header.startsAtPuzzle as number };
+  return { id: header.id, startsAtTrip: header.startsAtTrip as number };
 }
 
-/** The graph version a puzzle number is played on: the newest one that has started. */
+/** The graph version a trip number is played on: the newest one that has started. */
 export function graphVersionFor<Header extends GraphVersionHeader>(
   versions: readonly Header[],
-  puzzleNumber: number,
+  tripNumber: number,
 ): Header | undefined {
   return versions
-    .filter((version) => version.startsAtPuzzle <= puzzleNumber)
+    .filter((version) => version.startsAtTrip <= tripNumber)
     .reduce<Header | undefined>(
       (newest, version) =>
-        newest === undefined || version.startsAtPuzzle > newest.startsAtPuzzle ? version : newest,
+        newest === undefined || version.startsAtTrip > newest.startsAtTrip ? version : newest,
       undefined,
     );
 }

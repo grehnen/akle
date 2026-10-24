@@ -1,31 +1,31 @@
-import type { DailyPuzzle } from "../daily/loadDailyPuzzle";
+import type { DailyTrip } from "../daily/loadDailyTrip";
 import { useState } from "react";
 import { browserSessionStorage, browserStorage, type KeyValueStorage } from "../progress/storage";
 import { PlayScreen } from "./PlayScreen";
 
-type DailyPuzzleViewProps = {
-  daily: DailyPuzzle | undefined;
+type DailyTripViewProps = {
+  daily: DailyTrip | undefined;
   storage?: KeyValueStorage;
   /** Where view choices that last one browser session are kept; sessionStorage by default. */
   sessionStorage?: KeyValueStorage;
   now?: Date;
 };
 
-export function DailyPuzzleView({ daily, storage, sessionStorage, now }: DailyPuzzleViewProps) {
+export function DailyTripView({ daily, storage, sessionStorage, now }: DailyTripViewProps) {
   const [fallbackStorage] = useState(browserStorage);
   const [fallbackSessionStorage] = useState(browserSessionStorage);
   const [openedAt] = useState(() => now ?? new Date());
   if (daily === undefined) {
-    return <p>Laddar dagens pussel…</p>;
+    return <p>Laddar dagens resa…</p>;
   }
-  if (daily.kind === "no-puzzle") {
-    return <p role="status">Inget pussel i dag. Titta in igen i morgon!</p>;
+  if (daily.kind === "no-trip") {
+    return <p role="status">Ingen resa i dag. Titta in igen i morgon!</p>;
   }
   return (
     <PlayScreen
-      key={daily.puzzle.number}
+      key={daily.trip.number}
       graph={daily.graph}
-      puzzle={daily.puzzle}
+      trip={daily.trip}
       storage={storage ?? fallbackStorage}
       sessionStorage={sessionStorage ?? fallbackSessionStorage}
       now={openedAt}

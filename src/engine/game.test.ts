@@ -10,7 +10,7 @@ import { type Game, newGame, reviewGame, submitGuess } from "./game";
  */
 const graph = buildGraphVersion({
   id: "test",
-  startsAtPuzzle: 1,
+  startsAtTrip: 1,
   kommuner: ["S", "A", "B", "D", "P", "Q", "R", "Z", "W1", "W2", "W3", "F"].map((code) => ({
     code,
     name: `Kommun ${code}`,
@@ -32,10 +32,10 @@ const graph = buildGraphVersion({
   ],
 });
 
-const puzzle = { number: 1, start: "S", destination: "D" };
+const trip = { number: 1, start: "S", destination: "D" };
 
 function play(...inputs: string[]): Game {
-  let game = newGame(puzzle);
+  let game = newGame(trip);
   for (const input of inputs) {
     const result = submitGuess(graph, game, input);
     if (result.kind !== "accepted") {
@@ -50,7 +50,7 @@ const feedbackOf = (game: Game) => reviewGame(graph, game).cards.map((card) => c
 
 describe("a new game", () => {
   test("knows N and the guess limit", () => {
-    const review = reviewGame(graph, newGame(puzzle));
+    const review = reviewGame(graph, newGame(trip));
     expect(review.n).toBe(2);
     expect(review.limit).toBe(6);
     expect(review.status).toBe("playing");

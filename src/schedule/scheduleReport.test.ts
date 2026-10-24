@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import type { ScheduledPuzzle } from "./schedule";
+import type { ScheduledTrip } from "./schedule";
 import { scheduleReport } from "./scheduleReport";
 import { pathGraph } from "./testGraphs";
 
-const row = (number: number, start: string, destination: string, n: number): ScheduledPuzzle => ({
+const row = (number: number, start: string, destination: string, n: number): ScheduledTrip => ({
   number,
   start,
   destination,
@@ -25,12 +25,12 @@ describe("scheduleReport", () => {
     );
     expect(report).toBe(`## Schedule report
 
-Added 2 puzzles (#2–#3) and reconciled 1 unplayed puzzle.
+Added 2 trips (#2–#3) and reconciled 1 unplayed trip.
 
-### N distribution of the added puzzles
+### N distribution of the added trips
 
-| N | Puzzles |
-| - | ------- |
+| N | Trips |
+| - | ----- |
 | 3 | 1 |
 | 4 | 1 |
 | 5 | 0 |
@@ -38,7 +38,7 @@ Added 2 puzzles (#2–#3) and reconciled 1 unplayed puzzle.
 | 7 | 0 |
 | 8 | 0 |
 
-### Endpoint use per kommun in the added puzzles
+### Endpoint use per kommun in the added trips
 
 | Kommun | Times |
 | ------ | ----- |
@@ -60,16 +60,16 @@ Added 2 puzzles (#2–#3) and reconciled 1 unplayed puzzle.
 | 7 | 0 | 0 |
 | 8 | 0 | 0 |
 
-### Reconciled puzzles
+### Reconciled trips
 
-| Puzzle | Before | After |
-| ------ | ------ | ----- |
+| Trip | Before | After |
+| ---- | ------ | ----- |
 | #1 | Kommun k01 → Kommun k05 (N 4) | Kommun k00 → Kommun k04 (N 3) |
 
-### Added puzzles
+### Added trips
 
-| Puzzle | Start | Destination | N |
-| ------ | ----- | ----------- | - |
+| Trip | Start | Destination | N |
+| ---- | ----- | ----------- | - |
 | #2 | Kommun k05 | Kommun k00 | 4 |
 | #3 | Kommun k04 | Kommun k00 | 3 |
 `);
@@ -78,6 +78,6 @@ Added 2 puzzles (#2–#3) and reconciled 1 unplayed puzzle.
   test("says so when nothing changed", () => {
     expect(
       scheduleReport({ rows: [row(1, "k00", "k04", 3)], reconciled: [], added: [] }, [graph]),
-    ).toContain("Added no puzzles and reconciled no unplayed puzzles.");
+    ).toContain("Added no trips and reconciled no unplayed trips.");
   });
 });

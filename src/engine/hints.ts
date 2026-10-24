@@ -27,7 +27,7 @@ export function takeHint(graph: GraphVersion, game: Game): Game {
  * connected group.
  */
 export function nextKommunHint(graph: GraphVersion, game: Game): KommunCode | undefined {
-  const { start, destination } = game.puzzle;
+  const { start, destination } = game.trip;
   const known = new Set([start, destination, ...game.guesses]);
   return cheapestRoute(graph, start, destination, known)?.find((code) => !known.has(code));
 }
