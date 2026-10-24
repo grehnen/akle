@@ -4,6 +4,7 @@ import { readHistory } from "./progress/history";
 import { deriveStats } from "./progress/stats";
 import { browserStorage, type KeyValueStorage } from "./progress/storage";
 import { DailyTripView } from "./ui/DailyTripView";
+import { FreePlaySetupPrototypeLoader } from "./ui/FreePlaySetupPrototype";
 import { RulesDialog, RulesIcon } from "./ui/RulesDialog";
 import { StatsDialog, StatsIcon } from "./ui/StatsDialog";
 
@@ -22,6 +23,7 @@ export function App({ source, now = () => new Date(), storage }: AppProps) {
   const [statsOpen, setStatsOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   // Without today's trip (still loading, or no trip today) there is no streak to keep alive.
+  const inFreePlay = window.location.pathname === "/fri";
   const today = daily?.kind === "trip" ? daily.trip.number : Number.POSITIVE_INFINITY;
 
   useEffect(() => {
@@ -48,7 +50,21 @@ export function App({ source, now = () => new Date(), storage }: AppProps) {
         >
           <RulesIcon />
         </button>
-        <h1>Åkle</h1>
+        {/* PROTOTYPE (#62): free play at /fri; the title links back to the daily trip. */}
+        {inFreePlay ? (
+          <h1>
+            <a href="/" className="fp-title-link">
+              Åkle
+            </a>
+          </h1>
+        ) : (
+          <h1>Åkle</h1>
+        )}
+        {!inFreePlay && (
+          <a href="/fri" className="header-button fp-open" aria-label="Fri resa">
+            🎲
+          </a>
+        )}
         <button
           type="button"
           className="header-button stats-open"
@@ -67,6 +83,8 @@ export function App({ source, now = () => new Date(), storage }: AppProps) {
       )}
       {failed ? (
         <p role="alert">Kunde inte ladda dagens resa. Försök igen senare.</p>
+      ) : inFreePlay ? (
+        <FreePlaySetupPrototypeLoader source={source} />
       ) : (
         <DailyTripView daily={daily} storage={progressStorage} now={openedAt} />
       )}
