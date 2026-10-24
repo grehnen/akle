@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { freePlayShareText } from "./shareText";
+import type { ItinerarySummary, ItinerarySummaryRow } from "./itinerarySummary";
+import { freePlayShareText, itineraryShareText } from "./shareText";
 
 const link = "/fri?r=EAIFoKACI";
 const standard = { kind: "standard" } as const;
@@ -139,6 +140,115 @@ describe("a free-play trip's share text", () => {
     });
     expect(text.split("\n")).toHaveLength(4);
     expect(text.split("\n")[2]).toBe(emojiLine);
+    expect(text).not.toMatch(/#\d/);
+  });
+});
+
+describe("an itinerary's share text", () => {
+  const itineraryLink = "/resplan?namn=Norrlandsturen&r=EIYFoKAAoAUMXhQwBgdq";
+  const row = (fields: Partial<ItinerarySummaryRow>): ItinerarySummaryRow => ({
+    mode: standard,
+    start: "Kiruna",
+    destination: "Umeå",
+    outcome: { kind: "won", extra: 1, hintsUsed: 0 },
+    hintsUsed: 0,
+    timeouts: 0,
+    score: 1,
+    ...fields,
+  });
+  const rows: ItinerarySummaryRow[] = [
+    row({}),
+    row({
+      mode: { kind: "timed", thinkingTime: 10 },
+      outcome: { kind: "lost", away: 2, hintsUsed: 0, givenUp: true },
+      score: 8,
+    }),
+    row({
+      mode: { kind: "tie-breaker" },
+      outcome: { kind: "won", extra: 0, hintsUsed: 1 },
+      score: 1,
+      time: 1234,
+    }),
+    row({
+      mode: { kind: "tie-breaker" },
+      outcome: { kind: "perfect", extra: 0 },
+      score: -1,
+      time: 1289,
+    }),
+    row({ mode: { kind: "tie-breaker" }, outcome: { kind: "lost", away: 1, hintsUsed: 0 } }),
+  ];
+  const summary = (
+    summaryRows: ItinerarySummaryRow[],
+    standing: ItinerarySummary["standing"],
+  ): ItinerarySummary => ({
+    rows: summaryRows,
+    standing,
+    hasTieBreaker: summaryRows.some((summaryRow) => summaryRow.mode.kind === "tie-breaker"),
+  });
+
+  test("has the title and count, the total with its time, a label row per trip and the link", () => {
+    expect(
+      itineraryShareText({
+        title: "Norrlandsturen",
+        summary: summary(rows, { score: 10, wonTieBreakers: 2, totalTime: 2523 }),
+        link: itineraryLink,
+      }),
+    ).toBe(
+      [
+        "#åkle Resplan · Norrlandsturen · 5 resor",
+        "Totalt 10 poäng · 4:12,3 (2 vunna)",
+        "1. Standard · +1 · 1 poäng",
+        "2. Tidspress 10 s · Gav upp (2 ifrån) · 8 poäng",
+        "3. Tidtagning · +0 (1 ledtråd) · 1 poäng · 2:03,4",
+        "4. Tidtagning · +0 (Perfekt) · −1 poäng · 2:08,9",
+        "5. Tidtagning · (1 ifrån) · 1 poäng",
+        "https://akle.grehn.net/resplan?namn=Norrlandsturen&r=EIYFoKAAoAUMXhQwBgdq",
+      ].join("\n"),
+    );
+  });
+
+  test("without a title the header has only the count", () => {
+    const text = itineraryShareText({
+      summary: summary(rows.slice(0, 2), { score: 9, wonTieBreakers: 0, totalTime: 0 }),
+      link: "/resplan?r=EIYFoKAAoAUMXhQwBgdq",
+    });
+    expect(text.split("\n")[0]).toBe("#åkle Resplan · 2 resor");
+  });
+
+  test("without a tie-breaker trip the total has no time", () => {
+    const text = itineraryShareText({
+      title: "Fredag",
+      summary: summary(rows.slice(0, 2), { score: 9, wonTieBreakers: 0, totalTime: 0 }),
+      link: itineraryLink,
+    });
+    expect(text.split("\n")[1]).toBe("Totalt 9 poäng");
+  });
+
+  test("with tie-breaker trips but none won the total still counts them", () => {
+    const text = itineraryShareText({
+      summary: summary([rows[0], rows[4]], { score: 2, wonTieBreakers: 0, totalTime: 0 }),
+      link: itineraryLink,
+    });
+    expect(text.split("\n")[1]).toBe("Totalt 2 poäng · 0:00,0 (0 vunna)");
+  });
+
+  test("one won tie-breaker trip reads vunnen", () => {
+    const text = itineraryShareText({
+      summary: summary([rows[0], rows[2]], { score: 2, wonTieBreakers: 1, totalTime: 1234 }),
+      link: itineraryLink,
+    });
+    expect(text.split("\n")[1]).toBe("Totalt 2 poäng · 2:03,4 (1 vunnen)");
+  });
+
+  test("never names the endpoints, has no emoji lines and never carries a trip number", () => {
+    const text = itineraryShareText({
+      title: "Norrlandsturen",
+      summary: summary(rows, { score: 10, wonTieBreakers: 2, totalTime: 2523 }),
+      link: itineraryLink,
+    });
+    expect(text).not.toContain("Kiruna");
+    expect(text).not.toContain("Umeå");
+    expect(text).not.toMatch(/[✅🟩🟧🟥]/u);
     expect(text).not.toMatch(/#\d/);
   });
 });
