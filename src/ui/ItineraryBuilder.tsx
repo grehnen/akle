@@ -15,7 +15,7 @@ import {
   titleLength,
 } from "../freePlay/itineraryLink";
 import type { LinkedTrip, ModeSetting } from "../freePlay/linkPayload";
-import { DEFAULT_THINKING_TIME, PLAYABLE_MODES } from "../freePlay/modeRules";
+import { DEFAULT_THINKING_TIME } from "../freePlay/modeRules";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { shortestRouteLength } from "../graph/routes";
 import { SITE_URL } from "../siteUrl";
@@ -300,7 +300,7 @@ function ModeSelect({
         value={mode.kind}
         onChange={(event) => choose(event.target.value as ModeSetting["kind"])}
       >
-        {MODES.filter(({ kind }) => PLAYABLE_MODES.has(kind)).map(({ kind, name }) => (
+        {MODES.map(({ kind, name }) => (
           <option key={kind} value={kind}>
             {name}
           </option>
