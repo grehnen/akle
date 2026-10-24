@@ -1,3 +1,4 @@
+import type { DailyTrip } from "../daily/dailyTrip";
 import { type Game, type GuessCard, reviewGame } from "../engine/game";
 import type { GraphVersion } from "../graph/graphVersion";
 import { type KeyValueStorage, readJson, writeJson } from "./storage";
@@ -29,7 +30,11 @@ export function readHistory(storage: KeyValueStorage): History {
 }
 
 /** The history with a finished game's entry added once; an unfinished game or an already recorded trip is left alone. */
-export function withFinishedGame(history: History, graph: GraphVersion, game: Game): History {
+export function withFinishedGame(
+  history: History,
+  graph: GraphVersion,
+  game: Game<DailyTrip>,
+): History {
   const review = reviewGame(graph, game);
   if (review.status === "playing" || history[game.trip.number] !== undefined) return history;
   const entry: HistoryEntry = {
@@ -46,7 +51,7 @@ export function withFinishedGame(history: History, graph: GraphVersion, game: Ga
 export function recordFinishedGame(
   storage: KeyValueStorage,
   graph: GraphVersion,
-  game: Game,
+  game: Game<DailyTrip>,
 ): void {
   const history = readHistory(storage);
   const updated = withFinishedGame(history, graph, game);

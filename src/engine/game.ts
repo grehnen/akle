@@ -3,15 +3,28 @@ import { cheapestRoute, routeCost, shortestRoute, shortestRouteLength } from "..
 import { guessLimit } from "./guessLimit";
 import { resolveKommunName } from "./kommunNames";
 
+/** A start and a destination; a daily trip adds its trip number outside the engine. */
 export type Trip = {
-  number: number;
   start: KommunCode;
   destination: KommunCode;
 };
 
-/** A daily trip in progress: the accepted guesses, in order, and any hints taken. Everything else is derived. */
-export type Game = {
-  trip: Trip;
+/** What a game is played under, so a mode can change the rules without touching daily play. */
+export type Rules = {
+  /** `distance`: the daily guess limit, set by the distance; `none`: guess until the route is found. */
+  guessLimit: "distance" | "none";
+};
+
+/** The daily-trip rules, which standard mode plays by too. */
+export const STANDARD_RULES: Rules = { guessLimit: "distance" };
+
+/**
+ * A trip in progress under its rules: the accepted guesses, in order, and any hints taken.
+ * Everything else is derived. `T` lets a daily game keep its trip number on the trip.
+ */
+export type Game<T extends Trip = Trip> = {
+  trip: T;
+  rules: Rules;
   guesses: readonly KommunCode[];
   /** Absent until the first hint is taken. */
   hints?: TakenHints;
@@ -38,7 +51,8 @@ export type GameStatus = "playing" | "won" | "lost";
 
 export type GameReview = {
   n: number;
-  limit: number;
+  /** Undefined when the rules set no guess limit. */
+  limit?: number;
   status: GameStatus;
   cards: GuessCard[];
   /** Kommuner still missing from the cheapest route (the "k ifrån" on a loss). */
@@ -56,16 +70,20 @@ export type GameReview = {
   hintsUsed: number;
 };
 
-export type GuessResult =
-  | { kind: "accepted"; game: Game; card: GuessCard }
+export type GuessResult<T extends Trip = Trip> =
+  | { kind: "accepted"; game: Game<T>; card: GuessCard }
   | { kind: "rejected"; reason: "unknown" | "repeat" | "endpoint" | "game-over"; input: string };
 
-export function newGame(trip: Trip): Game {
-  return { trip, guesses: [] };
+export function newGame<T extends Trip>(trip: T, rules: Rules = STANDARD_RULES): Game<T> {
+  return { trip, rules, guesses: [] };
 }
 
 /** Resolves a typed name and adds it as a guess; rejected guesses are not counted. */
-export function submitGuess(graph: GraphVersion, game: Game, input: string): GuessResult {
+export function submitGuess<T extends Trip>(
+  graph: GraphVersion,
+  game: Game<T>,
+  input: string,
+): GuessResult<T> {
   if (reviewGame(graph, game).status !== "playing") {
     return { kind: "rejected", reason: "game-over", input };
   }
@@ -104,8 +122,9 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
     connected: connected.has(code),
   }));
 
-  const limit = guessLimit(n);
-  const status: GameStatus = away === 0 ? "won" : cards.length >= limit ? "lost" : "playing";
+  const limit = game.rules.guessLimit === "distance" ? guessLimit(n) : undefined;
+  const status: GameStatus =
+    away === 0 ? "won" : limit !== undefined && cards.length >= limit ? "lost" : "playing";
 
   const hintsUsed = game.hints?.taken ?? 0;
   const resultRoute =

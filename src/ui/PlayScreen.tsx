@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { resolveKommunName } from "../engine/kommunNames";
-import { type Trip, reviewGame } from "../engine/game";
+import type { DailyTrip } from "../daily/dailyTrip";
+import { reviewGame } from "../engine/game";
 import { hintReveals } from "../engine/hints";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SatelliteMap } from "../map/SatelliteMap";
@@ -26,14 +27,14 @@ import { UsedCounter } from "./UsedCounter";
 
 type PlayScreenProps = {
   graph: GraphVersion;
-  trip: Trip;
+  trip: DailyTrip;
   storage: KeyValueStorage;
   sessionStorage: KeyValueStorage;
   now: Date;
 };
 
 export function PlayScreen({ graph, trip, storage, sessionStorage, now }: PlayScreenProps) {
-  const [session, setSession] = useState<GuessSession>(() => ({
+  const [session, setSession] = useState<GuessSession<DailyTrip>>(() => ({
     game: loadSavedGame(storage, graph, trip),
     text: "",
   }));
