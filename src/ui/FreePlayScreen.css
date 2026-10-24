@@ -174,9 +174,14 @@
   font-weight: 700;
 }
 
-.result-score {
+.result-score,
+.result-time {
   margin: 0;
   font-weight: 700;
+}
+
+.result-time {
+  font-variant-numeric: tabular-nums;
 }
 
 .free-play-error {

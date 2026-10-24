@@ -50,7 +50,7 @@ export function ModeCards({
             checked={mode.kind === kind}
             disabled={!PLAYABLE_MODES.has(kind)}
             onChange={() => {
-              if (kind === "standard" || kind === "unlimited") onChange({ kind });
+              if (kind !== "timed") onChange({ kind });
             }}
           />
           <span className="free-play-mode-name">{name}</span>

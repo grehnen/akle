@@ -137,6 +137,42 @@ describe("automated accessibility check", () => {
     expect(await seriousViolations(setup)).toEqual([]);
   });
 
+  const tieBreakerTrip = {
+    start: "0192",
+    destination: "0488",
+    mode: { kind: "tie-breaker" },
+  } as const;
+
+  test("a tie-breaker trip behind its Starta gate has no serious violations", async () => {
+    const gate = (
+      <FreePlayScreen
+        graph={graph}
+        ordinal={0}
+        linkedTrip={tieBreakerTrip}
+        storage={memoryStorage()}
+        sessionStorage={memoryStorage()}
+      />
+    );
+    expect(await seriousViolations(gate)).toEqual([]);
+  });
+
+  test("a started tie-breaker trip with its clock has no serious violations", async () => {
+    const rules = { guessLimit: "distance", giveUp: true, keepsTime: true } as const;
+    const game = { trip: tieBreakerTrip, rules, guesses: [], startedAt: 0 };
+    const board = (
+      <FreePlayScreen
+        graph={graph}
+        ordinal={0}
+        linkedTrip={tieBreakerTrip}
+        resumed={{ game, drawn: false }}
+        storage={memoryStorage()}
+        sessionStorage={memoryStorage()}
+        clock={() => 83_000}
+      />
+    );
+    expect(await seriousViolations(board)).toEqual([]);
+  });
+
   test.each([
     ["naming its trip", { start: "Nynäshamn", destination: "Haninge" }],
     ["naming no trip", undefined],

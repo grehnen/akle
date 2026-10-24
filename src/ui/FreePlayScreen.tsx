@@ -1,6 +1,8 @@
 import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type Clock, systemClock } from "../engine/clock";
 import { type Game, newGame, reviewGame, type Trip } from "../engine/game";
 import { tripScore } from "../engine/score";
+import { startTime, stopTimeAtWin, tripTime } from "../engine/tripTime";
 import {
   defaultDistanceRange,
   type DistanceRange,
@@ -10,7 +12,7 @@ import {
 } from "../freePlay/draw";
 import { endpointSuggestions, pickedTrip, resolveEndpoint } from "../freePlay/endpoints";
 import type { LinkedTrip, ModeSetting } from "../freePlay/linkPayload";
-import { freePlayRules } from "../freePlay/modeRules";
+import { freePlayRules, opensAtStarta } from "../freePlay/modeRules";
 import { freePlayShareText } from "../freePlay/shareText";
 import { tripLinkPath } from "../freePlay/tripLink";
 import { saveTripSlot } from "../freePlay/tripSlot";
@@ -21,9 +23,11 @@ import type { KeyValueStorage } from "../progress/storage";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
 import { EndpointField } from "./EndpointField";
 import { ModeCards } from "./ModeCards";
-import { modeName, scoreText } from "./messages";
+import { modeName, scoreText, timeText } from "./messages";
 import { ShareButton } from "./ShareButton";
+import { StartGate } from "./StartGate";
 import { TripBoard } from "./TripBoard";
+import { TripClock } from "./TripClock";
 import "./FreePlayScreen.css";
 
 /**
@@ -49,13 +53,23 @@ type FreePlayScreenProps = {
   storage: KeyValueStorage;
   /** For the board's view choices, such as the result tab. */
   sessionStorage: KeyValueStorage;
+  /** What a trip's time is read from; the system clock by default. */
+  clock?: Clock;
 };
 
 /**
  * The trip on the board, and whether it was drawn, which lets its result draw another. `opened`
  * marks the trip the screen opened with, from a link or the slot, rather than one started here.
+ * `started` is false while a trip on the clock waits behind `Starta`, its ends still hidden.
  */
-type Played = { trip: LinkedTrip; game: Game; drawn: boolean; count: number; opened: boolean };
+type Played = {
+  trip: LinkedTrip;
+  game: Game;
+  drawn: boolean;
+  count: number;
+  opened: boolean;
+  started: boolean;
+};
 
 /**
  * Free play: the Fri resa setup screen, or a trip link's or the stored trip, then the drawn,
@@ -70,6 +84,7 @@ export function FreePlayScreen({
   onShowTripLink = () => {},
   storage,
   sessionStorage,
+  clock = systemClock,
 }: FreePlayScreenProps) {
   const pairs = useMemo(() => tripPairs(graph), [graph]);
   const largest = largestDistance(pairs);
@@ -83,6 +98,8 @@ export function FreePlayScreen({
         drawn: resumed?.drawn ?? false,
         count: 1,
         opened: true,
+        // A stored trip already started; it never waits behind Starta again.
+        started: resumed !== undefined || !opensAtStarta(linkedTrip.mode),
       },
   );
   const link = played && tripLinkPath(ordinal, played.trip);
@@ -92,10 +109,10 @@ export function FreePlayScreen({
     if (link !== undefined) onShowTripLink(link, opened);
   }, [link, opened, onShowTripLink]);
 
-  // A trip takes the slot as it starts, when the board first shows its ends, and keeps it
-  // up to date as it is played.
+  // A trip takes the slot as it starts, when the board first shows its ends (at Starta for a
+  // trip on the clock), and keeps it up to date as it is played.
   useEffect(() => {
-    if (played === undefined) return;
+    if (played === undefined || !played.started) return;
     const { trip, game, drawn } = played;
     saveTripSlot(storage, { versionOrdinal: ordinal, trip, game, drawn });
   }, [storage, ordinal, played]);
@@ -109,6 +126,7 @@ export function FreePlayScreen({
         drawn,
         count: (last?.count ?? 0) + 1,
         opened: false,
+        started: !opensAtStarta(tripMode),
       };
     });
   const draw = (tripMode: ModeSetting, previous?: Trip) => {
@@ -130,6 +148,18 @@ export function FreePlayScreen({
       />
     );
   }
+  const label = <p className="trip-number">Fri resa · {modeName(played.trip.mode)}</p>;
+  if (!played.started) {
+    return (
+      <StartGate
+        key={played.count}
+        label={label}
+        onStart={() =>
+          setPlayed({ ...played, started: true, game: startTime(played.game, clock()) })
+        }
+      />
+    );
+  }
   return (
     <FreePlayBoard
       // A new trip gets a fresh board, so the last one's result state doesn't carry over.
@@ -138,7 +168,11 @@ export function FreePlayScreen({
       trip={played.trip}
       game={played.game}
       link={link}
-      onGameChange={(game) => setPlayed({ ...played, game })}
+      label={label}
+      clock={clock}
+      // Started here just now, behind Starta, so the player can type at once.
+      focusGuessOnOpen={opensAtStarta(played.trip.mode) && played.game.guesses.length === 0}
+      onGameChange={(game) => setPlayed({ ...played, game: stopTimeAtWin(graph, game, clock()) })}
       sessionStorage={sessionStorage}
       resultActions={
         played.drawn && (
@@ -160,6 +194,9 @@ function FreePlayBoard({
   trip,
   game,
   link,
+  label,
+  clock,
+  focusGuessOnOpen,
   onGameChange,
   sessionStorage,
   resultActions,
@@ -168,6 +205,9 @@ function FreePlayBoard({
   trip: LinkedTrip;
   game: Game;
   link: string;
+  label: ReactNode;
+  clock: Clock;
+  focusGuessOnOpen: boolean;
   onGameChange: (game: Game) => void;
   sessionStorage: KeyValueStorage;
   resultActions: ReactNode;
@@ -175,12 +215,14 @@ function FreePlayBoard({
   const review = useMemo(() => reviewGame(graph, game), [graph, game]);
   const score = tripScore(review);
   const outcome = gameOutcome(review);
+  const time = tripTime(game);
   const share =
     score !== undefined && outcome !== undefined
       ? freePlayShareText({
           mode: trip.mode,
           outcome,
           score,
+          time,
           emojiLine: emojiLine(review.cards),
           link,
         })
@@ -188,6 +230,7 @@ function FreePlayBoard({
   const scoreAndShare = score !== undefined && share !== undefined && (
     <>
       <p className="result-score">{scoreText(score)}</p>
+      {game.rules.keepsTime && <ResultTime time={time} />}
       <ShareButton text={share} />
     </>
   );
@@ -197,7 +240,9 @@ function FreePlayBoard({
       game={game}
       onGameChange={onGameChange}
       sessionStorage={sessionStorage}
-      label={<p className="trip-number">Fri resa · {modeName(trip.mode)}</p>}
+      label={label}
+      clock={game.rules.keepsTime && <TripClock game={game} clock={clock} />}
+      focusGuessOnOpen={focusGuessOnOpen}
       resultActions={
         <>
           {scoreAndShare}
@@ -206,6 +251,23 @@ function FreePlayBoard({
       }
       stripActions={scoreAndShare}
     />
+  );
+}
+
+/** A tie-breaker trip's time in the result: a win's to tenths, or `–` for a loss, which has none. */
+function ResultTime({ time }: { time?: number }) {
+  return (
+    <p className="result-time">
+      Tid{" "}
+      {time === undefined ? (
+        <>
+          <span aria-hidden="true">–</span>
+          <span className="visually-hidden">saknas, bara en vinst får tid</span>
+        </>
+      ) : (
+        timeText(time)
+      )}
+    </p>
   );
 }
 
