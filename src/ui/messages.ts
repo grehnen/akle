@@ -47,7 +47,8 @@ function penalties(hintsUsed: number, timeouts = 0): string[] {
   ];
 }
 
-function penaltiesSuffix(hintsUsed: number, timeouts?: number): string {
+/** `, 2 ledtrådar`, `, 1 ledtråd, 2 ⏱` to close a bracket with, else nothing. */
+export function penaltiesSuffix(hintsUsed: number, timeouts?: number): string {
   return penalties(hintsUsed, timeouts)
     .map((penalty) => `, ${penalty}`)
     .join("");
