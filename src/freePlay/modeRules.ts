@@ -4,13 +4,14 @@ import type { ModeSetting } from "./linkPayload";
 /**
  * The rules a free-play trip is played under in its mode. Every mode lets the player give up,
  * unlike a daily trip; unlimited has no guess limit, so a give-up is its only loss; tie-breaker
- * keeps a win's time.
+ * keeps a win's time; timed gives every guess its thinking time.
  */
 export function freePlayRules(mode: ModeSetting): Rules {
   return {
     guessLimit: mode.kind === "unlimited" ? "none" : "distance",
     giveUp: true,
     keepsTime: mode.kind === "tie-breaker",
+    ...(mode.kind === "timed" && { thinkingTime: mode.thinkingTime }),
   };
 }
 

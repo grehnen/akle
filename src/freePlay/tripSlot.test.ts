@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { giveUp, newGame } from "../engine/game";
-import { startTime, stopTimeAtWin, tripTime } from "../engine/tripTime";
+import { giveUp, newGame, reviewGame } from "../engine/game";
+import { timeoutRuns } from "../engine/thinkingTime";
+import { stampThinkingTime, startTime, stopTimeAtWin, tripTime } from "../engine/tripTime";
 import { buildGraphVersion } from "../graph/graphVersion";
 import { memoryStorage } from "../progress/storage";
 import type { LinkedTrip } from "./linkPayload";
@@ -88,6 +89,52 @@ describe("the trip slot", () => {
 
     expect(resumeTrip(storage, version, timed)).toBeDefined();
     expect(resumeTrip(storage, version, slower)).toBeUndefined();
+  });
+
+  describe("a timed trip", () => {
+    const timed: LinkedTrip = { ...trip, mode: { kind: "timed", thinkingTime: 10 } };
+    const started = startTime(newGame(timed, freePlayRules(timed.mode)), startedAt);
+    const seconds = (count: number) => startedAt + count * 1000;
+
+    test("resumes its guess times, so timeouts across the gap count from real time", () => {
+      const storage = memoryStorage();
+      const game = stampThinkingTime(graph, { ...started, guesses: ["0136"] }, seconds(4));
+      saveTripSlot(storage, { versionOrdinal: 2, trip: timed, game, drawn: false });
+
+      const resumed = resumeTrip(storage, version, timed)?.game;
+      expect(resumed).toEqual(game);
+      // Reopened an hour later: every thinking time that ran out meanwhile is counted.
+      expect(resumed && timeoutRuns(resumed, seconds(4 + 3600 + 2.5))).toEqual([0, 360]);
+    });
+
+    test("resumes a finished trip with its timeouts fixed at the end", () => {
+      const storage = memoryStorage();
+      // Nynäshamn to Salem is a distance of 1; Trosa is off the route.
+      const toSalem: LinkedTrip = { ...timed, destination: "0128" };
+      const playing = startTime(newGame(toSalem, freePlayRules(toSalem.mode)), startedAt);
+      const guessed = stampThinkingTime(graph, { ...playing, guesses: ["0488"] }, seconds(3));
+      const game = stampThinkingTime(graph, giveUp(graph, guessed), seconds(25));
+      saveTripSlot(storage, { versionOrdinal: 2, trip: toSalem, game, drawn: false });
+
+      const resumed = resumeTrip(storage, version, toSalem)?.game;
+      expect(resumed && reviewGame(graph, resumed).timeouts).toBe(2);
+      expect(resumed && timeoutRuns(resumed, seconds(9000))).toEqual([0, 2]);
+    });
+
+    test.each([
+      ["no guess times", {}],
+      ["a guess time that isn't a number", { guessedAt: ["soon"] }],
+      ["fewer guess times than guesses", { guessedAt: [] }],
+    ])("isn't resumed with %s", (_, times) => {
+      const storage = memoryStorage();
+      const slot = { format: 1, versionOrdinal: 2, trip: timed, drawn: false };
+      storage.setItem(
+        "akle:free-play-trip",
+        JSON.stringify({ ...slot, game: { guesses: ["0136"], startedAt, ...times } }),
+      );
+
+      expect(resumeTrip(storage, version, timed)).toBeUndefined();
+    });
   });
 
   describe("a tie-breaker trip", () => {
