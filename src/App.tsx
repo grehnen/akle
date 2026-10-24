@@ -1,8 +1,9 @@
-import { type MouseEvent, type ReactNode, useEffect, useState } from "react";
+import { type MouseEvent, type ReactNode, useCallback, useEffect, useState } from "react";
 import { type DailyTripLoad, type DailyTripSource, loadDailyTrip } from "./daily/loadDailyTrip";
 import { readHistory } from "./progress/history";
 import { deriveStats } from "./progress/stats";
 import { browserStorage, type KeyValueStorage } from "./progress/storage";
+import { FREE_PLAY_PATH } from "./freePlay/tripLink";
 import { DailyTripView } from "./ui/DailyTripView";
 import { FreePlayView } from "./ui/FreePlayView";
 import { RulesDialog, RulesIcon } from "./ui/RulesDialog";
@@ -17,9 +18,9 @@ type AppProps = {
   sessionStorage?: KeyValueStorage;
   /** The page's path at load; the address bar's by default. */
   path?: string;
+  /** The page's query at load, such as a trip link's `?r=…`; the address bar's by default. */
+  search?: string;
 };
-
-const FREE_PLAY_PATH = "/fri";
 
 /** Whether a path is the free-play page, however the server or the dev server spells it. */
 function isFreePlayPath(path: string): boolean {
@@ -32,6 +33,7 @@ export function App({
   storage,
   sessionStorage,
   path: initialPath = globalThis.location?.pathname ?? "/",
+  search: initialSearch = globalThis.location?.search ?? "",
 }: AppProps) {
   const [daily, setDaily] = useState<DailyTripLoad>();
   const [failed, setFailed] = useState(false);
@@ -40,6 +42,7 @@ export function App({
   const [statsOpen, setStatsOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [path, setPath] = useState(initialPath);
+  const [search, setSearch] = useState(initialSearch);
   // Each visit to free play, even from free play itself, starts it afresh on the setup screen.
   const [visit, setVisit] = useState(0);
   const freePlay = isFreePlayPath(path);
@@ -62,6 +65,7 @@ export function App({
   useEffect(() => {
     const onPopState = () => {
       setPath(window.location.pathname);
+      setSearch(window.location.search);
       setVisit((count) => count + 1);
     };
     window.addEventListener("popstate", onPopState);
@@ -75,8 +79,18 @@ export function App({
   const navigate = (to: string) => {
     window.history.pushState(null, "", to);
     setPath(to);
+    setSearch("");
     setVisit((count) => count + 1);
   };
+
+  // A trip picked on the setup screen gets its own entry, so Back returns to the setup screen;
+  // a trip opened from its link keeps its entry, tidied to just the link.
+  const showTripLink = useCallback((link: string) => {
+    const { pathname, search: current } = window.location;
+    if (pathname + current === link) return;
+    if (new URLSearchParams(current).has("r")) window.history.replaceState(null, "", link);
+    else window.history.pushState(null, "", link);
+  }, []);
 
   return (
     <main>
@@ -124,7 +138,14 @@ export function App({
         />
       )}
       {freePlay ? (
-        <FreePlayView key={visit} source={source} now={openedAt} sessionStorage={sessionStorage} />
+        <FreePlayView
+          key={visit}
+          source={source}
+          now={openedAt}
+          linkPayload={new URLSearchParams(search).get("r") ?? undefined}
+          onShowTripLink={showTripLink}
+          sessionStorage={sessionStorage}
+        />
       ) : failed ? (
         <p role="alert">Kunde inte ladda dagens resa. Försök igen senare.</p>
       ) : (

@@ -1,4 +1,4 @@
-import { type KeyboardEvent, type ReactNode, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { type Game, newGame, reviewGame, STANDARD_RULES, type Trip } from "../engine/game";
 import { tripScore } from "../engine/score";
 import {
@@ -9,36 +9,73 @@ import {
   tripPairs,
 } from "../freePlay/draw";
 import { endpointSuggestions, pickedTrip, resolveEndpoint } from "../freePlay/endpoints";
+import type { LinkedTrip } from "../freePlay/linkPayload";
+import { freePlayShareText } from "../freePlay/shareText";
+import { tripLinkPath } from "../freePlay/tripLink";
 import type { GraphVersion } from "../graph/graphVersion";
+import { emojiLine } from "../progress/history";
+import { gameOutcome } from "../progress/outcome";
 import type { KeyValueStorage } from "../progress/storage";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
 import { EndpointField } from "./EndpointField";
-import { scoreText } from "./messages";
+import { modeName, scoreText } from "./messages";
+import { ShareButton } from "./ShareButton";
 import { TripBoard } from "./TripBoard";
 import "./FreePlayScreen.css";
 
+/** Shows a trip's link, `/fri?r=…`, in the address bar while the trip is played. */
+export type ShowTripLink = (link: string) => void;
+
 type FreePlayScreenProps = {
-  /** The current version, which every new free-play trip is played on. */
+  /** The version trips are played on: the current one, or the one a trip link pins. */
   graph: GraphVersion;
+  /** The version's ordinal, which a trip's link pins it by. */
+  ordinal: number;
+  /** A trip link's trip, played at once instead of the setup screen. */
+  linkedTrip?: LinkedTrip;
+  onShowTripLink?: ShowTripLink;
   /** For the board's view choices, such as the result tab; free play keeps no progress. */
   sessionStorage: KeyValueStorage;
 };
 
 /** The trip on the board, and whether it was drawn, which lets its result draw another. */
-type Played = { game: Game; drawn: boolean; count: number };
+type Played = { trip: LinkedTrip; game: Game; drawn: boolean; count: number };
+
+const standard = (trip: Trip): LinkedTrip => ({ ...trip, mode: { kind: "standard" } });
 
 /**
- * Free play: the Fri resa setup screen, then the drawn or picked trip on the board in
- * standard mode, with its score in the result. Nothing here reads or writes daily progress.
+ * Free play: the Fri resa setup screen, or a trip link's trip, then the drawn, picked or linked
+ * trip on the board in standard mode, with its score and share text in the result. Nothing here
+ * reads or writes daily progress.
  */
-export function FreePlayScreen({ graph, sessionStorage }: FreePlayScreenProps) {
+export function FreePlayScreen({
+  graph,
+  ordinal,
+  linkedTrip,
+  onShowTripLink = () => {},
+  sessionStorage,
+}: FreePlayScreenProps) {
   const pairs = useMemo(() => tripPairs(graph), [graph]);
   const largest = largestDistance(pairs);
   const [range, setRange] = useState(() => defaultDistanceRange(largest));
-  const [played, setPlayed] = useState<Played>();
+  const [played, setPlayed] = useState<Played | undefined>(
+    () =>
+      linkedTrip && {
+        trip: linkedTrip,
+        game: newGame(linkedTrip, STANDARD_RULES),
+        drawn: false,
+        count: 1,
+      },
+  );
+  const link = played && tripLinkPath(ordinal, played.trip);
+
+  useEffect(() => {
+    if (link !== undefined) onShowTripLink(link);
+  }, [link, onShowTripLink]);
 
   const play = (trip: Trip, drawn: boolean) =>
     setPlayed((last) => ({
+      trip: standard(trip),
       game: newGame(trip, STANDARD_RULES),
       drawn,
       count: (last?.count ?? 0) + 1,
@@ -48,7 +85,7 @@ export function FreePlayScreen({ graph, sessionStorage }: FreePlayScreenProps) {
     if (trip) play(trip, true);
   };
 
-  if (played === undefined) {
+  if (played === undefined || link === undefined) {
     return (
       <FreePlaySetup
         graph={graph}
@@ -65,7 +102,9 @@ export function FreePlayScreen({ graph, sessionStorage }: FreePlayScreenProps) {
       // A new trip gets a fresh board, so the last one's result state doesn't carry over.
       key={played.count}
       graph={graph}
+      trip={played.trip}
       game={played.game}
+      link={link}
       onGameChange={(game) => setPlayed({ ...played, game })}
       sessionStorage={sessionStorage}
       resultActions={
@@ -81,33 +120,54 @@ export function FreePlayScreen({ graph, sessionStorage }: FreePlayScreenProps) {
 
 function FreePlayBoard({
   graph,
+  trip,
   game,
+  link,
   onGameChange,
   sessionStorage,
   resultActions,
 }: {
   graph: GraphVersion;
+  trip: LinkedTrip;
   game: Game;
+  link: string;
   onGameChange: (game: Game) => void;
   sessionStorage: KeyValueStorage;
   resultActions: ReactNode;
 }) {
-  const score = useMemo(() => tripScore(reviewGame(graph, game)), [graph, game]);
-  const scoreLine = score !== undefined && <p className="result-score">{scoreText(score)}</p>;
+  const review = useMemo(() => reviewGame(graph, game), [graph, game]);
+  const score = tripScore(review);
+  const outcome = gameOutcome(review);
+  const share =
+    score !== undefined && outcome !== undefined
+      ? freePlayShareText({
+          mode: trip.mode,
+          outcome,
+          score,
+          emojiLine: emojiLine(review.cards),
+          link,
+        })
+      : undefined;
+  const scoreAndShare = score !== undefined && share !== undefined && (
+    <>
+      <p className="result-score">{scoreText(score)}</p>
+      <ShareButton text={share} />
+    </>
+  );
   return (
     <TripBoard
       graph={graph}
       game={game}
       onGameChange={onGameChange}
       sessionStorage={sessionStorage}
-      label={<p className="trip-number">Fri resa · Standard</p>}
+      label={<p className="trip-number">Fri resa · {modeName(trip.mode)}</p>}
       resultActions={
         <>
-          {scoreLine}
+          {scoreAndShare}
           {resultActions}
         </>
       }
-      stripActions={scoreLine}
+      stripActions={scoreAndShare}
     />
   );
 }

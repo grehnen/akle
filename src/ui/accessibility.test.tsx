@@ -7,6 +7,7 @@ import { saveGame } from "../progress/savedGame";
 import { memoryStorage } from "../progress/storage";
 import { DailyTripView } from "./DailyTripView";
 import { EndpointField } from "./EndpointField";
+import { FreePlayLinkError } from "./FreePlayLinkError";
 import { FreePlayScreen } from "./FreePlayScreen";
 import { GuessInput } from "./GuessInput";
 
@@ -125,8 +126,15 @@ describe("automated accessibility check", () => {
   });
 
   test("the Fri resa setup screen has no serious violations", async () => {
-    const setup = <FreePlayScreen graph={graph} sessionStorage={memoryStorage()} />;
+    const setup = <FreePlayScreen graph={graph} ordinal={0} sessionStorage={memoryStorage()} />;
     expect(await seriousViolations(setup)).toEqual([]);
+  });
+
+  test.each([
+    ["naming its trip", { start: "Nynäshamn", destination: "Haninge" }],
+    ["naming no trip", undefined],
+  ])("the free-play error screen %s has no serious violations", async (_, named) => {
+    expect(await seriousViolations(<FreePlayLinkError trip={named} />)).toEqual([]);
   });
 
   test("a Start field with its suggestions open has no serious violations", async () => {
