@@ -9,7 +9,7 @@ import {
   tripPairs,
 } from "../freePlay/draw";
 import { endpointSuggestions, pickedTrip, resolveEndpoint } from "../freePlay/endpoints";
-import type { LinkedTrip } from "../freePlay/linkPayload";
+import type { LinkedTrip, ModeSetting } from "../freePlay/linkPayload";
 import { freePlayRules } from "../freePlay/modeRules";
 import { freePlayShareText } from "../freePlay/shareText";
 import { tripLinkPath } from "../freePlay/tripLink";
@@ -20,6 +20,7 @@ import { gameOutcome } from "../progress/outcome";
 import type { KeyValueStorage } from "../progress/storage";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
 import { EndpointField } from "./EndpointField";
+import { ModeCards } from "./ModeCards";
 import { modeName, scoreText } from "./messages";
 import { ShareButton } from "./ShareButton";
 import { TripBoard } from "./TripBoard";
@@ -56,11 +57,9 @@ type FreePlayScreenProps = {
  */
 type Played = { trip: LinkedTrip; game: Game; drawn: boolean; count: number; opened: boolean };
 
-const standard = (trip: Trip): LinkedTrip => ({ ...trip, mode: { kind: "standard" } });
-
 /**
  * Free play: the Fri resa setup screen, or a trip link's or the stored trip, then the drawn,
- * picked or linked trip on the board in standard mode, with its score and share text in the
+ * picked or linked trip on the board in its mode, with its score and share text in the
  * result. The trip on the board is kept in the trip slot; nothing here touches daily progress.
  */
 export function FreePlayScreen({
@@ -75,6 +74,7 @@ export function FreePlayScreen({
   const pairs = useMemo(() => tripPairs(graph), [graph]);
   const largest = largestDistance(pairs);
   const [range, setRange] = useState(() => defaultDistanceRange(largest));
+  const [mode, setMode] = useState<ModeSetting>({ kind: "standard" });
   const [played, setPlayed] = useState<Played | undefined>(
     () =>
       linkedTrip && {
@@ -100,9 +100,9 @@ export function FreePlayScreen({
     saveTripSlot(storage, { versionOrdinal: ordinal, trip, game, drawn });
   }, [storage, ordinal, played]);
 
-  const play = (picked: Trip, drawn: boolean) =>
+  const play = (picked: Trip, tripMode: ModeSetting, drawn: boolean) =>
     setPlayed((last) => {
-      const trip = standard(picked);
+      const trip = { ...picked, mode: tripMode };
       return {
         trip,
         game: newGame(picked, freePlayRules(trip.mode)),
@@ -111,20 +111,22 @@ export function FreePlayScreen({
         opened: false,
       };
     });
-  const draw = (previous?: Trip) => {
+  const draw = (tripMode: ModeSetting, previous?: Trip) => {
     const trip = drawTrip(pairs, range, Math.random, previous);
-    if (trip) play(trip, true);
+    if (trip) play(trip, tripMode, true);
   };
 
   if (played === undefined || link === undefined) {
     return (
       <FreePlaySetup
         graph={graph}
+        mode={mode}
+        onModeChange={setMode}
         range={range}
         largest={largest}
         onRangeChange={setRange}
-        onDraw={() => draw()}
-        onPick={(trip) => play(trip, false)}
+        onDraw={() => draw(mode)}
+        onPick={(trip) => play(trip, mode, false)}
       />
     );
   }
@@ -140,7 +142,11 @@ export function FreePlayScreen({
       sessionStorage={sessionStorage}
       resultActions={
         played.drawn && (
-          <button type="button" className="free-play-redraw" onClick={() => draw(played.game.trip)}>
+          <button
+            type="button"
+            className="free-play-redraw"
+            onClick={() => draw(played.trip.mode, played.game.trip)}
+          >
             Slumpa ny resa
           </button>
         )
@@ -215,6 +221,8 @@ const panelId = (tab: SetupTab) => `free-play-panel-${tab}`;
 
 function FreePlaySetup({
   graph,
+  mode,
+  onModeChange,
   range,
   largest,
   onRangeChange,
@@ -222,6 +230,8 @@ function FreePlaySetup({
   onPick,
 }: {
   graph: GraphVersion;
+  mode: ModeSetting;
+  onModeChange: (mode: ModeSetting) => void;
   range: DistanceRange;
   largest: number;
   onRangeChange: (range: DistanceRange) => void;
@@ -232,6 +242,7 @@ function FreePlaySetup({
   return (
     <section className="free-play-setup" aria-labelledby="free-play-heading">
       <h2 id="free-play-heading">Fri resa</h2>
+      <ModeCards mode={mode} onChange={onModeChange} />
       <SetupTabs selected={tab} onSelect={setTab} />
       <div
         id={panelId("draw")}
