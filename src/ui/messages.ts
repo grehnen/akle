@@ -1,7 +1,7 @@
 import type { Feedback, GameReview, GameStatus, GuessCard, GuessResult } from "../engine/game";
 import type { HINT_COUNT } from "../engine/hints";
 import type { ModeSetting } from "../freePlay/linkPayload";
-import { gameOutcome } from "../progress/outcome";
+import { gameOutcome, type Outcome } from "../progress/outcome";
 
 type RejectionReason = Extract<GuessResult, { kind: "rejected" }>["reason"];
 
@@ -88,6 +88,18 @@ export function timeText(tenths: number): string {
   return `${hoursMinutesSeconds(Math.floor(tenths / 10))},${tenths % 10}`;
 }
 
+/** A summary row's outcome: `Perfekt`, `+2`, `3 ifrån` or, for a give-up, `Gav upp, 3 ifrån`. */
+export function summaryOutcomeText(outcome: Outcome): string {
+  switch (outcome.kind) {
+    case "perfect":
+      return "Perfekt";
+    case "won":
+      return `+${outcome.extra}`;
+    case "lost":
+      return `${outcome.givenUp ? "Gav upp, " : ""}${outcome.away} ifrån`;
+  }
+}
+
 /** An itinerary's total time and its won tie-breaker trips: `4:12,3 (2 vunna)`. */
 export function totalTimeText(tenths: number, won: number): string {
   return `${timeText(tenths)} (${won} ${won === 1 ? "vunnen" : "vunna"})`;
@@ -113,7 +125,8 @@ export function warningAnnouncement(seconds: number): string {
 }
 
 /** `1 ledtråd`, `2 ledtrådar`. */
-function hintCount(hints: number): string {
+/** Hints taken, counted: `0 ledtrådar`, `1 ledtråd`. */
+export function hintCount(hints: number): string {
   return hints === 1 ? "1 ledtråd" : `${hints} ledtrådar`;
 }
 
