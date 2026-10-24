@@ -56,6 +56,28 @@ export function drawTrip(
     : { start: second, destination: first };
 }
 
+/**
+ * Draws `count` trips in a row, as for an itinerary: each skips the pair drawn just before it,
+ * the first the pair of `previous`. A range without pairs draws none.
+ */
+export function drawTrips(
+  pairs: TripPairs,
+  range: DistanceRange,
+  count: number,
+  random: RandomSource,
+  previous?: Trip,
+): Trip[] {
+  const drawn: Trip[] = [];
+  let last = previous;
+  for (let index = 0; index < count; index++) {
+    const trip = drawTrip(pairs, range, random, last);
+    if (trip === undefined) break;
+    drawn.push(trip);
+    last = trip;
+  }
+  return drawn;
+}
+
 /** The largest distance among the pairs, which is where the distance range ends. */
 export function largestDistance(pairs: TripPairs): number {
   return Math.max(0, ...pairs.keys());
