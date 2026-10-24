@@ -89,6 +89,31 @@ describe("a free-play trip's share text", () => {
     ).toBe("Gav upp (1 ifrån) · 3 poäng");
   });
 
+  test("a timed trip puts its timeouts inside the label's brackets, never in the emoji line", () => {
+    const timed = { kind: "timed", thinkingTime: 10 } as const;
+    expect(
+      freePlayShareText({
+        mode: timed,
+        outcome: { kind: "won", extra: 2, hintsUsed: 1, timeouts: 2 },
+        score: 5,
+        emojiLine: "🟩🟧✅✅",
+        link,
+      }),
+    ).toBe(
+      "#åkle Fri resa · Tidspress 10 s\n+2 (1 ledtråd, 2 ⏱) · 5 poäng\n🟩🟧✅✅\nhttps://akle.grehn.net" +
+        link,
+    );
+    const label = (outcome: Parameters<typeof freePlayShareText>[0]["outcome"]) =>
+      freePlayShareText({ mode: timed, outcome, score: 0, emojiLine: "✅", link }).split("\n")[1];
+    expect(label({ kind: "won", extra: 0, hintsUsed: 0, timeouts: 2 })).toBe("+0 (2 ⏱) · 0 poäng");
+    expect(label({ kind: "lost", away: 3, hintsUsed: 0, timeouts: 1 })).toBe(
+      "(3 ifrån) (1 ⏱) · 0 poäng",
+    );
+    expect(label({ kind: "lost", away: 1, hintsUsed: 2, timeouts: 3, givenUp: true })).toBe(
+      "Gav upp (1 ifrån) (2 ledtrådar, 3 ⏱) · 0 poäng",
+    );
+  });
+
   test("names the mode, with a timed trip's thinking time", () => {
     const header = (mode: Parameters<typeof freePlayShareText>[0]["mode"]) =>
       freePlayShareText({
