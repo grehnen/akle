@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { type DailyTrip, type DailyTripSource, loadDailyTrip } from "./daily/loadDailyTrip";
+import { type DailyTripLoad, type DailyTripSource, loadDailyTrip } from "./daily/loadDailyTrip";
 import { readHistory } from "./progress/history";
 import { deriveStats } from "./progress/stats";
 import { browserStorage, type KeyValueStorage } from "./progress/storage";
@@ -15,7 +15,7 @@ type AppProps = {
 };
 
 export function App({ source, now = () => new Date(), storage }: AppProps) {
-  const [daily, setDaily] = useState<DailyTrip>();
+  const [daily, setDaily] = useState<DailyTripLoad>();
   const [failed, setFailed] = useState(false);
   const [openedAt] = useState(now);
   const [progressStorage] = useState(() => storage ?? browserStorage());

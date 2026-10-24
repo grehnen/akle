@@ -1,10 +1,10 @@
-import type { DailyTrip } from "../daily/loadDailyTrip";
+import type { DailyTripLoad } from "../daily/loadDailyTrip";
 import { useState } from "react";
 import { browserSessionStorage, browserStorage, type KeyValueStorage } from "../progress/storage";
 import { PlayScreen } from "./PlayScreen";
 
 type DailyTripViewProps = {
-  daily: DailyTrip | undefined;
+  daily: DailyTripLoad | undefined;
   storage?: KeyValueStorage;
   /** Where view choices that last one browser session are kept; sessionStorage by default. */
   sessionStorage?: KeyValueStorage;

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { Game } from "../engine/game";
+import type { DailyTrip } from "../daily/dailyTrip";
+import { type Game, newGame } from "../engine/game";
 import { buildGraphVersion } from "../graph/graphVersion";
 import { readHistory, recordFinishedGame } from "./history";
 import { memoryStorage } from "./storage";
@@ -21,8 +22,8 @@ const graph = buildGraphVersion({
   ],
 });
 
-const game = (number: number, ...guesses: string[]): Game => ({
-  trip: { number, start: "S", destination: "D" },
+const game = (number: number, ...guesses: string[]): Game<DailyTrip> => ({
+  ...newGame({ number, start: "S", destination: "D" }),
   guesses,
 });
 
