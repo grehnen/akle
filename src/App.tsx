@@ -1,10 +1,11 @@
-import { type MouseEvent, type ReactNode, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { type DailyTripSource, loadDailyTrip } from "./daily/loadDailyTrip";
 import { readHistory } from "./progress/history";
 import { deriveStats } from "./progress/stats";
 import { browserStorage, type KeyValueStorage } from "./progress/storage";
 import { ITINERARY_PATH } from "./freePlay/itineraryLink";
 import { FREE_PLAY_PATH } from "./freePlay/tripLink";
+import { AppLink } from "./ui/AppLink";
 import { DailyTripView } from "./ui/DailyTripView";
 import { FreePlayView } from "./ui/FreePlayView";
 import { ItineraryView } from "./ui/ItineraryView";
@@ -184,35 +185,5 @@ export function App({
         )}
       </main>
     </PacingContext>
-  );
-}
-
-/**
- * A link to another page of the app that stays in the app, through the History API, so Back
- * returns. A click that asks for a new tab or window is left to the browser.
- */
-function AppLink({
-  href,
-  onNavigate,
-  children,
-  ...attributes
-}: {
-  href: string;
-  onNavigate: (to: string) => void;
-  children: ReactNode;
-  className?: string;
-  "aria-label"?: string;
-}) {
-  const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-      return;
-    }
-    event.preventDefault();
-    onNavigate(href);
-  };
-  return (
-    <a href={href} onClick={onClick} {...attributes}>
-      {children}
-    </a>
   );
 }
