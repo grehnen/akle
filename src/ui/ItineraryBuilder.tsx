@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useMemo, useRef, useState } from "react";
 import type { Trip } from "../engine/game";
 import {
   defaultDistanceRange,
@@ -19,7 +19,7 @@ import { DEFAULT_THINKING_TIME, PLAYABLE_MODES } from "../freePlay/modeRules";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { shortestRouteLength } from "../graph/routes";
 import { SITE_URL } from "../siteUrl";
-import { copyShareText } from "./copyShareText";
+import { useCopyToast } from "./useCopyToast";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
 import { MODES, ThinkingTimeField } from "./ModeCards";
 import {
@@ -427,13 +427,7 @@ function LinkBar({
   link?: string;
   onPlay: (link: string) => void;
 }) {
-  const [toast, setToast] = useState("");
-  useEffect(() => {
-    if (toast === "") return;
-    const timer = setTimeout(() => setToast(""), 2000);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
+  const { toast, copy } = useCopyToast();
   return (
     <div className="itinerary-bar">
       <div className="itinerary-bar-content">
@@ -445,10 +439,7 @@ function LinkBar({
           type="button"
           className="itinerary-copy"
           disabled={link === undefined}
-          onClick={() =>
-            link !== undefined &&
-            void copyShareText(globalThis.navigator?.clipboard, `${SITE_URL}${link}`).then(setToast)
-          }
+          onClick={() => link !== undefined && copy(`${SITE_URL}${link}`)}
         >
           Kopiera länk
         </button>
