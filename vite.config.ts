@@ -9,7 +9,7 @@ export default defineConfig({
   // MapLibre (~1.1 MB) is code-split and loaded only when the map mounts.
   build: {
     chunkSizeWarningLimit: 1200,
-    // Each page is built for real, so /fri never relies on a fallback to index.html.
-    rollupOptions: { input: ["index.html", "fri.html"] },
+    // Each page is built for real, so /fri and /resplan never rely on a fallback to index.html.
+    rollupOptions: { input: ["index.html", "fri.html", "resplan.html"] },
   },
 });

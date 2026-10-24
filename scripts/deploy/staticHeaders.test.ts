@@ -45,9 +45,11 @@ describe("Åkle's _headers", () => {
     );
   });
 
-  test("the free-play page is revalidated on every load", () => {
-    expect(headersFor(akleRules, "https://akle.grehn.net/fri")["cache-control"]).toBe("no-cache");
-    expect(headersFor(akleRules, "https://akle.grehn.net/fri.html")["cache-control"]).toBe(
+  test.each(["fri", "resplan"])("the %s page is revalidated on every load", (page) => {
+    expect(headersFor(akleRules, `https://akle.grehn.net/${page}`)["cache-control"]).toBe(
+      "no-cache",
+    );
+    expect(headersFor(akleRules, `https://akle.grehn.net/${page}.html`)["cache-control"]).toBe(
       "no-cache",
     );
   });

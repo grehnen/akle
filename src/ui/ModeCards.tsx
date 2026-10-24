@@ -4,7 +4,8 @@ import "./ModeCards.css";
 
 type ModeKind = ModeSetting["kind"];
 
-const MODES: { kind: ModeKind; name: string; description: string }[] = [
+/** Every mode in the order the player is offered them, with its name and how it plays. */
+export const MODES: { kind: ModeKind; name: string; description: string }[] = [
   {
     kind: "standard",
     name: "Standard",
