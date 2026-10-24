@@ -135,11 +135,12 @@ function decodeV1(reader: BitReader): DecodedPayload {
   return { ok: true, payload: { versionOrdinal, trips } };
 }
 
-function isThinkingTime(seconds: number): boolean {
+/** Whether a value is a thinking time a link can carry: whole seconds in `THINKING_TIME_RANGE`. */
+export function isThinkingTime(seconds: unknown): seconds is number {
   return (
     Number.isInteger(seconds) &&
-    seconds >= THINKING_TIME_RANGE.min &&
-    seconds <= THINKING_TIME_RANGE.max
+    (seconds as number) >= THINKING_TIME_RANGE.min &&
+    (seconds as number) <= THINKING_TIME_RANGE.max
   );
 }
 
