@@ -126,7 +126,14 @@ describe("automated accessibility check", () => {
   });
 
   test("the Fri resa setup screen has no serious violations", async () => {
-    const setup = <FreePlayScreen graph={graph} ordinal={0} sessionStorage={memoryStorage()} />;
+    const setup = (
+      <FreePlayScreen
+        graph={graph}
+        ordinal={0}
+        storage={memoryStorage()}
+        sessionStorage={memoryStorage()}
+      />
+    );
     expect(await seriousViolations(setup)).toEqual([]);
   });
 
