@@ -1,5 +1,4 @@
-.itinerary-intro,
-.itinerary-finish {
+.itinerary-intro {
   width: 100%;
   max-width: 30rem;
   display: flex;
@@ -10,9 +9,7 @@
 }
 
 .itinerary-intro h2,
-.itinerary-intro p,
-.itinerary-finish h2,
-.itinerary-finish p {
+.itinerary-intro p {
   margin: 0;
   overflow-wrap: anywhere;
 }
@@ -39,10 +36,5 @@
 
 .itinerary-total {
   margin: 0;
-  font-weight: 700;
-}
-
-.itinerary-finish-total {
-  font-size: 1.5rem;
   font-weight: 700;
 }

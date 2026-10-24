@@ -1,0 +1,88 @@
+.itinerary-summary {
+  width: 100%;
+  max-width: 30rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.itinerary-summary h2,
+.itinerary-summary p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.itinerary-summary-count {
+  color: var(--muted);
+}
+
+.itinerary-summary-trips {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: summary-trip;
+  text-align: left;
+}
+
+.itinerary-summary-trip {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--rule);
+  counter-increment: summary-trip;
+}
+
+.itinerary-summary-pair {
+  font-weight: 700;
+}
+
+.itinerary-summary-pair::before {
+  content: counter(summary-trip) ". ";
+  color: var(--muted);
+}
+
+.itinerary-summary-facts {
+  grid-column: 1;
+  color: var(--muted);
+}
+
+.itinerary-summary-facts > span + span::before {
+  content: " · ";
+}
+
+.itinerary-summary-score {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.itinerary-summary-total {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.itinerary-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+/* Links that look like the app's buttons. */
+.itinerary-summary-actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--night);
+  font-weight: 700;
+  text-decoration: none;
+}

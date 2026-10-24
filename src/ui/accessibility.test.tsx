@@ -12,6 +12,7 @@ import { FreePlayScreen } from "./FreePlayScreen";
 import { GuessInput } from "./GuessInput";
 import { ItineraryBuilder } from "./ItineraryBuilder";
 import { ItineraryScreen } from "./ItineraryScreen";
+import { ItinerarySummaryView } from "./ItinerarySummary";
 import { ModeCards } from "./ModeCards";
 
 const graph = buildGraphVersion({
@@ -231,10 +232,47 @@ describe("automated accessibility check", () => {
           { start: "0192", destination: "0488", mode: { kind: "standard" } },
           { start: "0488", destination: "0192", mode: { kind: "timed", thinkingTime: 10 } },
         ]}
+        link="/resplan?namn=Fredagsresan&r=EIYFoKAAoAUMXhQwBgdq"
         sessionStorage={memoryStorage()}
       />
     );
     expect(await seriousViolations(intro)).toEqual([]);
+  });
+
+  test("an itinerary's summary has no serious violations", async () => {
+    const row = {
+      start: "Nynäshamn",
+      destination: "Trosa",
+      hintsUsed: 1,
+      timeouts: 2,
+      score: 4,
+    };
+    const summary = (
+      <ItinerarySummaryView
+        title="Fredagsresan"
+        summary={{
+          rows: [
+            {
+              ...row,
+              mode: { kind: "timed", thinkingTime: 10 },
+              outcome: { kind: "won", extra: 1, hintsUsed: 1, timeouts: 2 },
+            },
+            {
+              ...row,
+              mode: { kind: "tie-breaker" },
+              outcome: { kind: "perfect", extra: 0 },
+              timeouts: 0,
+              score: -1,
+              time: 834,
+            },
+          ],
+          standing: { score: 3, wonTieBreakers: 1, totalTime: 834 },
+          hasTieBreaker: true,
+        }}
+        link="/resplan?namn=Fredagsresan&r=EIYFoKAAoAUMXhQwBgdq"
+      />
+    );
+    expect(await seriousViolations(summary)).toEqual([]);
   });
 
   test("a Start field with its suggestions open has no serious violations", async () => {

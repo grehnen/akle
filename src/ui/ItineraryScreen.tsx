@@ -10,11 +10,13 @@ import {
   nextTrip,
   startTrip,
 } from "../freePlay/itineraryPlay";
+import { itinerarySummary } from "../freePlay/itinerarySummary";
 import type { LinkedTrip } from "../freePlay/linkPayload";
 import { opensAtStarta } from "../freePlay/modeRules";
 import type { GraphVersion } from "../graph/graphVersion";
 import type { KeyValueStorage } from "../progress/storage";
 import { FreePlayBoard } from "./FreePlayBoard";
+import { ItinerarySummaryView } from "./ItinerarySummary";
 import { modeName, scoreText } from "./messages";
 import { StartGate } from "./StartGate";
 import "./ItineraryScreen.css";
@@ -24,6 +26,8 @@ type ItineraryScreenProps = {
   graph: GraphVersion;
   title?: string;
   trips: readonly LinkedTrip[];
+  /** The itinerary's link, `/resplan?namn=…&r=…`, shared from its summary. */
+  link: string;
   /** For the board's view choices, such as the result tab. */
   sessionStorage: KeyValueStorage;
   /** What a trip's time is read from; the system clock by default. */
@@ -33,13 +37,14 @@ type ItineraryScreenProps = {
 /**
  * An itinerary played from its link: its intro, then for each trip in order a card with
  * `Starta`, the trip in its own mode and its result with the running total and `Nästa resa`,
- * and after the last a finish with the total. One attempt per trip, no skip or retry; nothing
- * here touches the trip slot or daily progress.
+ * and after the last its summary, shared with its `link`. One attempt per trip, no skip or
+ * retry; nothing here touches the trip slot or daily progress.
  */
 export function ItineraryScreen({
   graph,
   title,
   trips,
+  link,
   sessionStorage,
   clock = systemClock,
 }: ItineraryScreenProps) {
@@ -50,7 +55,12 @@ export function ItineraryScreen({
   if (stage.kind === "intro") {
     return <ItineraryIntro title={title} trips={trips} onBegin={() => setPlay(beginItinerary)} />;
   }
-  if (stage.kind === "finished") return <ItineraryFinish title={title} total={total} />;
+  if (stage.kind === "finished") {
+    const summary = itinerarySummary(graph, trips, play);
+    return summary === undefined ? null : (
+      <ItinerarySummaryView title={title} summary={summary} link={link} />
+    );
+  }
 
   const trip = trips[stage.index];
   const label = (
@@ -129,16 +139,6 @@ function ItineraryIntro({
       <button ref={button} type="button" className="itinerary-begin" onClick={onBegin}>
         Starta resplanen
       </button>
-    </section>
-  );
-}
-
-/** The minimal finish after the last trip: the total score. The full summary replaces it. */
-function ItineraryFinish({ title, total }: { title?: string; total: number }) {
-  return (
-    <section className="itinerary-finish" aria-labelledby="itinerary-finish-heading">
-      <h2 id="itinerary-finish-heading">{title ?? "Resplanen"} klar</h2>
-      <p className="itinerary-finish-total">Totalt {scoreText(total)}</p>
     </section>
   );
 }
