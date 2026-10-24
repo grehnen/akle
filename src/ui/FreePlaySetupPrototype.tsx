@@ -105,6 +105,8 @@ type VariantProps = {
   update: (change: Partial<Setup>) => void;
   maxDistance: number;
   draw: () => void;
+  /** Draws a pair and starts the trip at once, without showing the pair first. */
+  drawAndStart: () => void;
   start: () => void;
   problem: PairProblem | undefined;
   distance: number | undefined;
@@ -114,6 +116,7 @@ const VARIANTS = [
   { key: "A", name: "Formulär", Component: VariantForm },
   { key: "B", name: "Två vägar", Component: VariantTwoPaths },
   { key: "C", name: "Skylten", Component: VariantSigns },
+  { key: "D", name: "Läge först, slumpa startar", Component: VariantModeFirst },
 ] as const;
 
 /** Loads the newest graph version directly, so the prototype works before launch day too. */
@@ -177,6 +180,14 @@ export function FreePlaySetupPrototype({ graph }: { graph: GraphVersion }) {
         update={update}
         maxDistance={maxDistance}
         draw={draw}
+        drawAndStart={() => {
+          const previous: Pair | undefined =
+            setup.start && setup.destination ? [setup.start, setup.destination] : undefined;
+          const [start, destination] = drawPair(pairs, setup.range, previous);
+          const next = { ...setup, start, destination, drawn: true };
+          setSetup(next);
+          setStartedLink(freePlayLink(graph, next));
+        }}
         start={() => link && !problem && setStartedLink(link)}
         problem={problem}
         distance={distance}
@@ -639,6 +650,159 @@ function VariantTwoPaths({
         </button>
       </div>
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+// D: B reworked after review: mode first, then tabs; Slumpa resa starts a hidden pair at once
+
+function VariantModeFirst({
+  graph,
+  setup,
+  update,
+  maxDistance,
+  drawAndStart,
+  start,
+  distance,
+}: VariantProps) {
+  const [tab, setTab] = useState<"draw" | "pick">("draw");
+  const [min, max] = setup.range;
+  return (
+    <section className="fp-b fp-d" aria-labelledby="fp-d-heading">
+      <h2 id="fp-d-heading">Fri resa</h2>
+
+      <h3 className="section-heading fp-b__mode-heading">Läge</h3>
+      <div className="fp-b__cards" role="radiogroup" aria-label="Läge">
+        {MODES.map((entry) => (
+          <div
+            key={entry.key}
+            className="fp-b__card"
+            role="radio"
+            tabIndex={0}
+            aria-checked={entry.key === setup.mode}
+            onClick={() => update({ mode: entry.key })}
+            onKeyDown={(event) => event.key === " " && update({ mode: entry.key })}
+          >
+            <strong>{entry.name}</strong>
+            <span>{entry.blurb}</span>
+            {entry.key === "tidspress" && setup.mode === "tidspress" && (
+              <span onClick={(event) => event.stopPropagation()}>
+                <ThinkingTimeField
+                  value={setup.thinkingTime}
+                  onChange={(thinkingTime) => update({ thinkingTime })}
+                />
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="fp-b__tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "draw"}
+          onClick={() => setTab("draw")}
+        >
+          Slumpa
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "pick"}
+          onClick={() => setTab("pick")}
+        >
+          Välj själv
+        </button>
+      </div>
+
+      {tab === "draw" ? (
+        <div className="fp-b__panel fp-d__panel" role="tabpanel">
+          <DistanceRangeSlider
+            min={min}
+            max={max}
+            limit={maxDistance}
+            onChange={(range) => update({ range })}
+          />
+          <button type="button" className="fp-primary fp-d__dice" onClick={drawAndStart}>
+            <span aria-hidden="true">🎲</span> Slumpa resa
+          </button>
+          <p className="fp-muted">Start och mål visas när resan börjar.</p>
+        </div>
+      ) : (
+        <div className="fp-b__panel fp-d__panel" role="tabpanel">
+          <KommunPicker
+            graph={graph}
+            label="Start"
+            className="fp-picker--start"
+            value={setup.start}
+            onChange={(code) => update({ start: code, drawn: false })}
+            blocked={blockedBy(graph, setup.destination)}
+          />
+          <KommunPicker
+            graph={graph}
+            label="Mål"
+            className="fp-picker--destination"
+            value={setup.destination}
+            onChange={(code) => update({ destination: code, drawn: false })}
+            blocked={blockedBy(graph, setup.start)}
+          />
+          {distance !== undefined && <p className="fp-muted">Avstånd {distance}</p>}
+          <button
+            type="button"
+            className="fp-primary"
+            disabled={distance === undefined}
+            onClick={start}
+          >
+            Res
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** One track with two thumbs: two overlaid range inputs whose tracks ignore the pointer. */
+function DistanceRangeSlider({
+  min,
+  max,
+  limit,
+  onChange,
+}: {
+  min: number;
+  max: number;
+  limit: number;
+  onChange: (range: [number, number]) => void;
+}) {
+  const percent = (value: number) => ((value - 1) / (limit - 1)) * 100;
+  return (
+    <div className="fp-dual">
+      <p>
+        Avstånd <strong>{min === max ? min : `${min}–${max}`}</strong>
+      </p>
+      <div className="fp-dual__track">
+        <span
+          className="fp-dual__fill"
+          style={{ left: `${percent(min)}%`, right: `${100 - percent(max)}%` }}
+        />
+        <input
+          type="range"
+          aria-label="Minsta avstånd"
+          min={1}
+          max={limit}
+          value={min}
+          onChange={(event) => onChange([Math.min(Number(event.target.value), max), max])}
+        />
+        <input
+          type="range"
+          aria-label="Största avstånd"
+          min={1}
+          max={limit}
+          value={max}
+          onChange={(event) => onChange([min, Math.max(Number(event.target.value), min)])}
+        />
+      </div>
+    </div>
   );
 }
 

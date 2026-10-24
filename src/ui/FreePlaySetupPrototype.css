@@ -483,3 +483,91 @@
 .fp-title-link {
   text-decoration: none;
 }
+
+/* D */
+
+.fp-d {
+  padding-bottom: 4rem;
+}
+
+.fp-d__panel {
+  min-height: 0;
+}
+
+.fp-d__dice {
+  min-height: 4rem;
+  font-size: 1.25rem;
+}
+
+.fp-dual {
+  width: 100%;
+  text-align: left;
+}
+
+.fp-dual p {
+  margin: 0 0 0.25rem;
+}
+
+.fp-dual__track {
+  position: relative;
+  height: 2.75rem;
+}
+
+.fp-dual__track::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: var(--rule);
+}
+
+.fp-dual__fill {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  background: var(--start);
+}
+
+.fp-dual__track input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  appearance: none;
+  pointer-events: none;
+}
+
+.fp-dual__track input::-webkit-slider-runnable-track {
+  background: none;
+}
+
+.fp-dual__track input::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 3px var(--start);
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.fp-dual__track input::-moz-range-thumb {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 3px var(--start);
+  pointer-events: auto;
+  cursor: grab;
+}
