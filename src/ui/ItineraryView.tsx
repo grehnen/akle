@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type MouseEvent, useCallback, useEffect, useState } from "react";
 import type { DailyTripSource } from "../daily/loadDailyTrip";
 import type { Clock } from "../engine/clock";
 import { loadCurrentVersion, type PinnedVersion } from "../freePlay/currentVersion";
@@ -7,7 +7,14 @@ import {
   type OpenedItineraryLink,
   openItineraryLink,
 } from "../freePlay/itineraryLink";
-import { browserSessionStorage, type KeyValueStorage } from "../progress/storage";
+import type { ItineraryPlay } from "../freePlay/itineraryPlay";
+import {
+  resumeItinerary,
+  saveItinerarySlot,
+  type UnfinishedItinerary,
+  unfinishedItinerary,
+} from "../freePlay/itinerarySlot";
+import { browserSessionStorage, browserStorage, type KeyValueStorage } from "../progress/storage";
 import { FreePlayLinkError } from "./FreePlayLinkError";
 import { ItineraryBuilder } from "./ItineraryBuilder";
 import { ItineraryScreen } from "./ItineraryScreen";
@@ -21,18 +28,24 @@ type ItineraryViewProps = {
   title?: string;
   /** Opens a built itinerary's link in place, `/resplan?namn=…&r=…`. */
   onPlay: (link: string) => void;
+  /** Where the itinerary slot is kept; localStorage by default. */
+  storage?: KeyValueStorage;
   /** Where view choices that last one browser session are kept; sessionStorage by default. */
   sessionStorage?: KeyValueStorage;
   /** What a trip's time is read from; the system clock by default. */
   clock?: Clock;
 };
 
-type Loaded = { kind: "builder"; version: PinnedVersion } | OpenedItineraryLink;
+type Loaded =
+  | { kind: "builder"; version: PinnedVersion; unfinished?: UnfinishedItinerary }
+  | (OpenedItineraryLink & { resumed?: ItineraryPlay });
 
 /**
  * The itinerary page: with `r` the itinerary its link opens, on the version it pins, or the
  * free-play error screen when the link is invalid; without `r` the builder, on the current
  * version that every trip of the built itinerary is pinned to. Only that one version loads.
+ * The itinerary slot keeps the latest itinerary begun: its exact link resumes it, finished or
+ * not, and the builder links back to it while it's unfinished.
  */
 export function ItineraryView({
   source,
@@ -40,19 +53,29 @@ export function ItineraryView({
   linkPayload,
   title,
   onPlay,
+  storage,
   sessionStorage,
   clock,
 }: ItineraryViewProps) {
   const [loaded, setLoaded] = useState<Loaded>();
   const [failed, setFailed] = useState(false);
+  const [slotStorage] = useState(() => storage ?? browserStorage());
   const [fallbackSessionStorage] = useState(browserSessionStorage);
 
   useEffect(() => {
     let cancelled = false;
     const loading: Promise<Loaded> =
       linkPayload === undefined
-        ? loadCurrentVersion(source, now).then((version) => ({ kind: "builder", version }))
-        : openItineraryLink(source, now, title, linkPayload);
+        ? loadCurrentVersion(source, now).then((version) => ({
+            kind: "builder",
+            version,
+            unfinished: unfinishedItinerary(slotStorage),
+          }))
+        : openItineraryLink(source, now, title, linkPayload).then((opened) =>
+            opened.kind === "itinerary"
+              ? { ...opened, resumed: resumeItinerary(slotStorage, opened) }
+              : opened,
+          );
     loading
       .then((result) => !cancelled && setLoaded(result))
       .catch((error: unknown) => {
@@ -62,14 +85,36 @@ export function ItineraryView({
     return () => {
       cancelled = true;
     };
-  }, [source, now, linkPayload, title]);
+  }, [source, now, linkPayload, title, slotStorage]);
+
+  const savePlay = useCallback(
+    (play: ItineraryPlay) => {
+      if (loaded?.kind !== "itinerary") return;
+      const { version, title: savedTitle, trips } = loaded;
+      saveItinerarySlot(slotStorage, {
+        versionOrdinal: version.ordinal,
+        title: savedTitle,
+        trips,
+        play,
+      });
+    },
+    [loaded, slotStorage],
+  );
 
   if (failed) return <p role="alert">Kunde inte ladda resplanen. Försök igen senare.</p>;
   if (loaded === undefined) return <p>Laddar resplan…</p>;
   if (loaded.kind === "invalid") return <FreePlayLinkError trip={loaded.trip} itinerary />;
   if (loaded.kind === "builder") {
     const { graph, ordinal } = loaded.version;
-    return <ItineraryBuilder graph={graph} ordinal={ordinal} onPlay={onPlay} />;
+    const { unfinished } = loaded;
+    return (
+      <ItineraryBuilder
+        graph={graph}
+        ordinal={ordinal}
+        onPlay={onPlay}
+        banner={unfinished && <ResumeBanner unfinished={unfinished} onPlay={onPlay} />}
+      />
+    );
   }
   return (
     <ItineraryScreen
@@ -79,6 +124,34 @@ export function ItineraryView({
       link={itineraryLinkPath(loaded.version.ordinal, loaded.title ?? "", loaded.trips)}
       sessionStorage={sessionStorage ?? fallbackSessionStorage}
       clock={clock}
+      initialPlay={loaded.resumed}
+      onPlayChange={savePlay}
     />
+  );
+}
+
+/**
+ * The builder's way back to the unfinished itinerary, opened in place like `Spela`; a click that
+ * asks for a new tab or window is left to the browser.
+ */
+function ResumeBanner({
+  unfinished: { title, tripNumber, tripCount, link },
+  onPlay,
+}: {
+  unfinished: UnfinishedItinerary;
+  onPlay: (link: string) => void;
+}) {
+  const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    event.preventDefault();
+    onPlay(link);
+  };
+  const named = title === undefined ? "" : `${title}, `;
+  return (
+    <a className="itinerary-resume" href={link} onClick={onClick}>
+      Fortsätt resplanen: {named}resa {tripNumber} av {tripCount}
+    </a>
   );
 }
