@@ -62,16 +62,17 @@ export function headersFor(rulesText: string, url: string): Record<string, strin
 
 /**
  * Checks the built asset paths (relative to the assets directory) against the caching policy:
- * every hashed file under assets/ is immutable, and index.html is no-cache.
+ * every hashed file under assets/ is immutable, and every top-level page is no-cache.
  */
 export function cacheViolations(rulesText: string, builtFiles: string[]): string[] {
   const cacheControl = (path: string) =>
     headersFor(rulesText, `${SITE_URL}${path}`)["cache-control"] ?? "";
   const violations: string[] = [];
   for (const file of builtFiles) {
-    if (file === "index.html") {
-      // Workers serve index.html at "/" (a request for /index.html redirects there).
-      if (cacheControl("/") !== "no-cache") {
+    const page = /^([^/]+)\.html$/.exec(file)?.[1];
+    if (page !== undefined) {
+      // Workers serve index.html at "/" and fri.html at "/fri" (the .html paths redirect there).
+      if (cacheControl(page === "index" ? "/" : `/${page}`) !== "no-cache") {
         violations.push(`${file} is not served no-cache`);
       }
     } else if (file.startsWith("assets/") && !cacheControl(`/${file}`).includes("immutable")) {
