@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useRef } from "react";
+import { type ReactNode, type RefObject, useEffect, useRef } from "react";
 import { HINT_LABELS } from "./messages";
 
 type HintSectionProps = {
@@ -6,13 +6,20 @@ type HintSectionProps = {
   onTakeHint: () => void;
   /** Where focus goes when the last hint disables every button, so it doesn't drop to the page top. */
   focusAfterLastHint: RefObject<HTMLElement | null>;
+  /** Shown after the hint buttons, such as a free-play trip's Ge upp. */
+  children?: ReactNode;
 };
 
 /**
  * A headed section with one numbered button per hint, side by side when they fit and stacked
  * when they don't. Hints are taken in order: only the first one not yet taken is enabled.
  */
-export function HintSection({ hintsUsed, onTakeHint, focusAfterLastHint }: HintSectionProps) {
+export function HintSection({
+  hintsUsed,
+  onTakeHint,
+  focusAfterLastHint,
+  children,
+}: HintSectionProps) {
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   const focusNextHint = useRef(false);
 
@@ -61,6 +68,7 @@ export function HintSection({ hintsUsed, onTakeHint, focusAfterLastHint }: HintS
           );
         })}
       </div>
+      {children}
     </section>
   );
 }
