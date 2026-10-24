@@ -62,6 +62,17 @@ describe("DailyTripView", () => {
     expect(visibleText(markup)).toContain("Gissa (1/5)");
   });
 
+  test("has no Ge upp, even with the distance's worth of guesses", () => {
+    const trip = { number: 21, start: "0192", destination: "0488", n: 1 };
+    const storage = memoryStorage();
+    saveGame(storage, { trip, guesses: ["0136"] });
+    const markup = renderToStaticMarkup(
+      <DailyTripView daily={{ kind: "trip", trip, graph }} storage={storage} />,
+    );
+    expect(visibleText(markup)).toContain("Gissa (2/5)");
+    expect(markup).not.toContain("Ge upp");
+  });
+
   describe("on the play screen", () => {
     const markup = renderToStaticMarkup(
       <DailyTripView

@@ -14,6 +14,16 @@ const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>', {
 // The satellite map asks for the touch-screen media query; jsdom has no matchMedia.
 const matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
 Object.assign(dom.window, { matchMedia });
+// jsdom has no modal dialogs: opening one only marks it open, and closing it fires close.
+Object.assign(dom.window.HTMLDialogElement.prototype, {
+  showModal(this: HTMLDialogElement) {
+    this.setAttribute("open", "");
+  },
+  close(this: HTMLDialogElement) {
+    this.removeAttribute("open");
+    this.dispatchEvent(new dom.window.Event("close"));
+  },
+});
 Object.assign(globalThis, {
   window: dom.window,
   document: dom.window.document,
@@ -620,5 +630,77 @@ describe("resuming the free-play trip", () => {
     storage.setItem("akle:free-play-trip", slot);
     const { container } = await mountApp("/fri", storage);
     expect(query(container, "#free-play-heading").textContent).toBe("Fri resa");
+  });
+});
+
+describe("giving up", () => {
+  // Nynäshamn to Salem is a distance of 1; Trosa, beyond Salem, is off the route.
+  const nynashamnSalem = tripLinkPath(0, {
+    start: "0192",
+    destination: "0128",
+    mode: { kind: "standard" },
+  });
+  const giveUpButton = (container: HTMLElement) =>
+    query<HTMLButtonElement>(container, ".give-up-button");
+  const dialog = (container: HTMLElement) =>
+    query<HTMLDialogElement>(container, "dialog.give-up-dialog");
+  const confirmButton = (container: HTMLElement) =>
+    query(container, "dialog.give-up-dialog .give-up-confirm");
+
+  async function giveUpAfterTrosa(container: HTMLElement) {
+    await pick(container, "Nynäshamn", "Salem");
+    await guess(container, "Trosa");
+    await click(giveUpButton(container));
+    await click(confirmButton(container));
+    // A finished trip keeps the board up for a moment before the result view opens.
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 1600)));
+  }
+
+  test("Ge upp sits with the hints from the start, enabled once there are distance guesses", async () => {
+    const { container } = await mountApp("/fri");
+    await pick(container, "Nynäshamn", "Salem");
+    expect(giveUpButton(container).textContent).toBe("Ge upp");
+    expect(giveUpButton(container).closest(".hint-section")).not.toBeNull();
+    expect(giveUpButton(container).disabled).toBe(true);
+
+    await guess(container, "Trosa");
+    expect(giveUpButton(container).disabled).toBe(false);
+  });
+
+  test("asks before ending the trip, and going back keeps playing", async () => {
+    const { container } = await mountApp("/fri");
+    await pick(container, "Nynäshamn", "Salem");
+    await guess(container, "Trosa");
+
+    await click(giveUpButton(container));
+    expect(dialog(container).open).toBe(true);
+    await click(query(container, "dialog.give-up-dialog .give-up-cancel"));
+    expect(container.querySelector("dialog.give-up-dialog")).toBeNull();
+    expect(container.querySelector("#guess-input")).not.toBeNull();
+  });
+
+  test("a give-up is a loss headed Gav upp, scored 3 per kommun away, with its share label", async () => {
+    const { container } = await mountApp("/fri");
+    await giveUpAfterTrosa(container);
+
+    expect(query(container, "#result-heading").textContent).toBe("Gav upp (1 ifrån)");
+    // 1 guess − distance 1 + 3·1 away.
+    expect(query(container, ".result-score").textContent).toBe("3 poäng");
+    await click(query(container, ".share-button"));
+    expect(copied).toEqual([
+      `#åkle Fri resa · Standard\nGav upp (1 ifrån) · 3 poäng\n🟧\nhttps://akle.grehn.net${nynashamnSalem}`,
+    ]);
+  });
+
+  test("a reload or the exact link reopens a given-up trip as given up", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    await giveUpAfterTrosa(container);
+    expect(address()).toBe(nynashamnSalem);
+
+    const reloaded = await reopen(nynashamnSalem, storage);
+    expect(query(reloaded.container, "#result-heading").textContent).toBe("Gav upp (1 ifrån)");
+    expect(query(reloaded.container, ".result-score").textContent).toBe("3 poäng");
+    expect(reloaded.container.querySelector("#guess-input")).toBeNull();
   });
 });
