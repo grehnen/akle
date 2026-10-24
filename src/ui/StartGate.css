@@ -1,0 +1,27 @@
+.start-gate {
+  width: 100%;
+  max-width: 30rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.start-gate h2,
+.start-gate p {
+  margin: 0;
+}
+
+.start-gate-note {
+  color: var(--muted);
+}
+
+.start-gate-button {
+  min-height: 4rem;
+  min-width: 12rem;
+  background: var(--start);
+  color: var(--night);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
