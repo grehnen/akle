@@ -1,4 +1,4 @@
-import type { DailyPuzzleSource } from "../daily/loadDailyPuzzle";
+import type { DailyTripSource } from "../daily/loadDailyTrip";
 import {
   graphVersionDirectory,
   graphVersionFileNames,
@@ -14,7 +14,7 @@ const dataFile = (path: string) => Bun.file(new URL(path, dataDirectory));
  * Reads the data committed under `data/` from disk, the way `bundledDataSource` reads it in the
  * browser. For tests and scripts under Bun; the app never imports it.
  */
-export const committedDataSource: DailyPuzzleSource = {
+export const committedDataSource: DailyTripSource = {
   scheduleConfig: async () => parseScheduleConfig(await dataFile("schedule/config.json").json()),
   scheduleChunk: async (chunk) => {
     const file = dataFile(`schedule/${scheduleChunkFileName(chunk)}`);

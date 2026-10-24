@@ -1,4 +1,4 @@
-import { connectedTo, type Feedback, type GuessCard, type Puzzle } from "../engine/game";
+import { connectedTo, type Feedback, type GuessCard, type Trip } from "../engine/game";
 import { routeStops } from "../engine/routeStops";
 import type { GraphVersion, KommunCode } from "../graph/graphVersion";
 
@@ -52,18 +52,18 @@ type FeatureOptions = {
  */
 export function mapFeatures(
   graph: GraphVersion,
-  puzzle: Pick<Puzzle, "start" | "destination">,
+  trip: Pick<Trip, "start" | "destination">,
   cards: readonly Pick<GuessCard, "code" | "connected">[],
   hintOutlines: readonly KommunCode[] = [],
   { allOutlines = false }: FeatureOptions = {},
 ): DrawnFeatures {
-  const shown = new Set([puzzle.start, puzzle.destination, ...cards.map((card) => card.code)]);
+  const shown = new Set([trip.start, trip.destination, ...cards.map((card) => card.code)]);
   const drawn: DrawnKommun[] = [
     ...(allOutlines ? [] : hintOutlines)
       .filter((code) => !shown.has(code))
       .map((code) => ({ code, kind: "hint" as const, color: HINT_COLOR, connected: true })),
-    { code: puzzle.start, kind: "start", color: START_COLOR, connected: true },
-    { code: puzzle.destination, kind: "destination", color: DESTINATION_COLOR, connected: true },
+    { code: trip.start, kind: "start", color: START_COLOR, connected: true },
+    { code: trip.destination, kind: "destination", color: DESTINATION_COLOR, connected: true },
     ...cards.map((card) => ({
       code: card.code,
       kind: "guess" as const,
@@ -81,7 +81,7 @@ export function mapFeatures(
  */
 export function routeFeatures(
   graph: GraphVersion,
-  puzzle: Pick<Puzzle, "start" | "destination">,
+  trip: Pick<Trip, "start" | "destination">,
   route: readonly KommunCode[],
   guesses: ReadonlySet<KommunCode>,
   { allOutlines = false }: FeatureOptions = {},
@@ -96,9 +96,9 @@ export function routeFeatures(
         color: UNCONNECTED_COLOR,
         connected: false,
       })),
-    { code: puzzle.start, kind: "start", color: START_COLOR, connected: true },
-    { code: puzzle.destination, kind: "destination", color: DESTINATION_COLOR, connected: true },
-    ...routeStops(puzzle, route, guesses).flatMap(({ code, kind }): DrawnKommun[] => {
+    { code: trip.start, kind: "start", color: START_COLOR, connected: true },
+    { code: trip.destination, kind: "destination", color: DESTINATION_COLOR, connected: true },
+    ...routeStops(trip, route, guesses).flatMap(({ code, kind }): DrawnKommun[] => {
       if (kind === "guessed")
         return [{ code, kind: "guess", color: CONNECTED_COLOR, connected: true }];
       if (kind === "missed")
@@ -141,14 +141,10 @@ const FRAMED_FEEDBACK: ReadonlySet<Feedback> = new Set(["✅", "🟩", "🟧"]);
  */
 export function defaultBounds(
   graph: GraphVersion,
-  puzzle: Pick<Puzzle, "start" | "destination">,
+  trip: Pick<Trip, "start" | "destination">,
   cards: readonly FramedCard[],
 ): Bounds | undefined {
-  return routeBounds(graph, [
-    puzzle.start,
-    puzzle.destination,
-    ...framedGuesses(graph, puzzle, cards),
-  ]);
+  return routeBounds(graph, [trip.start, trip.destination, ...framedGuesses(graph, trip, cards)]);
 }
 
 /**
@@ -157,26 +153,26 @@ export function defaultBounds(
  */
 export function guessViewBounds(
   graph: GraphVersion,
-  puzzle: Pick<Puzzle, "start" | "destination">,
+  trip: Pick<Trip, "start" | "destination">,
   cards: readonly FramedCard[],
 ): Bounds | undefined {
   const latest = cards.at(-1)?.code;
   return routeBounds(graph, [
-    puzzle.start,
-    puzzle.destination,
-    ...framedGuesses(graph, puzzle, cards),
+    trip.start,
+    trip.destination,
+    ...framedGuesses(graph, trip, cards),
     ...(latest === undefined ? [] : [latest]),
   ]);
 }
 
 function framedGuesses(
   graph: GraphVersion,
-  puzzle: Pick<Puzzle, "start" | "destination">,
+  trip: Pick<Trip, "start" | "destination">,
   cards: readonly FramedCard[],
 ): KommunCode[] {
   const toDestination = connectedTo(
     graph,
-    puzzle.destination,
+    trip.destination,
     cards.map((card) => card.code),
   );
   return cards

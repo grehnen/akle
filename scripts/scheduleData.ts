@@ -10,7 +10,8 @@ import {
   parseScheduleChunk,
   parseScheduleConfig,
   type ScheduleConfig,
-  type ScheduledPuzzle,
+  scheduleHeader,
+  type ScheduledTrip,
   scheduleChunkFor,
 } from "../src/schedule/schedule";
 import type { ScheduleAtBase } from "./playedThrough";
@@ -50,8 +51,8 @@ export async function readGraphVersions(): Promise<GraphVersion[]> {
   );
 }
 
-/** Every committed schedule row, in puzzle order, from the working tree. */
-export async function readScheduleRows(): Promise<ScheduledPuzzle[]> {
+/** Every committed schedule row, in trip order, from the working tree. */
+export async function readScheduleRows(): Promise<ScheduledTrip[]> {
   const fileNames = [...new Bun.Glob("*.csv").scanSync(scheduleDirectory)];
   const files = await Promise.all(
     fileNames.map(async (fileName) => ({
@@ -62,8 +63,8 @@ export async function readScheduleRows(): Promise<ScheduledPuzzle[]> {
   return rowsFromChunkFiles(files);
 }
 
-/** Every schedule row at a git revision, in puzzle order; none if it has no schedule. */
-export function readScheduleRowsAt(revision: string): ScheduledPuzzle[] {
+/** Every schedule row at a git revision, in trip order; none if it has no schedule. */
+export function readScheduleRowsAt(revision: string): ScheduledTrip[] {
   const listing = git(["ls-tree", "--name-only", revision, "data/schedule/"]);
   const fileNames = listing
     .split("\n")
@@ -72,19 +73,19 @@ export function readScheduleRowsAt(revision: string): ScheduledPuzzle[] {
   return rowsFromChunkFiles(
     fileNames.map((fileName) => ({
       fileName,
-      csv: git(["show", `${revision}:data/schedule/${fileName}`]),
+      csv: withTripHeader(git(["show", `${revision}:data/schedule/${fileName}`])),
     })),
   );
 }
 
 /**
- * The epoch and schedule rows at a git revision, for counting played puzzles. A revision without
- * a schedule config has no played puzzle, so `currentEpoch` stands in for its epoch.
+ * The epoch and schedule rows at a git revision, for counting played trips. A revision without
+ * a schedule config has no played trip, so `currentEpoch` stands in for its epoch.
  */
 export function readScheduleAt(
   revision: string,
   currentEpoch: string,
-): ScheduleAtBase & { rows: ScheduledPuzzle[] } {
+): ScheduleAtBase & { rows: ScheduledTrip[] } {
   const hasConfig = git(["ls-tree", "--name-only", revision, "data/schedule/config.json"]) !== "";
   const epoch = hasConfig
     ? parseScheduleConfig(JSON.parse(git(["show", `${revision}:data/schedule/config.json`]))).epoch
@@ -92,14 +93,22 @@ export function readScheduleAt(
   return { epoch, rows: readScheduleRowsAt(revision) };
 }
 
+/** Revisions from before the puzzle → trip rename head their chunks `puzzle,start,destination,n`. */
+function withTripHeader(csv: string): string {
+  const legacyHeader = "puzzle,start,destination,n";
+  return csv.startsWith(`${legacyHeader}\n`) || csv.startsWith(`${legacyHeader}\r\n`)
+    ? `${scheduleHeader}${csv.slice(legacyHeader.length)}`
+    : csv;
+}
+
 /** Writes every chunk that holds a row; earlier chunk files stay as they are when unchanged. */
-export async function writeScheduleRows(rows: readonly ScheduledPuzzle[]): Promise<void> {
+export async function writeScheduleRows(rows: readonly ScheduledTrip[]): Promise<void> {
   for (const { fileName, csv } of formatScheduleChunks(rows)) {
     await Bun.write(`${scheduleDirectory}${fileName}`, csv);
   }
 }
 
-function rowsFromChunkFiles(files: { fileName: string; csv: string }[]): ScheduledPuzzle[] {
+function rowsFromChunkFiles(files: { fileName: string; csv: string }[]): ScheduledTrip[] {
   const rows = files
     .filter(({ fileName }) => chunkFilePattern.test(fileName))
     .sort((a, b) => a.fileName.localeCompare(b.fileName))
@@ -108,7 +117,7 @@ function rowsFromChunkFiles(files: { fileName: string; csv: string }[]): Schedul
       const chunkRows = parseScheduleChunk(csv);
       const misplaced = chunkRows.find((row) => scheduleChunkFor(row.number) !== chunk);
       if (misplaced) {
-        throw new Error(`Puzzle #${misplaced.number} does not belong in ${fileName}`);
+        throw new Error(`Trip #${misplaced.number} does not belong in ${fileName}`);
       }
       return chunkRows;
     });

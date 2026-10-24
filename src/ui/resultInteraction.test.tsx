@@ -5,7 +5,7 @@ import type { Root } from "react-dom/client";
 import { buildGraphVersion } from "../graph/graphVersion";
 import { saveGame } from "../progress/savedGame";
 import { type KeyValueStorage, memoryStorage } from "../progress/storage";
-import { DailyPuzzleView } from "./DailyPuzzleView";
+import { DailyTripView } from "./DailyTripView";
 
 const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>');
 // The satellite map asks for the touch-screen media query; jsdom has no matchMedia.
@@ -26,7 +26,7 @@ afterAll(() => {
 
 const graph = buildGraphVersion({
   id: "test",
-  startsAtPuzzle: 1,
+  startsAtTrip: 1,
   kommuner: [
     { code: "0192", name: "Nynäshamn" },
     { code: "0181", name: "Södertälje" },
@@ -39,7 +39,7 @@ const graph = buildGraphVersion({
   ],
 });
 
-const puzzle = { number: 21, start: "0192", destination: "0488", n: 1 };
+const trip = { number: 21, start: "0192", destination: "0488", n: 1 };
 
 let mounted: { root: Root; container: HTMLElement } | undefined;
 
@@ -53,20 +53,20 @@ function unmount() {
 
 afterEach(unmount);
 
-/** Opens today's finished puzzle (won with Södertälje) as a page load would. */
-async function openFinishedGame(sessionStorage: KeyValueStorage, puzzleNumber = puzzle.number) {
+/** Opens today's finished trip (won with Södertälje) as a page load would. */
+async function openFinishedGame(sessionStorage: KeyValueStorage, tripNumber = trip.number) {
   unmount();
-  const today = { ...puzzle, number: puzzleNumber };
+  const today = { ...trip, number: tripNumber };
   const storage = memoryStorage();
-  saveGame(storage, { puzzle: today, guesses: ["0181"] });
+  saveGame(storage, { trip: today, guesses: ["0181"] });
   const container = dom.window.document.createElement("div");
   dom.window.document.body.append(container);
   const root = createRoot(container);
   mounted = { root, container };
   await act(async () =>
     root.render(
-      <DailyPuzzleView
-        daily={{ kind: "puzzle", puzzle: today, graph }}
+      <DailyTripView
+        daily={{ kind: "trip", trip: today, graph }}
         storage={storage}
         sessionStorage={sessionStorage}
         now={new Date(2026, 9, 21, 13, 5, 9)}
@@ -123,13 +123,13 @@ describe("the finished game's result", () => {
     expect(dom.window.document.activeElement?.id).toBe("result-heading");
   });
 
-  test("stays collapsed after a reload in the same session, but opens for another puzzle", async () => {
+  test("stays collapsed after a reload in the same session, but opens for another trip", async () => {
     const session = memoryStorage();
     const container = await openFinishedGame(session);
     await act(async () => buttonNamed(container, "Stäng resultat").click());
 
     expect(resultCardOpen(await openFinishedGame(session))).toBe(false);
-    expect(resultCardOpen(await openFinishedGame(session, puzzle.number + 1))).toBe(true);
+    expect(resultCardOpen(await openFinishedGame(session, trip.number + 1))).toBe(true);
   });
 
   test("a clicked tab is selected and kept for the rest of the session", async () => {
@@ -141,7 +141,7 @@ describe("the finished game's result", () => {
     expect(selectedTab(container)).toBe("Statistik");
     expect(container.textContent).toContain("Spelade");
     expect(selectedTab(await openFinishedGame(session))).toBe("Statistik");
-    expect(selectedTab(await openFinishedGame(session, puzzle.number + 1))).toBe("Statistik");
+    expect(selectedTab(await openFinishedGame(session, trip.number + 1))).toBe("Statistik");
   });
 
   test("arrow keys, Home and End move between tabs, selecting and focusing them", async () => {

@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import type { ScheduledPuzzle } from "./schedule";
+import type { ScheduledTrip } from "./schedule";
 import { checkScheduleRules } from "./scheduleRules";
 import { lanPathGraph, pathGraph } from "./testGraphs";
 
-const row = (number: number, start: string, destination: string, n: number): ScheduledPuzzle => ({
+const row = (number: number, start: string, destination: string, n: number): ScheduledTrip => ({
   number,
   start,
   destination,
@@ -13,8 +13,8 @@ const row = (number: number, start: string, destination: string, n: number): Sch
 const graph = pathGraph(14);
 const validRows = [row(1, "k00", "k04", 3), row(2, "k05", "k09", 3), row(3, "k01", "k06", 4)];
 const check = (
-  rows: ScheduledPuzzle[],
-  options: { previousRows?: ScheduledPuzzle[]; playedThrough?: number } = {},
+  rows: ScheduledTrip[],
+  options: { previousRows?: ScheduledTrip[]; playedThrough?: number } = {},
 ) =>
   checkScheduleRules({
     rows,
@@ -31,19 +31,19 @@ describe("checkScheduleRules", () => {
 
   test("rejects an N that differs from the row's graph version", () => {
     expect(check([row(1, "k00", "k04", 4)])).toEqual([
-      "Puzzle #1: N is 4 but graph version path gives 3",
+      "Trip #1: N is 4 but graph version path gives 3",
     ]);
   });
 
   test("rejects an N outside 3–8", () => {
     expect(check([row(1, "k00", "k03", 2), row(2, "k04", "k13", 8)])).toEqual([
-      "Puzzle #1: N is 2, outside 3–8",
+      "Trip #1: N is 2, outside 3–8",
     ]);
   });
 
   test("rejects an endpoint missing from the row's graph version", () => {
     expect(check([row(1, "k00", "x99", 3)])).toEqual([
-      "Puzzle #1: x99 is not a kommun in graph version path",
+      "Trip #1: x99 is not a kommun in graph version path",
     ]);
   });
 
@@ -57,12 +57,12 @@ describe("checkScheduleRules", () => {
         cooldownDays: 2,
         playedThrough: 0,
       }),
-    ).toEqual(["Puzzle #1: no graph version covers it"]);
+    ).toEqual(["Trip #1: no graph version covers it"]);
   });
 
   test("rejects an endpoint used again within the cooldown", () => {
     expect(check([...validRows, row(4, "k06", "k10", 3)])).toEqual([
-      "Puzzle #4: k06 was an endpoint within the last 2 puzzles",
+      "Trip #4: k06 was an endpoint within the last 2 trips",
     ]);
     expect(check([...validRows, row(4, "k04", "k08", 3)])).toEqual([]);
   });
@@ -78,13 +78,13 @@ describe("checkScheduleRules", () => {
         cooldownDaysByGraphVersion: { fixture: 0 },
         playedThrough: 0,
       }),
-    ).toEqual(["Puzzle #3: k00 was an endpoint within the last 2 puzzles"]);
+    ).toEqual(["Trip #3: k00 was an endpoint within the last 2 trips"]);
   });
 
   test("rejects an endpoint whose län held an endpoint within the län cooldown", () => {
     // Län 01 is 0100–0102, län 02 is 0200–0202, … along one line.
     const lanGraph = lanPathGraph(5, 3);
-    const checkLan = (rows: ScheduledPuzzle[], lanCooldownDaysByGraphVersion = {}) =>
+    const checkLan = (rows: ScheduledTrip[], lanCooldownDaysByGraphVersion = {}) =>
       checkScheduleRules({
         rows,
         previousRows: [],
@@ -96,14 +96,14 @@ describe("checkScheduleRules", () => {
       });
     const first = row(1, "0100", "0201", 3);
     expect(checkLan([first, row(2, "0102", "0300", 3)])).toEqual([
-      "Puzzle #2: 0102's län 01 had an endpoint within the last 1 puzzles",
+      "Trip #2: 0102's län 01 had an endpoint within the last 1 trips",
     ]);
     expect(checkLan([first, row(2, "0300", "0401", 3)])).toEqual([]);
     expect(checkLan([first, row(2, "0300", "0401", 3), row(3, "0202", "0500", 6)])).toEqual([]);
     expect(checkLan([first, row(2, "0102", "0300", 3)], { "lan-path": 0 })).toEqual([]);
   });
 
-  test("allows both endpoints of one puzzle in the same län", () => {
+  test("allows both endpoints of one trip in the same län", () => {
     const lanGraph = lanPathGraph(1, 6);
     expect(
       checkScheduleRules({
@@ -119,7 +119,7 @@ describe("checkScheduleRules", () => {
 
   test("rejects a pair that repeats before every pair with its N is used", () => {
     expect(check([...validRows, row(4, "k04", "k00", 3)])).toEqual([
-      "Puzzle #4: k00-k04 repeats (used 1 times) before every N 3 pair outside the cooldowns is used as often",
+      "Trip #4: k00-k04 repeats (used 1 times) before every N 3 pair outside the cooldowns is used as often",
     ]);
   });
 
@@ -135,10 +135,10 @@ describe("checkScheduleRules", () => {
         cooldownDays,
         playedThrough: 0,
       });
-    // k01 and k06 from puzzle #2 block k01–k05 and k02–k06, so k00–k04 may repeat.
+    // k01 and k06 from trip #2 block k01–k05 and k02–k06, so k00–k04 may repeat.
     expect(checkWith(1)).toEqual([]);
     expect(checkWith(0)).toEqual([
-      "Puzzle #3: k00-k04 repeats (used 1 times) before every N 3 pair outside the cooldowns is used as often",
+      "Trip #3: k00-k04 repeats (used 1 times) before every N 3 pair outside the cooldowns is used as often",
     ]);
   });
 
@@ -157,22 +157,22 @@ describe("checkScheduleRules", () => {
     ).toEqual([]);
   });
 
-  test("rejects puzzle numbers that skip, repeat or do not start at 1", () => {
+  test("rejects trip numbers that skip, repeat or do not start at 1", () => {
     expect(check([row(1, "k00", "k04", 3), row(3, "k05", "k09", 3)])).toEqual([
-      "Puzzle numbers must run 1, 2, 3, …: expected #2, got #3",
+      "Trip numbers must run 1, 2, 3, …: expected #2, got #3",
     ]);
     expect(check([row(2, "k00", "k04", 3)])).toEqual([
-      "Puzzle numbers must run 1, 2, 3, …: expected #1, got #2",
+      "Trip numbers must run 1, 2, 3, …: expected #1, got #2",
     ]);
   });
 
   test("rejects a played row that was changed or removed", () => {
     const changed = [validRows[0], row(2, "k07", "k11", 3), validRows[2]];
     expect(check(changed, { previousRows: validRows, playedThrough: 2 })).toEqual([
-      "Puzzle #2 is played and must not change: was k05,k09,3, now k07,k11,3",
+      "Trip #2 is played and must not change: was k05,k09,3, now k07,k11,3",
     ]);
     expect(check(validRows.slice(0, 1), { previousRows: validRows, playedThrough: 2 })).toEqual([
-      "Puzzle #2 is played and must not change: was k05,k09,3, now missing",
+      "Trip #2 is played and must not change: was k05,k09,3, now missing",
     ]);
   });
 
@@ -184,7 +184,7 @@ describe("checkScheduleRules", () => {
     ];
     expect(check(grandfathered, { previousRows: grandfathered, playedThrough: 2 })).toEqual([]);
     expect(check(validRows, { previousRows: grandfathered, playedThrough: 2 })).toEqual([
-      "Puzzle #2 is played and must not change: was k00,k04,3, now k05,k09,3",
+      "Trip #2 is played and must not change: was k00,k04,3, now k05,k09,3",
     ]);
   });
 });

@@ -5,12 +5,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { buildGraphVersion } from "../graph/graphVersion";
 import { saveGame } from "../progress/savedGame";
 import { memoryStorage } from "../progress/storage";
-import { DailyPuzzleView } from "./DailyPuzzleView";
+import { DailyTripView } from "./DailyTripView";
 import { GuessInput } from "./GuessInput";
 
 const graph = buildGraphVersion({
   id: "test",
-  startsAtPuzzle: 1,
+  startsAtTrip: 1,
   kommuner: [
     { code: "0192", name: "Nynäshamn" },
     { code: "0181", name: "Södertälje" },
@@ -27,7 +27,7 @@ const graph = buildGraphVersion({
   ],
 });
 
-const puzzle = { number: 21, start: "0192", destination: "0488", n: 1 };
+const trip = { number: 21, start: "0192", destination: "0488", n: 1 };
 
 const dom = new JSDOM(
   '<!doctype html><html lang="sv"><head><title>Åkle</title></head><body></body></html>',
@@ -63,10 +63,10 @@ async function seriousViolations(body: ReactElement): Promise<string[]> {
 function playScreen(guesses: string[], hintsTaken = 0, sessionStorage = memoryStorage()) {
   const storage = memoryStorage();
   const hints = hintsTaken > 0 ? { taken: hintsTaken, nextKommun: "0181" } : undefined;
-  saveGame(storage, { puzzle, guesses, hints });
+  saveGame(storage, { trip, guesses, hints });
   return (
-    <DailyPuzzleView
-      daily={{ kind: "puzzle", puzzle, graph }}
+    <DailyTripView
+      daily={{ kind: "trip", trip, graph }}
       storage={storage}
       sessionStorage={sessionStorage}
       now={new Date(2026, 9, 21, 13, 5, 9)}
@@ -118,7 +118,7 @@ describe("automated accessibility check", () => {
   );
 
   test("the collapsed result over the board has no serious violations", async () => {
-    const session = sessionWith("akle:result-closed", puzzle.number);
+    const session = sessionWith("akle:result-closed", trip.number);
     expect(await seriousViolations(playScreen(["0181"], 0, session))).toEqual([]);
   });
 });

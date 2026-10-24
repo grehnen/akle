@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { resolveKommunName } from "../engine/kommunNames";
-import { type Puzzle, reviewGame } from "../engine/game";
+import { type Trip, reviewGame } from "../engine/game";
 import { hintReveals } from "../engine/hints";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SatelliteMap } from "../map/SatelliteMap";
@@ -26,15 +26,15 @@ import { UsedCounter } from "./UsedCounter";
 
 type PlayScreenProps = {
   graph: GraphVersion;
-  puzzle: Puzzle;
+  trip: Trip;
   storage: KeyValueStorage;
   sessionStorage: KeyValueStorage;
   now: Date;
 };
 
-export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: PlayScreenProps) {
+export function PlayScreen({ graph, trip, storage, sessionStorage, now }: PlayScreenProps) {
   const [session, setSession] = useState<GuessSession>(() => ({
-    game: loadSavedGame(storage, graph, puzzle),
+    game: loadSavedGame(storage, graph, trip),
     text: "",
   }));
   const { game, toast, announcement } = session;
@@ -53,12 +53,12 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
   // Focus follows the result view when it opens or closes by the player's hand, not on reload.
   const [resultToggled, setResultToggled] = useState(false);
   const [resultClosed, setResultClosed] = useState(
-    () => readJson(sessionStorage, CLOSED_RESULT_KEY) === puzzle.number,
+    () => readJson(sessionStorage, CLOSED_RESULT_KEY) === trip.number,
   );
   const closeResult = (closed: boolean) => {
     setResultToggled(true);
     setResultClosed(closed);
-    if (closed) writeJson(sessionStorage, CLOSED_RESULT_KEY, puzzle.number);
+    if (closed) writeJson(sessionStorage, CLOSED_RESULT_KEY, trip.number);
     else sessionStorage.removeItem(CLOSED_RESULT_KEY);
   };
   const resultOpen = settled && !resultClosed;
@@ -72,11 +72,11 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
     () => withFinishedGame(readHistory(storage), graph, game),
     [storage, graph, game],
   );
-  const todayEntry = history[puzzle.number];
+  const todayEntry = history[trip.number];
   const outcome = gameOutcome(review);
   const share =
     todayEntry !== undefined && outcome !== undefined
-      ? shareText({ puzzleNumber: puzzle.number, outcome, emojiLine: todayEntry.emojiLine })
+      ? shareText({ tripNumber: trip.number, outcome, emojiLine: todayEntry.emojiLine })
       : undefined;
   const showResult = resultOpen && share !== undefined;
 
@@ -86,11 +86,11 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
   }, [storage, graph, game]);
 
   return (
-    <section className="play-screen" aria-labelledby="puzzle-heading">
-      <p className="puzzle-number">Dagens pussel #{puzzle.number}</p>
-      <h2 id="puzzle-heading">
-        Res från <strong className="sign sign--start">{nameOf(puzzle.start)}</strong> till{" "}
-        <strong className="sign sign--destination">{nameOf(puzzle.destination)}</strong>
+    <section className="play-screen" aria-labelledby="trip-heading">
+      <p className="trip-number">Dagens resa #{trip.number}</p>
+      <h2 id="trip-heading">
+        Res från <strong className="sign sign--start">{nameOf(trip.start)}</strong> till{" "}
+        <strong className="sign sign--destination">{nameOf(trip.destination)}</strong>
       </h2>
 
       {showResult && (
@@ -99,7 +99,7 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
           game={game}
           review={review}
           now={now}
-          stats={deriveStats(history, puzzle.number)}
+          stats={deriveStats(history, trip.number)}
           shareText={share}
           sessionStorage={sessionStorage}
           onClose={() => closeResult(true)}
@@ -121,7 +121,7 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
         <>
           <SatelliteMap
             graph={graph}
-            puzzle={puzzle}
+            trip={trip}
             cards={review.cards}
             hintOutlines={reveals.outlines}
             initials={reveals.initials}
@@ -156,7 +156,7 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
             </h3>
             {review.cards.length === 0 && (
               <p className="section-empty">
-                Inga gissningar än. Börja med en granne till {nameOf(puzzle.start)}.
+                Inga gissningar än. Börja med en granne till {nameOf(trip.start)}.
               </p>
             )}
             <ol aria-label="Gissningar">
@@ -184,7 +184,7 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
       )}
 
       <footer className="credits">
-        <a href={reportIssueUrl({ puzzleNumber: puzzle.number, graphVersion: graph.id })}>
+        <a href={reportIssueUrl({ tripNumber: trip.number, graphVersion: graph.id })}>
           Rapportera fel
         </a>
         <p>
@@ -199,5 +199,5 @@ export function PlayScreen({ graph, puzzle, storage, sessionStorage, now }: Play
 
 const FINISH_LINGER_MS = 1500;
 
-/** The puzzle number whose result the player collapsed this session. */
+/** The trip number whose result the player collapsed this session. */
 const CLOSED_RESULT_KEY = "akle:result-closed";

@@ -4,7 +4,7 @@ import type { Outcome } from "./outcome";
 
 /** A finished game as the share text needs it. */
 export type ShareResult = {
-  puzzleNumber: number;
+  tripNumber: number;
   outcome: Outcome;
   /** One ✅/🟩/🟧/🟥 per counted guess, in guess order. */
   emojiLine: string;
@@ -12,7 +12,7 @@ export type ShareResult = {
 
 /** The three lines a player copies: `#åkle #n` and the result, the emoji line, the site. */
 export function shareText(result: ShareResult): string {
-  return [`#åkle #${result.puzzleNumber} ${resultLabel(result)}`, result.emojiLine, SITE_URL].join(
+  return [`#åkle #${result.tripNumber} ${resultLabel(result)}`, result.emojiLine, SITE_URL].join(
     "\n",
   );
 }

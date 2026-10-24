@@ -36,7 +36,7 @@ export function compareLinks(a: NeighborLink, b: NeighborLink): number {
 
 export type GraphVersionSource = {
   id: string;
-  startsAtPuzzle: number;
+  startsAtTrip: number;
   kommuner: readonly Kommun[];
   links: readonly NeighborLink[];
   shapes?: KommunShapes;
@@ -55,7 +55,7 @@ export type KommunShapes = {
 /** One graph version, loaded as a unit (ADR 0004). */
 export type GraphVersion = {
   id: string;
-  startsAtPuzzle: number;
+  startsAtTrip: number;
   kommuner: ReadonlyMap<KommunCode, Kommun>;
   links: readonly NeighborLink[];
   neighbors: ReadonlyMap<KommunCode, ReadonlySet<KommunCode>>;
@@ -106,7 +106,7 @@ export function buildGraphVersion(source: GraphVersionSource): GraphVersion {
 
   return {
     id: source.id,
-    startsAtPuzzle: source.startsAtPuzzle,
+    startsAtTrip: source.startsAtTrip,
     kommuner,
     links: source.links,
     neighbors,

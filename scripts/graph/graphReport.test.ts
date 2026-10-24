@@ -99,7 +99,7 @@ const review: NeighborReview = {
 };
 
 const report = graphReport({
-  version: { id: "osm-test", startsAtPuzzle: 31 },
+  version: { id: "osm-test", startsAtTrip: 31 },
   kommuner,
   review,
   previous: {
@@ -184,8 +184,8 @@ describe("graphReport", () => {
   });
 
   test("says when there is no previous graph version", () => {
-    expect(
-      graphReport({ version: { id: "first", startsAtPuzzle: 1 }, kommuner, review }),
-    ).toContain("No previous graph version.");
+    expect(graphReport({ version: { id: "first", startsAtTrip: 1 }, kommuner, review })).toContain(
+      "No previous graph version.",
+    );
   });
 });

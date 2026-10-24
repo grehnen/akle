@@ -1,4 +1,4 @@
-import type { DailyPuzzleSource } from "../daily/loadDailyPuzzle";
+import type { DailyTripSource } from "../daily/loadDailyTrip";
 import {
   graphVersionDirectory,
   parseGraphVersionHeader,
@@ -48,7 +48,7 @@ function loadFile(path: string): Promise<string> {
 }
 
 /** Reads the data committed under `data/`, bundled by Vite and fetched on demand. */
-export const bundledDataSource: DailyPuzzleSource = {
+export const bundledDataSource: DailyTripSource = {
   scheduleConfig: async () => parseScheduleConfig(scheduleConfig),
   scheduleChunk: async (chunk) => {
     const load = scheduleChunks[`/data/schedule/${scheduleChunkFileName(chunk)}`];

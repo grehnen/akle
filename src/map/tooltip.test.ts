@@ -4,7 +4,7 @@ import { tooltipText } from "./tooltip";
 
 const graph = buildGraphVersion({
   id: "test",
-  startsAtPuzzle: 1,
+  startsAtTrip: 1,
   kommuner: [
     { code: "0139", name: "Upplands-Bro" },
     { code: "0180", name: "Stockholm" },

@@ -1,32 +1,32 @@
 import { useEffect, useState } from "react";
-import { type DailyPuzzle, type DailyPuzzleSource, loadDailyPuzzle } from "./daily/loadDailyPuzzle";
+import { type DailyTrip, type DailyTripSource, loadDailyTrip } from "./daily/loadDailyTrip";
 import { readHistory } from "./progress/history";
 import { deriveStats } from "./progress/stats";
 import { browserStorage, type KeyValueStorage } from "./progress/storage";
-import { DailyPuzzleView } from "./ui/DailyPuzzleView";
+import { DailyTripView } from "./ui/DailyTripView";
 import { RulesDialog, RulesIcon } from "./ui/RulesDialog";
 import { StatsDialog, StatsIcon } from "./ui/StatsDialog";
 
 type AppProps = {
-  source: DailyPuzzleSource;
+  source: DailyTripSource;
   now?: () => Date;
   /** Where progress and history are kept; localStorage by default. */
   storage?: KeyValueStorage;
 };
 
 export function App({ source, now = () => new Date(), storage }: AppProps) {
-  const [daily, setDaily] = useState<DailyPuzzle>();
+  const [daily, setDaily] = useState<DailyTrip>();
   const [failed, setFailed] = useState(false);
   const [openedAt] = useState(now);
   const [progressStorage] = useState(() => storage ?? browserStorage());
   const [statsOpen, setStatsOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
-  // Without today's puzzle (still loading, or no puzzle today) there is no streak to keep alive.
-  const today = daily?.kind === "puzzle" ? daily.puzzle.number : Number.POSITIVE_INFINITY;
+  // Without today's trip (still loading, or no trip today) there is no streak to keep alive.
+  const today = daily?.kind === "trip" ? daily.trip.number : Number.POSITIVE_INFINITY;
 
   useEffect(() => {
     let cancelled = false;
-    loadDailyPuzzle(source, openedAt)
+    loadDailyTrip(source, openedAt)
       .then((loaded) => !cancelled && setDaily(loaded))
       .catch((error: unknown) => {
         console.error(error);
@@ -66,9 +66,9 @@ export function App({ source, now = () => new Date(), storage }: AppProps) {
         />
       )}
       {failed ? (
-        <p role="alert">Kunde inte ladda dagens pussel. Försök igen senare.</p>
+        <p role="alert">Kunde inte ladda dagens resa. Försök igen senare.</p>
       ) : (
-        <DailyPuzzleView daily={daily} storage={progressStorage} now={openedAt} />
+        <DailyTripView daily={daily} storage={progressStorage} now={openedAt} />
       )}
     </main>
   );

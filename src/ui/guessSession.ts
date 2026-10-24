@@ -175,8 +175,8 @@ export function suggestKommuner(graph: GraphVersion, game: Game, text: string): 
 }
 
 function disabledTag(game: Game, code: KommunCode): SuggestionTag | undefined {
-  if (code === game.puzzle.start) return "start";
-  if (code === game.puzzle.destination) return "mål";
+  if (code === game.trip.start) return "start";
+  if (code === game.trip.destination) return "mål";
   if (game.guesses.includes(code)) return "redan gissad";
   return undefined;
 }

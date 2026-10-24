@@ -6,14 +6,14 @@ const scheduledThrough = (last: number) =>
   Array.from({ length: last }, (_, index) => ({ number: index + 1 }));
 
 describe("runwayDays", () => {
-  test("counts the scheduled puzzles after today's puzzle number in UTC+14", () => {
-    // 12:00 UTC on 23 October is already 24 October in UTC+14: puzzle #24.
+  test("counts the scheduled trips after today's trip number in UTC+14", () => {
+    // 12:00 UTC on 23 October is already 24 October in UTC+14: trip #24.
     expect(runwayDays(scheduledThrough(90), new Date("2026-10-23T12:00:00Z"), epoch)).toBe(66);
-    // 09:00 UTC is still 23 October in UTC+14: puzzle #23.
+    // 09:00 UTC is still 23 October in UTC+14: trip #23.
     expect(runwayDays(scheduledThrough(90), new Date("2026-10-23T09:00:00Z"), epoch)).toBe(67);
   });
 
-  test("before launch, every scheduled puzzle is runway", () => {
+  test("before launch, every scheduled trip is runway", () => {
     expect(runwayDays(scheduledThrough(90), new Date("2026-09-01T00:00:00Z"), epoch)).toBe(90);
   });
 
@@ -26,7 +26,7 @@ describe("runwayDays", () => {
 describe("runwayViolation", () => {
   test("fails the runway check below 100 days", () => {
     expect(runwayViolation(99)).toBe(
-      "Only 99 days of puzzles left; the runway check needs at least 100. Run `bun run schedule` and merge the extension.",
+      "Only 99 days of trips left; the runway check needs at least 100. Run `bun run schedule` and merge the extension.",
     );
     expect(runwayViolation(0)).toBeDefined();
   });

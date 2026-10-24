@@ -3,15 +3,15 @@ import { cheapestRoute, routeCost, shortestRoute, shortestRouteLength } from "..
 import { guessLimit } from "./guessLimit";
 import { resolveKommunName } from "./kommunNames";
 
-export type Puzzle = {
+export type Trip = {
   number: number;
   start: KommunCode;
   destination: KommunCode;
 };
 
-/** A daily puzzle in progress: the accepted guesses, in order, and any hints taken. Everything else is derived. */
+/** A daily trip in progress: the accepted guesses, in order, and any hints taken. Everything else is derived. */
 export type Game = {
-  puzzle: Puzzle;
+  trip: Trip;
   guesses: readonly KommunCode[];
   /** Absent until the first hint is taken. */
   hints?: TakenHints;
@@ -60,8 +60,8 @@ export type GuessResult =
   | { kind: "accepted"; game: Game; card: GuessCard }
   | { kind: "rejected"; reason: "unknown" | "repeat" | "endpoint" | "game-over"; input: string };
 
-export function newGame(puzzle: Puzzle): Game {
-  return { puzzle, guesses: [] };
+export function newGame(trip: Trip): Game {
+  return { trip, guesses: [] };
 }
 
 /** Resolves a typed name and adds it as a guess; rejected guesses are not counted. */
@@ -71,7 +71,7 @@ export function submitGuess(graph: GraphVersion, game: Game, input: string): Gue
   }
   const code = resolveKommunName(graph, input);
   if (code === undefined) return { kind: "rejected", reason: "unknown", input };
-  if (code === game.puzzle.start || code === game.puzzle.destination) {
+  if (code === game.trip.start || code === game.trip.destination) {
     return { kind: "rejected", reason: "endpoint", input };
   }
   if (game.guesses.includes(code)) return { kind: "rejected", reason: "repeat", input };
@@ -83,7 +83,7 @@ export function submitGuess(graph: GraphVersion, game: Game, input: string): Gue
 }
 
 export function reviewGame(graph: GraphVersion, game: Game): GameReview {
-  const { start, destination } = game.puzzle;
+  const { start, destination } = game.trip;
   const n = shortestRouteLength(graph, start, destination);
 
   const known = new Set<KommunCode>([start, destination]);

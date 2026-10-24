@@ -7,11 +7,11 @@ export const pathCode = (index: number) => `k${String(index).padStart(2, "0")}`;
  * A graph version whose kommuner form one line, k00 – k01 – … , so the N of a pair is
  * the distance between their positions minus one.
  */
-export function pathGraph(length: number, id = "path", startsAtPuzzle = 1): GraphVersion {
+export function pathGraph(length: number, id = "path", startsAtTrip = 1): GraphVersion {
   return lineGraph(
     Array.from({ length }, (_, index) => pathCode(index)),
     id,
-    startsAtPuzzle,
+    startsAtTrip,
   );
 }
 
@@ -28,10 +28,10 @@ export function lanPathGraph(lanCount: number, perLan: number, id = "lan-path"):
   return lineGraph(codes, id, 1);
 }
 
-function lineGraph(codes: string[], id: string, startsAtPuzzle: number): GraphVersion {
+function lineGraph(codes: string[], id: string, startsAtTrip: number): GraphVersion {
   return buildGraphVersion({
     id,
-    startsAtPuzzle,
+    startsAtTrip,
     kommuner: codes.map((code) => ({ code, name: `Kommun ${code}` })),
     links: codes.slice(1).map((code, index) => ({ between: [codes[index], code], kind: "land" })),
   });

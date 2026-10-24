@@ -32,7 +32,7 @@ export function graphReport({ version, kommuner, review, previous }: GraphReport
     "",
     "Written by `bun run graph:build` and `bun run graph:review` from the graph version and `data/neighbor-overrides.yaml` (ADR 0003). Don't edit it by hand: `bun run graph:check` fails when it's out of date.",
     "",
-    `Graph version \`${version.id}\` starts at puzzle #${version.startsAtPuzzle}. ${kommuner.length} kommuner, ${new Set(review.links.map((link) => pairKey(link.between))).size} neighbor pairs: ${count("land")} land, ${count("fixed")} fixed, ${count("ferry")} ferry links.`,
+    `Graph version \`${version.id}\` starts at trip #${version.startsAtTrip}. ${kommuner.length} kommuner, ${new Set(review.links.map((link) => pairKey(link.between))).size} neighbor pairs: ${count("land")} land, ${count("fixed")} fixed, ${count("ferry")} ferry links.`,
     "",
     "## Problems",
     "",
