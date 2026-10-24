@@ -117,7 +117,7 @@ How many more guesses a win took than the trip's distance, shown as `+extra`.
 _Avoid_: Penalty, over par
 
 **Perfect**:
-A win whose every guess lay on a shortest route connected to the start, with no hints used.
+A win whose every guess lay on a shortest route connected to the start, with no hints used and no timeouts.
 _Avoid_: Flawless, optimal
 
 **Hint**:
@@ -125,7 +125,7 @@ One of three optional reveals a player can take during a trip (in the UI: _ledtr
 _Avoid_: Clue, help, tip
 
 **Score**:
-The number a finished free-play trip earns, lower being better: a win's extra, or for a loss its guesses beyond the distance plus a multiple of its away, larger for a give-up than for reaching the guess limit, then a cost for each hint and a bonus for Perfect; an itinerary's score is the sum of its trips' scores. Time never enters it and only separates equal scores.
+The number a finished free-play trip earns, lower being better: a win's extra, or for a loss its guesses beyond the distance plus a multiple of its away, larger for a give-up than for reaching the guess limit, then a cost for each hint and each timeout and a bonus for Perfect; an itinerary's score is the sum of its trips' scores. Time never enters it and only separates equal scores.
 _Avoid_: Points, result, total
 
 **Give up** (in the UI: _ge upp_):
@@ -161,5 +161,13 @@ An ordered list of free-play trips, each with its own mode, shared as a link.
 _Avoid_: Playlist, challenge, set, quiz, pack
 
 **Time**:
-The elapsed time a player spends on one trip, kept in tie-breaker and timed modes.
+The elapsed time a player spends on one trip, kept only in tie-breaker mode.
 _Avoid_: Clock, timer, stopwatch
+
+**Thinking time** (in the UI: _betänketid_):
+The whole seconds a player has for each guess in a timed-mode trip, set per trip; each counted guess starts it again.
+_Avoid_: Clock, timer, time limit, shot clock
+
+**Timeout** (in the UI: _tiden ute_):
+The thinking time running out before a guess; it adds to the score and rules out Perfect but uses no guess, and the thinking time starts again.
+_Avoid_: Penalty, strike, miss
