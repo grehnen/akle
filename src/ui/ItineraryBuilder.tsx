@@ -7,7 +7,13 @@ import {
   type RandomSource,
   tripPairs,
 } from "../freePlay/draw";
-import { ITINERARY_TRIPS, itineraryLinkPath, MAX_ITINERARY_TITLE } from "../freePlay/itineraryLink";
+import {
+  capTitle,
+  ITINERARY_TRIPS,
+  itineraryLinkPath,
+  MAX_ITINERARY_TITLE,
+  titleLength,
+} from "../freePlay/itineraryLink";
 import type { LinkedTrip, ModeSetting } from "../freePlay/linkPayload";
 import { DEFAULT_THINKING_TIME, PLAYABLE_MODES } from "../freePlay/modeRules";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
@@ -145,16 +151,16 @@ function TitleField({ title, onChange }: { title: string; onChange: (title: stri
   return (
     <div className="itinerary-title">
       <label htmlFor="itinerary-title">Namn (valfritt)</label>
+      {/* Capped on change rather than by maxLength, which counts an emoji as two. */}
       <input
         id="itinerary-title"
         value={title}
-        maxLength={MAX_ITINERARY_TITLE}
         autoComplete="off"
         aria-describedby="itinerary-title-count"
-        onChange={(event) => onChange(event.target.value.slice(0, MAX_ITINERARY_TITLE))}
+        onChange={(event) => onChange(capTitle(event.target.value))}
       />
       <span id="itinerary-title-count" className="itinerary-title-count">
-        {title.length}/{MAX_ITINERARY_TITLE}
+        {titleLength(title)}/{MAX_ITINERARY_TITLE}
         <span className="visually-hidden"> tecken</span>
       </span>
     </div>

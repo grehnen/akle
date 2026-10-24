@@ -357,9 +357,18 @@ describe("the itinerary's link", () => {
   test("the title takes at most 40 characters, with a counter", async () => {
     const container = await mountApp("/resplan");
     const title = query<HTMLInputElement>(container, "#itinerary-title");
-    expect(title.maxLength).toBe(40);
     await type(title, "x".repeat(45));
     expect(title.value).toBe("x".repeat(40));
+    expect(query(container, ".itinerary-title-count").textContent).toBe("40/40 tecken");
+  });
+
+  test("the title counts characters, not UTF-16 units: an emoji is one", async () => {
+    const container = await mountApp("/resplan");
+    const title = query<HTMLInputElement>(container, "#itinerary-title");
+    await type(title, "Tåg🚂");
+    expect(query(container, ".itinerary-title-count").textContent).toBe("4/40 tecken");
+    await type(title, "🚂".repeat(45));
+    expect(title.value).toBe("🚂".repeat(40));
     expect(query(container, ".itinerary-title-count").textContent).toBe("40/40 tecken");
   });
 });
