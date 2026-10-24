@@ -1,5 +1,4 @@
 import { type ModeSetting, THINKING_TIME_RANGE } from "../freePlay/linkPayload";
-import { PLAYABLE_MODES } from "../freePlay/modeRules";
 import { MODE_NAMES } from "./messages";
 import "./ModeCards.css";
 
@@ -31,8 +30,7 @@ export const MODES: { kind: ModeKind; name: string; description: string }[] = [
 
 /**
  * The Läge choice: one card per mode, its name and a line on how it plays, as a radio group.
- * Tidspress, when chosen, shows its betänketid in its card. Modes whose tickets haven't landed
- * yet are shown but can't be chosen.
+ * Tidspress, when chosen, shows its betänketid in its card.
  */
 export function ModeCards({
   mode,
@@ -57,7 +55,6 @@ export function ModeCards({
               name="free-play-mode"
               value={kind}
               checked={mode.kind === kind}
-              disabled={!PLAYABLE_MODES.has(kind)}
               onChange={() => choose(kind)}
             />
             <span className="free-play-mode-name">{name}</span>
