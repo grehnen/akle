@@ -13,10 +13,12 @@ export type Trip = {
 export type Rules = {
   /** `distance`: the daily guess limit, set by the distance; `none`: guess until the route is found. */
   guessLimit: "distance" | "none";
+  /** Whether the player may give up once they've made as many guesses as the distance. */
+  giveUp: boolean;
 };
 
-/** The daily-trip rules, which standard mode plays by too. */
-export const STANDARD_RULES: Rules = { guessLimit: "distance" };
+/** The daily-trip rules: the guess limit set by the distance, and no giving up. */
+export const DAILY_RULES: Rules = { guessLimit: "distance", giveUp: false };
 
 /**
  * A trip in progress under its rules: the accepted guesses, in order, and any hints taken.
@@ -28,6 +30,8 @@ export type Game<T extends Trip = Trip> = {
   guesses: readonly KommunCode[];
   /** Absent until the first hint is taken. */
   hints?: TakenHints;
+  /** Set when the player gave up, which ends the trip as a loss. */
+  givenUp?: true;
 };
 
 export type TakenHints = {
@@ -54,6 +58,10 @@ export type GameReview = {
   /** Undefined when the rules set no guess limit. */
   limit?: number;
   status: GameStatus;
+  /** A loss the player chose by giving up, rather than one at the guess limit. */
+  givenUp: boolean;
+  /** Whether giving up is allowed right now: the rules allow it and there are N guesses or more. */
+  canGiveUp: boolean;
   cards: GuessCard[];
   /** Kommuner still missing from the cheapest route (the "k ifrån" on a loss). */
   away: number;
@@ -74,7 +82,7 @@ export type GuessResult<T extends Trip = Trip> =
   | { kind: "accepted"; game: Game<T>; card: GuessCard }
   | { kind: "rejected"; reason: "unknown" | "repeat" | "endpoint" | "game-over"; input: string };
 
-export function newGame<T extends Trip>(trip: T, rules: Rules = STANDARD_RULES): Game<T> {
+export function newGame<T extends Trip>(trip: T, rules: Rules = DAILY_RULES): Game<T> {
   return { trip, rules, guesses: [] };
 }
 
@@ -100,6 +108,11 @@ export function submitGuess<T extends Trip>(
   return { kind: "accepted", game: nextGame, card };
 }
 
+/** Ends the trip as a loss when giving up is allowed; otherwise the game is returned as it was. */
+export function giveUp<T extends Trip>(graph: GraphVersion, game: Game<T>): Game<T> {
+  return reviewGame(graph, game).canGiveUp ? { ...game, givenUp: true } : game;
+}
+
 export function reviewGame(graph: GraphVersion, game: Game): GameReview {
   const { start, destination } = game.trip;
   const n = shortestRouteLength(graph, start, destination);
@@ -123,8 +136,13 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
   }));
 
   const limit = game.rules.guessLimit === "distance" ? guessLimit(n) : undefined;
+  const givenUp = away !== 0 && game.givenUp === true;
   const status: GameStatus =
-    away === 0 ? "won" : limit !== undefined && cards.length >= limit ? "lost" : "playing";
+    away === 0
+      ? "won"
+      : givenUp || (limit !== undefined && cards.length >= limit)
+        ? "lost"
+        : "playing";
 
   const hintsUsed = game.hints?.taken ?? 0;
   const resultRoute =
@@ -135,6 +153,8 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
     n,
     limit,
     status,
+    givenUp,
+    canGiveUp: status === "playing" && game.rules.giveUp && cards.length >= n,
     cards,
     away,
     cheapestRoute: resultRoute,

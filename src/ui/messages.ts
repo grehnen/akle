@@ -18,10 +18,13 @@ export function rejectionMessage(reason: RejectionReason, input: string): string
   }
 }
 
-/** The result view's outcome: `Framme! (+2)`, `Framme! (+1, 1 ledtråd)`, `Perfekt!` or `Slut på gissningar (3 ifrån)`. */
+/**
+ * The result view's outcome: `Framme! (+2)`, `Framme! (+1, 1 ledtråd)`, `Perfekt!`,
+ * `Slut på gissningar (3 ifrån)` or, for a give-up, `Gav upp (3 ifrån)`.
+ */
 export function resultOutcome(
   review: Pick<GameReview, "status" | "extra" | "perfect" | "away"> &
-    Partial<Pick<GameReview, "hintsUsed">>,
+    Partial<Pick<GameReview, "hintsUsed" | "givenUp">>,
 ): string | undefined {
   const outcome = gameOutcome(review);
   switch (outcome?.kind) {
@@ -32,7 +35,7 @@ export function resultOutcome(
     case "won":
       return `Framme! (+${outcome.extra}${hintsSuffix(outcome.hintsUsed)})`;
     case "lost":
-      return `Slut på gissningar (${outcome.away} ifrån${hintsSuffix(outcome.hintsUsed)})`;
+      return `${outcome.givenUp ? "Gav upp" : "Slut på gissningar"} (${outcome.away} ifrån${hintsSuffix(outcome.hintsUsed)})`;
   }
 }
 
