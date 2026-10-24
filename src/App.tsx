@@ -3,9 +3,11 @@ import { type DailyTripLoad, type DailyTripSource, loadDailyTrip } from "./daily
 import { readHistory } from "./progress/history";
 import { deriveStats } from "./progress/stats";
 import { browserStorage, type KeyValueStorage } from "./progress/storage";
+import { ITINERARY_PATH } from "./freePlay/itineraryLink";
 import { FREE_PLAY_PATH } from "./freePlay/tripLink";
 import { DailyTripView } from "./ui/DailyTripView";
 import { FreePlayView } from "./ui/FreePlayView";
+import { ItineraryView } from "./ui/ItineraryView";
 import { RulesDialog, RulesIcon } from "./ui/RulesDialog";
 import { StatsDialog, StatsIcon } from "./ui/StatsDialog";
 
@@ -22,9 +24,9 @@ type AppProps = {
   search?: string;
 };
 
-/** Whether a path is the free-play page, however the server or the dev server spells it. */
-function isFreePlayPath(path: string): boolean {
-  return [FREE_PLAY_PATH, `${FREE_PLAY_PATH}/`, `${FREE_PLAY_PATH}.html`].includes(path);
+/** Whether a path is the given page, however the server or the dev server spells it. */
+function isPagePath(path: string, page: string): boolean {
+  return [page, `${page}/`, `${page}.html`].includes(path);
 }
 
 export function App({
@@ -47,7 +49,8 @@ export function App({
   const [search, setSearch] = useState(initialSearch);
   // Each visit to free play, even from free play itself, starts it afresh on the setup screen.
   const [visit, setVisit] = useState(0);
-  const freePlay = isFreePlayPath(path);
+  const freePlay = isPagePath(path, FREE_PLAY_PATH);
+  const itinerary = isPagePath(path, ITINERARY_PATH);
   // Without today's trip (still loading, or no trip today) there is no streak to keep alive.
   const today = daily?.kind === "trip" ? daily.trip.number : Number.POSITIVE_INFINITY;
 
@@ -75,13 +78,14 @@ export function App({
   }, []);
 
   useEffect(() => {
-    document.title = freePlay ? "Åkle – Fri resa" : "Åkle";
-  }, [freePlay]);
+    document.title = freePlay ? "Åkle – Fri resa" : itinerary ? "Åkle – Resplan" : "Åkle";
+  }, [freePlay, itinerary]);
 
   const navigate = (to: string) => {
     window.history.pushState(null, "", to);
-    setPath(to);
-    setSearch("");
+    const { pathname, search: query } = window.location;
+    setPath(pathname);
+    setSearch(query);
     setVisit((count) => count + 1);
   };
 
@@ -108,7 +112,7 @@ export function App({
         >
           <RulesIcon />
         </button>
-        {freePlay ? (
+        {freePlay || itinerary ? (
           <h1>
             <AppLink href="/" onNavigate={navigate}>
               Åkle
@@ -125,6 +129,15 @@ export function App({
         >
           {/* A placeholder icon until free play gets its own. */}
           <span aria-hidden="true">🎲</span>
+        </AppLink>
+        <AppLink
+          href={ITINERARY_PATH}
+          className="header-button itinerary-open"
+          aria-label="Resplan"
+          onNavigate={navigate}
+        >
+          {/* A placeholder icon until itineraries get their own. */}
+          <span aria-hidden="true">🗺</span>
         </AppLink>
         <button
           type="button"
@@ -152,6 +165,14 @@ export function App({
           storage={progressStorage}
           sessionStorage={sessionStorage}
           clock={clock}
+        />
+      ) : itinerary ? (
+        <ItineraryView
+          key={visit}
+          source={source}
+          now={openedAt}
+          linkPayload={new URLSearchParams(search).get("r") ?? undefined}
+          onPlay={navigate}
         />
       ) : failed ? (
         <p role="alert">Kunde inte ladda dagens resa. Försök igen senare.</p>

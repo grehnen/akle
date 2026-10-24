@@ -10,6 +10,7 @@ import { EndpointField } from "./EndpointField";
 import { FreePlayLinkError } from "./FreePlayLinkError";
 import { FreePlayScreen } from "./FreePlayScreen";
 import { GuessInput } from "./GuessInput";
+import { ItineraryBuilder } from "./ItineraryBuilder";
 import { ModeCards } from "./ModeCards";
 
 const graph = buildGraphVersion({
@@ -213,6 +214,11 @@ describe("automated accessibility check", () => {
     ["naming no trip", undefined],
   ])("the free-play error screen %s has no serious violations", async (_, named) => {
     expect(await seriousViolations(<FreePlayLinkError trip={named} />)).toEqual([]);
+  });
+
+  test("the itinerary builder has no serious violations", async () => {
+    const builder = <ItineraryBuilder graph={graph} ordinal={0} onPlay={() => {}} />;
+    expect(await seriousViolations(builder)).toEqual([]);
   });
 
   test("a Start field with its suggestions open has no serious violations", async () => {
