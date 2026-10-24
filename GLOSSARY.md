@@ -140,7 +140,7 @@ _Avoid_: Run, chain, combo
 The short, spoiler-free summary of a finished daily trip that a player copies to post elsewhere.
 _Avoid_: Score card, result string
 
-**Free play**:
+**Free play** (in the UI: _Fri resa_):
 Playing outside the schedule; it never touches the streak, stats or history.
 _Avoid_: Practice, training, sandbox
 
