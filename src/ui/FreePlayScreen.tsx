@@ -12,7 +12,7 @@ import {
 import type { LinkedTrip, ModeSetting } from "../freePlay/linkPayload";
 import { DEFAULT_THINKING_TIME, freePlayRules, opensAtStarta } from "../freePlay/modeRules";
 import { tripLinkPath } from "../freePlay/tripLink";
-import { saveTripSlot } from "../freePlay/tripSlot";
+import { type ResumedTrip, saveTripSlot } from "../freePlay/tripSlot";
 import type { GraphVersion } from "../graph/graphVersion";
 import type { KeyValueStorage } from "../progress/storage";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
@@ -35,9 +35,6 @@ import "./FreePlayScreen.css";
  */
 export type ShowTripLink = (link: string, replace?: boolean) => void;
 
-/** The stored game of a trip opened again, and whether it was drawn. */
-export type ResumedTrip = { game: Game; drawn: boolean };
-
 type FreePlayScreenProps = {
   /** The version trips are played on: the current one, or the one a trip link pins. */
   graph: GraphVersion;
@@ -57,7 +54,8 @@ type FreePlayScreenProps = {
 };
 
 /**
- * The trip on the board, and whether it was drawn, which lets its result draw another. `opened`
+ * The trip on the board, and whether it was drawn, which lets its result draw another from the
+ * range it was drawn from (none for a drawn trip stored before ranges were kept). `opened`
  * marks the trip the screen opened with, from a link or the slot, rather than one started here.
  * `started` is false while a trip on the clock waits behind `Starta`, its ends still hidden.
  */
@@ -65,6 +63,7 @@ type Played = {
   trip: LinkedTrip;
   game: Game;
   drawn: boolean;
+  range?: DistanceRange;
   count: number;
   opened: boolean;
   started: boolean;
@@ -101,6 +100,7 @@ export function FreePlayScreen({
         trip: linkedTrip,
         game: resumed?.game ?? newGame(linkedTrip, freePlayRules(linkedTrip.mode)),
         drawn: resumed?.drawn ?? false,
+        range: resumed?.range,
         count: 1,
         opened: true,
         // A stored trip already started; it never waits behind Starta again.
@@ -118,25 +118,26 @@ export function FreePlayScreen({
   // trip on the clock), and keeps it up to date as it is played.
   useEffect(() => {
     if (played === undefined || !played.started) return;
-    const { trip, game, drawn } = played;
-    saveTripSlot(storage, { versionOrdinal: ordinal, trip, game, drawn });
+    const { trip, game, drawn, range: drawnFrom } = played;
+    saveTripSlot(storage, { versionOrdinal: ordinal, trip, game, drawn, range: drawnFrom });
   }, [storage, ordinal, played]);
 
-  const play = (picked: Trip, tripMode: ModeSetting, drawn: boolean) =>
+  const play = (picked: Trip, tripMode: ModeSetting, drawnFrom?: DistanceRange) =>
     setPlayed((last) => {
       const trip = { ...picked, mode: tripMode };
       return {
         trip,
         game: newGame(picked, freePlayRules(trip.mode)),
-        drawn,
+        drawn: drawnFrom !== undefined,
+        range: drawnFrom,
         count: (last?.count ?? 0) + 1,
         opened: false,
         started: !opensAtStarta(tripMode),
       };
     });
-  const draw = (tripMode: ModeSetting, previous?: Trip) => {
-    const trip = drawTrip(pairs, range, Math.random, previous);
-    if (trip) play(trip, tripMode, true);
+  const draw = (tripMode: ModeSetting, from: DistanceRange, previous?: Trip) => {
+    const trip = drawTrip(pairs, from, Math.random, previous);
+    if (trip) play(trip, tripMode, from);
   };
 
   if (played === undefined || link === undefined) {
@@ -149,8 +150,8 @@ export function FreePlayScreen({
         range={range}
         largest={largest}
         onRangeChange={setRange}
-        onDraw={() => draw(mode)}
-        onPick={(trip) => play(trip, mode, false)}
+        onDraw={() => draw(mode, range)}
+        onPick={(trip) => play(trip, mode)}
       />
     );
   }
@@ -189,7 +190,7 @@ export function FreePlayScreen({
           <button
             type="button"
             className="free-play-redraw"
-            onClick={() => draw(played.trip.mode, played.game.trip)}
+            onClick={() => draw(played.trip.mode, played.range ?? range, played.game.trip)}
           >
             Slumpa ny resa
           </button>

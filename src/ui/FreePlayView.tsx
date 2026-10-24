@@ -6,11 +6,11 @@ import { loadCurrentVersion, type PinnedVersion } from "../freePlay/currentVersi
 import type { LinkedTrip } from "../freePlay/linkPayload";
 import { PLAYABLE_MODES } from "../freePlay/modeRules";
 import { type OpenedTripLink, openTrip, openTripLink } from "../freePlay/tripLink";
-import { resumeTrip, storedTrip } from "../freePlay/tripSlot";
+import { type ResumedTrip, resumeTrip, storedTrip } from "../freePlay/tripSlot";
 import { kommunName } from "../graph/graphVersion";
 import { browserSessionStorage, browserStorage, type KeyValueStorage } from "../progress/storage";
 import { FreePlayLinkError } from "./FreePlayLinkError";
-import { FreePlayScreen, type ResumedTrip, type ShowTripLink } from "./FreePlayScreen";
+import { FreePlayScreen, type ShowTripLink } from "./FreePlayScreen";
 
 type FreePlayViewProps = {
   source: DailyTripSource;
