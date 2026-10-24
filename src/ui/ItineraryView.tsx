@@ -1,4 +1,4 @@
-import { type MouseEvent, useCallback, useEffect, useState } from "react";
+import { type MouseEvent, useCallback, useState } from "react";
 import type { DailyTripSource } from "../daily/loadDailyTrip";
 import type { Clock } from "../engine/clock";
 import { loadCurrentVersion, type PinnedVersion } from "../freePlay/currentVersion";
@@ -18,6 +18,7 @@ import { browserSessionStorage, browserStorage, type KeyValueStorage } from "../
 import { FreePlayLinkError } from "./FreePlayLinkError";
 import { ItineraryBuilder } from "./ItineraryBuilder";
 import { ItineraryScreen } from "./ItineraryScreen";
+import { useLoaded } from "./useLoaded";
 
 type ItineraryViewProps = {
   source: DailyTripSource;
@@ -57,35 +58,25 @@ export function ItineraryView({
   sessionStorage,
   clock,
 }: ItineraryViewProps) {
-  const [loaded, setLoaded] = useState<Loaded>();
-  const [failed, setFailed] = useState(false);
   const [slotStorage] = useState(() => storage ?? browserStorage());
   const [fallbackSessionStorage] = useState(browserSessionStorage);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loading: Promise<Loaded> =
-      linkPayload === undefined
-        ? loadCurrentVersion(source, now).then((version) => ({
-            kind: "builder",
-            version,
-            unfinished: unfinishedItinerary(slotStorage),
-          }))
-        : openItineraryLink(source, now, title, linkPayload).then((opened) =>
-            opened.kind === "itinerary"
-              ? { ...opened, resumed: resumeItinerary(slotStorage, opened) }
-              : opened,
-          );
-    loading
-      .then((result) => !cancelled && setLoaded(result))
-      .catch((error: unknown) => {
-        console.error(error);
-        if (!cancelled) setFailed(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [source, now, linkPayload, title, slotStorage]);
+  const { loaded, failed } = useLoaded(
+    useCallback(
+      (): Promise<Loaded> =>
+        linkPayload === undefined
+          ? loadCurrentVersion(source, now).then((version) => ({
+              kind: "builder",
+              version,
+              unfinished: unfinishedItinerary(slotStorage),
+            }))
+          : openItineraryLink(source, now, title, linkPayload).then((opened) =>
+              opened.kind === "itinerary"
+                ? { ...opened, resumed: resumeItinerary(slotStorage, opened) }
+                : opened,
+            ),
+      [source, now, linkPayload, title, slotStorage],
+    ),
+  );
 
   const savePlay = useCallback(
     (play: ItineraryPlay) => {
