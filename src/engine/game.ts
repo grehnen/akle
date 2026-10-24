@@ -15,10 +15,12 @@ export type Rules = {
   guessLimit: "distance" | "none";
   /** Whether the player may give up once they've made as many guesses as the distance. */
   giveUp: boolean;
+  /** Whether a win's time is kept: the real time from Starta to the winning guess. */
+  keepsTime: boolean;
 };
 
-/** The daily-trip rules: the guess limit set by the distance, and no giving up. */
-export const DAILY_RULES: Rules = { guessLimit: "distance", giveUp: false };
+/** The daily-trip rules: the guess limit set by the distance, no giving up and no time. */
+export const DAILY_RULES: Rules = { guessLimit: "distance", giveUp: false, keepsTime: false };
 
 /**
  * A trip in progress under its rules: the accepted guesses, in order, and any hints taken.
@@ -32,6 +34,10 @@ export type Game<T extends Trip = Trip> = {
   hints?: TakenHints;
   /** Set when the player gave up, which ends the trip as a loss. */
   givenUp?: true;
+  /** When the trip started, at Starta, as a timestamp in milliseconds; set where time is kept. */
+  startedAt?: number;
+  /** When the winning guess was made, as a timestamp in milliseconds; set where time is kept. */
+  wonAt?: number;
 };
 
 export type TakenHints = {

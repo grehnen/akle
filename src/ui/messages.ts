@@ -67,6 +67,25 @@ export function modeName(mode: ModeSetting): string {
   }
 }
 
+/** The running clock, in whole seconds: `1:23`, or `1:02:05` past an hour. */
+export function clockText(milliseconds: number): string {
+  return hoursMinutesSeconds(Math.floor(milliseconds / 1000));
+}
+
+/** A win's time, kept to tenths: `1:23,4`, or `1:00:00,0` past an hour. */
+export function timeText(tenths: number): string {
+  return `${hoursMinutesSeconds(Math.floor(tenths / 10))},${tenths % 10}`;
+}
+
+function hoursMinutesSeconds(totalSeconds: number): string {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor(totalSeconds / 60) % 60;
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${seconds}`
+    : `${minutes}:${seconds}`;
+}
+
 /** `1 ledtråd`, `2 ledtrådar`. */
 function hintCount(hints: number): string {
   return hints === 1 ? "1 ledtråd" : `${hints} ledtrådar`;
