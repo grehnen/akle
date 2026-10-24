@@ -125,8 +125,12 @@ One of three optional reveals a player can take during a trip (in the UI: _ledtr
 _Avoid_: Clue, help, tip
 
 **Score**:
-The number a finished free-play trip earns, lower being better: a win's extra, or for a loss its guesses beyond the distance plus a multiple of its away, then a cost for each hint and a bonus for Perfect; an itinerary's score is the sum of its trips' scores. Time never enters it and only separates equal scores.
+The number a finished free-play trip earns, lower being better: a win's extra, or for a loss its guesses beyond the distance plus a multiple of its away, larger for a give-up than for reaching the guess limit, then a cost for each hint and a bonus for Perfect; an itinerary's score is the sum of its trips' scores. Time never enters it and only separates equal scores.
 _Avoid_: Points, result, total
+
+**Give up** (in the UI: _ge upp_):
+To end an unwon free-play trip before its guess limit, which counts as a loss; it is allowed once the player has made as many guesses as the distance, and never in a daily trip.
+_Avoid_: Surrender, quit, forfeit, abandon
 
 **Streak**:
 The number of daily trips won on consecutive trip numbers; a loss or a daily trip not finished ends it.
