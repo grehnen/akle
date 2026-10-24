@@ -280,8 +280,9 @@ describe("the itinerary's link", () => {
     await type(query(container, "#itinerary-title"), "Helgresan");
     await pick(container, "Nynäshamn", "Salem");
     await choose(query(container, "#itinerary-new-mode"), "timed");
-    expect(query<HTMLSelectElement>(container, "#itinerary-new-thinking-time").value).toBe("10");
-    await choose(query(container, "#itinerary-new-thinking-time"), "30");
+    const newThinkingTime = query<HTMLInputElement>(container, "#itinerary-new-thinking-time");
+    expect(newThinkingTime.value).toBe("10");
+    await type(newThinkingTime, "17");
     await pick(container, "Trosa", "Haninge");
     await click(labelled(container, "Dubblera resa 1"));
     await choose(rowMode(container, 2), "tie-breaker");
@@ -301,11 +302,33 @@ describe("the itinerary's link", () => {
         trips: [
           { start: "0192", destination: "0128", mode: { kind: "standard" } },
           { start: "0192", destination: "0128", mode: { kind: "tie-breaker" } },
-          { start: "0488", destination: "0136", mode: { kind: "timed", thinkingTime: 30 } },
+          { start: "0488", destination: "0136", mode: { kind: "timed", thinkingTime: 17 } },
         ],
       },
     });
     expect(query(container, ".itinerary-toast").textContent).toBe("Kopierat!");
+  });
+
+  test("a trip's betänketid takes any whole second from 5 to 60, as the setup's does", async () => {
+    const container = await mountApp("/resplan");
+    await pick(container, "Nynäshamn", "Salem");
+    await pick(container, "Trosa", "Haninge");
+    await choose(rowMode(container, 2), "timed");
+    const thinkingTime = query<HTMLInputElement>(
+      container,
+      ".itinerary-trip:nth-child(2) input[type='range']",
+    );
+    expect([thinkingTime.min, thinkingTime.max, thinkingTime.step]).toEqual(["5", "60", "1"]);
+    await type(thinkingTime, "23");
+    expect(query(container, ".itinerary-trip:nth-child(2) output").textContent).toBe("23 s");
+
+    await click(button(container, "Kopiera länk"));
+    const url = new URL(copied[0]);
+    const decoded = decodeLinkPayload(url.searchParams.get("r") ?? "");
+    expect(decoded.ok && decoded.payload.trips[1]?.mode).toEqual({
+      kind: "timed",
+      thinkingTime: 23,
+    });
   });
 
   test("Kopiera länk and Spela wait for the second trip", async () => {
