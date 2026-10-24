@@ -2,7 +2,7 @@ import { type Game, giveUp, type Trip, newGame, reviewGame, type TakenHints } fr
 import { stampThinkingTime, startTime, stopTimeAtWin } from "../engine/tripTime";
 import type { GraphVersion, KommunCode } from "../graph/graphVersion";
 import { restoreGame } from "../progress/savedGame";
-import { type LinkedTrip, type ModeSetting, THINKING_TIME_RANGE } from "./linkPayload";
+import { isThinkingTime, type LinkedTrip, type ModeSetting } from "./linkPayload";
 import { freePlayRules, opensAtStarta } from "./modeRules";
 
 /**
@@ -110,14 +110,7 @@ function readMode(stored: unknown): ModeSetting | undefined {
   if (!isRecord(stored)) return undefined;
   const { kind, thinkingTime: seconds } = stored;
   if (kind === "standard" || kind === "unlimited" || kind === "tie-breaker") return { kind };
-  if (
-    kind === "timed" &&
-    Number.isInteger(seconds) &&
-    (seconds as number) >= THINKING_TIME_RANGE.min &&
-    (seconds as number) <= THINKING_TIME_RANGE.max
-  ) {
-    return { kind, thinkingTime: seconds as number };
-  }
+  if (kind === "timed" && isThinkingTime(seconds)) return { kind, thinkingTime: seconds };
   return undefined;
 }
 
