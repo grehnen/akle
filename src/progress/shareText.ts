@@ -20,9 +20,8 @@ export function shareText(result: ShareResult): string {
 }
 
 /**
- * How a game went in share text: `+2`, `+0 (Perfekt)`, `+1 (1 ledtråd)`, `(3 ifrån)` or, for a
- * free-play give-up, `Gav upp (3 ifrån)`. A timed trip's timeouts join the hints in brackets:
- * `+1 (1 ledtråd, 2 ⏱)`, `+0 (2 ⏱)`.
+ * How a game went in a daily share text: `+2`, `+0 (Perfekt)`, `+1 (1 ledtråd)`, `(3 ifrån)` or
+ * `(3 ifrån) (1 ledtråd)`. Timeouts join the hints in brackets: `+1 (1 ledtråd, 2 ⏱)`.
  */
 export function resultLabel(outcome: Outcome): string {
   switch (outcome.kind) {
@@ -31,6 +30,6 @@ export function resultLabel(outcome: Outcome): string {
     case "won":
       return `+${outcome.extra}${penaltiesNote(outcome.hintsUsed, outcome.timeouts)}`;
     case "lost":
-      return `${outcome.givenUp ? "Gav upp " : ""}(${outcome.away} ifrån)${penaltiesNote(outcome.hintsUsed, outcome.timeouts)}`;
+      return `(${outcome.away} ifrån)${penaltiesNote(outcome.hintsUsed, outcome.timeouts)}`;
   }
 }

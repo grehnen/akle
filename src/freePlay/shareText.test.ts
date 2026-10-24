@@ -48,6 +48,18 @@ describe("a free-play trip's share text", () => {
     );
   });
 
+  test("a loss with hints keeps them in the away bracket, as the result headline does", () => {
+    expect(
+      freePlayShareText({
+        mode: standard,
+        outcome: { kind: "lost", away: 2, hintsUsed: 1 },
+        score: 7,
+        emojiLine: "🟥🟧",
+        link,
+      }).split("\n")[1],
+    ).toBe("(2 ifrån, 1 ledtråd) · 7 poäng");
+  });
+
   test("labels a give-up beside the guess-limit loss", () => {
     expect(
       freePlayShareText({
@@ -108,10 +120,10 @@ describe("a free-play trip's share text", () => {
       freePlayShareText({ mode: timed, outcome, score: 0, emojiLine: "✅", link }).split("\n")[1];
     expect(label({ kind: "won", extra: 0, hintsUsed: 0, timeouts: 2 })).toBe("+0 (2 ⏱) · 0 poäng");
     expect(label({ kind: "lost", away: 3, hintsUsed: 0, timeouts: 1 })).toBe(
-      "(3 ifrån) (1 ⏱) · 0 poäng",
+      "(3 ifrån, 1 ⏱) · 0 poäng",
     );
     expect(label({ kind: "lost", away: 1, hintsUsed: 2, timeouts: 3, givenUp: true })).toBe(
-      "Gav upp (1 ifrån) (2 ledtrådar, 3 ⏱) · 0 poäng",
+      "Gav upp (1 ifrån, 2 ledtrådar, 3 ⏱) · 0 poäng",
     );
   });
 
@@ -175,7 +187,7 @@ describe("an itinerary's share text", () => {
       score: -1,
       time: 1289,
     }),
-    row({ mode: { kind: "tie-breaker" }, outcome: { kind: "lost", away: 1, hintsUsed: 0 } }),
+    row({ mode: { kind: "tie-breaker" }, outcome: { kind: "lost", away: 1, hintsUsed: 1 } }),
   ];
   const summary = (
     summaryRows: ItinerarySummaryRow[],
@@ -201,7 +213,7 @@ describe("an itinerary's share text", () => {
         "2. Tidspress 10 s · Gav upp (2 ifrån) · 8 poäng",
         "3. Tidtagning · +0 (1 ledtråd) · 1 poäng · 2:03,4",
         "4. Tidtagning · +0 (Perfekt) · −1 poäng · 2:08,9",
-        "5. Tidtagning · (1 ifrån) · 1 poäng",
+        "5. Tidtagning · (1 ifrån, 1 ledtråd) · 1 poäng",
         "https://akle.grehn.net/resplan?namn=Norrlandsturen&r=EIYFoKAAoAUMXhQwBgdq",
       ].join("\n"),
     );
