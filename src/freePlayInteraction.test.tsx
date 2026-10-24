@@ -4,6 +4,7 @@ import { act } from "react";
 import type { Root } from "react-dom/client";
 import { App } from "./App";
 import type { DailyTripSource } from "./daily/loadDailyTrip";
+import { tripLinkPath } from "./freePlay/tripLink";
 import type { GraphVersionFiles } from "./graph/graphVersionFiles";
 import { type KeyValueStorage, memoryStorage } from "./progress/storage";
 
@@ -20,10 +21,17 @@ Object.assign(globalThis, {
 });
 // Imported only now: react-dom checks for a DOM once, when it loads, to pick its event handling.
 const { createRoot } = await import("react-dom/client");
+// What the share button copies.
+const copied: string[] = [];
+Object.defineProperty(globalThis.navigator, "clipboard", {
+  configurable: true,
+  value: { writeText: async (text: string) => void copied.push(text) },
+});
 afterAll(() => {
   for (const name of ["window", "document", "IS_REACT_ACT_ENVIRONMENT"]) {
     Reflect.deleteProperty(globalThis, name);
   }
+  Reflect.deleteProperty(globalThis.navigator, "clipboard");
 });
 
 // Nynäshamn ── Haninge ── Salem ── Trosa.
@@ -95,11 +103,13 @@ afterEach(() => {
   act(() => root.unmount());
   container.remove();
   mounted = undefined;
+  copied.length = 0;
   dom.window.history.replaceState(null, "", "/");
 });
 
 async function mountApp(path: string, storage: KeyValueStorage = memoryStorage()) {
   dom.window.history.replaceState(null, "", path);
+  const { pathname, search } = dom.window.location;
   const container = dom.window.document.createElement("div");
   dom.window.document.body.append(container);
   const root = createRoot(container);
@@ -112,7 +122,8 @@ async function mountApp(path: string, storage: KeyValueStorage = memoryStorage()
         now={() => new Date(2026, 9, 24, 12, 0)}
         storage={storage}
         sessionStorage={memoryStorage()}
-        path={path}
+        path={pathname}
+        search={search}
       />,
     ),
   );
@@ -337,5 +348,95 @@ describe("Slumpa", () => {
     await winDistanceOneTrip(container);
     expect(query(container, "#result-heading").textContent).toBe("Perfekt!");
     expect(buttonNamed(container, "Slumpa ny resa")).toBeUndefined();
+  });
+});
+
+const address = () => dom.window.location.pathname + dom.window.location.search;
+
+async function playToTheEnd(container: HTMLElement, ...names: string[]) {
+  for (const name of names) {
+    await type(query<HTMLInputElement>(container, "#guess-input"), name);
+    await click(query(container, '.guess-input button[type="submit"]'));
+  }
+  // A finished game keeps the board up for a moment before the result view opens.
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 1600)));
+}
+
+describe("trip links", () => {
+  const nynashamnTrosa = tripLinkPath(0, {
+    start: "0192",
+    destination: "0488",
+    mode: { kind: "standard" },
+  });
+
+  test("a picked trip shows its link while played, and Back returns to the setup screen", async () => {
+    const { container } = await mountApp("/fri");
+    await type(startField(container), "Nynäshamn");
+    await type(destinationField(container), "Trosa");
+    await click(resButton(container));
+    expect(address()).toBe(nynashamnTrosa);
+
+    await act(async () => {
+      dom.window.history.back();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    expect(address()).toBe("/fri");
+    expect(query(container, "#free-play-heading").textContent).toBe("Fri resa");
+  });
+
+  test("the share text of a finished trip ends with the link in the address bar", async () => {
+    const { container } = await mountApp("/fri");
+    await type(startField(container), "Nynäshamn");
+    await type(destinationField(container), "Trosa");
+    await click(resButton(container));
+    await playToTheEnd(container, "Haninge", "Salem");
+
+    await click(query(container, ".share-button"));
+    expect(copied).toEqual([
+      `#åkle Fri resa · Standard\n+0 (Perfekt) · −1 poäng\n✅✅\nhttps://akle.grehn.net${address()}`,
+    ]);
+    expect(address()).toBe(nynashamnTrosa);
+  });
+
+  test("/fri?r=… opens straight on the trip, showing just its link", async () => {
+    const { container, fetched } = await mountApp(`${nynashamnTrosa}&utm_source=chat`);
+    expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
+    expect(container.textContent).toContain("Fri resa · Standard");
+    expect(address()).toBe(nynashamnTrosa);
+    expect(fetched).toEqual(["current"]);
+  });
+
+  test.each([
+    ["a garbled payload", "/fri?r=EAIFoKICI"],
+    [
+      "a version that hasn't started",
+      tripLinkPath(1, { start: "0192", destination: "0488", mode: { kind: "standard" } }),
+    ],
+    ["two trips", "/fri?r=EIYFoKAAoAUMXhQwBgdq"],
+  ])("%s shows the free-play error screen, never a fallback", async (_, link) => {
+    const { container } = await mountApp(link);
+    expect(query(container, "#free-play-error-heading").textContent).toBe("Länken fungerar inte");
+    expect(container.querySelector("#trip-heading")).toBeNull();
+    expect(container.querySelector("#free-play-heading")).toBeNull();
+    const links = [...container.querySelectorAll(".free-play-error a")].map((anchor) => [
+      anchor.textContent,
+      anchor.getAttribute("href"),
+    ]);
+    expect(links).toEqual([
+      ["Dagens resa", "/"],
+      ["Fri resa", "/fri"],
+    ]);
+  });
+
+  test("an invalid link names its trip when it can", async () => {
+    const neighbors = tripLinkPath(0, {
+      start: "0136",
+      destination: "0128",
+      mode: { kind: "standard" },
+    });
+    const { container } = await mountApp(neighbors);
+    expect(query(container, ".free-play-error").textContent).toContain(
+      "Resan från Haninge till Salem",
+    );
   });
 });
