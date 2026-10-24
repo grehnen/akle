@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import type { DailyTripSource } from "../daily/loadDailyTrip";
 import type { Clock } from "../engine/clock";
 import { reviewGame } from "../engine/game";
@@ -11,6 +11,7 @@ import { kommunName } from "../graph/graphVersion";
 import { browserSessionStorage, browserStorage, type KeyValueStorage } from "../progress/storage";
 import { FreePlayLinkError } from "./FreePlayLinkError";
 import { FreePlayScreen, type ShowTripLink } from "./FreePlayScreen";
+import { useLoaded } from "./useLoaded";
 
 type FreePlayViewProps = {
   source: DailyTripSource;
@@ -46,22 +47,18 @@ export function FreePlayView({
   sessionStorage,
   clock,
 }: FreePlayViewProps) {
-  const [loaded, setLoaded] = useState<Loaded>();
-  const [failed, setFailed] = useState(false);
   const [slotStorage] = useState(() => storage ?? browserStorage());
   const [fallbackSessionStorage] = useState(browserSessionStorage);
-
-  useEffect(() => {
-    let cancelled = false;
-    const resume = (opened: Loaded): Loaded =>
-      opened.kind === "trip"
-        ? {
-            ...opened,
-            resumed: resumeTrip(slotStorage, opened.version, opened.trip),
-          }
-        : opened;
-    const loading: Promise<Loaded> =
-      linkPayload === undefined
+  const { loaded, failed } = useLoaded(
+    useCallback((): Promise<Loaded> => {
+      const resume = (opened: Loaded): Loaded =>
+        opened.kind === "trip"
+          ? {
+              ...opened,
+              resumed: resumeTrip(slotStorage, opened.version, opened.trip),
+            }
+          : opened;
+      return linkPayload === undefined
         ? loadUnfinishedTrip(source, now, slotStorage).then(
             async ({ unfinished, version }) =>
               unfinished ??
@@ -71,16 +68,8 @@ export function FreePlayView({
               })),
           )
         : openTripLink(source, now, linkPayload).then(playableLink).then(resume);
-    loading
-      .then((result) => !cancelled && setLoaded(result))
-      .catch((error: unknown) => {
-        console.error(error);
-        if (!cancelled) setFailed(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [source, now, linkPayload, slotStorage]);
+    }, [source, now, linkPayload, slotStorage]),
+  );
 
   if (failed) return <p role="alert">Kunde inte ladda fri resa. Försök igen senare.</p>;
   if (loaded === undefined) return <p>Laddar fri resa…</p>;

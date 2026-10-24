@@ -1,5 +1,5 @@
 import { type MouseEvent, type ReactNode, useCallback, useEffect, useState } from "react";
-import { type DailyTripLoad, type DailyTripSource, loadDailyTrip } from "./daily/loadDailyTrip";
+import { type DailyTripSource, loadDailyTrip } from "./daily/loadDailyTrip";
 import { readHistory } from "./progress/history";
 import { deriveStats } from "./progress/stats";
 import { browserStorage, type KeyValueStorage } from "./progress/storage";
@@ -11,6 +11,7 @@ import { ItineraryView } from "./ui/ItineraryView";
 import { DEFAULT_PACING, type Pacing, PacingContext } from "./ui/pacing";
 import { RulesDialog, RulesIcon } from "./ui/RulesDialog";
 import { StatsDialog, StatsIcon } from "./ui/StatsDialog";
+import { useLoaded } from "./ui/useLoaded";
 
 type AppProps = {
   source: DailyTripSource;
@@ -41,9 +42,10 @@ export function App({
   search: initialSearch = globalThis.location?.search ?? "",
   pacing = DEFAULT_PACING,
 }: AppProps) {
-  const [daily, setDaily] = useState<DailyTripLoad>();
-  const [failed, setFailed] = useState(false);
   const [openedAt] = useState(now);
+  const { loaded: daily, failed } = useLoaded(
+    useCallback(() => loadDailyTrip(source, openedAt), [source, openedAt]),
+  );
   // A free-play trip's time is read from `now` as it runs, not frozen at opening like the day.
   const [clock] = useState(() => () => now().getTime());
   const [progressStorage] = useState(() => storage ?? browserStorage());
@@ -57,19 +59,6 @@ export function App({
   const itinerary = isPagePath(path, ITINERARY_PATH);
   // Without today's trip (still loading, or no trip today) there is no streak to keep alive.
   const today = daily?.kind === "trip" ? daily.trip.number : Number.POSITIVE_INFINITY;
-
-  useEffect(() => {
-    let cancelled = false;
-    loadDailyTrip(source, openedAt)
-      .then((loaded) => !cancelled && setDaily(loaded))
-      .catch((error: unknown) => {
-        console.error(error);
-        if (!cancelled) setFailed(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [source, openedAt]);
 
   useEffect(() => {
     const onPopState = () => {
