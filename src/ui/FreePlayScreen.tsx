@@ -2,7 +2,8 @@ import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useStat
 import { type Clock, systemClock } from "../engine/clock";
 import { type Game, newGame, reviewGame, type Trip } from "../engine/game";
 import { tripScore } from "../engine/score";
-import { startTime, stopTimeAtWin, tripTime } from "../engine/tripTime";
+import { timeoutRuns } from "../engine/thinkingTime";
+import { stampThinkingTime, startTime, stopTimeAtWin, tripTime } from "../engine/tripTime";
 import {
   defaultDistanceRange,
   type DistanceRange,
@@ -12,7 +13,7 @@ import {
 } from "../freePlay/draw";
 import { endpointSuggestions, pickedTrip, resolveEndpoint } from "../freePlay/endpoints";
 import type { LinkedTrip, ModeSetting } from "../freePlay/linkPayload";
-import { freePlayRules, opensAtStarta } from "../freePlay/modeRules";
+import { DEFAULT_THINKING_TIME, freePlayRules, opensAtStarta } from "../freePlay/modeRules";
 import { freePlayShareText } from "../freePlay/shareText";
 import { tripLinkPath } from "../freePlay/tripLink";
 import { saveTripSlot } from "../freePlay/tripSlot";
@@ -27,7 +28,9 @@ import { modeName, scoreText, timeText } from "./messages";
 import { ShareButton } from "./ShareButton";
 import { StartGate } from "./StartGate";
 import { TripBoard } from "./TripBoard";
+import { ThinkingTimeBar } from "./ThinkingTimeBar";
 import { TripClock } from "./TripClock";
+import { useNow } from "./useNow";
 import "./FreePlayScreen.css";
 
 /**
@@ -90,6 +93,12 @@ export function FreePlayScreen({
   const largest = largestDistance(pairs);
   const [range, setRange] = useState(() => defaultDistanceRange(largest));
   const [mode, setMode] = useState<ModeSetting>({ kind: "standard" });
+  // Kept apart from the mode, so choosing another mode and Tidspress again keeps it.
+  const [thinkingTime, setThinkingTime] = useState(DEFAULT_THINKING_TIME);
+  const changeMode = (next: ModeSetting) => {
+    setMode(next);
+    if (next.kind === "timed") setThinkingTime(next.thinkingTime);
+  };
   const [played, setPlayed] = useState<Played | undefined>(
     () =>
       linkedTrip && {
@@ -139,7 +148,8 @@ export function FreePlayScreen({
       <FreePlaySetup
         graph={graph}
         mode={mode}
-        onModeChange={setMode}
+        thinkingTime={thinkingTime}
+        onModeChange={changeMode}
         range={range}
         largest={largest}
         onRangeChange={setRange}
@@ -172,7 +182,11 @@ export function FreePlayScreen({
       clock={clock}
       // Started here just now, behind Starta, so the player can type at once.
       focusGuessOnOpen={opensAtStarta(played.trip.mode) && played.game.guesses.length === 0}
-      onGameChange={(game) => setPlayed({ ...played, game: stopTimeAtWin(graph, game, clock()) })}
+      onGameChange={(game) => {
+        const now = clock();
+        const stamped = stampThinkingTime(graph, stopTimeAtWin(graph, game, now), now);
+        setPlayed({ ...played, game: stamped });
+      }}
       sessionStorage={sessionStorage}
       resultActions={
         played.drawn && (
@@ -213,6 +227,10 @@ function FreePlayBoard({
   resultActions: ReactNode;
 }) {
   const review = useMemo(() => reviewGame(graph, game), [graph, game]);
+  // A timed trip's thinking time runs on real time, read again on each tick while it's played.
+  const timed = game.rules.thinkingTime !== undefined;
+  const thinking = timed && review.status === "playing";
+  const now = useNow(clock, thinking);
   const score = tripScore(review);
   const outcome = gameOutcome(review);
   const time = tripTime(game);
@@ -241,7 +259,14 @@ function FreePlayBoard({
       onGameChange={onGameChange}
       sessionStorage={sessionStorage}
       label={label}
-      clock={game.rules.keepsTime && <TripClock game={game} clock={clock} />}
+      clock={
+        game.rules.keepsTime ? (
+          <TripClock game={game} clock={clock} />
+        ) : (
+          thinking && <ThinkingTimeBar game={game} now={now} />
+        )
+      }
+      timeouts={timed ? timeoutRuns(game, now) : undefined}
       focusGuessOnOpen={focusGuessOnOpen}
       resultActions={
         <>
@@ -284,6 +309,7 @@ const panelId = (tab: SetupTab) => `free-play-panel-${tab}`;
 function FreePlaySetup({
   graph,
   mode,
+  thinkingTime,
   onModeChange,
   range,
   largest,
@@ -293,6 +319,7 @@ function FreePlaySetup({
 }: {
   graph: GraphVersion;
   mode: ModeSetting;
+  thinkingTime: number;
   onModeChange: (mode: ModeSetting) => void;
   range: DistanceRange;
   largest: number;
@@ -304,7 +331,7 @@ function FreePlaySetup({
   return (
     <section className="free-play-setup" aria-labelledby="free-play-heading">
       <h2 id="free-play-heading">Fri resa</h2>
-      <ModeCards mode={mode} onChange={onModeChange} />
+      <ModeCards mode={mode} thinkingTime={thinkingTime} onChange={onModeChange} />
       <SetupTabs selected={tab} onSelect={setTab} />
       <div
         id={panelId("draw")}
