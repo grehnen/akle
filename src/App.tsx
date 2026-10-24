@@ -83,13 +83,16 @@ export function App({
     setVisit((count) => count + 1);
   };
 
-  // A trip picked on the setup screen gets its own entry, so Back returns to the setup screen;
-  // a trip opened from its link keeps its entry, tidied to just the link.
-  const showTripLink = useCallback((link: string) => {
+  // A trip picked on the setup screen gets its own entry, so Back returns to `/fri`; a trip
+  // opened from its link or resumed on `/fri` keeps its entry, tidied to just the link.
+  const showTripLink = useCallback((link: string, replace = false) => {
     const { pathname, search: current } = window.location;
     if (pathname + current === link) return;
-    if (new URLSearchParams(current).has("r")) window.history.replaceState(null, "", link);
-    else window.history.pushState(null, "", link);
+    if (replace || new URLSearchParams(current).has("r")) {
+      window.history.replaceState(null, "", link);
+    } else {
+      window.history.pushState(null, "", link);
+    }
   }, []);
 
   return (
@@ -144,6 +147,7 @@ export function App({
           now={openedAt}
           linkPayload={new URLSearchParams(search).get("r") ?? undefined}
           onShowTripLink={showTripLink}
+          storage={progressStorage}
           sessionStorage={sessionStorage}
         />
       ) : failed ? (
