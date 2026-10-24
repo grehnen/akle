@@ -28,6 +28,16 @@ describe("a free-play mode's rules", () => {
     });
   });
 
+  test("timed gives every guess its thinking time, with the standard guess limit and no time kept", () => {
+    expect(freePlayRules({ kind: "timed", thinkingTime: 25 })).toEqual({
+      guessLimit: "distance",
+      giveUp: true,
+      keepsTime: false,
+      thinkingTime: 25,
+    });
+    expect(freePlayRules({ kind: "standard" }).thinkingTime).toBeUndefined();
+  });
+
   test("the modes on the clock open behind Starta", () => {
     expect(opensAtStarta({ kind: "tie-breaker" })).toBe(true);
     expect(opensAtStarta({ kind: "timed", thinkingTime: 10 })).toBe(true);

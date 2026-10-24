@@ -58,6 +58,25 @@ describe("resultOutcome", () => {
     ).toBe("Gav upp (1 ifrån, 2 ledtrådar)");
   });
 
+  test("timeouts are counted beside the hints", () => {
+    expect(
+      resultOutcome({
+        status: "won",
+        extra: 1,
+        perfect: false,
+        away: 0,
+        hintsUsed: 1,
+        timeouts: 2,
+      }),
+    ).toBe("Framme! (+1, 1 ledtråd, 2 ⏱)");
+    expect(resultOutcome({ status: "won", extra: 0, perfect: false, away: 0, timeouts: 1 })).toBe(
+      "Framme! (+0, 1 ⏱)",
+    );
+    expect(
+      resultOutcome({ status: "lost", perfect: false, away: 2, givenUp: true, timeouts: 4 }),
+    ).toBe("Gav upp (2 ifrån, 4 ⏱)");
+  });
+
   test("nothing while playing", () => {
     expect(resultOutcome({ status: "playing", perfect: false, away: 3 })).toBeUndefined();
   });

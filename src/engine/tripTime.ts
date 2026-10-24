@@ -21,6 +21,26 @@ export function stopTimeAtWin<T extends Trip>(
   return reviewGame(graph, game).status === "won" ? { ...game, wonAt: now } : game;
 }
 
+/**
+ * Stamps a timed game, just changed, at `now`: each counted guess not yet stamped (only a counted
+ * guess starts the thinking time again), and the end once the game is over. Called after every
+ * change; a game with no thinking time, or not started, is returned as it was.
+ */
+export function stampThinkingTime<T extends Trip>(
+  graph: GraphVersion,
+  game: Game<T>,
+  now: number,
+): Game<T> {
+  if (game.rules.thinkingTime === undefined || game.startedAt === undefined) return game;
+  const stamped = game.guessedAt ?? [];
+  const unstamped = game.guesses.length - stamped.length;
+  const guessedAt =
+    unstamped > 0 ? [...stamped, ...Array<number>(unstamped).fill(now)] : game.guessedAt;
+  const ended = game.endedAt === undefined && reviewGame(graph, game).status !== "playing";
+  if (guessedAt === game.guessedAt && !ended) return game;
+  return { ...game, guessedAt, ...(ended && { endedAt: now }) };
+}
+
 /** Milliseconds since Starta, as the running clock shows them; the clock stops at the win. */
 export function elapsedTime(game: Game, now: number): number {
   if (game.startedAt === undefined) return 0;

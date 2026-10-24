@@ -1,5 +1,5 @@
 import { SITE_URL } from "../siteUrl";
-import { hintsNote } from "../ui/messages";
+import { penaltiesNote } from "../ui/messages";
 import type { Outcome } from "./outcome";
 
 /** A finished game as the share text needs it. */
@@ -21,15 +21,16 @@ export function shareText(result: ShareResult): string {
 
 /**
  * How a game went in share text: `+2`, `+0 (Perfekt)`, `+1 (1 ledtråd)`, `(3 ifrån)` or, for a
- * free-play give-up, `Gav upp (3 ifrån)`.
+ * free-play give-up, `Gav upp (3 ifrån)`. A timed trip's timeouts join the hints in brackets:
+ * `+1 (1 ledtråd, 2 ⏱)`, `+0 (2 ⏱)`.
  */
 export function resultLabel(outcome: Outcome): string {
   switch (outcome.kind) {
     case "perfect":
       return `+${outcome.extra} (Perfekt)`;
     case "won":
-      return `+${outcome.extra}${hintsNote(outcome.hintsUsed)}`;
+      return `+${outcome.extra}${penaltiesNote(outcome.hintsUsed, outcome.timeouts)}`;
     case "lost":
-      return `${outcome.givenUp ? "Gav upp " : ""}(${outcome.away} ifrån)${hintsNote(outcome.hintsUsed)}`;
+      return `${outcome.givenUp ? "Gav upp " : ""}(${outcome.away} ifrån)${penaltiesNote(outcome.hintsUsed, outcome.timeouts)}`;
   }
 }
