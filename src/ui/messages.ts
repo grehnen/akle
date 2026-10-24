@@ -97,6 +97,16 @@ function hoursMinutesSeconds(totalSeconds: number): string {
     : `${minutes}:${seconds}`;
 }
 
+/** Timeouts in words, as announced and as a ⏱ row reads: `Tiden ute`, `Tiden ute 5 gånger`. */
+export function timeoutsText(timeouts: number): string {
+  return timeouts === 1 ? "Tiden ute" : `Tiden ute ${timeouts} gånger`;
+}
+
+/** What is announced as a thinking time's last third begins: `3 sekunder kvar`, `1 sekund kvar`. */
+export function warningAnnouncement(seconds: number): string {
+  return seconds === 1 ? "1 sekund kvar" : `${seconds} sekunder kvar`;
+}
+
 /** `1 ledtråd`, `2 ledtrådar`. */
 function hintCount(hints: number): string {
   return hints === 1 ? "1 ledtråd" : `${hints} ledtrådar`;

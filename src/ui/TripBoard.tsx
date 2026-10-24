@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { type Game, giveUp, reviewGame, type Trip } from "../engine/game";
 import { hintReveals } from "../engine/hints";
 import { resolveKommunName } from "../engine/kommunNames";
@@ -16,7 +16,7 @@ import {
   suggestKommuner,
   takeSessionHint,
 } from "./guessSession";
-import { guessCardText } from "./messages";
+import { guessCardText, timeoutsText } from "./messages";
 import { ResultStrip, ResultView } from "./ResultView";
 import { UsedCounter } from "./UsedCounter";
 
@@ -44,6 +44,11 @@ type TripBoardProps<T extends Trip> = {
   clock?: ReactNode;
   /** Puts focus in the guess input as the board opens, as after `Starta`. */
   focusGuessOnOpen?: boolean;
+  /**
+   * A timed trip's timeouts, as runs: before each guess, then since the last one (`timeoutRuns`).
+   * Each run shows as one ⏱ row among the guesses.
+   */
+  timeouts?: readonly number[];
 };
 
 /**
@@ -66,6 +71,7 @@ export function TripBoard<T extends Trip>({
   footerLinks,
   clock,
   focusGuessOnOpen = false,
+  timeouts,
 }: TripBoardProps<T>) {
   const [input, setInput] = useState<Omit<GuessSession<T>, "game">>({ text: "" });
   const { toast, announcement } = input;
@@ -178,22 +184,26 @@ export function TripBoard<T extends Trip>({
             <h3 id="guesses-heading" className="section-heading">
               Tidigare gissningar
             </h3>
-            {review.cards.length === 0 && (
+            {review.cards.length === 0 && !timeouts?.some((run) => run > 0) && (
               <p className="section-empty">
                 Inga gissningar än. Börja med en granne till {nameOf(trip.start)}.
               </p>
             )}
             <ol aria-label="Gissningar">
               {review.cards.map((card, index) => (
-                <li key={card.code}>
-                  <span aria-hidden="true">
-                    {card.feedback} {nameOf(card.code)}
-                  </span>
-                  <span className="visually-hidden">
-                    {guessCardText(card, { number: index + 1, name: nameOf(card.code) })}
-                  </span>
-                </li>
+                <Fragment key={card.code}>
+                  <TimeoutRow timeouts={timeouts?.[index]} />
+                  <li>
+                    <span aria-hidden="true">
+                      {card.feedback} {nameOf(card.code)}
+                    </span>
+                    <span className="visually-hidden">
+                      {guessCardText(card, { number: index + 1, name: nameOf(card.code) })}
+                    </span>
+                  </li>
+                </Fragment>
               ))}
+              <TimeoutRow timeouts={timeouts?.[review.cards.length]} />
             </ol>
           </section>
 
@@ -233,3 +243,14 @@ export function TripBoard<T extends Trip>({
 }
 
 const FINISH_LINGER_MS = 1500;
+
+/** Consecutive timeouts as one row among the guesses, `⏱ ×5`; not a guess, so not numbered. */
+function TimeoutRow({ timeouts = 0 }: { timeouts?: number }) {
+  if (timeouts === 0) return null;
+  return (
+    <li className="timeout-row">
+      <span aria-hidden="true">⏱ ×{timeouts}</span>
+      <span className="visually-hidden">{timeoutsText(timeouts)}</span>
+    </li>
+  );
+}
