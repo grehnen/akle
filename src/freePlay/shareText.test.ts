@@ -47,6 +47,21 @@ describe("a free-play trip's share text", () => {
     );
   });
 
+  test("labels a give-up beside the guess-limit loss", () => {
+    expect(
+      freePlayShareText({
+        mode: standard,
+        outcome: { kind: "lost", away: 3, hintsUsed: 0, givenUp: true },
+        score: 11,
+        emojiLine: "🟥🟧🟥",
+        link,
+      }),
+    ).toBe(
+      "#åkle Fri resa · Standard\nGav upp (3 ifrån) · 11 poäng\n🟥🟧🟥\nhttps://akle.grehn.net" +
+        link,
+    );
+  });
+
   test("names the mode, with a timed trip's thinking time", () => {
     const header = (mode: Parameters<typeof freePlayShareText>[0]["mode"]) =>
       freePlayShareText({

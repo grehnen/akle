@@ -49,6 +49,15 @@ describe("resultOutcome", () => {
     );
   });
 
+  test("a give-up says so instead of running out of guesses", () => {
+    expect(resultOutcome({ status: "lost", perfect: false, away: 3, givenUp: true })).toBe(
+      "Gav upp (3 ifrån)",
+    );
+    expect(
+      resultOutcome({ status: "lost", perfect: false, away: 1, givenUp: true, hintsUsed: 2 }),
+    ).toBe("Gav upp (1 ifrån, 2 ledtrådar)");
+  });
+
   test("nothing while playing", () => {
     expect(resultOutcome({ status: "playing", perfect: false, away: 3 })).toBeUndefined();
   });
