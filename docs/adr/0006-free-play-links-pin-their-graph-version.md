@@ -5,7 +5,6 @@ A free-play trip has no trip number, so [ADR 0004](./0004-versioned-graphs-keyed
 - Free play only ever uses versions a daily trip has already used, so ADR 0004's rule that such a version is never edited also protects every link.
 - Before launch day there is no trip number, so the current version is the one trip #1 uses. Until trip #1 is played that version may still be edited, so a link made before launch could change; we accept that short window.
 - An itinerary pins one version for all its trips.
-- A hand-typed link with no version tag plays on the current version.
 - A link naming a version the app doesn't have, or a code missing from its pinned version, shows a clear error. The app never falls back to another version.
 - A free-play trip or itinerary in progress keeps its version when the current version changes.
 - A trip on an older pinned version plays with no notice that the data is old.
