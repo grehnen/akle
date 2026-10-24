@@ -65,18 +65,18 @@ export function scoreText(score: number): string {
   return `${score < 0 ? `−${-score}` : score} poäng`;
 }
 
+/** Each mode as the UI names it. */
+export const MODE_NAMES: Record<ModeSetting["kind"], string> = {
+  standard: "Standard",
+  unlimited: "Obegränsad",
+  timed: "Tidspress",
+  "tie-breaker": "Tidtagning",
+};
+
 /** A mode as the UI names it, with a timed trip's thinking time: `Standard`, `Tidspress 10 s`. */
 export function modeName(mode: ModeSetting): string {
-  switch (mode.kind) {
-    case "standard":
-      return "Standard";
-    case "unlimited":
-      return "Obegränsad";
-    case "timed":
-      return `Tidspress ${mode.thinkingTime} s`;
-    case "tie-breaker":
-      return "Tidtagning";
-  }
+  const name = MODE_NAMES[mode.kind];
+  return mode.kind === "timed" ? `${name} ${mode.thinkingTime} s` : name;
 }
 
 /** A running time, in whole seconds: `1:23`, or `1:02:05` past an hour. */
