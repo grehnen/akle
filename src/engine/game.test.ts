@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildGraphVersion } from "../graph/graphVersion";
-import { type Game, newGame, reviewGame, submitGuess } from "./game";
+import { type Game, newGame, reviewGame, type Rules, STANDARD_RULES, submitGuess } from "./game";
 
 /*
  * S ── A ── B ── D        shortest route S-A-B-D, N = 2, guess limit 6
@@ -32,10 +32,13 @@ const graph = buildGraphVersion({
   ],
 });
 
-const trip = { number: 1, start: "S", destination: "D" };
+// A trip is only its endpoints; a daily trip's number lives outside the engine.
+const trip = { start: "S", destination: "D" };
 
-function play(...inputs: string[]): Game {
-  let game = newGame(trip);
+const play = (...inputs: string[]): Game => playUnder(STANDARD_RULES, ...inputs);
+
+function playUnder(rules: Rules, ...inputs: string[]): Game {
+  let game = newGame(trip, rules);
   for (const input of inputs) {
     const result = submitGuess(graph, game, input);
     if (result.kind !== "accepted") {
@@ -122,7 +125,8 @@ describe("winning and losing", () => {
       graph,
       play("Kommun Z", "Kommun F", "Kommun W1", "Kommun W2", "Kommun A", "Kommun B"),
     );
-    expect(review.cards).toHaveLength(review.limit);
+    expect(review.cards).toHaveLength(6);
+    expect(review.limit).toBe(6);
     expect(review.status).toBe("won");
     expect(review.extra).toBe(4);
   });
@@ -143,6 +147,28 @@ describe("winning and losing", () => {
     const review = reviewGame(graph, play("Kommun A"));
     expect(review.status).toBe("playing");
     expect(review.away).toBe(1);
+  });
+});
+
+describe("with no guess limit", () => {
+  const unlimited: Rules = { guessLimit: "none" };
+  const farOff = ["Kommun Z", "Kommun F", "Kommun W1", "Kommun W2", "Kommun W3", "Kommun P"];
+
+  test("has no limit to show", () => {
+    expect(reviewGame(graph, newGame(trip, unlimited)).limit).toBeUndefined();
+  });
+
+  test("keeps playing past the standard guess limit", () => {
+    const review = reviewGame(graph, playUnder(unlimited, ...farOff, "Kommun Q"));
+    expect(review.cards).toHaveLength(7);
+    expect(review.status).toBe("playing");
+    expect(review.away).toBe(1);
+  });
+
+  test("still wins once a route is complete, counting extra beyond N", () => {
+    const review = reviewGame(graph, playUnder(unlimited, ...farOff, "Kommun A", "Kommun B"));
+    expect(review.status).toBe("won");
+    expect(review.extra).toBe(6);
   });
 });
 

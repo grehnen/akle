@@ -1,6 +1,6 @@
 import type { GraphVersion, KommunCode } from "../graph/graphVersion";
 import { cheapestRoute } from "../graph/routes";
-import { type Game, reviewGame } from "./game";
+import { type Game, reviewGame, type Trip } from "./game";
 
 export const HINT_COUNT = 3;
 
@@ -13,7 +13,7 @@ export type HintReveals = {
 };
 
 /** Takes the next hint; free, but only while the game is unfinished and hints remain. */
-export function takeHint(graph: GraphVersion, game: Game): Game {
+export function takeHint<T extends Trip>(graph: GraphVersion, game: Game<T>): Game<T> {
   const taken = game.hints?.taken ?? 0;
   if (taken >= HINT_COUNT || reviewGame(graph, game).status !== "playing") return game;
   if (game.hints !== undefined) return { ...game, hints: { ...game.hints, taken: taken + 1 } };

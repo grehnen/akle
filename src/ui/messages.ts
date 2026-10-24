@@ -81,12 +81,13 @@ export function guessAnnouncement(
     limit,
     name,
     status,
-  }: { number: number; limit: number; name: string; status: GameStatus },
+  }: { number: number; limit: number | undefined; name: string; status: GameStatus },
 ): string {
   const connected = card.connected ? connectionText(card) : "";
   const ending =
     status === "won" ? " Du nådde målet!" : status === "lost" ? " Slut på gissningar." : "";
-  return `Gissning ${number} av ${limit}: ${name}, ${feedbackText(card.feedback)}${connected}.${ending}`;
+  const counted = limit === undefined ? `${number}` : `${number} av ${limit}`;
+  return `Gissning ${counted}: ${name}, ${feedbackText(card.feedback)}${connected}.${ending}`;
 }
 
 /** What the live region says after hint `taken` (1 to 3). */

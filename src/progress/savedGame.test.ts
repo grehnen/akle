@@ -22,7 +22,10 @@ describe("the saved game", () => {
   test("a reload restores today's guesses", () => {
     const storage = memoryStorage();
     saveGame(storage, { trip: today, guesses: ["A", "B"] });
-    expect(loadSavedGame(storage, graph, today)).toEqual({ trip: today, guesses: ["A", "B"] });
+    expect(loadSavedGame(storage, graph, today)).toEqual({
+      ...newGame(today),
+      guesses: ["A", "B"],
+    });
   });
 
   test("a new trip number starts a fresh game", () => {
@@ -52,7 +55,7 @@ describe("the saved game", () => {
 
   test("a reload keeps the hints taken and hint 1's kommun", () => {
     const storage = memoryStorage();
-    const game = { trip: today, guesses: ["B"], hints: { taken: 2, nextKommun: "A" } };
+    const game = { ...newGame(today), guesses: ["B"], hints: { taken: 2, nextKommun: "A" } };
     saveGame(storage, game);
     expect(loadSavedGame(storage, graph, today)).toEqual(game);
   });
