@@ -15,6 +15,24 @@
   text-align: center;
 }
 
+/* The way back to an unfinished itinerary, set off like a sign above the builder. */
+.itinerary-resume {
+  display: block;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--rule);
+  border-left: 0.3rem solid var(--start);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.itinerary-resume:hover {
+  text-decoration: underline;
+}
+
 .itinerary-title {
   display: grid;
   grid-template-columns: 1fr auto;
