@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { DailyTripSource } from "../daily/loadDailyTrip";
-import { reviewGame, STANDARD_RULES } from "../engine/game";
+import { reviewGame } from "../engine/game";
 import { loadCurrentVersion, type PinnedVersion } from "../freePlay/currentVersion";
 import type { LinkedTrip } from "../freePlay/linkPayload";
 import { type OpenedTripLink, openTrip, openTripLink } from "../freePlay/tripLink";
@@ -52,7 +52,7 @@ export function FreePlayView({
       opened.kind === "trip"
         ? {
             ...opened,
-            resumed: resumeTrip(slotStorage, opened.version, opened.trip, STANDARD_RULES),
+            resumed: resumeTrip(slotStorage, opened.version, opened.trip),
           }
         : opened;
     const loading: Promise<Loaded> =
@@ -109,7 +109,7 @@ async function loadUnfinishedTrip(
   const opened = playableLink(await openTrip(source, now, stored.versionOrdinal, stored.trip));
   if (opened.kind !== "trip") return {};
   const { version } = opened;
-  const resumed = resumeTrip(storage, version, opened.trip, STANDARD_RULES);
+  const resumed = resumeTrip(storage, version, opened.trip);
   if (resumed === undefined || reviewGame(version.graph, resumed.game).status !== "playing") {
     return { version };
   }

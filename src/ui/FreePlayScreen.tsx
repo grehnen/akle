@@ -1,5 +1,5 @@
 import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { type Game, newGame, reviewGame, STANDARD_RULES, type Trip } from "../engine/game";
+import { type Game, newGame, reviewGame, type Trip } from "../engine/game";
 import { tripScore } from "../engine/score";
 import {
   defaultDistanceRange,
@@ -10,6 +10,7 @@ import {
 } from "../freePlay/draw";
 import { endpointSuggestions, pickedTrip, resolveEndpoint } from "../freePlay/endpoints";
 import type { LinkedTrip } from "../freePlay/linkPayload";
+import { freePlayRules } from "../freePlay/modeRules";
 import { freePlayShareText } from "../freePlay/shareText";
 import { tripLinkPath } from "../freePlay/tripLink";
 import { saveTripSlot } from "../freePlay/tripSlot";
@@ -78,7 +79,7 @@ export function FreePlayScreen({
     () =>
       linkedTrip && {
         trip: linkedTrip,
-        game: resumed?.game ?? newGame(linkedTrip, STANDARD_RULES),
+        game: resumed?.game ?? newGame(linkedTrip, freePlayRules(linkedTrip.mode)),
         drawn: resumed?.drawn ?? false,
         count: 1,
         opened: true,
@@ -99,14 +100,17 @@ export function FreePlayScreen({
     saveTripSlot(storage, { versionOrdinal: ordinal, trip, game, drawn });
   }, [storage, ordinal, played]);
 
-  const play = (trip: Trip, drawn: boolean) =>
-    setPlayed((last) => ({
-      trip: standard(trip),
-      game: newGame(trip, STANDARD_RULES),
-      drawn,
-      count: (last?.count ?? 0) + 1,
-      opened: false,
-    }));
+  const play = (picked: Trip, drawn: boolean) =>
+    setPlayed((last) => {
+      const trip = standard(picked);
+      return {
+        trip,
+        game: newGame(picked, freePlayRules(trip.mode)),
+        drawn,
+        count: (last?.count ?? 0) + 1,
+        opened: false,
+      };
+    });
   const draw = (previous?: Trip) => {
     const trip = drawTrip(pairs, range, Math.random, previous);
     if (trip) play(trip, true);
