@@ -19,7 +19,10 @@ export function shareText(result: ShareResult): string {
   ].join("\n");
 }
 
-/** How a game went in share text: `+2`, `+0 (Perfekt)`, `+1 (1 ledtråd)`, `(3 ifrån)`. */
+/**
+ * How a game went in share text: `+2`, `+0 (Perfekt)`, `+1 (1 ledtråd)`, `(3 ifrån)` or, for a
+ * free-play give-up, `Gav upp (3 ifrån)`.
+ */
 export function resultLabel(outcome: Outcome): string {
   switch (outcome.kind) {
     case "perfect":
@@ -27,6 +30,6 @@ export function resultLabel(outcome: Outcome): string {
     case "won":
       return `+${outcome.extra}${hintsNote(outcome.hintsUsed)}`;
     case "lost":
-      return `(${outcome.away} ifrån)${hintsNote(outcome.hintsUsed)}`;
+      return `${outcome.givenUp ? "Gav upp " : ""}(${outcome.away} ifrån)${hintsNote(outcome.hintsUsed)}`;
   }
 }
