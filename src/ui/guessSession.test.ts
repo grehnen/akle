@@ -246,7 +246,7 @@ describe("announcements", () => {
   });
 
   test("with no guess limit, a guess is announced with its number alone", () => {
-    const unlimited = { game: newGame(trip, { guessLimit: "none", giveUp: true }), text: "" };
+    const unlimited = { game: newGame(trip, { guessLimit: "none", giveUp: true, keepsTime: false }), text: "" };
     expect(play([type("Örebro"), enter], unlimited).announcement).toBe(
       "Gissning 1: Örebro, långt från en kortaste väg.",
     );
