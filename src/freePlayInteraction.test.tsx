@@ -196,12 +196,12 @@ describe("Välj själv", () => {
 
     await type(startField(container), "0192");
     expect(resButton(container).hasAttribute("disabled")).toBe(true);
-    expect(container.textContent).not.toContain("Avstånd");
+    expect(query(container, ".free-play-distance").textContent).toBe("");
 
     await type(destinationField(container), "Tro");
     await click(query(container, '#free-play-destination-suggestions [role="option"]'));
     expect(destinationField(container).value).toBe("Trosa");
-    expect(container.textContent).toContain("Avstånd 2");
+    expect(query(container, ".free-play-distance").textContent).toBe("Avstånd 2");
     expect(resButton(container).hasAttribute("disabled")).toBe(false);
   });
 
@@ -210,7 +210,7 @@ describe("Välj själv", () => {
 
     await type(startField(container), "Salem");
     await type(destinationField(container), "Trosa");
-    expect(container.textContent).not.toContain("Avstånd");
+    expect(query(container, ".free-play-distance").textContent).not.toContain("Avstånd");
     expect(container.textContent).toContain("Start och mål är grannar.");
     expect(resButton(container).hasAttribute("disabled")).toBe(true);
   });
@@ -240,5 +240,102 @@ describe("playing a picked trip", () => {
     expect(progress.writes).toEqual([]);
     expect(progress.storage.getItem("akle:game")).toBe(progress.savedGame);
     expect(progress.storage.getItem("akle:history")).toBe(progress.history);
+  });
+});
+
+const buttonNamed = (container: HTMLElement, text: string) =>
+  [...container.querySelectorAll("button")].find((b) => b.textContent?.includes(text)) as
+    | HTMLElement
+    | undefined;
+const distanceThumbs = (container: HTMLElement) => ({
+  min: query<HTMLInputElement>(container, 'input[aria-label="Minsta avstånd"]'),
+  max: query<HTMLInputElement>(container, 'input[aria-label="Största avstånd"]'),
+});
+const KOMMUN_NAMES = ["Nynäshamn", "Haninge", "Salem", "Trosa"];
+const pairIn = (heading: string) => KOMMUN_NAMES.filter((name) => heading.includes(name));
+
+/** Wins a trip at distance 1 by guessing the kommun between its ends; returns its heading. */
+async function winDistanceOneTrip(container: HTMLElement) {
+  const heading = query(container, "#trip-heading").textContent ?? "";
+  const between = heading.includes("Nynäshamn") ? "Haninge" : "Salem";
+  await type(query<HTMLInputElement>(container, "#guess-input"), between);
+  await click(query(container, '.guess-input button[type="submit"]'));
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 1600)));
+  return heading;
+}
+
+describe("Slumpa", () => {
+  test("is the open tab, with a distance slider from 1 to the version's largest distance", async () => {
+    const { container } = await mountApp("/fri");
+
+    expect(query(container, "#free-play-tab-draw").getAttribute("aria-selected")).toBe("true");
+    expect(query(container, "#free-play-panel-draw").hidden).toBe(false);
+    expect(query(container, "#free-play-panel-pick").hidden).toBe(true);
+    const { min, max } = distanceThumbs(container);
+    expect([min.min, min.max, max.min, max.max]).toEqual(["1", "2", "1", "2"]);
+    // 3–8 by default, cut down to this version's largest distance, 2.
+    expect([min.value, max.value]).toEqual(["2", "2"]);
+    expect(query(container, ".free-play-range-label").textContent).toBe("Avstånd 2");
+    expect(container.textContent).toContain("Start och mål visas när resan börjar.");
+  });
+
+  test("the distance label follows the thumbs", async () => {
+    const { container } = await mountApp("/fri");
+
+    await type(distanceThumbs(container).min, "1");
+    expect(query(container, ".free-play-range-label").textContent).toBe("Avstånd 1–2");
+  });
+
+  test("Välj själv shows its panel instead", async () => {
+    const { container } = await mountApp("/fri");
+
+    await click(query(container, "#free-play-tab-pick"));
+    expect(query(container, "#free-play-tab-pick").getAttribute("aria-selected")).toBe("true");
+    expect(query(container, "#free-play-panel-pick").hidden).toBe(false);
+    expect(query(container, "#free-play-panel-draw").hidden).toBe(true);
+  });
+
+  test("starts the drawn trip at once, never showing its pair before", async () => {
+    const { container } = await mountApp("/fri");
+    expect(pairIn(query(container, ".free-play-setup").textContent ?? "")).toEqual([]);
+
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+    // The only pair at distance 2.
+    expect(pairIn(query(container, "#trip-heading").textContent ?? "")).toEqual([
+      "Nynäshamn",
+      "Trosa",
+    ]);
+    expect(container.textContent).toContain("Fri resa · Standard");
+  });
+
+  test("Slumpa ny resa keeps the range and draws the other pair", async () => {
+    const { container } = await mountApp("/fri");
+    const { min, max } = distanceThumbs(container);
+    await type(min, "1");
+    await type(max, "1");
+
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+    const first = await winDistanceOneTrip(container);
+    await click(buttonNamed(container, "Slumpa ny resa") as HTMLElement);
+    const second = await winDistanceOneTrip(container);
+
+    // Distance 1 has two pairs: Nynäshamn–Salem and Haninge–Trosa.
+    expect(pairIn(first)).toHaveLength(2);
+    expect(pairIn(second)).toHaveLength(2);
+    expect(pairIn(second)).not.toEqual(pairIn(first));
+    expect(query(container, "#result-heading").textContent).toBe("Perfekt!");
+    expect(buttonNamed(container, "Slumpa ny resa")).toBeDefined();
+  });
+
+  test("a picked trip offers no Slumpa ny resa", async () => {
+    const { container } = await mountApp("/fri");
+
+    await click(query(container, "#free-play-tab-pick"));
+    await type(startField(container), "Nynäshamn");
+    await type(destinationField(container), "Salem");
+    await click(resButton(container));
+    await winDistanceOneTrip(container);
+    expect(query(container, "#result-heading").textContent).toBe("Perfekt!");
+    expect(buttonNamed(container, "Slumpa ny resa")).toBeUndefined();
   });
 });
