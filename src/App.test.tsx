@@ -33,4 +33,21 @@ describe("App", () => {
       /<header[^>]*><button[^>]*aria-label="Så spelar du"(?![^>]*disabled)[^>]*>.*<h1>/,
     );
   });
+
+  test("has a free-play link in the header", () => {
+    const markup = renderToStaticMarkup(<App source={neverLoads} path="/" />);
+
+    expect(markup).toMatch(/<header[^>]*>.*<a href="\/fri"[^>]*aria-label="Fri resa"/);
+  });
+
+  test.each(["/fri", "/fri/", "/fri.html"])(
+    "at %p shows free play, with the title linking back to today's trip",
+    (path) => {
+      const markup = renderToStaticMarkup(<App source={neverLoads} path={path} />);
+
+      expect(markup).toContain('<h1><a href="/">Åkle</a></h1>');
+      expect(markup).toContain("Laddar fri resa…");
+      expect(markup).not.toContain("Laddar dagens resa");
+    },
+  );
 });

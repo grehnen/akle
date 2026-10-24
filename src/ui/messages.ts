@@ -44,6 +44,11 @@ export function hintsNote(hintsUsed: number): string {
   return hintsUsed > 0 ? ` (${hintCount(hintsUsed)})` : "";
 }
 
+/** A free-play score: `3 poäng`, `−1 poäng` (with a real minus sign). */
+export function scoreText(score: number): string {
+  return `${score < 0 ? `−${-score}` : score} poäng`;
+}
+
 /** `1 ledtråd`, `2 ledtrådar`. */
 function hintCount(hints: number): string {
   return hints === 1 ? "1 ledtråd" : `${hints} ledtrådar`;
