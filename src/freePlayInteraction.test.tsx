@@ -248,7 +248,7 @@ describe("playing a picked trip", () => {
     expect(query(container, "#result-heading").textContent).toBe("Perfekt!");
     expect(query(container, ".result-score").textContent).toBe("−1 poäng");
     expect(fetched).toEqual(["current"]);
-    expect(progress.writes).toEqual([]);
+    expect(new Set(progress.writes)).toEqual(new Set(["akle:free-play-trip"]));
     expect(progress.storage.getItem("akle:game")).toBe(progress.savedGame);
     expect(progress.storage.getItem("akle:history")).toBe(progress.history);
   });
@@ -369,19 +369,12 @@ describe("trip links", () => {
     mode: { kind: "standard" },
   });
 
-  test("a picked trip shows its link while played, and Back returns to the setup screen", async () => {
+  test("a picked trip shows its link while played", async () => {
     const { container } = await mountApp("/fri");
     await type(startField(container), "Nynäshamn");
     await type(destinationField(container), "Trosa");
     await click(resButton(container));
     expect(address()).toBe(nynashamnTrosa);
-
-    await act(async () => {
-      dom.window.history.back();
-      await new Promise((resolve) => setTimeout(resolve, 20));
-    });
-    expect(address()).toBe("/fri");
-    expect(query(container, "#free-play-heading").textContent).toBe("Fri resa");
   });
 
   test("the share text of a finished trip ends with the link in the address bar", async () => {
@@ -438,5 +431,194 @@ describe("trip links", () => {
     expect(query(container, ".free-play-error").textContent).toContain(
       "Resan från Haninge till Salem",
     );
+  });
+});
+
+/** Unmounts the app and mounts it again on the same storage, as a reload or a reopened tab. */
+async function reopen(path: string, storage: KeyValueStorage) {
+  const { root, container } = mounted as { root: Root; container: HTMLElement };
+  act(() => root.unmount());
+  container.remove();
+  return mountApp(path, storage);
+}
+
+const guessNames = (container: HTMLElement) =>
+  [...container.querySelectorAll('ol[aria-label="Gissningar"] li span[aria-hidden="true"]')].map(
+    (span) => span.textContent,
+  );
+const takenHints = (container: HTMLElement) =>
+  container.querySelectorAll(".hint-button.taken").length;
+
+async function pick(container: HTMLElement, start: string, destination: string) {
+  await type(startField(container), start);
+  await type(destinationField(container), destination);
+  await click(resButton(container));
+}
+
+async function guess(container: HTMLElement, name: string) {
+  await type(query<HTMLInputElement>(container, "#guess-input"), name);
+  await click(query(container, '.guess-input button[type="submit"]'));
+}
+
+describe("resuming the free-play trip", () => {
+  const nynashamnTrosa = tripLinkPath(0, {
+    start: "0192",
+    destination: "0488",
+    mode: { kind: "standard" },
+  });
+  const haningeTrosa = tripLinkPath(0, {
+    start: "0136",
+    destination: "0488",
+    mode: { kind: "standard" },
+  });
+
+  test("a reload restores an unfinished trip's guesses and hints", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    await pick(container, "Nynäshamn", "Trosa");
+    await guess(container, "Haninge");
+    await click(query(container, ".hint-button"));
+
+    const reloaded = await reopen(address(), storage);
+    expect(query(reloaded.container, "#trip-heading").textContent).toBe(
+      "Från: Nynäshamn Till: Trosa",
+    );
+    expect(guessNames(reloaded.container)).toEqual(["1. Haninge ✅"]);
+    expect(takenHints(reloaded.container)).toBe(1);
+  });
+
+  test("/fri resumes an unfinished trip straight onto its play screen, showing its link", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    await pick(container, "Nynäshamn", "Trosa");
+    await guess(container, "Haninge");
+
+    const reopened = await reopen("/fri", storage);
+    expect(guessNames(reopened.container)).toEqual(["1. Haninge ✅"]);
+    expect(address()).toBe(nynashamnTrosa);
+  });
+
+  test("Back from an unfinished trip resumes it, as /fri does", async () => {
+    const { container } = await mountApp("/fri");
+    await pick(container, "Nynäshamn", "Trosa");
+    await guess(container, "Haninge");
+
+    await act(async () => {
+      dom.window.history.back();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    expect(guessNames(container)).toEqual(["1. Haninge ✅"]);
+    expect(address()).toBe(nynashamnTrosa);
+  });
+
+  test("the exact link to a finished trip reopens its result and share text, with no replay", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    await pick(container, "Nynäshamn", "Trosa");
+    await playToTheEnd(container, "Haninge", "Salem");
+
+    const reopened = await reopen(`${nynashamnTrosa}&utm_source=chat`, storage);
+    expect(query(reopened.container, "#result-heading").textContent).toBe("Perfekt!");
+    expect(query(reopened.container, ".result-score").textContent).toBe("−1 poäng");
+    await click(query(reopened.container, ".share-button"));
+    expect(copied).toEqual([
+      `#åkle Fri resa · Standard\n+0 (Perfekt) · −1 poäng\n✅✅\nhttps://akle.grehn.net${nynashamnTrosa}`,
+    ]);
+    expect(reopened.container.querySelector("#guess-input")).toBeNull();
+  });
+
+  test("/fri opens setup when the stored trip is finished", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    await pick(container, "Nynäshamn", "Trosa");
+    await playToTheEnd(container, "Haninge", "Salem");
+
+    const reopened = await reopen("/fri", storage);
+    expect(query(reopened.container, "#free-play-heading").textContent).toBe("Fri resa");
+    expect(address()).toBe("/fri");
+    // The stored trip's version is the current one, so it is loaded only once.
+    expect(reopened.fetched).toEqual(["current"]);
+  });
+
+  test("Back from a finished trip returns to the setup screen", async () => {
+    const { container } = await mountApp("/fri");
+    await pick(container, "Nynäshamn", "Trosa");
+    await playToTheEnd(container, "Haninge", "Salem");
+
+    await act(async () => {
+      dom.window.history.back();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    expect(address()).toBe("/fri");
+    expect(query(container, "#free-play-heading").textContent).toBe("Fri resa");
+  });
+
+  test("a different link replaces the slot as it opens, dropping the unfinished trip", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    await pick(container, "Nynäshamn", "Trosa");
+    await guess(container, "Haninge");
+
+    await reopen(haningeTrosa, storage);
+    const back = await reopen(nynashamnTrosa, storage);
+    expect(guessNames(back.container)).toEqual([]);
+
+    const resumed = await reopen("/fri", storage);
+    expect(query(resumed.container, "#trip-heading").textContent).toBe(
+      "Från: Nynäshamn Till: Trosa",
+    );
+  });
+
+  test("a new trip started from setup replaces the finished one", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    await pick(container, "Nynäshamn", "Trosa");
+    await playToTheEnd(container, "Haninge", "Salem");
+
+    const setup = await reopen("/fri", storage);
+    await pick(setup.container, "Haninge", "Trosa");
+
+    const resumed = await reopen("/fri", storage);
+    expect(query(resumed.container, "#trip-heading").textContent).toBe("Från: Haninge Till: Trosa");
+    expect(address()).toBe(haningeTrosa);
+  });
+
+  test("a drawn trip keeps Slumpa ny resa when reopened finished", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+    await playToTheEnd(container, "Haninge", "Salem");
+
+    const reopened = await reopen(address(), storage);
+    expect(buttonNamed(reopened.container, "Slumpa ny resa")).toBeDefined();
+  });
+
+  test.each([
+    ["corrupt", "{not json"],
+    [
+      "pinned to a version that hasn't started",
+      JSON.stringify({
+        format: 1,
+        versionOrdinal: 1,
+        trip: { start: "0192", destination: "0488", mode: { kind: "standard" } },
+        drawn: false,
+        game: { guesses: [] },
+      }),
+    ],
+    [
+      "for kommuner its version lacks",
+      JSON.stringify({
+        format: 1,
+        versionOrdinal: 0,
+        trip: { start: "0192", destination: "9999", mode: { kind: "standard" } },
+        drawn: false,
+        game: { guesses: [] },
+      }),
+    ],
+  ])("a %s slot is ignored, and /fri opens setup", async (_, slot) => {
+    const storage = memoryStorage();
+    storage.setItem("akle:free-play-trip", slot);
+    const { container } = await mountApp("/fri", storage);
+    expect(query(container, "#free-play-heading").textContent).toBe("Fri resa");
   });
 });
