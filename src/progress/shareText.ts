@@ -12,12 +12,15 @@ export type ShareResult = {
 
 /** The three lines a player copies: `#åkle #n` and the result, the emoji line, the site. */
 export function shareText(result: ShareResult): string {
-  return [`#åkle #${result.tripNumber} ${resultLabel(result)}`, result.emojiLine, SITE_URL].join(
-    "\n",
-  );
+  return [
+    `#åkle #${result.tripNumber} ${resultLabel(result.outcome)}`,
+    result.emojiLine,
+    SITE_URL,
+  ].join("\n");
 }
 
-function resultLabel({ outcome }: ShareResult): string {
+/** How a game went in share text: `+2`, `+0 (Perfekt)`, `+1 (1 ledtråd)`, `(3 ifrån)`. */
+export function resultLabel(outcome: Outcome): string {
   switch (outcome.kind) {
     case "perfect":
       return `+${outcome.extra} (Perfekt)`;
