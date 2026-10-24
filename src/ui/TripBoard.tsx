@@ -40,6 +40,10 @@ type TripBoardProps<T extends Trip> = {
   onResultClosedChange?: (closed: boolean) => void;
   /** Links put in the footer before the data credits, such as Rapportera fel. */
   footerLinks?: ReactNode;
+  /** Shown above the guess input while the board is up, such as a trip's running clock. */
+  clock?: ReactNode;
+  /** Puts focus in the guess input as the board opens, as after `Starta`. */
+  focusGuessOnOpen?: boolean;
 };
 
 /**
@@ -60,6 +64,8 @@ export function TripBoard<T extends Trip>({
   resultClosed: initiallyClosed = false,
   onResultClosedChange,
   footerLinks,
+  clock,
+  focusGuessOnOpen = false,
 }: TripBoardProps<T>) {
   const [input, setInput] = useState<Omit<GuessSession<T>, "game">>({ text: "" });
   const { toast, announcement } = input;
@@ -96,6 +102,10 @@ export function TripBoard<T extends Trip>({
   useEffect(() => {
     if (resultClosed && resultToggled) reopenButton.current?.focus();
   }, [resultClosed, resultToggled]);
+  const [focusGuess] = useState(focusGuessOnOpen);
+  useEffect(() => {
+    if (focusGuess) guessInput.current?.focus();
+  }, [focusGuess]);
   const nameOf = (code: string) => kommunName(graph, code);
 
   return (
@@ -140,6 +150,8 @@ export function TripBoard<T extends Trip>({
             initials={reveals.initials}
             allOutlines={settled}
           />
+
+          {clock}
 
           <GuessInput
             text={input.text}

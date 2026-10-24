@@ -1,0 +1,8 @@
+/* Tabular figures, so the clock doesn't jitter as its digits change. */
+.trip-clock {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}

@@ -107,7 +107,15 @@ function dailyProgress() {
 
 let mounted: { root: Root; container: HTMLElement } | undefined;
 
+const OPENED_AT = new Date(2026, 9, 24, 12, 0).getTime();
+/** The app's clock, which a test moves on to let real time pass, as across a reload or sleep. */
+let clockTime = OPENED_AT;
+const passTime = (milliseconds: number) => {
+  clockTime += milliseconds;
+};
+
 afterEach(() => {
+  clockTime = OPENED_AT;
   if (!mounted) return;
   const { root, container } = mounted;
   act(() => root.unmount());
@@ -129,7 +137,7 @@ async function mountApp(path: string, storage: KeyValueStorage = memoryStorage()
     root.render(
       <App
         source={source}
-        now={() => new Date(2026, 9, 24, 12, 0)}
+        now={() => new Date(clockTime)}
         storage={storage}
         sessionStorage={memoryStorage()}
         path={pathname}
@@ -725,7 +733,7 @@ describe("Läge", () => {
         radio.closest("label")?.querySelector(".free-play-mode-name")?.textContent === name,
     ) as HTMLInputElement;
 
-  test("four mode cards sit above the tabs, Standard chosen, the timed two not yet playable", async () => {
+  test("four mode cards sit above the tabs, Standard chosen, Tidspress not yet playable", async () => {
     const { container } = await mountApp("/fri");
 
     const modes = query(container, "fieldset.free-play-modes");
@@ -757,7 +765,7 @@ describe("Läge", () => {
         name: "Tidtagning",
         description: "Tiden tas. Vid lika poäng vinner den snabbaste.",
         checked: false,
-        disabled: true,
+        disabled: false,
       },
     ]);
   });
@@ -839,5 +847,149 @@ describe("Läge", () => {
     });
     const { container } = await mountApp(timed);
     expect(query(container, "#free-play-error-heading").textContent).toBe("Länken fungerar inte");
+  });
+});
+
+describe("Tidtagning", () => {
+  const tieBreakerLink = (start: string, destination: string) =>
+    tripLinkPath(0, { start, destination, mode: { kind: "tie-breaker" } });
+  const NOTICE = "Tiden går även om du lämnar sidan.";
+  const startaButton = (container: HTMLElement) => buttonNamed(container, "Starta") as HTMLElement;
+  const clockShown = (container: HTMLElement) =>
+    query(container, '.trip-clock [role="timer"]').textContent;
+  const resultTime = (container: HTMLElement) => query(container, ".result-time").textContent;
+  const chooseTieBreaker = (container: HTMLElement) =>
+    click(query(container, 'input[name="free-play-mode"][value="tie-breaker"]'));
+
+  test("a picked trip opens hidden behind Starta, which shows its ends and a quiet clock", async () => {
+    const { container } = await mountApp("/fri");
+    await chooseTieBreaker(container);
+    await click(query(container, "#free-play-tab-pick"));
+    await pick(container, "Nynäshamn", "Trosa");
+
+    expect(container.querySelector("#trip-heading")).toBeNull();
+    expect(container.querySelector("#guess-input")).toBeNull();
+    expect(pairIn(container.textContent ?? "")).toEqual([]);
+    expect(container.textContent).toContain("Fri resa · Tidtagning");
+    expect(container.textContent).toContain(NOTICE);
+
+    await click(startaButton(container));
+    expect(query(container, "#trip-heading").textContent).toBe("Res från Nynäshamn till Trosa");
+    expect(container.textContent).not.toContain(NOTICE);
+    expect(clockShown(container)).toBe("0:00");
+    // Visible, sitting above the guess input, but never announced live.
+    const clock = query(container, ".trip-clock");
+    expect(
+      clock.compareDocumentPosition(query(container, "#guess-input")) &
+        dom.window.Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(clock.closest("[aria-live]")).toBeNull();
+    expect(clock.querySelector("[aria-live]")).toBeNull();
+  });
+
+  test("a drawn trip stays hidden until Starta too", async () => {
+    const { container } = await mountApp("/fri");
+    await chooseTieBreaker(container);
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+
+    expect(container.querySelector("#trip-heading")).toBeNull();
+    expect(pairIn(container.textContent ?? "")).toEqual([]);
+    await click(startaButton(container));
+    expect(pairIn(query(container, "#trip-heading").textContent ?? "")).toEqual([
+      "Nynäshamn",
+      "Trosa",
+    ]);
+  });
+
+  test("the clock runs on real time, past an hour as h:mm:ss", async () => {
+    const { container } = await mountApp(tieBreakerLink("0192", "0488"));
+    await click(startaButton(container));
+
+    // Hidden, backgrounded or asleep: the clock reads the time that passed when it next ticks.
+    passTime(65_000);
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 1100)));
+    expect(clockShown(container)).toBe("1:05");
+    passTime(3600_000);
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 1100)));
+    expect(clockShown(container)).toBe("1:01:05");
+  });
+
+  test("a win keeps its time to tenths, from Starta to the winning guess, and shares it", async () => {
+    const link = tieBreakerLink("0192", "0488");
+    const { container } = await mountApp(link);
+    // Time before Starta isn't counted: the trip isn't shown yet.
+    passTime(60_000);
+    await click(startaButton(container));
+    await guess(container, "Haninge");
+    passTime(83_456);
+    await playToTheEnd(container, "Salem");
+
+    expect(query(container, "#result-heading").textContent).toBe("Perfekt!");
+    expect(resultTime(container)).toBe("Tid 1:23,4");
+    await click(query(container, ".share-button"));
+    expect(copied).toEqual([
+      `#åkle Fri resa · Tidtagning\n+0 (Perfekt) · −1 poäng · 1:23,4\n✅✅\nhttps://akle.grehn.net${link}`,
+    ]);
+  });
+
+  test("time runs on between reloads, and a reopened win keeps its time", async () => {
+    const storage = memoryStorage();
+    const link = tieBreakerLink("0192", "0488");
+    const { container } = await mountApp(link, storage);
+    await click(startaButton(container));
+    await guess(container, "Haninge");
+    passTime(2 * 3600_000 + 5_000);
+
+    // The trip already started, so it resumes straight onto the board.
+    const reloaded = await reopen("/fri", storage);
+    expect(reloaded.container.textContent).not.toContain(NOTICE);
+    expect(clockShown(reloaded.container)).toBe("2:00:05");
+    passTime(1_234);
+    await playToTheEnd(reloaded.container, "Salem");
+    expect(resultTime(reloaded.container)).toBe("Tid 2:00:06,2");
+
+    passTime(60_000);
+    const reopened = await reopen(link, storage);
+    expect(resultTime(reopened.container)).toBe("Tid 2:00:06,2");
+  });
+
+  test("a trip takes the slot only at Starta", async () => {
+    const storage = memoryStorage();
+    const standard = tripLinkPath(0, {
+      start: "0192",
+      destination: "0488",
+      mode: { kind: "standard" },
+    });
+    const { container } = await mountApp(standard, storage);
+    await guess(container, "Haninge");
+
+    // Opened but never started: the unfinished standard trip keeps the slot.
+    await reopen(tieBreakerLink("0136", "0488"), storage);
+    const notStarted = await reopen("/fri", storage);
+    expect(notStarted.container.textContent).toContain("Fri resa · Standard");
+    expect(guessNames(notStarted.container)).toEqual(["1. Haninge ✅"]);
+
+    const opened = await reopen(tieBreakerLink("0136", "0488"), storage);
+    await click(startaButton(opened.container));
+    const started = await reopen("/fri", storage);
+    expect(started.container.textContent).toContain("Fri resa · Tidtagning");
+    expect(query(started.container, "#trip-heading").textContent).toBe(
+      "Res från Haninge till Trosa",
+    );
+  });
+
+  test("a give-up keeps no time, shown as –", async () => {
+    // Nynäshamn to Salem is a distance of 1; Trosa is off the route.
+    const { container } = await mountApp(tieBreakerLink("0192", "0128"));
+    await click(startaButton(container));
+    await guess(container, "Trosa");
+    await click(query(container, ".give-up-button"));
+    await click(query(container, "dialog.give-up-dialog .give-up-confirm"));
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 1600)));
+
+    expect(query(container, "#result-heading").textContent).toBe("Gav upp (1 ifrån)");
+    expect(query(container, '.result-time [aria-hidden="true"]').textContent).toBe("–");
+    await click(query(container, ".share-button"));
+    expect(copied[0]?.split("\n")[1]).toBe("Gav upp (1 ifrån) · 3 poäng");
   });
 });
