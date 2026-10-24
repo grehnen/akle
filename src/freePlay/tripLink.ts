@@ -47,7 +47,17 @@ export async function openTrip(
 ): Promise<OpenedTripLink> {
   const version = await loadPinnedVersion(source, now, versionOrdinal);
   if (version === undefined) return { kind: "invalid" };
-  const { graph } = version;
+  return tripProblem(version, trip) ?? { kind: "trip", version, trip };
+}
+
+/** Why a linked trip can't be played on its pinned version, or undefined when it can. */
+export type TripProblem = Extract<OpenedTripLink, { kind: "invalid" }>;
+
+/**
+ * What makes a linked trip unplayable on its pinned version: a code the version lacks, or a
+ * start that is the destination or its neighbor, which names the trip. Undefined when playable.
+ */
+export function tripProblem({ graph }: PinnedVersion, trip: LinkedTrip): TripProblem | undefined {
   if (!graph.kommuner.has(trip.start) || !graph.kommuner.has(trip.destination)) {
     return { kind: "invalid" };
   }
@@ -60,5 +70,5 @@ export async function openTrip(
       },
     };
   }
-  return { kind: "trip", version, trip };
+  return undefined;
 }
