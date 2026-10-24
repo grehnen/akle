@@ -1,5 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import { rejectionMessage, resultOutcome } from "./messages";
+import { clockText, rejectionMessage, resultOutcome, scoreText, timeText } from "./messages";
+
+describe("scoreText", () => {
+  test.each([
+    [3, "3 poäng"],
+    [1, "1 poäng"],
+    [0, "0 poäng"],
+    [-1, "−1 poäng"],
+  ])("%p → %p", (score, text) => {
+    expect(scoreText(score)).toBe(text);
+  });
+});
 
 describe("rejectionMessage", () => {
   test.each([
@@ -38,7 +49,60 @@ describe("resultOutcome", () => {
     );
   });
 
+  test("a give-up says so instead of running out of guesses", () => {
+    expect(resultOutcome({ status: "lost", perfect: false, away: 3, givenUp: true })).toBe(
+      "Gav upp (3 ifrån)",
+    );
+    expect(
+      resultOutcome({ status: "lost", perfect: false, away: 1, givenUp: true, hintsUsed: 2 }),
+    ).toBe("Gav upp (1 ifrån, 2 ledtrådar)");
+  });
+
+  test("timeouts are counted beside the hints", () => {
+    expect(
+      resultOutcome({
+        status: "won",
+        extra: 1,
+        perfect: false,
+        away: 0,
+        hintsUsed: 1,
+        timeouts: 2,
+      }),
+    ).toBe("Framme! (+1, 1 ledtråd, 2 ⏱)");
+    expect(resultOutcome({ status: "won", extra: 0, perfect: false, away: 0, timeouts: 1 })).toBe(
+      "Framme! (+0, 1 ⏱)",
+    );
+    expect(
+      resultOutcome({ status: "lost", perfect: false, away: 2, givenUp: true, timeouts: 4 }),
+    ).toBe("Gav upp (2 ifrån, 4 ⏱)");
+  });
+
   test("nothing while playing", () => {
     expect(resultOutcome({ status: "playing", perfect: false, away: 3 })).toBeUndefined();
+  });
+});
+
+describe("clockText, the running clock in whole seconds", () => {
+  test.each([
+    [0, "0:00"],
+    [9_999, "0:09"],
+    [83_900, "1:23"],
+    [3_599_999, "59:59"],
+    [3_600_000, "1:00:00"],
+    [3_725_000, "1:02:05"],
+  ])("%p ms → %p", (milliseconds, text) => {
+    expect(clockText(milliseconds)).toBe(text);
+  });
+});
+
+describe("timeText, a win's time to tenths", () => {
+  test.each([
+    [0, "0:00,0"],
+    [834, "1:23,4"],
+    [35_999, "59:59,9"],
+    [36_000, "1:00:00,0"],
+    [72_012, "2:00:01,2"],
+  ])("%p tenths → %p", (tenths, text) => {
+    expect(timeText(tenths)).toBe(text);
   });
 });

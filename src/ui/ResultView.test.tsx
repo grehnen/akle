@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { type Game, reviewGame } from "../engine/game";
+import { type Game, newGame, reviewGame } from "../engine/game";
 import { buildGraphVersion, type GraphVersion } from "../graph/graphVersion";
 import { deriveStats } from "../progress/stats";
 import { type KeyValueStorage, memoryStorage } from "../progress/storage";
@@ -32,8 +32,7 @@ const graph = buildGraphVersion({
   ],
 });
 
-const trip = { number: 21, start: "0192", destination: "0488" };
-const now = new Date(2026, 9, 21, 13, 5, 9);
+const trip = { start: "0192", destination: "0488" };
 
 function routeItems(markup: string, label = "Bästa vägen med dina gissningar"): string[] {
   const route = markup.match(new RegExp(`<ol aria-label="${label}"[^>]*>(.*?)</ol>`))?.[1] ?? "";
@@ -66,18 +65,16 @@ function renderOn(
   guesses: string[],
   sessionStorage: KeyValueStorage = memoryStorage(),
 ) {
-  const game: Game = { trip: onTrip, guesses };
+  const game: Game = { ...newGame(onTrip), guesses };
   return renderToStaticMarkup(
     <ResultView
       graph={onGraph}
       game={game}
       review={reviewGame(onGraph, game)}
-      now={now}
       stats={deriveStats(
         { 20: { won: true, extra: 0, perfect: true, hintsUsed: 0, emojiLine: "✅" } },
         21,
       )}
-      shareText="#åkle #21 +1"
       sessionStorage={sessionStorage}
     />,
   );
@@ -115,15 +112,6 @@ describe("the result view", () => {
 
     test("keeps the stats out of the Min rutt tab", () => {
       expect(markup).not.toContain("<dt>Spelade</dt>");
-    });
-
-    test("offers to share the result", () => {
-      expect(markup).toMatch(/<button[^>]*>Dela resultat<\/button>/);
-    });
-
-    test("counts down to the next trip at midnight", () => {
-      expect(markup).toContain("Nästa resa om");
-      expect(markup).toContain("10:54:51");
     });
   });
 
@@ -170,7 +158,7 @@ describe("the result view", () => {
         ["F3", "F4"],
       ].map(([a, b]) => ({ between: [a, b] as const, kind: "land" as const })),
     });
-    const markup = renderOn(detour, { number: 21, start: "S", destination: "T" }, [
+    const markup = renderOn(detour, { start: "S", destination: "T" }, [
       "X",
       "Y",
       "F1",

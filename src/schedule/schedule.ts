@@ -1,8 +1,8 @@
 import { readCsv } from "../data/csv";
-import type { Trip } from "../engine/game";
+import type { DailyTrip } from "../daily/dailyTrip";
 
 /** One schedule row (ADR 0001): the daily trip for a trip number. */
-export type ScheduledTrip = Trip & {
+export type ScheduledTrip = DailyTrip & {
   /** Shortest-route length when the row was generated. */
   n: number;
 };

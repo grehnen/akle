@@ -56,6 +56,17 @@ describe("DailyTripView", () => {
     expect(visibleText(markup)).toContain("Gissa (0/5)");
   });
 
+  test("has no Ge upp, even with the distance's worth of guesses", () => {
+    const trip = { number: 21, start: "0192", destination: "0488", n: 1 };
+    const storage = memoryStorage();
+    saveGame(storage, { trip, guesses: ["0136"] });
+    const markup = renderToStaticMarkup(
+      <DailyTripView daily={{ kind: "trip", trip, graph }} storage={storage} />,
+    );
+    expect(visibleText(markup)).toContain("Gissa (1/5)");
+    expect(markup).not.toContain("Ge upp");
+  });
+
   describe("on the play screen", () => {
     const markup = renderToStaticMarkup(
       <DailyTripView
@@ -115,6 +126,12 @@ describe("DailyTripView", () => {
       const markup = renderWith(["0181"]);
       expect(markup).toContain('aria-labelledby="result-heading"');
       expect(markup).toContain(">Perfekt!</h2>");
+    });
+
+    test("the result view offers to share and counts down to the next trip at midnight", () => {
+      const markup = renderWith(["0181"]);
+      expect(markup).toMatch(/<button[^>]*>Dela resultat<\/button>/);
+      expect(markup).toContain("Nästa resa om");
       expect(markup).toContain("10:54:51");
     });
 

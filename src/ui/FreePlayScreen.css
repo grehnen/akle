@@ -1,0 +1,218 @@
+.free-play-setup {
+  width: 100%;
+  max-width: 30rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.free-play-setup h2 {
+  margin: 0;
+}
+
+.free-play-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--rule);
+}
+
+.free-play-tabs [role="tab"] {
+  flex: 1;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.free-play-tabs [role="tab"][aria-selected="true"] {
+  color: var(--text);
+  font-weight: 700;
+  background: linear-gradient(var(--text), var(--text)) bottom / 100% 3px no-repeat;
+}
+
+.free-play-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.endpoint-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.endpoint-field label {
+  font-weight: 700;
+}
+
+/* Each end takes its road-sign colour: a yellow edge for Start, a blue one for Mål. */
+.endpoint-field input {
+  border-left: 6px solid var(--start);
+}
+
+.endpoint-field--destination input {
+  border-left-color: var(--destination);
+}
+
+.free-play-distance {
+  min-height: 1.45em;
+  margin: 0;
+  color: var(--muted);
+}
+
+.free-play-go {
+  align-self: center;
+  min-width: 8rem;
+  background: var(--start);
+  color: var(--night);
+  font-weight: 700;
+}
+
+.free-play-go:disabled {
+  background: var(--surface);
+  color: var(--muted);
+  cursor: default;
+}
+
+.free-play-draw {
+  min-height: 4rem;
+  min-width: 12rem;
+  font-size: 1.25rem;
+}
+
+.free-play-note {
+  margin: 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Two range inputs stacked on one track; only their thumbs take the pointer. */
+.distance-range p {
+  margin: 0 0 0.25rem;
+}
+
+.distance-range-track {
+  position: relative;
+  height: 2.75rem;
+}
+
+.distance-range-track::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: var(--rule);
+}
+
+.distance-range-fill {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  background: var(--start);
+}
+
+.distance-range-track input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  appearance: none;
+  pointer-events: none;
+}
+
+.distance-range-track input::-webkit-slider-runnable-track {
+  background: none;
+}
+
+.distance-range-track input::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 3px var(--start);
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.distance-range-track input::-moz-range-thumb {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 3px var(--start);
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.distance-range-track input:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--text);
+  outline-offset: 4px;
+}
+
+.distance-range-track input:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--text);
+  outline-offset: 4px;
+}
+
+.free-play-redraw {
+  margin-left: auto;
+  padding-inline: 1.5rem;
+  background: var(--start);
+  color: var(--night);
+  font-weight: 700;
+}
+
+.result-score,
+.result-time {
+  margin: 0;
+  font-weight: 700;
+}
+
+.result-time {
+  font-variant-numeric: tabular-nums;
+}
+
+.free-play-error {
+  width: 100%;
+  max-width: 30rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.free-play-error h2,
+.free-play-error p {
+  margin: 0;
+}
+
+.free-play-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+/* Links that look like the app's buttons. */
+.free-play-error-actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--night);
+  font-weight: 700;
+  text-decoration: none;
+}

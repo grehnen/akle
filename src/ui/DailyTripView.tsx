@@ -1,10 +1,10 @@
-import type { DailyTrip } from "../daily/loadDailyTrip";
+import type { DailyTripLoad } from "../daily/loadDailyTrip";
 import { useState } from "react";
 import { browserSessionStorage, browserStorage, type KeyValueStorage } from "../progress/storage";
-import { PlayScreen } from "./PlayScreen";
+import { DailyPlayScreen } from "./DailyPlayScreen";
 
 type DailyTripViewProps = {
-  daily: DailyTrip | undefined;
+  daily: DailyTripLoad | undefined;
   storage?: KeyValueStorage;
   /** Where view choices that last one browser session are kept; sessionStorage by default. */
   sessionStorage?: KeyValueStorage;
@@ -22,7 +22,7 @@ export function DailyTripView({ daily, storage, sessionStorage, now }: DailyTrip
     return <p role="status">Ingen resa i dag. Titta in igen i morgon!</p>;
   }
   return (
-    <PlayScreen
+    <DailyPlayScreen
       key={daily.trip.number}
       graph={daily.graph}
       trip={daily.trip}

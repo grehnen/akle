@@ -23,6 +23,8 @@
   --start-edge: #ed1c24;
   --destination-edge: #ffffff;
   --focus: #fecc02;
+  /* A thinking time running out: a red light enough to read on the night background. */
+  --warning: #ff5a5f;
   /* Hint outlines: unfilled, thin and white at half opacity. */
   --hint-outline: rgb(255 255 255 / 50%);
 
@@ -89,6 +91,30 @@ h1 {
 
 .stats-open {
   right: 0;
+}
+
+.free-play-open,
+.itinerary-open {
+  right: 2.75rem;
+  height: 2.75rem;
+  font-size: 1.4rem;
+  text-decoration: none;
+}
+
+.itinerary-open {
+  right: 5.5rem;
+}
+
+/* On a narrow screen the title centres between the buttons, so the three on the right clear it. */
+@media (max-width: 25rem) {
+  .site-header {
+    padding-inline: 2.75rem 8.25rem;
+  }
+}
+
+/* In free play the title leads back to today's trip. */
+h1 a {
+  text-decoration: none;
 }
 
 .header-button:hover {
@@ -406,6 +432,52 @@ input::placeholder {
   background: var(--muted);
   color: var(--night);
   font-weight: 700;
+}
+
+/* Ge upp sits under the hints, quieter than them: text only, at the section's left edge. */
+.give-up-button {
+  align-self: flex-start;
+  padding-inline: 0.75rem;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 400;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.give-up-button:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.give-up-dialog {
+  max-width: 24rem;
+}
+
+.give-up-dialog h2,
+.give-up-dialog p {
+  margin: 0;
+}
+
+.give-up-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.give-up-actions button {
+  padding-inline: 1.25rem;
+}
+
+.give-up-cancel {
+  background: var(--text);
+  color: var(--night);
+}
+
+.give-up-confirm {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--hint-outline);
+  color: var(--text);
 }
 
 form {

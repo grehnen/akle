@@ -14,7 +14,7 @@ bun run check    # every required check, as CI runs them
 
 ## Deployment
 
-Åkle is one Cloudflare Worker, `akle`, that serves static assets only. [`cloudflare.config.ts`](../cloudflare.config.ts) configures it, and the [`cf` CLI](https://developers.cloudflare.com/cf/) builds and deploys it. `vite build` writes the Worker's Build Output to `.cloudflare/output/`. [`public/_headers`](../public/_headers) sets the caching: hashed files under `/assets/` (graph version data included) are `immutable`, and `index.html` is `no-cache`. `bun run headers:check` checks the build against it.
+Åkle is one Cloudflare Worker, `akle`, that serves static assets only. [`cloudflare.config.ts`](../cloudflare.config.ts) configures it, and the [`cf` CLI](https://developers.cloudflare.com/cf/) builds and deploys it. `vite build` writes the Worker's Build Output to `.cloudflare/output/`. [`public/_headers`](../public/_headers) sets the caching: hashed files under `/assets/` (graph version data included) are `immutable`, and the pages (`index.html`, `fri.html` served at `/fri` and `resplan.html` served at `/resplan`) are `no-cache`. `bun run headers:check` checks the build against it.
 
 [CI](../.github/workflows/ci.yml) runs the required checks on every PR and every push to `main`, then:
 

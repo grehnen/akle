@@ -1,6 +1,7 @@
 import type { Feedback, GameReview, GameStatus, GuessCard, GuessResult } from "../engine/game";
 import type { HINT_COUNT } from "../engine/hints";
-import { gameOutcome } from "../progress/outcome";
+import type { ModeSetting } from "../freePlay/linkPayload";
+import { gameOutcome, type Outcome } from "../progress/outcome";
 
 type RejectionReason = Extract<GuessResult, { kind: "rejected" }>["reason"];
 
@@ -17,10 +18,13 @@ export function rejectionMessage(reason: RejectionReason, input: string): string
   }
 }
 
-/** The result view's outcome: `Framme! (+2)`, `Framme! (+1, 1 ledtråd)`, `Perfekt!` or `Slut på gissningar (3 ifrån)`. */
+/**
+ * The result view's outcome: `Framme! (+2)`, `Framme! (+1, 1 ledtråd)`, `Perfekt!`,
+ * `Slut på gissningar (3 ifrån)` or, for a give-up, `Gav upp (3 ifrån)`.
+ */
 export function resultOutcome(
   review: Pick<GameReview, "status" | "extra" | "perfect" | "away"> &
-    Partial<Pick<GameReview, "hintsUsed">>,
+    Partial<Pick<GameReview, "hintsUsed" | "givenUp" | "timeouts">>,
 ): string | undefined {
   const outcome = gameOutcome(review);
   switch (outcome?.kind) {
@@ -29,23 +33,101 @@ export function resultOutcome(
     case "perfect":
       return "Perfekt!";
     case "won":
-      return `Framme! (+${outcome.extra}${hintsSuffix(outcome.hintsUsed)})`;
+      return `Framme! (+${outcome.extra}${costsSuffix(outcome.hintsUsed, outcome.timeouts)})`;
     case "lost":
-      return `Slut på gissningar (${outcome.away} ifrån${hintsSuffix(outcome.hintsUsed)})`;
+      return `${outcome.givenUp ? "Gav upp" : "Slut på gissningar"} (${outcome.away} ifrån${costsSuffix(outcome.hintsUsed, outcome.timeouts)})`;
   }
 }
 
-function hintsSuffix(hintsUsed: number): string {
-  return hintsUsed > 0 ? `, ${hintCount(hintsUsed)}` : "";
+/** The hints and timeouts a result counts: `1 ledtråd`, `2 ⏱`; none when there are none. */
+function costs(hintsUsed: number, timeouts = 0): string[] {
+  return [
+    ...(hintsUsed > 0 ? [hintCount(hintsUsed)] : []),
+    ...(timeouts > 0 ? [`${timeouts} ⏱`] : []),
+  ];
 }
 
-/** ` (2 ledtrådar)` after a result when hints were used, else nothing. */
-export function hintsNote(hintsUsed: number): string {
-  return hintsUsed > 0 ? ` (${hintCount(hintsUsed)})` : "";
+/** `, 2 ledtrådar`, `, 1 ledtråd, 2 ⏱` to close a bracket with, else nothing. */
+export function costsSuffix(hintsUsed: number, timeouts?: number): string {
+  return costs(hintsUsed, timeouts)
+    .map((cost) => `, ${cost}`)
+    .join("");
+}
+
+/** ` (2 ledtrådar)`, ` (1 ledtråd, 2 ⏱)` after a result with hints or timeouts, else nothing. */
+export function costsNote(hintsUsed: number, timeouts?: number): string {
+  const counted = costs(hintsUsed, timeouts);
+  return counted.length > 0 ? ` (${counted.join(", ")})` : "";
+}
+
+/** A free-play score: `3 poäng`, `−1 poäng` (with a real minus sign). */
+export function scoreText(score: number): string {
+  return `${score < 0 ? `−${-score}` : score} poäng`;
+}
+
+/** Each mode as the UI names it. */
+export const MODE_NAMES: Record<ModeSetting["kind"], string> = {
+  standard: "Standard",
+  unlimited: "Obegränsad",
+  timed: "Tidspress",
+  "tie-breaker": "Tidtagning",
+};
+
+/** A mode as the UI names it, with a timed trip's thinking time: `Standard`, `Tidspress 10 s`. */
+export function modeName(mode: ModeSetting): string {
+  const name = MODE_NAMES[mode.kind];
+  return mode.kind === "timed" ? `${name} ${mode.thinkingTime} s` : name;
+}
+
+/** A running time, in whole seconds: `1:23`, or `1:02:05` past an hour. */
+export function clockText(milliseconds: number): string {
+  return hoursMinutesSeconds(Math.floor(milliseconds / 1000));
+}
+
+/** A win's time, kept to tenths: `1:23,4`, or `1:00:00,0` past an hour. */
+export function timeText(tenths: number): string {
+  return `${hoursMinutesSeconds(Math.floor(tenths / 10))},${tenths % 10}`;
+}
+
+/** A summary row's outcome: `Perfekt`, `+2`, `3 ifrån` or, for a give-up, `Gav upp, 3 ifrån`. */
+export function summaryOutcomeText(outcome: Outcome): string {
+  switch (outcome.kind) {
+    case "perfect":
+      return "Perfekt";
+    case "won":
+      return `+${outcome.extra}`;
+    case "lost":
+      return `${outcome.givenUp ? "Gav upp, " : ""}${outcome.away} ifrån`;
+  }
+}
+
+/** An itinerary's total time and its won tie-breaker trips: `4:12,3 (2 vunna)`. */
+export function totalTimeText(tenths: number, won: number): string {
+  return `${timeText(tenths)} (${won} ${won === 1 ? "vunnen" : "vunna"})`;
+}
+
+function hoursMinutesSeconds(totalSeconds: number): string {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor(totalSeconds / 60) % 60;
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${seconds}`
+    : `${minutes}:${seconds}`;
+}
+
+/** Timeouts in words, as announced and as a ⏱ row reads: `Tiden ute`, `Tiden ute 5 gånger`. */
+export function timeoutsText(timeouts: number): string {
+  return timeouts === 1 ? "Tiden ute" : `Tiden ute ${timeouts} gånger`;
+}
+
+/** What is announced as a thinking time's last third begins: `3 sekunder kvar`, `1 sekund kvar`. */
+export function warningAnnouncement(seconds: number): string {
+  return seconds === 1 ? "1 sekund kvar" : `${seconds} sekunder kvar`;
 }
 
 /** `1 ledtråd`, `2 ledtrådar`. */
-function hintCount(hints: number): string {
+/** Hints taken, counted: `0 ledtrådar`, `1 ledtråd`. */
+export function hintCount(hints: number): string {
   return hints === 1 ? "1 ledtråd" : `${hints} ledtrådar`;
 }
 
@@ -81,12 +163,13 @@ export function guessAnnouncement(
     limit,
     name,
     status,
-  }: { number: number; limit: number; name: string; status: GameStatus },
+  }: { number: number; limit: number | undefined; name: string; status: GameStatus },
 ): string {
   const connected = card.connected ? connectionText(card) : "";
   const ending =
     status === "won" ? " Du nådde målet!" : status === "lost" ? " Slut på gissningar." : "";
-  return `Gissning ${number} av ${limit}: ${name}, ${feedbackText(card.feedback)}${connected}.${ending}`;
+  const counted = limit === undefined ? `${number}` : `${number} av ${limit}`;
+  return `Gissning ${counted}: ${name}, ${feedbackText(card.feedback)}${connected}.${ending}`;
 }
 
 /** What the live region says after hint `taken` (1 to 3). */
