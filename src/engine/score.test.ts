@@ -8,7 +8,7 @@ import { tripScore } from "./score";
 const graph = pathGraph(12);
 const trip = { start: pathCode(0), destination: pathCode(4) };
 
-const FREE_PLAY: Rules = { guessLimit: "distance", giveUp: true };
+const FREE_PLAY: Rules = { guessLimit: "distance", giveUp: true, keepsTime: false };
 
 /** Plays guesses by path position, taking a hint at each "hint" and giving up at "give up". */
 function played(...steps: (number | "hint" | "give up")[]): Game {

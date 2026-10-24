@@ -159,7 +159,7 @@ describe("winning and losing", () => {
 });
 
 describe("with no guess limit", () => {
-  const unlimited: Rules = { guessLimit: "none", giveUp: false };
+  const unlimited: Rules = { guessLimit: "none", giveUp: false, keepsTime: false };
   const farOff = ["Kommun Z", "Kommun F", "Kommun W1", "Kommun W2", "Kommun W3", "Kommun P"];
 
   test("has no limit to show", () => {
@@ -181,7 +181,7 @@ describe("with no guess limit", () => {
 });
 
 describe("giving up", () => {
-  const freePlay: Rules = { guessLimit: "distance", giveUp: true };
+  const freePlay: Rules = { guessLimit: "distance", giveUp: true, keepsTime: false };
 
   test("is allowed once there are as many guesses as the distance, and ends the trip as a loss", () => {
     const tooSoon = playUnder(freePlay, "Kommun Z");
@@ -211,7 +211,7 @@ describe("giving up", () => {
   });
 
   test("works without a guess limit too, where it is the only loss", () => {
-    const unlimited: Rules = { guessLimit: "none", giveUp: true };
+    const unlimited: Rules = { guessLimit: "none", giveUp: true, keepsTime: false };
     const game = playUnder(unlimited, "Kommun Z", "Kommun F", "Kommun W1", "Kommun W2");
     expect(reviewGame(graph, giveUp(graph, game)).status).toBe("lost");
   });
