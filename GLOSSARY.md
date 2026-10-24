@@ -104,6 +104,10 @@ _Avoid_: N, par, length, steps
 A route through the fewest kommuner the player hasn't guessed, with guessed kommuner free; it can be longer than a shortest route. In the UI: _Min rutt_.
 _Avoid_: Shortest route (for this), best route, kortaste vägen
 
+**Away** (in the UI: _ifrån_):
+How many kommuner the player hasn't guessed lie on a cheapest route; a trip starts with away equal to its distance and is won when it reaches zero.
+_Avoid_: Remaining, left, missing
+
 **Guess limit**:
 The number of guesses allowed in a trip, set by its distance; unlimited mode has none.
 _Avoid_: Max guesses, lives
@@ -117,8 +121,12 @@ A win whose every guess lay on a shortest route connected to the start, with no 
 _Avoid_: Flawless, optimal
 
 **Hint**:
-One of three optional reveals a player can take during a trip (in the UI: _ledtråd_); it never costs a guess but rules out Perfect.
+One of three optional reveals a player can take during a trip (in the UI: _ledtråd_); it never costs a guess but rules out Perfect, and adds to a free-play score.
 _Avoid_: Clue, help, tip
+
+**Score**:
+The number a finished free-play trip earns, lower being better: a win's extra, or for a loss its guesses beyond the distance plus a multiple of its away, then a cost for each hint and a bonus for Perfect; an itinerary's score is the sum of its trips' scores. Time never enters it and only separates equal scores.
+_Avoid_: Points, result, total
 
 **Streak**:
 The number of daily trips won on consecutive trip numbers; a loss or a daily trip not finished ends it.
