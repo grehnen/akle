@@ -25,7 +25,7 @@ The neighbor graph, kommun names and kommun shapes that apply from a given trip 
 _Avoid_: Snapshot, release, map version
 
 **Current version**:
-The graph version that applies to today's trip number; a free-play trip not pinned to another version is played on it.
+The graph version that applies to today's trip number, or before launch day the one trip #1 uses; a free-play trip not pinned to another version is played on it.
 _Avoid_: Latest version, newest version
 
 **Fixed link**:
