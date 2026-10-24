@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { type Game, giveUp, reviewGame, type Trip } from "../engine/game";
 import { hintReveals } from "../engine/hints";
 import { resolveKommunName } from "../engine/kommunNames";
@@ -9,6 +9,7 @@ import type { KeyValueStorage } from "../progress/storage";
 import { GiveUp } from "./GiveUp";
 import { GuessInput } from "./GuessInput";
 import { HintSection } from "./HintSection";
+import { PacingContext } from "./pacing";
 import {
   applyGuessInput,
   enterTarget,
@@ -87,12 +88,13 @@ export function TripBoard<T extends Trip>({
   const reveals = useMemo(() => hintReveals(graph, game), [graph, game]);
   const finished = review.status !== "playing";
   // A game finished just now keeps the board up for a moment, so the last guess is seen landing.
+  const { finishLingerMs } = useContext(PacingContext);
   const [boardLingered, setBoardLingered] = useState(finished);
   useEffect(() => {
     if (!finished || boardLingered) return;
-    const timer = setTimeout(() => setBoardLingered(true), FINISH_LINGER_MS);
+    const timer = setTimeout(() => setBoardLingered(true), finishLingerMs);
     return () => clearTimeout(timer);
-  }, [finished, boardLingered]);
+  }, [finished, boardLingered, finishLingerMs]);
   const settled = finished && boardLingered;
   // Focus follows the result view when it opens or closes by the player's hand, not on reload.
   const [resultToggled, setResultToggled] = useState(false);
@@ -241,8 +243,6 @@ export function TripBoard<T extends Trip>({
     </section>
   );
 }
-
-const FINISH_LINGER_MS = 1500;
 
 /** Consecutive timeouts as one row among the guesses, `⏱ ×5`; not a guess, so not numbered. */
 function TimeoutRow({ timeouts = 0 }: { timeouts?: number }) {

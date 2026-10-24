@@ -105,6 +105,11 @@ function dailyProgress() {
   return { storage: recording, writes, savedGame, history };
 }
 
+/** Lingers and ticks shortened, so the tests wait on no real time to speak of. */
+const pacing = { finishLingerMs: 0, tickMs: 5 };
+/** Lets the shortened linger and a tick or two pass. */
+const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
+
 let mounted: { root: Root; container: HTMLElement } | undefined;
 
 const OPENED_AT = new Date(2026, 9, 24, 12, 0).getTime();
@@ -142,6 +147,7 @@ async function mountApp(path: string, storage: KeyValueStorage = memoryStorage()
         sessionStorage={memoryStorage()}
         path={pathname}
         search={search}
+        pacing={pacing}
       />,
     ),
   );
@@ -261,7 +267,7 @@ describe("playing a picked trip", () => {
       await click(query(container, '.guess-input button[type="submit"]'));
     }
     // A finished game keeps the board up for a moment before the result view opens.
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 1600)));
+    await settle();
 
     expect(query(container, "#result-heading").textContent).toBe("Perfekt!");
     expect(query(container, ".result-score").textContent).toBe("−1 poäng");
@@ -289,7 +295,7 @@ async function winDistanceOneTrip(container: HTMLElement) {
   const between = heading.includes("Nynäshamn") ? "Haninge" : "Salem";
   await type(query<HTMLInputElement>(container, "#guess-input"), between);
   await click(query(container, '.guess-input button[type="submit"]'));
-  await act(async () => new Promise((resolve) => setTimeout(resolve, 1600)));
+  await settle();
   return heading;
 }
 
@@ -377,7 +383,7 @@ async function playToTheEnd(container: HTMLElement, ...names: string[]) {
     await click(query(container, '.guess-input button[type="submit"]'));
   }
   // A finished game keeps the board up for a moment before the result view opens.
-  await act(async () => new Promise((resolve) => setTimeout(resolve, 1600)));
+  await settle();
 }
 
 describe("trip links", () => {
@@ -680,7 +686,7 @@ describe("giving up", () => {
     await click(giveUpButton(container));
     await click(confirmButton(container));
     // A finished trip keeps the board up for a moment before the result view opens.
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 1600)));
+    await settle();
   }
 
   test("Ge upp sits with the hints from the start, enabled once there are distance guesses", async () => {
@@ -914,10 +920,10 @@ describe("Tidtagning", () => {
 
     // Hidden, backgrounded or asleep: the clock reads the time that passed when it next ticks.
     passTime(65_000);
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 1100)));
+    await settle();
     expect(clockShown(container)).toBe("1:05");
     passTime(3600_000);
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 1100)));
+    await settle();
     expect(clockShown(container)).toBe("1:01:05");
   });
 
@@ -992,7 +998,7 @@ describe("Tidtagning", () => {
     await guess(container, "Trosa");
     await click(query(container, ".give-up-button"));
     await click(query(container, "dialog.give-up-dialog .give-up-confirm"));
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 1600)));
+    await settle();
 
     expect(query(container, "#result-heading").textContent).toBe("Gav upp (1 ifrån)");
     expect(query(container, '.result-time [aria-hidden="true"]').textContent).toBe("–");
