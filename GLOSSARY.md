@@ -17,11 +17,11 @@ A kommun connected to another for gameplay purposes, so a route may pass directl
 _Avoid_: Adjacent, bordering
 
 **Neighbor graph**:
-The set of all neighbor pairs between kommuner, the source every route, shortest route and daily puzzle is computed from.
+The set of all neighbor pairs between kommuner, the source every route, shortest route and daily trip is computed from.
 _Avoid_: Map, adjacency list, network
 
 **Graph version**:
-The neighbor graph, kommun names and kommun shapes that apply from a given puzzle number onward; it never changes once a daily puzzle has used it.
+The neighbor graph, kommun names and kommun shapes that apply from a given trip number onward; it never changes once a daily trip has used it.
 _Avoid_: Snapshot, release, map version
 
 **Fixed link**:
@@ -44,36 +44,40 @@ _Avoid_: Warning, suspect pair
 A human's committed decision on a flagged pair: keep what the build decided, or override it with a reason and evidence.
 _Avoid_: Approval, exception
 
-**Daily puzzle**:
-The single start/destination pair that every player gets on a given day.
-_Avoid_: Level, round, challenge
+**Trip** (in the UI: _resa_):
+A start kommun and a destination kommun for the player to find a route between.
+_Avoid_: Puzzle, level, round, journey
 
-**Puzzle number**:
-The sequential number of a daily puzzle, counting Åkle's launch day as #1.
-_Avoid_: Day, index, id
+**Daily trip**:
+The single trip that every player gets on a given day.
+_Avoid_: Daily puzzle, level, round, challenge
+
+**Trip number**:
+The sequential number of a daily trip, counting Åkle's launch day as #1.
+_Avoid_: Puzzle number, day, index, id
 
 **Schedule**:
-The predetermined list of daily puzzles, one per puzzle number.
+The predetermined list of daily trips, one per trip number.
 _Avoid_: Calendar, queue, rotation
 
 **Cooldown**:
-The number of daily puzzles after one with a given kommun as start or destination before that kommun can be one again.
+The number of daily trips after one with a given kommun as start or destination before that kommun can be one again.
 _Avoid_: Quarantine, rest period, gap
 
 **Län cooldown**:
-The number of daily puzzles after one with a start or destination in a given län before any kommun in that län can be one again.
+The number of daily trips after one with a start or destination in a given län before any kommun in that län can be one again.
 _Avoid_: County cooldown, regional cooldown
 
 **Runway**:
-How many days of puzzles the schedule has left: the scheduled puzzles after today's puzzle number in the earliest time zone.
+How many days of trips the schedule has left: the scheduled daily trips after today's trip number in the earliest time zone.
 _Avoid_: Buffer, remaining days, backlog
 
 **Extension PR**:
-The pull request the quarterly cron opens to append puzzles to the schedule when the runway runs low; it may be curated by hand before it merges.
+The pull request the quarterly cron opens to append daily trips to the schedule when the runway runs low; it may be curated by hand before it merges.
 _Avoid_: Schedule PR, refill, top-up
 
 **Guess**:
-A kommun the player names during a daily puzzle; only valid, new kommuner other than the start and destination count.
+A kommun the player names during a trip; only valid, new kommuner other than the start and destination count.
 _Avoid_: Step, move, attempt
 
 **Route**:
@@ -85,19 +89,23 @@ Said of a guess linked to the start kommun through an unbroken chain of neighbor
 _Avoid_: Reached, linked, on the route
 
 **Shortest route**:
-A route with the fewest intermediate kommuner; a daily puzzle may have several. In the UI: _Kortaste rutt_, showing the one with the most guesses on it.
+A route with the fewest intermediate kommuner; a trip may have several. In the UI: _Kortaste rutt_, showing the one with the most guesses on it.
 _Avoid_: Optimal path, solution
+
+**Distance**:
+The number of intermediate kommuner on a shortest route of a trip.
+_Avoid_: N, par, length, steps
 
 **Cheapest route**:
 A route through the fewest kommuner the player hasn't guessed, with guessed kommuner free; it can be longer than a shortest route. In the UI: _Min rutt_.
 _Avoid_: Shortest route (for this), best route, kortaste vägen
 
 **Guess limit**:
-The number of guesses allowed in a daily puzzle, set by the length of its shortest route.
+The number of guesses allowed in a trip, set by its distance; unlimited mode has none.
 _Avoid_: Max guesses, lives
 
 **Extra**:
-How many more guesses a win took than the shortest route has intermediate kommuner, shown as `+extra`.
+How many more guesses a win took than the trip's distance, shown as `+extra`.
 _Avoid_: Penalty, over par
 
 **Perfect**:
@@ -105,13 +113,37 @@ A win whose every guess lay on a shortest route connected to the start, with no 
 _Avoid_: Flawless, optimal
 
 **Hint**:
-One of three optional reveals a player can take during a daily puzzle (in the UI: _ledtråd_); it never costs a guess but rules out Perfect.
+One of three optional reveals a player can take during a trip (in the UI: _ledtråd_); it never costs a guess but rules out Perfect.
 _Avoid_: Clue, help, tip
 
 **Streak**:
-The number of daily puzzles won on consecutive puzzle numbers; a loss or a puzzle not finished ends it.
+The number of daily trips won on consecutive trip numbers; a loss or a daily trip not finished ends it.
 _Avoid_: Run, chain, combo
 
 **Share text**:
-The short, spoiler-free summary of a finished daily puzzle that a player copies to post elsewhere.
+The short, spoiler-free summary of a finished daily trip that a player copies to post elsewhere.
 _Avoid_: Score card, result string
+
+**Free play**:
+Playing outside the schedule; it never touches the streak, stats or history.
+_Avoid_: Practice, training, sandbox
+
+**Mode**:
+One of a fixed set of named rule sets a free-play trip is played under: standard, unlimited, timed or tie-breaker.
+_Avoid_: Variant, ruleset, settings
+
+**Standard mode**:
+The default mode, played by the daily-trip rules with no time kept.
+_Avoid_: Classic, normal, daily mode
+
+**Free-play trip**:
+A trip played in free play rather than taken from the schedule, whether picked or drawn at random.
+_Avoid_: Practice puzzle, custom puzzle, random puzzle
+
+**Itinerary** (in the UI: _resplan_):
+An ordered list of free-play trips, each with its own mode, shared as a link.
+_Avoid_: Playlist, challenge, set, quiz, pack
+
+**Time**:
+The elapsed time a player spends on one trip, kept in tie-breaker and timed modes.
+_Avoid_: Clock, timer, stopwatch
