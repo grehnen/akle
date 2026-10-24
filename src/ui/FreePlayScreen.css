@@ -178,3 +178,36 @@
   margin: 0;
   font-weight: 700;
 }
+
+.free-play-error {
+  width: 100%;
+  max-width: 30rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.free-play-error h2,
+.free-play-error p {
+  margin: 0;
+}
+
+.free-play-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+/* Links that look like the app's buttons. */
+.free-play-error-actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--night);
+  font-weight: 700;
+  text-decoration: none;
+}
