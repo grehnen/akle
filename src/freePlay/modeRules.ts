@@ -23,13 +23,5 @@ export function opensAtStarta(mode: ModeSetting): boolean {
   return mode.kind === "timed" || mode.kind === "tie-breaker";
 }
 
-/** The modes that can be played so far; the others wait for their tickets. */
-export const PLAYABLE_MODES: ReadonlySet<ModeSetting["kind"]> = new Set([
-  "standard",
-  "unlimited",
-  "timed",
-  "tie-breaker",
-]);
-
 /** The thinking time, in whole seconds, a timed trip gets unless the player sets another. */
 export const DEFAULT_THINKING_TIME = 10;
