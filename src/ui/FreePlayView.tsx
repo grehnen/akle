@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { DailyTripSource } from "../daily/loadDailyTrip";
+import type { Clock } from "../engine/clock";
 import { reviewGame } from "../engine/game";
 import { loadCurrentVersion, type PinnedVersion } from "../freePlay/currentVersion";
 import type { LinkedTrip } from "../freePlay/linkPayload";
@@ -22,6 +23,8 @@ type FreePlayViewProps = {
   storage?: KeyValueStorage;
   /** Where view choices that last one browser session are kept; sessionStorage by default. */
   sessionStorage?: KeyValueStorage;
+  /** What a trip's time is read from; the system clock by default. */
+  clock?: Clock;
 };
 
 type Loaded =
@@ -41,6 +44,7 @@ export function FreePlayView({
   onShowTripLink = () => {},
   storage,
   sessionStorage,
+  clock,
 }: FreePlayViewProps) {
   const [loaded, setLoaded] = useState<Loaded>();
   const [failed, setFailed] = useState(false);
@@ -91,6 +95,7 @@ export function FreePlayView({
       onShowTripLink={onShowTripLink}
       storage={slotStorage}
       sessionStorage={sessionStorage ?? fallbackSessionStorage}
+      clock={clock}
     />
   );
 }
@@ -118,7 +123,7 @@ async function loadUnfinishedTrip(
 }
 
 /**
- * Only standard and unlimited mode can be played so far; a link to a trip in another mode is
+ * Only the `PLAYABLE_MODES` can be played so far; a link to a trip in another mode is
  * invalid until that mode's ticket lands. The app makes no such links yet.
  */
 function playableLink(opened: OpenedTripLink): Loaded {

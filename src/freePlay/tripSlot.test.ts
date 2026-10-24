@@ -104,7 +104,11 @@ describe("the trip slot", () => {
 
     test("resumes a win with its time", () => {
       const storage = memoryStorage();
-      const game = stopTimeAtWin(graph, { ...started, guesses: ["0136", "0128"] }, startedAt + 83_456);
+      const game = stopTimeAtWin(
+        graph,
+        { ...started, guesses: ["0136", "0128"] },
+        startedAt + 83_456,
+      );
       saveTripSlot(storage, { versionOrdinal: 2, trip: tieBreaker, game, drawn: false });
 
       const resumed = resumeTrip(storage, version, tieBreaker)?.game;
