@@ -5,7 +5,7 @@ import { type GraphVersion, type KommunCode, kommunName } from "../graph/graphVe
 import { guessAnnouncement, hintAnnouncement, rejectionMessage } from "./messages";
 
 /** Why a suggestion can't be picked, shown as its tag. */
-export type SuggestionTag = "redan gissad" | "start" | "mål";
+export type SuggestionTag = "redan gissad" | "start" | "mål" | "samma" | "granne";
 
 export type Suggestion = {
   code: KommunCode;
@@ -158,6 +158,18 @@ export function takeSessionHint<T extends Trip>(
 
 /** Autocomplete for the guess input: fuzzysort-style subsequence matching over folded names. */
 export function suggestKommuner(graph: GraphVersion, game: Game, text: string): Suggestion[] {
+  return rankKommuner(graph, text, (code) => disabledTag(game, code));
+}
+
+/**
+ * The kommuner whose names best match `text`, as suggestions tagged by `tagOf`: fuzzysort-style
+ * subsequence matching over folded names, a prefix first.
+ */
+export function rankKommuner(
+  graph: GraphVersion,
+  text: string,
+  tagOf: (code: KommunCode) => SuggestionTag | undefined,
+): Suggestion[] {
   const folded = foldKommunName(text);
   if (folded === "") return [];
   const literal = normalizeKommunName(text);
@@ -167,7 +179,7 @@ export function suggestKommuner(graph: GraphVersion, game: Game, text: string): 
     const score = subsequenceScore(foldKommunName(kommun.name), folded);
     if (score === undefined) continue;
     const literalBonus = normalizeKommunName(kommun.name).includes(literal) ? 1 : 0;
-    const disabled = disabledTag(game, kommun.code);
+    const disabled = tagOf(kommun.code);
     scored.push({
       suggestion: { code: kommun.code, name: kommun.name, ...(disabled && { disabled }) },
       score: score + literalBonus,
