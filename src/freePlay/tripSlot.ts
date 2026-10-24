@@ -1,5 +1,5 @@
-import { type Game, giveUp, newGame, type TakenHints } from "../engine/game";
-import { startTime, stopTimeAtWin } from "../engine/tripTime";
+import { type Game, giveUp, newGame, reviewGame, type TakenHints } from "../engine/game";
+import { stampThinkingTime, startTime, stopTimeAtWin } from "../engine/tripTime";
 import type { KommunCode } from "../graph/graphVersion";
 import { restoreGame } from "../progress/savedGame";
 import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
@@ -32,6 +32,9 @@ type StoredSlot = {
     /** Timestamps in milliseconds: when Starta was pressed, and when the winning guess was made. */
     startedAt?: number;
     wonAt?: number;
+    /** Timestamps of a timed trip: each counted guess, in order, and the end once it's over. */
+    guessedAt?: number[];
+    endedAt?: number;
   };
 };
 
@@ -58,6 +61,8 @@ export function saveTripSlot(storage: KeyValueStorage, saved: SavedTrip): void {
       ...(game.givenUp && { givenUp: true }),
       ...(game.startedAt !== undefined && { startedAt: game.startedAt }),
       ...(game.wonAt !== undefined && { wonAt: game.wonAt }),
+      ...(game.guessedAt !== undefined && { guessedAt: [...game.guessedAt] }),
+      ...(game.endedAt !== undefined && { endedAt: game.endedAt }),
     },
   };
   writeJson(storage, TRIP_SLOT_KEY, stored);
@@ -88,7 +93,7 @@ export function resumeTrip(
   const slot = readSlot(storage);
   if (slot === undefined || slot.versionOrdinal !== version.ordinal) return undefined;
   if (!sameTrip(slot.trip, trip)) return undefined;
-  const { startedAt, wonAt, givenUp } = slot.game;
+  const { startedAt, wonAt, givenUp, guessedAt = [], endedAt } = slot.game;
   // A trip that opens at Starta is stored only once started, so one without a start is corrupt.
   if (opensAtStarta(trip.mode) && !isTimestamp(startedAt)) return undefined;
   const fresh = newGame(trip, freePlayRules(trip.mode));
@@ -96,10 +101,26 @@ export function resumeTrip(
   const game = isTimestamp(startedAt) ? startTime(restored, startedAt) : restored;
   // A give-up counts only where the restored game still allows one, a win time only on a win.
   const resumed = givenUp === true ? giveUp(version.graph, game) : game;
-  return {
-    game: isTimestamp(wonAt) ? stopTimeAtWin(version.graph, resumed, wonAt) : resumed,
-    drawn: slot.drawn,
-  };
+  const timed = isTimestamp(wonAt) ? stopTimeAtWin(version.graph, resumed, wonAt) : resumed;
+  if (timed.rules.thinkingTime === undefined) return { game: timed, drawn: slot.drawn };
+
+  // Timeouts are counted from the guess times, so a timed trip needs one for every guess, and
+  // the time it ended once it's over.
+  if (
+    !Array.isArray(guessedAt) ||
+    guessedAt.length !== timed.guesses.length ||
+    !guessedAt.every(isTimestamp)
+  ) {
+    return undefined;
+  }
+  const withGuessTimes = { ...timed, ...(guessedAt.length > 0 && { guessedAt }) };
+  const ended = isTimestamp(endedAt)
+    ? stampThinkingTime(version.graph, withGuessTimes, endedAt)
+    : withGuessTimes;
+  if (ended.endedAt === undefined && reviewGame(version.graph, ended).status !== "playing") {
+    return undefined;
+  }
+  return { game: ended, drawn: slot.drawn };
 }
 
 const isTimestamp = (value: unknown): value is number =>
