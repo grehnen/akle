@@ -43,6 +43,32 @@ describe("the trip slot", () => {
     expect(storedTrip(storage)).toEqual({ versionOrdinal: 2, trip });
   });
 
+  test("resumes the distance range a drawn trip was drawn from", () => {
+    const storage = memoryStorage();
+    const game = newGame(trip, freePlayRules(trip.mode));
+    const range = { min: 1, max: 2 };
+    saveTripSlot(storage, { versionOrdinal: 2, trip, game, drawn: true, range });
+
+    expect(resumeTrip(storage, version, trip)).toEqual({ game, drawn: true, range });
+  });
+
+  test.each([
+    ["not a record", 3],
+    ["missing its end", { min: 1 }],
+    ["from below 1", { min: 0, max: 2 }],
+    ["upside down", { min: 3, max: 2 }],
+    ["fractional", { min: 1.5, max: 2 }],
+  ])("drops a range that is %s, keeping the trip", (_, range) => {
+    const storage = memoryStorage();
+    const slot = { format: 1, versionOrdinal: 2, trip, drawn: true, range, game: { guesses: [] } };
+    storage.setItem("akle:free-play-trip", JSON.stringify(slot));
+
+    expect(resumeTrip(storage, version, trip)).toEqual({
+      game: newGame(trip, freePlayRules(trip.mode)),
+      drawn: true,
+    });
+  });
+
   test("resumes a given-up trip as given up", () => {
     const storage = memoryStorage();
     // Nynäshamn to Salem is a distance of 1; Trosa is off the route.
