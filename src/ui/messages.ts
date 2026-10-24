@@ -1,5 +1,6 @@
 import type { Feedback, GameReview, GameStatus, GuessCard, GuessResult } from "../engine/game";
 import type { HINT_COUNT } from "../engine/hints";
+import type { ModeSetting } from "../freePlay/linkPayload";
 import { gameOutcome } from "../progress/outcome";
 
 type RejectionReason = Extract<GuessResult, { kind: "rejected" }>["reason"];
@@ -47,6 +48,20 @@ export function hintsNote(hintsUsed: number): string {
 /** A free-play score: `3 poäng`, `−1 poäng` (with a real minus sign). */
 export function scoreText(score: number): string {
   return `${score < 0 ? `−${-score}` : score} poäng`;
+}
+
+/** A mode as the UI names it, with a timed trip's thinking time: `Standard`, `Tidspress 10 s`. */
+export function modeName(mode: ModeSetting): string {
+  switch (mode.kind) {
+    case "standard":
+      return "Standard";
+    case "unlimited":
+      return "Obegränsad";
+    case "timed":
+      return `Tidspress ${mode.thinkingTime} s`;
+    case "tie-breaker":
+      return "Tidtagning";
+  }
 }
 
 /** `1 ledtråd`, `2 ledtrådar`. */
