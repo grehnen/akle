@@ -3,11 +3,8 @@ import type { DailyTripSource } from "../daily/loadDailyTrip";
 import type { Clock } from "../engine/clock";
 import { reviewGame } from "../engine/game";
 import { loadCurrentVersion, type PinnedVersion } from "../freePlay/currentVersion";
-import type { LinkedTrip } from "../freePlay/linkPayload";
-import { PLAYABLE_MODES } from "../freePlay/modeRules";
 import { type OpenedTripLink, openTrip, openTripLink } from "../freePlay/tripLink";
 import { type ResumedTrip, resumeTrip, storedTrip } from "../freePlay/tripSlot";
-import { kommunName } from "../graph/graphVersion";
 import { browserSessionStorage, browserStorage, type KeyValueStorage } from "../progress/storage";
 import { FreePlayLinkError } from "./FreePlayLinkError";
 import { FreePlayScreen, type ShowTripLink } from "./FreePlayScreen";
@@ -67,7 +64,7 @@ export function FreePlayView({
                 version: current,
               })),
           )
-        : openTripLink(source, now, linkPayload).then(playableLink).then(resume);
+        : openTripLink(source, now, linkPayload).then(resume);
     }, [source, now, linkPayload, slotStorage]),
   );
 
@@ -101,7 +98,7 @@ async function loadUnfinishedTrip(
 ): Promise<{ unfinished?: Loaded; version?: PinnedVersion }> {
   const stored = storedTrip(storage);
   if (stored === undefined) return {};
-  const opened = playableLink(await openTrip(source, now, stored.versionOrdinal, stored.trip));
+  const opened = await openTrip(source, now, stored.versionOrdinal, stored.trip);
   if (opened.kind !== "trip") return {};
   const { version } = opened;
   const resumed = resumeTrip(storage, version, opened.trip);
@@ -109,17 +106,4 @@ async function loadUnfinishedTrip(
     return { version };
   }
   return { unfinished: { ...opened, resumed }, version };
-}
-
-/**
- * Only the `PLAYABLE_MODES` can be played so far; a link to a trip in another mode is
- * invalid until that mode's ticket lands. The app makes no such links yet.
- */
-function playableLink(opened: OpenedTripLink): Loaded {
-  if (opened.kind === "invalid" || PLAYABLE_MODES.has(opened.trip.mode.kind)) return opened;
-  return { kind: "invalid", trip: tripNames(opened.version, opened.trip) };
-}
-
-function tripNames({ graph }: PinnedVersion, trip: LinkedTrip) {
-  return { start: kommunName(graph, trip.start), destination: kommunName(graph, trip.destination) };
 }
