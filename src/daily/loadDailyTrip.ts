@@ -42,9 +42,17 @@ export async function loadDailyTrip(source: DailyTripSource, now: Date): Promise
   if (version === undefined) {
     throw new Error(`No graph version covers trip #${tripNumber}`);
   }
+  return { kind: "trip", trip, graph: await loadGraphVersion(source, version) };
+}
+
+/** Fetches and parses one graph version, checking its files declare the header they're listed under. */
+export async function loadGraphVersion(
+  source: Pick<DailyTripSource, "graphVersionFiles">,
+  version: GraphVersionHeader,
+): Promise<GraphVersion> {
   const graph = parseGraphVersionFiles(await source.graphVersionFiles(version.id));
   if (graph.id !== version.id || graph.startsAtTrip !== version.startsAtTrip) {
     throw new Error(`Graph version ${version.id} declares a different id or starting trip`);
   }
-  return { kind: "trip", trip, graph };
+  return graph;
 }
