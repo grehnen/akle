@@ -115,6 +115,12 @@ describe("DailyTripView", () => {
       const markup = renderWith(["0181"]);
       expect(markup).toContain('aria-labelledby="result-heading"');
       expect(markup).toContain(">Perfekt!</h2>");
+    });
+
+    test("the result view offers to share and counts down to the next trip at midnight", () => {
+      const markup = renderWith(["0181"]);
+      expect(markup).toMatch(/<button[^>]*>Dela resultat<\/button>/);
+      expect(markup).toContain("Nästa resa om");
       expect(markup).toContain("10:54:51");
     });
 

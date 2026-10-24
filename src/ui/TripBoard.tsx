@@ -1,44 +1,73 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { resolveKommunName } from "../engine/kommunNames";
-import type { DailyTrip } from "../daily/dailyTrip";
-import { reviewGame } from "../engine/game";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type Game, reviewGame, type Trip } from "../engine/game";
 import { hintReveals } from "../engine/hints";
+import { resolveKommunName } from "../engine/kommunNames";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SatelliteMap } from "../map/SatelliteMap";
-import { readHistory, recordFinishedGame, withFinishedGame } from "../progress/history";
-import { gameOutcome } from "../progress/outcome";
-import { loadSavedGame, saveGame } from "../progress/savedGame";
-import { shareText } from "../progress/shareText";
-import { deriveStats } from "../progress/stats";
-import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
+import type { Stats } from "../progress/stats";
+import type { KeyValueStorage } from "../progress/storage";
 import { GuessInput } from "./GuessInput";
 import { HintSection } from "./HintSection";
 import {
   applyGuessInput,
-  type GuessSession,
   enterTarget,
+  type GuessSession,
   suggestKommuner,
   takeSessionHint,
 } from "./guessSession";
 import { guessCardText } from "./messages";
-import { reportIssueUrl } from "./reportIssue";
 import { ResultStrip, ResultView } from "./ResultView";
 import { UsedCounter } from "./UsedCounter";
 
-type PlayScreenProps = {
+type TripBoardProps<T extends Trip> = {
   graph: GraphVersion;
-  trip: DailyTrip;
-  storage: KeyValueStorage;
+  /** The game being played; the screen around the board holds it, to save or share it. */
+  game: Game<T>;
+  onGameChange: (game: Game<T>) => void;
+  /** Where view choices that last one browser session are kept, such as the result tab. */
   sessionStorage: KeyValueStorage;
-  now: Date;
+  /** Shown with the heading, such as `Dagens resa #21`. */
+  label?: ReactNode;
+  /** Added beside the outcome in the result view, such as the countdown and sharing. */
+  resultActions?: ReactNode;
+  /** Added to the collapsed result strip, such as sharing. */
+  stripActions?: ReactNode;
+  /** Adds the Statistik tab to the result view. */
+  stats?: Stats;
+  /** Whether the finished game's result starts collapsed, as the screen remembers it. */
+  resultClosed?: boolean;
+  onResultClosedChange?: (closed: boolean) => void;
+  /** Links put in the footer before the data credits, such as Rapportera fel. */
+  footerLinks?: ReactNode;
 };
 
-export function PlayScreen({ graph, trip, storage, sessionStorage, now }: PlayScreenProps) {
-  const [session, setSession] = useState<GuessSession<DailyTrip>>(() => ({
-    game: loadSavedGame(storage, graph, trip),
-    text: "",
-  }));
-  const { game, toast, announcement } = session;
+/**
+ * Plays one trip: the heading, the map, the guess input, the past guesses, the hints and, once
+ * the game ends, the result view with Min rutt and Kortaste rutt. Whatever only one kind of trip
+ * needs, such as saving, history or a trip number, the screen around it passes in.
+ */
+export function TripBoard<T extends Trip>({
+  graph,
+  game,
+  onGameChange,
+  sessionStorage,
+  label,
+  resultActions,
+  stripActions,
+  stats,
+  resultClosed: initiallyClosed = false,
+  onResultClosedChange,
+  footerLinks,
+}: TripBoardProps<T>) {
+  const [input, setInput] = useState<Omit<GuessSession<T>, "game">>({ text: "" });
+  const { toast, announcement } = input;
+  const update = (change: (session: GuessSession<T>) => GuessSession<T>) => {
+    const { game: nextGame, ...nextInput } = change({ ...input, game });
+    setInput(nextInput);
+    if (nextGame !== game) onGameChange(nextGame);
+  };
+  const session = { ...input, game };
+  const { trip } = game;
 
   const review = useMemo(() => reviewGame(graph, game), [graph, game]);
   const reveals = useMemo(() => hintReveals(graph, game), [graph, game]);
@@ -53,42 +82,23 @@ export function PlayScreen({ graph, trip, storage, sessionStorage, now }: PlaySc
   const settled = finished && boardLingered;
   // Focus follows the result view when it opens or closes by the player's hand, not on reload.
   const [resultToggled, setResultToggled] = useState(false);
-  const [resultClosed, setResultClosed] = useState(
-    () => readJson(sessionStorage, CLOSED_RESULT_KEY) === trip.number,
-  );
+  const [resultClosed, setResultClosed] = useState(initiallyClosed);
   const closeResult = (closed: boolean) => {
     setResultToggled(true);
     setResultClosed(closed);
-    if (closed) writeJson(sessionStorage, CLOSED_RESULT_KEY, trip.number);
-    else sessionStorage.removeItem(CLOSED_RESULT_KEY);
+    onResultClosedChange?.(closed);
   };
-  const resultOpen = settled && !resultClosed;
+  const showResult = settled && !resultClosed;
   const reopenButton = useRef<HTMLButtonElement>(null);
   const guessInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (resultClosed && resultToggled) reopenButton.current?.focus();
   }, [resultClosed, resultToggled]);
   const nameOf = (code: string) => kommunName(graph, code);
-  const history = useMemo(
-    () => withFinishedGame(readHistory(storage), graph, game),
-    [storage, graph, game],
-  );
-  const todayEntry = history[trip.number];
-  const outcome = gameOutcome(review);
-  const share =
-    todayEntry !== undefined && outcome !== undefined
-      ? shareText({ tripNumber: trip.number, outcome, emojiLine: todayEntry.emojiLine })
-      : undefined;
-  const showResult = resultOpen && share !== undefined;
-
-  useEffect(() => {
-    saveGame(storage, game);
-    recordFinishedGame(storage, graph, game);
-  }, [storage, graph, game]);
 
   return (
     <section className="play-screen" aria-labelledby="trip-heading">
-      <p className="trip-number">Dagens resa #{trip.number}</p>
+      {label}
       <h2 id="trip-heading">
         Res från <strong className="sign sign--start">{nameOf(trip.start)}</strong> till{" "}
         <strong className="sign sign--destination">{nameOf(trip.destination)}</strong>
@@ -99,19 +109,18 @@ export function PlayScreen({ graph, trip, storage, sessionStorage, now }: PlaySc
           graph={graph}
           game={game}
           review={review}
-          now={now}
-          stats={deriveStats(history, trip.number)}
-          shareText={share}
+          actions={resultActions}
+          stats={stats}
           sessionStorage={sessionStorage}
           onClose={() => closeResult(true)}
           focusOnOpen={resultToggled || announcement !== undefined}
         />
       )}
 
-      {settled && !resultOpen && share !== undefined && (
+      {settled && !showResult && (
         <ResultStrip
           review={review}
-          shareText={share}
+          actions={stripActions}
           onOpen={() => closeResult(false)}
           openButtonRef={reopenButton}
         />
@@ -130,12 +139,12 @@ export function PlayScreen({ graph, trip, storage, sessionStorage, now }: PlaySc
           />
 
           <GuessInput
-            text={session.text}
-            exactMatch={resolveKommunName(graph, session.text) !== undefined}
-            suggestions={suggestKommuner(graph, game, session.text)}
+            text={input.text}
+            exactMatch={resolveKommunName(graph, input.text) !== undefined}
+            suggestions={suggestKommuner(graph, game, input.text)}
             highlighted={enterTarget(graph, session)}
             counter={<UsedCounter label="Gissa" used={review.cards.length} limit={review.limit} />}
-            onEvent={(event) => setSession((current) => applyGuessInput(graph, current, event))}
+            onEvent={(event) => update((current) => applyGuessInput(graph, current, event))}
             inputRef={guessInput}
           />
 
@@ -177,7 +186,7 @@ export function PlayScreen({ graph, trip, storage, sessionStorage, now }: PlaySc
           {!finished && (
             <HintSection
               hintsUsed={review.hintsUsed}
-              onTakeHint={() => setSession((current) => takeSessionHint(graph, current))}
+              onTakeHint={() => update((current) => takeSessionHint(graph, current))}
               focusAfterLastHint={guessInput}
             />
           )}
@@ -185,9 +194,7 @@ export function PlayScreen({ graph, trip, storage, sessionStorage, now }: PlaySc
       )}
 
       <footer className="credits">
-        <a href={reportIssueUrl({ tripNumber: trip.number, graphVersion: graph.id })}>
-          Rapportera fel
-        </a>
+        {footerLinks}
         <p>
           Kommungränser och grannar bygger på data från{" "}
           <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a> och är
@@ -199,6 +206,3 @@ export function PlayScreen({ graph, trip, storage, sessionStorage, now }: PlaySc
 }
 
 const FINISH_LINGER_MS = 1500;
-
-/** The trip number whose result the player collapsed this session. */
-const CLOSED_RESULT_KEY = "akle:result-closed";
