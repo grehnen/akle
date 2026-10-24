@@ -24,6 +24,10 @@ _Avoid_: Map, adjacency list, network
 The neighbor graph, kommun names and kommun shapes that apply from a given trip number onward; it never changes once a daily trip has used it.
 _Avoid_: Snapshot, release, map version
 
+**Current version**:
+The graph version that applies to today's trip number; a free-play trip not pinned to another version is played on it.
+_Avoid_: Latest version, newest version
+
 **Fixed link**:
 A public road, path or railway crossing the border between two kommuner, over water on a bridge, in a tunnel or over a causeway, or on land, whatever traffic it carries, that reaches meaningful land (the mainland or an island of at least 1 km²) on both sides, in each kommun's main part rather than an exclave. Only such a qualifying link makes the kommuner neighbors; a private road, driveway or track, a bridge to an islet, or a road into an exclave doesn't. A link of several ways qualifies when at least one of them does. Most fixed links join kommuner that are land neighbors anyway; one matters where the land border doesn't count, as with a road across a small island border.
 _Avoid_: Crossing, connection
