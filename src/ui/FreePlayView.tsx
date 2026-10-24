@@ -3,6 +3,7 @@ import type { DailyTripSource } from "../daily/loadDailyTrip";
 import { reviewGame } from "../engine/game";
 import { loadCurrentVersion, type PinnedVersion } from "../freePlay/currentVersion";
 import type { LinkedTrip } from "../freePlay/linkPayload";
+import { PLAYABLE_MODES } from "../freePlay/modeRules";
 import { type OpenedTripLink, openTrip, openTripLink } from "../freePlay/tripLink";
 import { resumeTrip, storedTrip } from "../freePlay/tripSlot";
 import { kommunName } from "../graph/graphVersion";
@@ -117,11 +118,11 @@ async function loadUnfinishedTrip(
 }
 
 /**
- * Only standard mode can be played so far; a link to a trip in another mode is invalid until
- * that mode's ticket lands. The app makes no such links yet.
+ * Only standard and unlimited mode can be played so far; a link to a trip in another mode is
+ * invalid until that mode's ticket lands. The app makes no such links yet.
  */
 function playableLink(opened: OpenedTripLink): Loaded {
-  if (opened.kind === "invalid" || opened.trip.mode.kind === "standard") return opened;
+  if (opened.kind === "invalid" || PLAYABLE_MODES.has(opened.trip.mode.kind)) return opened;
   return { kind: "invalid", trip: tripNames(opened.version, opened.trip) };
 }
 
