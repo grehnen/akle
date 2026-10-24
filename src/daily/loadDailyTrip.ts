@@ -24,11 +24,11 @@ export type DailyTripSource = {
   graphVersionFiles(id: string): Promise<GraphVersionFiles>;
 };
 
-export type DailyTrip =
+export type DailyTripLoad =
   | { kind: "trip"; trip: ScheduledTrip; graph: GraphVersion }
   | { kind: "no-trip"; reason: "before-epoch" | "schedule-ended" };
 
-export async function loadDailyTrip(source: DailyTripSource, now: Date): Promise<DailyTrip> {
+export async function loadDailyTrip(source: DailyTripSource, now: Date): Promise<DailyTripLoad> {
   const config = await source.scheduleConfig();
   const tripNumber = tripNumberOn(now, config.epoch);
   if (tripNumber < 1) return { kind: "no-trip", reason: "before-epoch" };
