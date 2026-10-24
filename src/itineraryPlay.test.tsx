@@ -32,10 +32,17 @@ Object.assign(globalThis, {
 });
 // Imported only now: react-dom checks for a DOM once, when it loads, to pick its event handling.
 const { createRoot } = await import("react-dom/client");
+// What the share button copies.
+const copied: string[] = [];
+Object.defineProperty(globalThis.navigator, "clipboard", {
+  configurable: true,
+  value: { writeText: async (text: string) => void copied.push(text) },
+});
 afterAll(() => {
   for (const name of ["window", "document", "IS_REACT_ACT_ENVIRONMENT"]) {
     Reflect.deleteProperty(globalThis, name);
   }
+  Reflect.deleteProperty(globalThis.navigator, "clipboard");
 });
 
 // Nynäshamn ── Haninge ── Salem ── Trosa.
@@ -99,6 +106,7 @@ let mounted: { root: Root; container: HTMLElement } | undefined;
 
 afterEach(() => {
   clockTime = OPENED_AT;
+  copied.length = 0;
   if (!mounted) return;
   const { root, container } = mounted;
   act(() => root.unmount());
@@ -157,6 +165,23 @@ async function guess(container: HTMLElement, name: string) {
   await type(query<HTMLInputElement>(container, "#guess-input"), name);
   await click(query(container, '.guess-input button[type="submit"]'));
 }
+
+/** The summary's rows, each field by its class; a field a trip doesn't have is undefined. */
+const summaryRows = (container: HTMLElement) =>
+  [...container.querySelectorAll(".itinerary-summary-trip")].map((row) => {
+    const field = (name: string) =>
+      row.querySelector(`.itinerary-summary-${name}`)?.textContent ?? undefined;
+    return {
+      pair: field("pair"),
+      mode: field("mode"),
+      outcome: field("outcome"),
+      hints: field("hints"),
+      timeouts:
+        row.querySelector(".itinerary-summary-timeouts [aria-hidden]")?.textContent ?? undefined,
+      time: field("time"),
+      score: field("score"),
+    };
+  });
 
 /** A finished trip keeps the board up for a moment before the result view opens. */
 const linger = () => act(async () => new Promise((resolve) => setTimeout(resolve, 1600)));
@@ -250,8 +275,121 @@ describe("an itinerary from its link", () => {
     expect(button(container, "Nästa resa")).toBeUndefined();
     await click(button(container, "Avsluta resplanen"));
 
-    expect(text(container, "#itinerary-finish-heading")).toBe("Fredagsresan klar");
-    expect(text(container, ".itinerary-finish-total")).toBe("Totalt 4 poäng");
+    // The summary: the title, then a row per trip with all it has.
+    expect(text(container, "#itinerary-summary-heading")).toBe("Fredagsresan");
+    expect(summaryRows(container)).toEqual([
+      {
+        pair: "Nynäshamn → Salem",
+        mode: "Standard",
+        outcome: "Perfekt",
+        hints: "0 ledtrådar",
+        timeouts: undefined,
+        time: undefined,
+        score: "−1 poäng",
+      },
+      {
+        pair: "Haninge → Trosa",
+        mode: "Tidspress 10 s",
+        outcome: "+0",
+        hints: "0 ledtrådar",
+        timeouts: "2 ⏱",
+        time: undefined,
+        score: "2 poäng",
+      },
+      {
+        pair: "Trosa → Haninge",
+        mode: "Tidtagning",
+        outcome: "Gav upp, 1 ifrån",
+        hints: "0 ledtrådar",
+        timeouts: undefined,
+        time: undefined,
+        score: "3 poäng",
+      },
+    ]);
+    expect(text(container, ".itinerary-summary-total")).toBe("Totalt 4 poäng");
+    // A tie-breaker trip, lost: the total time is there, with nothing won.
+    expect(text(container, ".itinerary-summary-total-time")).toBe("Total tid 0:00,0 (0 vunna)");
+    expect(button(container, "Nästa resa")).toBeUndefined();
+    expect(button(container, "Spela igen")).toBeUndefined();
+
+    await click(query(container, ".itinerary-summary .share-button"));
+    expect(copied).toEqual([
+      [
+        "#åkle Resplan · Fredagsresan · 3 resor",
+        "Totalt 4 poäng · 0:00,0 (0 vunna)",
+        "1. Standard · +0 (Perfekt) · −1 poäng",
+        "2. Tidspress 10 s · +0 (2 ⏱) · 2 poäng",
+        "3. Tidtagning · Gav upp (1 ifrån) · 3 poäng",
+        `https://akle.grehn.net${fridayLink}`,
+      ].join("\n"),
+    ]);
+  });
+
+  test("sums the won tie-breaker trips' time, shows each one's time, and shares it all", async () => {
+    const link = itineraryLinkPath(0, "", [trosaHaninge, nynashamnSalem]);
+    const container = await mountApp(link);
+    await click(button(container, "Starta resplanen"));
+    await click(button(container, "Starta"));
+    clockTime += 12_340;
+    await guess(container, "Salem");
+    await linger();
+    await click(button(container, "Nästa resa"));
+    await click(button(container, "Starta"));
+    await click(query(container, ".hint-button"));
+    await guess(container, "Haninge");
+    await linger();
+    await click(button(container, "Avsluta resplanen"));
+
+    expect(text(container, "#itinerary-summary-heading")).toBe("Resplan");
+    expect(
+      summaryRows(container).map(({ outcome, hints, time, score }) => ({
+        outcome,
+        hints,
+        time,
+        score,
+      })),
+    ).toEqual([
+      { outcome: "Perfekt", hints: "0 ledtrådar", time: "0:12,3", score: "−1 poäng" },
+      { outcome: "+0", hints: "1 ledtråd", time: undefined, score: "1 poäng" },
+    ]);
+    expect(text(container, ".itinerary-summary-total")).toBe("Totalt 0 poäng");
+    expect(text(container, ".itinerary-summary-total-time")).toBe("Total tid 0:12,3 (1 vunnen)");
+
+    await click(query(container, ".itinerary-summary .share-button"));
+    expect(copied).toEqual([
+      [
+        "#åkle Resplan · 2 resor",
+        "Totalt 0 poäng · 0:12,3 (1 vunnen)",
+        "1. Tidtagning · +0 (Perfekt) · −1 poäng · 0:12,3",
+        "2. Standard · +0 (1 ledtråd) · 1 poäng",
+        `https://akle.grehn.net${link}`,
+      ].join("\n"),
+    ]);
+  });
+
+  test("the summary shows no total time without a tie-breaker trip, and leads to today's trip and free play", async () => {
+    const container = await mountApp(itineraryLinkPath(0, "", [nynashamnSalem, haningeTrosa]));
+    await click(button(container, "Starta resplanen"));
+    await click(button(container, "Starta"));
+    await guess(container, "Haninge");
+    await linger();
+    await click(button(container, "Nästa resa"));
+    await click(button(container, "Starta"));
+    await guess(container, "Salem");
+    await linger();
+    await click(button(container, "Avsluta resplanen"));
+
+    expect(text(container, ".itinerary-summary-total")).toBe("Totalt −2 poäng");
+    expect(container.querySelector(".itinerary-summary-total-time")).toBeNull();
+    expect(
+      [...container.querySelectorAll(".itinerary-summary-actions a")].map((a) => [
+        a.textContent,
+        a.getAttribute("href"),
+      ]),
+    ).toEqual([
+      ["Dagens resa", "/"],
+      ["Fri resa", "/fri"],
+    ]);
   });
 
   test("offers no retry: a finished trip's result has no way to play it again", async () => {

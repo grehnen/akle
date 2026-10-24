@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import type { DailyTripSource } from "../daily/loadDailyTrip";
 import type { Clock } from "../engine/clock";
 import { loadCurrentVersion, type PinnedVersion } from "../freePlay/currentVersion";
-import { type OpenedItineraryLink, openItineraryLink } from "../freePlay/itineraryLink";
+import {
+  itineraryLinkPath,
+  type OpenedItineraryLink,
+  openItineraryLink,
+} from "../freePlay/itineraryLink";
 import { browserSessionStorage, type KeyValueStorage } from "../progress/storage";
 import { FreePlayLinkError } from "./FreePlayLinkError";
 import { ItineraryBuilder } from "./ItineraryBuilder";
@@ -72,6 +76,7 @@ export function ItineraryView({
       graph={loaded.version.graph}
       title={loaded.title}
       trips={loaded.trips}
+      link={itineraryLinkPath(loaded.version.ordinal, loaded.title ?? "", loaded.trips)}
       sessionStorage={sessionStorage ?? fallbackSessionStorage}
       clock={clock}
     />
