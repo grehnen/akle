@@ -172,7 +172,10 @@ export function App({
           source={source}
           now={openedAt}
           linkPayload={new URLSearchParams(search).get("r") ?? undefined}
+          title={new URLSearchParams(search).get("namn") ?? undefined}
           onPlay={navigate}
+          sessionStorage={sessionStorage}
+          clock={clock}
         />
       ) : failed ? (
         <p role="alert">Kunde inte ladda dagens resa. Försök igen senare.</p>
