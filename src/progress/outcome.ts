@@ -6,7 +6,10 @@ type WonOutcome =
   | { kind: "won"; extra: number; hintsUsed: number };
 
 /** How a finished game went, as the result view and the share text tell it. */
-export type Outcome = WonOutcome | { kind: "lost"; hintsUsed: number; away: number };
+export type Outcome =
+  | WonOutcome
+  /** `givenUp` marks a free-play give-up; a daily trip only loses at the guess limit. */
+  | { kind: "lost"; hintsUsed: number; away: number; givenUp?: true };
 
 /** How a recorded game went, as the stats count it; history doesn't keep a loss's `away`. */
 export type RecordedOutcome = WonOutcome | { kind: "lost"; hintsUsed: number };
@@ -24,14 +27,16 @@ export function classifyOutcome({
 /** A game's outcome from its review; undefined while it is still being played. */
 export function gameOutcome(
   review: Pick<GameReview, "status" | "extra" | "perfect" | "away"> &
-    Partial<Pick<GameReview, "hintsUsed">>,
+    Partial<Pick<GameReview, "hintsUsed" | "givenUp">>,
 ): Outcome | undefined {
   const hintsUsed = review.hintsUsed ?? 0;
   switch (review.status) {
     case "playing":
       return undefined;
     case "lost":
-      return { kind: "lost", hintsUsed, away: review.away };
+      return review.givenUp
+        ? { kind: "lost", hintsUsed, away: review.away, givenUp: true }
+        : { kind: "lost", hintsUsed, away: review.away };
     case "won":
       return wonOutcome(review.extra ?? 0, review.perfect, hintsUsed);
   }

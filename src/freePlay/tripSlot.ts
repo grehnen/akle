@@ -1,9 +1,10 @@
-import { type Game, newGame, type Rules, type TakenHints } from "../engine/game";
+import { type Game, giveUp, newGame, type TakenHints } from "../engine/game";
 import type { KommunCode } from "../graph/graphVersion";
 import { restoreGame } from "../progress/savedGame";
 import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
 import type { PinnedVersion } from "./currentVersion";
 import { type LinkedTrip, type ModeSetting, THINKING_TIME_RANGE } from "./linkPayload";
+import { freePlayRules } from "./modeRules";
 
 const TRIP_SLOT_KEY = "akle:free-play-trip";
 
@@ -23,7 +24,7 @@ type StoredSlot = {
   versionOrdinal: number;
   trip: LinkedTrip;
   drawn: boolean;
-  game: { guesses: KommunCode[]; hints?: TakenHints };
+  game: { guesses: KommunCode[]; hints?: TakenHints; givenUp?: true };
 };
 
 /** A free-play trip as the slot keeps it: its pinned version, its game and how it was set up. */
@@ -43,7 +44,11 @@ export function saveTripSlot(storage: KeyValueStorage, saved: SavedTrip): void {
     versionOrdinal,
     trip: { start: trip.start, destination: trip.destination, mode: trip.mode },
     drawn,
-    game: { guesses: [...game.guesses], ...(game.hints && { hints: game.hints }) },
+    game: {
+      guesses: [...game.guesses],
+      ...(game.hints && { hints: game.hints }),
+      ...(game.givenUp && { givenUp: true }),
+    },
   };
   writeJson(storage, TRIP_SLOT_KEY, stored);
 }
@@ -61,19 +66,22 @@ export function storedTrip(
 
 /**
  * The stored game, when the slot holds exactly this trip on this version: the same endpoints,
- * mode, thinking time and version, however its link was spelled. Its guesses and hints are
- * checked against the version's graph. Undefined for any other trip, or an empty or corrupt slot.
+ * mode, thinking time and version, however its link was spelled, played under its mode's rules.
+ * Its guesses, hints and give-up are checked against the version's graph. Undefined for any other
+ * trip, or an empty or corrupt slot.
  */
 export function resumeTrip(
   storage: KeyValueStorage,
   version: PinnedVersion,
   trip: LinkedTrip,
-  rules: Rules,
 ): { game: Game; drawn: boolean } | undefined {
   const slot = readSlot(storage);
   if (slot === undefined || slot.versionOrdinal !== version.ordinal) return undefined;
   if (!sameTrip(slot.trip, trip)) return undefined;
-  return { game: restoreGame(version.graph, newGame(trip, rules), slot.game), drawn: slot.drawn };
+  const game = restoreGame(version.graph, newGame(trip, freePlayRules(trip.mode)), slot.game);
+  // A give-up counts only where the restored game still allows one.
+  const resumed = slot.game.givenUp === true ? giveUp(version.graph, game) : game;
+  return { game: resumed, drawn: slot.drawn };
 }
 
 function sameTrip(a: LinkedTrip, b: LinkedTrip): boolean {
