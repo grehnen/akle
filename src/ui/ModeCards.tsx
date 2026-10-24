@@ -1,5 +1,6 @@
 import { type ModeSetting, THINKING_TIME_RANGE } from "../freePlay/linkPayload";
 import { PLAYABLE_MODES } from "../freePlay/modeRules";
+import { MODE_NAMES } from "./messages";
 import "./ModeCards.css";
 
 type ModeKind = ModeSetting["kind"];
@@ -8,22 +9,22 @@ type ModeKind = ModeSetting["kind"];
 export const MODES: { kind: ModeKind; name: string; description: string }[] = [
   {
     kind: "standard",
-    name: "Standard",
+    name: MODE_NAMES.standard,
     description: "Som dagens resa: gissningarna räcker till avståndet och lite till.",
   },
   {
     kind: "unlimited",
-    name: "Obegränsad",
+    name: MODE_NAMES.unlimited,
     description: "Gissa hur många gånger du vill. Ge upp när du vill.",
   },
   {
     kind: "timed",
-    name: "Tidspress",
+    name: MODE_NAMES.timed,
     description: "Varje gissning måste göras inom betänketiden.",
   },
   {
     kind: "tie-breaker",
-    name: "Tidtagning",
+    name: MODE_NAMES["tie-breaker"],
     description: "Tiden tas. Vid lika poäng vinner den snabbaste.",
   },
 ];
