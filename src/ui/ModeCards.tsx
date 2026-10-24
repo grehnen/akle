@@ -64,6 +64,7 @@ export function ModeCards({
           </label>
           {kind === "timed" && mode.kind === "timed" && (
             <ThinkingTimeField
+              id="free-play-thinking-time"
               seconds={mode.thinkingTime}
               onChange={(seconds) => onChange({ kind: "timed", thinkingTime: seconds })}
             />
@@ -75,18 +76,25 @@ export function ModeCards({
 }
 
 /** The betänketid: whole seconds within the range a trip link can carry. */
-function ThinkingTimeField({
+export function ThinkingTimeField({
+  id,
+  labelHidden = false,
   seconds,
   onChange,
 }: {
+  /** Unique on the page. */
+  id: string;
+  labelHidden?: boolean;
   seconds: number;
   onChange: (seconds: number) => void;
 }) {
   return (
     <div className="free-play-thinking-time">
-      <label htmlFor="free-play-thinking-time">Betänketid</label>
+      <label htmlFor={id} className={labelHidden ? "visually-hidden" : undefined}>
+        Betänketid
+      </label>
       <input
-        id="free-play-thinking-time"
+        id={id}
         type="range"
         min={THINKING_TIME_RANGE.min}
         max={THINKING_TIME_RANGE.max}
@@ -95,7 +103,7 @@ function ThinkingTimeField({
         aria-valuetext={`${seconds} sekunder`}
         onChange={(event) => onChange(Number(event.target.value))}
       />
-      <output htmlFor="free-play-thinking-time">{seconds} s</output>
+      <output htmlFor={id}>{seconds} s</output>
     </div>
   );
 }
