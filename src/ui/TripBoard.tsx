@@ -1,11 +1,12 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { type Game, reviewGame, type Trip } from "../engine/game";
+import { type Game, giveUp, reviewGame, type Trip } from "../engine/game";
 import { hintReveals } from "../engine/hints";
 import { resolveKommunName } from "../engine/kommunNames";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SatelliteMap } from "../map/SatelliteMap";
 import type { Stats } from "../progress/stats";
 import type { KeyValueStorage } from "../progress/storage";
+import { GiveUp } from "./GiveUp";
 import { GuessCounter } from "./GuessCounter";
 import { GuessInput } from "./GuessInput";
 import { HintSection } from "./HintSection";
@@ -42,7 +43,8 @@ type TripBoardProps<T extends Trip> = {
 };
 
 /**
- * Plays one trip: the heading, the map, the guess input, the past guesses, the hints and, once
+ * Plays one trip: the heading, the map, the guess input, the past guesses, the hints (with Ge upp
+ * when the rules allow giving up) and, once
  * the game ends, the result view with Min rutt and Kortaste rutt. Whatever only one kind of trip
  * needs, such as saving, history or a trip number, the screen around it passes in.
  */
@@ -196,7 +198,20 @@ export function TripBoard<T extends Trip>({
               hintsUsed={review.hintsUsed}
               onTakeHint={() => update((current) => takeSessionHint(graph, current))}
               focusAfterLastHint={guessInput}
-            />
+            >
+              {game.rules.giveUp && (
+                <GiveUp
+                  enabled={review.canGiveUp}
+                  onGiveUp={() =>
+                    update((current) => ({
+                      ...current,
+                      game: giveUp(graph, current.game),
+                      announcement: "Du gav upp.",
+                    }))
+                  }
+                />
+              )}
+            </HintSection>
           )}
         </>
       )}
