@@ -88,6 +88,11 @@ export function timeText(tenths: number): string {
   return `${hoursMinutesSeconds(Math.floor(tenths / 10))},${tenths % 10}`;
 }
 
+/** An itinerary's total time and its won tie-breaker trips: `4:12,3 (2 vunna)`. */
+export function totalTimeText(tenths: number, won: number): string {
+  return `${timeText(tenths)} (${won} ${won === 1 ? "vunnen" : "vunna"})`;
+}
+
 function hoursMinutesSeconds(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor(totalSeconds / 60) % 60;

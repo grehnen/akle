@@ -1,7 +1,8 @@
 import type { Outcome } from "../progress/outcome";
 import { resultLabel } from "../progress/shareText";
 import { SITE_URL } from "../siteUrl";
-import { modeName, scoreText, timeText } from "../ui/messages";
+import { modeName, scoreText, timeText, totalTimeText } from "../ui/messages";
+import type { ItinerarySummary } from "./itinerarySummary";
 import type { ModeSetting } from "./linkPayload";
 
 /** A finished free-play trip as its share text needs it. */
@@ -31,12 +32,49 @@ export function freePlayShareText({
   emojiLine,
   link,
 }: FreePlayShareResult): string {
-  const label = [resultLabel(outcome), scoreText(score)];
-  if (time !== undefined) label.push(timeText(time));
   return [
     `#åkle Fri resa · ${modeName(mode)}`,
-    label.join(" · "),
+    tripLabel({ outcome, score, time }),
     emojiLine,
+    `${SITE_URL}${link}`,
+  ].join("\n");
+}
+
+/** A finished free-play trip's label: the daily label, the score and a tie-breaker win's time. */
+function tripLabel({
+  outcome,
+  score,
+  time,
+}: Pick<FreePlayShareResult, "outcome" | "score" | "time">): string {
+  const label = [resultLabel(outcome), scoreText(score)];
+  if (time !== undefined) label.push(timeText(time));
+  return label.join(" · ");
+}
+
+/**
+ * What a player copies from a finished itinerary's summary: `#åkle Resplan · <title> · <n>
+ * resor`, the total score (with the total time and how many tie-breaker trips were won, when it
+ * has any), a `<i>. <mode> · <trip label>` row per trip and the itinerary's link. No emoji lines,
+ * and never the endpoints.
+ */
+export function itineraryShareText({
+  title,
+  summary,
+  link,
+}: {
+  title?: string;
+  summary: ItinerarySummary;
+  /** The itinerary's link, from the site root: `/resplan?namn=…&r=…`. */
+  link: string;
+}): string {
+  const { rows, standing, hasTieBreaker } = summary;
+  const header = ["#åkle Resplan", ...(title === undefined ? [] : [title]), `${rows.length} resor`];
+  const total = [`Totalt ${scoreText(standing.score)}`];
+  if (hasTieBreaker) total.push(totalTimeText(standing.totalTime, standing.wonTieBreakers));
+  return [
+    header.join(" · "),
+    total.join(" · "),
+    ...rows.map((row, index) => `${index + 1}. ${modeName(row.mode)} · ${tripLabel(row)}`),
     `${SITE_URL}${link}`,
   ].join("\n");
 }
