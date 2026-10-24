@@ -7,5 +7,8 @@ export default defineConfig({
     name: "akle",
     compatibilityDate: "2026-10-23",
     domains: [new URL(SITE_URL).hostname],
+    // `cf` defaults Preview URLs to off, so keep both Worker URL switches declarative.
+    workersDev: true,
+    previewUrls: true,
   },
 });
