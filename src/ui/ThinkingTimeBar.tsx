@@ -5,7 +5,7 @@ import { timeoutsText, warningAnnouncement } from "./messages";
 import "./ThinkingTimeBar.css";
 
 /**
- * A timed trip's countdown: a bar and the seconds left of the thinking time running at `now`.
+ * A timed trip's thinking time as it runs down: a bar and the seconds left of it at `now`.
  * In its last third it turns a warning colour and bolds the seconds. Screen readers hear one
  * polite announcement as that third begins and one for each timeout, never every second.
  */

@@ -914,11 +914,11 @@ describe("Tidtagning", () => {
     ]);
   });
 
-  test("the clock runs on real time, past an hour as h:mm:ss", async () => {
+  test("the time shown runs on real time, past an hour as h:mm:ss", async () => {
     const { container } = await mountApp(tieBreakerLink("0192", "0488"));
     await click(startaButton(container));
 
-    // Hidden, backgrounded or asleep: the clock reads the time that passed when it next ticks.
+    // Hidden, backgrounded or asleep: the time shown catches up when it next ticks.
     passTime(65_000);
     await settle();
     expect(clockShown(container)).toBe("1:05");
@@ -1082,7 +1082,7 @@ describe("Tidspress", () => {
     return mountedApp;
   }
 
-  test("Starta starts the thinking time: a countdown bar with the seconds left, above the input", async () => {
+  test("Starta starts the thinking time: a bar running down with the seconds left, above the input", async () => {
     const { container } = await startedTimedTrip();
     expect(secondsLeft(container)).toBe("10");
     const bar = query(container, ".thinking-time");
