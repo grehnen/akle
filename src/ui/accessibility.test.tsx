@@ -6,6 +6,8 @@ import { buildGraphVersion } from "../graph/graphVersion";
 import { saveGame } from "../progress/savedGame";
 import { memoryStorage } from "../progress/storage";
 import { DailyTripView } from "./DailyTripView";
+import { EndpointField } from "./EndpointField";
+import { FreePlayScreen } from "./FreePlayScreen";
 import { GuessInput } from "./GuessInput";
 
 const graph = buildGraphVersion({
@@ -120,5 +122,27 @@ describe("automated accessibility check", () => {
   test("the collapsed result over the board has no serious violations", async () => {
     const session = sessionWith("akle:result-closed", trip.number);
     expect(await seriousViolations(playScreen(["0181"], 0, session))).toEqual([]);
+  });
+
+  test("the Fri resa setup screen has no serious violations", async () => {
+    const setup = <FreePlayScreen graph={graph} sessionStorage={memoryStorage()} />;
+    expect(await seriousViolations(setup)).toEqual([]);
+  });
+
+  test("a Start field with its suggestions open has no serious violations", async () => {
+    const field = (
+      <EndpointField
+        id="free-play-start"
+        label="Start"
+        end="start"
+        text="s"
+        suggestions={[
+          { code: "0181", name: "Södertälje" },
+          { code: "0192", name: "Nynäshamn", disabled: "granne" },
+        ]}
+        onTextChange={() => {}}
+      />
+    );
+    expect(await seriousViolations(field)).toEqual([]);
   });
 });
