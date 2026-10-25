@@ -45,8 +45,11 @@ type TripBoardProps<T extends Trip> = {
   footerLinks?: ReactNode;
   /** Shown above the guess input while the trip is played, such as its running clock. */
   clock?: ReactNode;
-  /** Puts focus in the guess input as the board opens, as after `Starta`. */
-  focusGuessOnOpen?: boolean;
+  /**
+   * The board opens by the player's own action, as after Slumpa resa or `Starta`, not on
+   * arriving at the page: it takes the window to the top and focus to the guess input.
+   */
+  openedByPlayer?: boolean;
   /**
    * A timed trip's timeouts, as runs: before each guess, then since the last one (`timeoutRuns`).
    * Each run shows as one ⏱ row among the guesses.
@@ -81,7 +84,7 @@ export function TripBoard<T extends Trip>({
   onResultClosedChange,
   footerLinks,
   clock,
-  focusGuessOnOpen = false,
+  openedByPlayer: initiallyOpenedByPlayer = false,
   timeouts,
   concealed = false,
   onMapReady,
@@ -122,11 +125,14 @@ export function TripBoard<T extends Trip>({
   useEffect(() => {
     if (resultClosed && resultToggled) reopenButton.current?.focus();
   }, [resultClosed, resultToggled]);
-  const [focusGuess] = useState(focusGuessOnOpen);
-  // A board loaded behind Starta takes focus at the reveal, as it is shown.
+  const [openedByPlayer] = useState(initiallyOpenedByPlayer);
+  // A board loaded behind Starta opens at the reveal, as it is shown. A finished trip's input
+  // never takes focus.
   useEffect(() => {
-    if (focusGuess && !concealed) guessInput.current?.focus();
-  }, [focusGuess, concealed]);
+    if (!openedByPlayer || concealed || finished) return;
+    window.scrollTo(0, 0);
+    guessInput.current?.focus({ preventScroll: true });
+  }, [openedByPlayer, concealed, finished]);
   const nameOf = (code: string) => kommunName(graph, code);
 
   return (
