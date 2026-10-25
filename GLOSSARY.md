@@ -172,6 +172,10 @@ _Avoid_: Practice puzzle, custom puzzle, random puzzle
 An ordered list of free-play trips, each with its own mode, shared as a link.
 _Avoid_: Playlist, challenge, set, quiz, pack
 
+**Draft**:
+The itinerary being built in the builder, its title and trips kept on this device until _Ny resplan_ empties it; one made on an older version is dropped.
+_Avoid_: Unsaved itinerary, work in progress
+
 **Time**:
 The elapsed real time from starting a tie-breaker-mode trip to winning it, including any time the player is away; only a won tie-breaker trip has a time.
 _Avoid_: Clock, timer, stopwatch
