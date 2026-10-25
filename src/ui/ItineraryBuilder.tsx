@@ -28,8 +28,7 @@ import { DEFAULT_THINKING_TIME } from "../freePlay/modeRules";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { shortestRouteLength } from "../graph/routes";
 import { SITE_URL } from "../siteUrl";
-import { CloseIcon } from "./CloseIcon";
-import { useCopyToast } from "./useCopyToast";
+import { CopyFallback } from "./CopyFallback";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
 import { MODES, modeDescription } from "./messages";
 import { ThinkingTimeField } from "./ModeCards";
@@ -40,6 +39,10 @@ import {
   tripChoicePanelId,
   tripChoiceTabId,
 } from "./TripChoice";
+import { UndoToast, useUndoRemoval } from "./UndoToast";
+import { useAnnouncer } from "./useAnnouncer";
+import { useCopyToast } from "./useCopyToast";
+import { useKeepOnScreen } from "./useKeepOnScreen";
 import "./ItineraryBuilder.css";
 
 type ItineraryBuilderProps = {
@@ -65,9 +68,6 @@ type BuilderTrip = DraftTrip & { id: number };
 const DEFAULT_DRAW_COUNT = 5;
 
 const ID_PREFIX = "itinerary";
-
-/** How long Ångra stays up after a removal, unless the pointer or focus is on it. */
-const UNDO_MS = 5000;
 
 /**
  * The itinerary builder (Bygg en resplan): a title, the ordered trip list, a panel that adds
@@ -108,51 +108,30 @@ export function ItineraryBuilder({
         )
       : undefined;
 
-  // What the next render focuses, and an element to keep where it is on screen across it.
+  // Room made to keep the add panel in place goes once the list is empty again.
+  const { keep, scrollRoom } = useKeepOnScreen(trips.length === 0);
+  const addPanel = useRef<HTMLFieldSetElement>(null);
+  // What the next render focuses, by a selector within the builder.
   const section = useRef<HTMLElement>(null);
   const focusAfterRender = useRef<string>(undefined);
-  const keepInPlace = useRef<{ element: HTMLElement; top: number }>(undefined);
-  const addPanel = useRef<HTMLFieldSetElement>(null);
-  const scrollRoom = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    const kept = keepInPlace.current;
-    keepInPlace.current = undefined;
-    // Room made to keep the add panel in place goes once the list is empty again.
-    if (trips.length === 0 && scrollRoom.current !== null) scrollRoom.current.style.height = "";
-    if (kept !== undefined) keepOnScreen(kept, scrollRoom.current);
     const selector = focusAfterRender.current;
     focusAfterRender.current = undefined;
     if (selector !== undefined) section.current?.querySelector<HTMLElement>(selector)?.focus();
   });
-  const removeButton = (number: number) => `[aria-label="Ta bort resa ${number}"]`;
+  const removeButton = (number: number) => `[data-remove-trip="${number}"]`;
 
   const { announcement, announce } = useAnnouncer();
   // The latest removal, until Ångra, its time running out, or another trip added.
-  const [removed, setRemoved] = useState<{ entry: BuilderTrip; index: number }>();
-  const [undoHeld, setUndoHeld] = useState(false);
-  // A new or gone Ångra toast is never held, wherever the pointer or focus was on the last one.
-  const replaceUndoToast = (trip: typeof removed) => {
-    setRemoved(trip);
-    setUndoHeld(false);
-  };
-  useEffect(() => {
-    if (removed === undefined || undoHeld) return;
-    const timer = setTimeout(() => setRemoved(undefined), UNDO_MS);
-    return () => clearTimeout(timer);
-  }, [removed, undoHeld]);
+  const { removed, showRemoval, hold } = useUndoRemoval<{ entry: BuilderTrip; index: number }>();
 
   const add = (added: readonly DraftTrip[], drawn: boolean) => {
     const count = Math.min(added.length, room);
     if (count === 0) return;
     // Rows go in above the panel: it stays put on screen, so the button just used never moves.
-    if (addPanel.current !== null) {
-      keepInPlace.current = {
-        element: addPanel.current,
-        top: addPanel.current.getBoundingClientRect().top,
-      };
-    }
+    if (addPanel.current !== null) keep(addPanel.current);
     setTrips((current) => [...current, ...withIds(added)].slice(0, ITINERARY_TRIPS.max));
-    replaceUndoToast(undefined);
+    showRemoval(undefined);
     announce(count === 1 ? `Resa ${trips.length + 1} tillagd` : `${count} resor tillagda`);
     focusAfterRender.current =
       count === room ? ".itinerary-count" : drawn ? ".itinerary-draw" : `#${ID_PREFIX}-start`;
@@ -177,12 +156,12 @@ export function ItineraryBuilder({
         ...current.slice(index + 1),
       ].slice(0, ITINERARY_TRIPS.max),
     );
-    replaceUndoToast(undefined);
+    showRemoval(undefined);
   };
   const remove = (index: number) => {
     const entry = trips[index];
     setTrips(trips.filter((_, other) => other !== index));
-    replaceUndoToast({ entry, index });
+    showRemoval({ entry, index });
     announce(`Resa ${index + 1} borttagen`);
     // Focus the ✕ that took its place, the one before it for the last row, or the empty list.
     const left = trips.length - 1;
@@ -193,7 +172,7 @@ export function ItineraryBuilder({
     if (removed === undefined) return;
     const { entry, index } = removed;
     setTrips((current) => [...current.slice(0, index), entry, ...current.slice(index)]);
-    replaceUndoToast(undefined);
+    showRemoval(undefined);
     announce(`Resa ${index + 1} tillbaka`);
     focusAfterRender.current = removeButton(index + 1);
   };
@@ -201,7 +180,7 @@ export function ItineraryBuilder({
     setTitle("");
     setTrips([]);
     setRevealed(new Set());
-    replaceUndoToast(undefined);
+    showRemoval(undefined);
   };
 
   return (
@@ -263,7 +242,7 @@ export function ItineraryBuilder({
           removed && {
             number: removed.index + 1,
             onUndo: undoRemoval,
-            onHold: setUndoHeld,
+            onHold: hold,
           }
         }
       />
@@ -273,32 +252,6 @@ export function ItineraryBuilder({
       </p>
     </section>
   );
-}
-
-/**
- * Scrolls so `kept.element` is back where it was on screen, `top` from the viewport. A page too
- * short to scroll that far first grows `room` at its end by what's missing.
- */
-function keepOnScreen(kept: { element: HTMLElement; top: number }, room: HTMLElement | null) {
-  const moved = kept.element.getBoundingClientRect().top - kept.top;
-  if (moved === 0) return;
-  const target = window.scrollY + moved;
-  const scrollEnd = document.documentElement.scrollHeight - window.innerHeight;
-  if (room !== null && target > scrollEnd) {
-    room.style.height = `${room.offsetHeight + target - scrollEnd}px`;
-  }
-  window.scrollTo(0, target);
-}
-
-/**
- * A polite announcement for the builder's live region. The same words twice in a row differ by
- * a trailing no-break space, so screen readers read them again.
- */
-function useAnnouncer(): { announcement: string; announce: (text: string) => void } {
-  const [announcement, setAnnouncement] = useState("");
-  const announce = (text: string) =>
-    setAnnouncement((previous) => (previous === text ? `${text}\u00a0` : text));
-  return { announcement, announce };
 }
 
 function TitleField({ title, onChange }: { title: string; onChange: (title: string) => void }) {
@@ -429,7 +382,13 @@ function TripRow({
         >
           <span aria-hidden="true">⧉</span>
         </button>
-        <button type="button" aria-label={`Ta bort resa ${number}`} onClick={onRemove}>
+        <button
+          type="button"
+          aria-label={`Ta bort resa ${number}`}
+          // Found by its number for focus, never by its words.
+          data-remove-trip={number}
+          onClick={onRemove}
+        >
           <span aria-hidden="true">✕</span>
         </button>
       </span>
@@ -703,56 +662,6 @@ function LinkBar({
           Spela
         </button>
       </div>
-    </div>
-  );
-}
-
-/** "Resa N borttagen" and Ångra; held up while the pointer or focus is on it. */
-function UndoToast({
-  number,
-  onUndo,
-  onHold,
-}: {
-  number: number;
-  onUndo: () => void;
-  onHold: (held: boolean) => void;
-}) {
-  return (
-    <div
-      className="itinerary-undo"
-      onPointerEnter={() => onHold(true)}
-      onPointerLeave={() => onHold(false)}
-      onFocus={() => onHold(true)}
-      onBlur={() => onHold(false)}
-    >
-      <span>Resa {number} borttagen</span>
-      <button type="button" onClick={onUndo}>
-        Ångra
-      </button>
-    </div>
-  );
-}
-
-/** The link in a read-only field, selected, for the player to copy by hand. */
-function CopyFallback({ url, onClose }: { url: string; onClose: () => void }) {
-  const field = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    field.current?.focus();
-    field.current?.select();
-  }, []);
-  return (
-    <div className="itinerary-copy-fallback">
-      <label htmlFor="itinerary-copy-fallback">Kunde inte kopiera. Kopiera länken själv:</label>
-      <input
-        ref={field}
-        id="itinerary-copy-fallback"
-        readOnly
-        value={url}
-        onFocus={(event) => event.target.select()}
-      />
-      <button type="button" aria-label="Stäng" onClick={onClose}>
-        <CloseIcon />
-      </button>
     </div>
   );
 }
