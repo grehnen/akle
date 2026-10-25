@@ -18,7 +18,7 @@ import {
   suggestKommuner,
   takeSessionHint,
 } from "./guessSession";
-import { guessCardText, timeoutsText } from "./messages";
+import { guessCardText, timeoutRowTitle, timeoutsText } from "./messages";
 import { ResultStrip, ResultView } from "./ResultView";
 
 type TripBoardProps<T extends Trip> = {
@@ -294,7 +294,8 @@ export function TripBoard<T extends Trip>({
 }
 
 /**
- * Consecutive timeouts as one row among the guesses, `⏱ ×5`; not a guess, so not numbered.
+ * Consecutive timeouts as one row among the guesses, `⏱ ×5`, its tooltip saying what they cost;
+ * not a guess, so not numbered.
  * A `held` row with no timeouts yet keeps its place, unseen, so a timeout moves nothing below it.
  */
 function TimeoutRow({ timeouts = 0, held = false }: { timeouts?: number; held?: boolean }) {
@@ -306,7 +307,7 @@ function TimeoutRow({ timeouts = 0, held = false }: { timeouts?: number; held?: 
     ) : null;
   }
   return (
-    <li className="timeout-row">
+    <li className="timeout-row" title={timeoutRowTitle(timeouts)}>
       <span aria-hidden="true">⏱ ×{timeouts}</span>
       <span className="visually-hidden">{timeoutsText(timeouts)}</span>
     </li>

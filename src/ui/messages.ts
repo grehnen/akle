@@ -1,5 +1,6 @@
 import type { Feedback, GameReview, GameStatus, GuessCard, GuessResult } from "../engine/game";
 import type { HINT_COUNT } from "../engine/hints";
+import { TIMEOUT_COST } from "../engine/score";
 import type { ModeSetting } from "../freePlay/linkPayload";
 import { gameOutcome, type Outcome } from "../progress/outcome";
 
@@ -158,6 +159,16 @@ function hoursMinutesSeconds(totalSeconds: number): string {
   return hours > 0
     ? `${hours}:${String(minutes).padStart(2, "0")}:${seconds}`
     : `${minutes}:${seconds}`;
+}
+
+/** How many times, counted: `1 gång`, `5 gånger`. */
+export function timesText(times: number): string {
+  return times === 1 ? "1 gång" : `${times} gånger`;
+}
+
+/** A ⏱ row's tooltip, what its timeouts were and cost: `Tiden ute 1 gång, 1 poäng`. */
+export function timeoutRowTitle(timeouts: number): string {
+  return `Tiden ute ${timesText(timeouts)}, ${scoreText(timeouts * TIMEOUT_COST)}`;
 }
 
 /** Timeouts in words, as announced and as a ⏱ row reads: `Tiden ute`, `Tiden ute 5 gånger`. */
