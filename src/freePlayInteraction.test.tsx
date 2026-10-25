@@ -1196,6 +1196,19 @@ describe("Tidtagning", () => {
     ]);
   });
 
+  test("a win's clock leaves the board, its time shown to tenths in the result strip", async () => {
+    const { container } = await mountApp(tieBreakerLink("0192", "0488"));
+    await click(startaButton(container));
+    await guess(container, "Haninge");
+    passTime(95_432);
+    await playToTheEnd(container, "Salem");
+
+    await click(query(container, ".result-close"));
+    expect(container.querySelector(".satellite-map")).not.toBeNull();
+    expect(container.querySelector(".trip-clock")).toBeNull();
+    expect(query(container, ".result-strip .result-time").textContent).toBe("Tid 1:35,4");
+  });
+
   test("time runs on between reloads, and a reopened win keeps its time", async () => {
     const storage = memoryStorage();
     const link = tieBreakerLink("0192", "0488");
@@ -1248,7 +1261,7 @@ describe("Tidtagning", () => {
     );
   });
 
-  test("a give-up keeps no time, shown as –", async () => {
+  test("a give-up keeps no time, and shows no Tid line", async () => {
     // Nynäshamn to Salem is a distance of 1; Trosa is off the route.
     const { container } = await mountApp(tieBreakerLink("0192", "0128"));
     await click(startaButton(container));
@@ -1258,9 +1271,13 @@ describe("Tidtagning", () => {
     await settle();
 
     expect(query(container, "#result-heading").textContent).toBe("Gav upp");
-    expect(query(container, '.result-time [aria-hidden="true"]').textContent).toBe("–");
+    expect(container.querySelector(".result-time")).toBeNull();
     await click(query(container, ".share-button"));
     expect(copied[0]?.split("\n")[1]).toBe("Gav upp (1 ifrån) · 3 poäng");
+    await click(query(container, ".result-close"));
+    expect(container.querySelector(".result-strip")).not.toBeNull();
+    expect(container.querySelector(".result-time")).toBeNull();
+    expect(container.querySelector(".trip-clock")).toBeNull();
   });
 });
 
