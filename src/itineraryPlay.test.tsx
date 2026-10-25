@@ -83,7 +83,7 @@ function dailyProgress() {
   const storage = memoryStorage();
   storage.setItem("akle:game", JSON.stringify({ tripNumber: 3, guesses: ["0136"] }));
   storage.setItem("akle:history", JSON.stringify({ 2: { won: true, extra: 0, perfect: true } }));
-  storage.setItem("akle:free-play-trip", "a stored trip");
+  storage.setItem("akle:free-play-trips", "stored trips");
   const writes: string[] = [];
   const recording: KeyValueStorage = {
     getItem: (key) => storage.getItem(key),
@@ -428,7 +428,7 @@ describe("an itinerary from its link", () => {
     expect(container.querySelector("#guess-input")).toBeNull();
   });
 
-  test("leaves the trip slot, streak, stats and history untouched", async () => {
+  test("leaves trips' saves, streak, stats and history untouched", async () => {
     const { storage, writes } = dailyProgress();
     const container = await mountApp(
       itineraryLinkPath(0, "", [nynashamnSalem, haningeTrosa]),
@@ -443,9 +443,9 @@ describe("an itinerary from its link", () => {
     await settle();
     await click(button(container, "Avsluta resplanen"));
 
-    // Only the itinerary slot is written.
-    expect(new Set(writes)).toEqual(new Set(["akle:itinerary"]));
-    expect(storage.getItem("akle:free-play-trip")).toBe("a stored trip");
+    // Only the itinerary's save is written.
+    expect(new Set(writes)).toEqual(new Set(["akle:itineraries"]));
+    expect(storage.getItem("akle:free-play-trips")).toBe("stored trips");
   });
 });
 
@@ -526,41 +526,60 @@ describe("resuming an itinerary", () => {
     expect(copied[0]?.split("\n")[0]).toBe("#åkle Resplan · Kort · 2 resor");
   });
 
-  test("another itinerary takes the slot only at Starta resplanen", async () => {
+  test("beginning another itinerary never resets one already begun", async () => {
     const storage = memoryStorage();
     let container = await mountApp(fridayLink, storage);
     await click(button(container, "Starta resplanen"));
     await guess(container, "Trosa");
 
-    // Opened, not begun: the stored itinerary stays.
+    // Opened, not begun: it gets no save, so it opens on its intro again.
     const other = itineraryLinkPath(0, "Lördag", [haningeTrosa, nynashamnSalem]);
     container = await reopen(other, storage);
     expect(button(container, "Starta resplanen")).toBeDefined();
-    container = await reopen(fridayLink, storage);
-    expect(guessNames(container)).toEqual(["1. Trosa 🟧"]);
-
-    // Begun: the other one replaces it, and the first one starts over from its intro.
     container = await reopen(other, storage);
+    expect(button(container, "Starta resplanen")).toBeDefined();
+
+    // Begun: each keeps its own save, and the first goes on where it was.
     await click(button(container, "Starta resplanen"));
     container = await reopen(fridayLink, storage);
-    expect(button(container, "Starta resplanen")).toBeDefined();
+    expect(guessNames(container)).toEqual(["1. Trosa 🟧"]);
     container = await reopen(other, storage);
     expect(text(container, ".start-gate .trip-number")).toBe(
       "Lördag · Resa 1 av 2 · Tidspress 10 s · Totalt 0 poäng",
     );
   });
 
-  test("a free-play trip never touches the itinerary slot", async () => {
+  test("a finished itinerary's link reopens its summary after another is played", async () => {
+    const storage = memoryStorage();
+    const link = itineraryLinkPath(0, "Kort", [nynashamnSalem, haningeTrosa]);
+    let container = await mountApp(link, storage);
+    await click(button(container, "Starta resplanen"));
+    await guess(container, "Haninge");
+    await settle();
+    await click(button(container, "Nästa resa"));
+    await click(button(container, "Starta"));
+    await guess(container, "Salem");
+    await settle();
+    await click(button(container, "Avsluta resplanen"));
+
+    container = await reopen(fridayLink, storage);
+    await click(button(container, "Starta resplanen"));
+    container = await reopen(link, storage);
+    expect(text(container, "#itinerary-summary-heading")).toBe("Kort");
+    expect(button(container, "Starta resplanen")).toBeUndefined();
+  });
+
+  test("a free-play trip never touches itineraries' saves", async () => {
     const storage = memoryStorage();
     let container = await mountApp(fridayLink, storage);
     await click(button(container, "Starta resplanen"));
-    const stored = storage.getItem("akle:itinerary");
+    const stored = storage.getItem("akle:itineraries");
 
     container = await reopen(tripLinkPath(0, nynashamnSalem), storage);
     await guess(container, "Haninge");
     await settle();
     expect(text(container, "#result-heading")).toBe("Perfekt!");
-    expect(storage.getItem("akle:itinerary")).toBe(stored);
+    expect(storage.getItem("akle:itineraries")).toBe(stored);
   });
 
   test("a tie-breaker trip's time runs on while the page is closed", async () => {
@@ -642,6 +661,30 @@ describe("the builder's banner", () => {
     await click(button(container, "Avsluta resplanen"));
     container = await reopen("/resplan", storage);
     expect(banner(container)).toBeNull();
+  });
+
+  test("is only for the most recently played itinerary, never an older unfinished one", async () => {
+    const storage = memoryStorage();
+    let container = await mountApp(fridayLink, storage);
+    await click(button(container, "Starta resplanen"));
+
+    // A shorter itinerary played to its end after it.
+    const link = itineraryLinkPath(0, "", [nynashamnSalem, nynashamnSalem]);
+    container = await reopen(link, storage);
+    await click(button(container, "Starta resplanen"));
+    await guess(container, "Haninge");
+    await settle();
+    await click(button(container, "Nästa resa"));
+    await guess(container, "Haninge");
+    await settle();
+    await click(button(container, "Avsluta resplanen"));
+    container = await reopen("/resplan", storage);
+    expect(banner(container)).toBeNull();
+
+    // Opening the unfinished one makes it the most recently played again.
+    container = await reopen(fridayLink, storage);
+    container = await reopen("/resplan", storage);
+    expect(banner(container).textContent).toBe("Fortsätt resplanen: Fredagsresan, resa 1 av 3");
   });
 });
 
