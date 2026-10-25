@@ -17,6 +17,8 @@
 .itinerary-intro-count,
 .itinerary-intro-note {
   color: var(--muted);
+  /* Never ends on a lone word. */
+  text-wrap: pretty;
 }
 
 .itinerary-intro-trips {
