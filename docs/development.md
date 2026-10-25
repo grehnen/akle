@@ -12,6 +12,8 @@ bun run dev      # Vite dev server
 bun run check    # every required check, as CI runs them
 ```
 
+`bun install` points Git at [`.githooks/`](../.githooks/), whose `pre-push` hook runs the quick checks (format, lint, typecheck, tests) before every push.
+
 ## Deployment
 
 Åkle is one Cloudflare Worker, `akle`, that serves static assets only. [`cloudflare.config.ts`](../cloudflare.config.ts) configures it, and the [`cf` CLI](https://developers.cloudflare.com/cf/) builds and deploys it. `vite build` writes the Worker's Build Output to `.cloudflare/output/`. [`public/_headers`](../public/_headers) sets the caching: hashed files under `/assets/` (graph version data included) are `immutable`, and `index.html` is `no-cache`. `bun run headers:check` checks the build against it.
