@@ -376,12 +376,15 @@ function AddTrips({
   const [mode, setMode] = useState<ModeSetting>({ kind: "standard" });
   const [tab, setTab] = useState<TripChoiceTab>("draw");
   const [count, setCount] = useState(DEFAULT_DRAW_COUNT);
+  // Antal never changes by itself but to follow the room left down, never back up: at least 1.
+  const roomForCount = Math.max(1, room);
+  if (count > roomForCount) setCount(roomForCount);
+  const drawCount = Math.min(count, roomForCount);
   const [lastDrawn, setLastDrawn] = useState<Trip>();
-  const drawCount = Math.max(1, Math.min(count, room));
   const full = room === 0;
 
   const draw = () => {
-    const drawn = drawTrips(pairs, range, Math.min(count, room), random, lastDrawn);
+    const drawn = drawTrips(pairs, range, Math.min(drawCount, room), random, lastDrawn);
     if (drawn.length === 0) return;
     setLastDrawn(drawn.at(-1));
     onAdd(drawn, mode, true);
@@ -400,7 +403,7 @@ function AddTrips({
         hidden={tab !== "draw"}
       >
         <DistanceRangeSlider range={range} largest={largest} onChange={setRange} />
-        <Stepper value={drawCount} max={Math.max(1, room)} onChange={setCount} />
+        <Stepper value={drawCount} max={roomForCount} onChange={setCount} />
         <button type="button" className="free-play-go itinerary-draw" onClick={draw}>
           <span aria-hidden="true">🎲</span> Lägg till {drawCount}{" "}
           {drawCount === 1 ? "slumpad" : "slumpade"}
