@@ -122,6 +122,15 @@ export function App({
               >
                 <RulesIcon />
               </button>
+              <button
+                type="button"
+                className="header-button stats-open"
+                aria-label="Visa statistik"
+                title="Visa statistik"
+                onClick={() => setStatsOpen(true)}
+              >
+                <StatsIcon />
+              </button>
               {freePlay || itinerary ? (
                 <h1>
                   <AppLink href="/">Åkle</AppLink>
@@ -149,15 +158,6 @@ export function App({
                 {/* A placeholder icon until free play gets its own. */}
                 <span aria-hidden="true">🎲</span>
               </AppLink>
-              <button
-                type="button"
-                className="header-button stats-open"
-                aria-label="Visa statistik"
-                title="Visa statistik"
-                onClick={() => setStatsOpen(true)}
-              >
-                <StatsIcon />
-              </button>
             </header>
             {rulesOpen && <RulesDialog onClose={() => setRulesOpen(false)} />}
             {statsOpen && (

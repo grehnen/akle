@@ -70,8 +70,7 @@ h1 {
 }
 
 .site-header {
-  /* The buttons and the title are sized from the header's width, so the title fits between them. */
-  --header-button-width: min(2.75rem, 12.5cqi);
+  --header-button-width: 2.75rem;
 
   position: relative;
   width: 100%;
@@ -83,10 +82,10 @@ h1 {
   align-items: center;
 }
 
-/* The title stays centred on the screen, like everything below it, and shrinks on a narrow screen
-   to clear the three buttons on the right with a little room: "Åkle" is a little over 2.1em wide. */
+/* The title stays centred on the screen, like everything below it, between two buttons on each
+   side; on a screen too narrow for that it shrinks: "Åkle" is a little over 2.1em wide. */
 .site-header h1 {
-  font-size: min(2.5rem, (100cqi - 6 * var(--header-button-width)) / 2.5);
+  font-size: min(2.5rem, (100cqi - 4 * var(--header-button-width)) / 2.5);
   white-space: nowrap;
 }
 
@@ -105,19 +104,22 @@ h1 {
 }
 
 .stats-open {
-  right: 0;
+  left: var(--header-button-width);
 }
 
 .free-play-open,
 .itinerary-open {
-  right: var(--header-button-width);
   height: 2.75rem;
   font-size: 1.4rem;
   text-decoration: none;
 }
 
 .itinerary-open {
-  right: calc(2 * var(--header-button-width));
+  right: var(--header-button-width);
+}
+
+.free-play-open {
+  right: 0;
 }
 
 /* The page the player is on: a bar under its button, the colour of the start sign. */
