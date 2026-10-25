@@ -1,5 +1,5 @@
 import { type KeyValueStorage, readJson, removeKey, writeJson } from "../progress/storage";
-import { isRecord } from "./storedGame";
+import { hasFormat } from "./storedGame";
 
 /**
  * The stored list's format. A list of any other format is ignored, as if empty, so a change to
@@ -30,7 +30,7 @@ export type SavedGameKind<Save> = {
 export function readSaves<Save>(storage: KeyValueStorage, kind: SavedGameKind<Save>): Save[] {
   const stored = readJson(storage, kind.key);
   if (stored === undefined) return adoptLegacySlot(storage, kind);
-  if (!isRecord(stored) || stored.format !== SAVES_FORMAT || !Array.isArray(stored.saves)) {
+  if (!hasFormat(stored, SAVES_FORMAT) || !Array.isArray(stored.saves)) {
     return [];
   }
   return stored.saves.map(kind.readSave).filter((save) => save !== undefined);
@@ -69,8 +69,7 @@ function writeSaves<Save>(storage: KeyValueStorage, kind: SavedGameKind<Save>, s
 function adoptLegacySlot<Save>(storage: KeyValueStorage, kind: SavedGameKind<Save>): Save[] {
   if (!hasItem(storage, kind.legacySlotKey)) return [];
   const slot = readJson(storage, kind.legacySlotKey);
-  const save =
-    isRecord(slot) && slot.format === LEGACY_SLOT_FORMAT ? kind.readSave(slot) : undefined;
+  const save = hasFormat(slot, LEGACY_SLOT_FORMAT) ? kind.readSave(slot) : undefined;
   if (save !== undefined) writeSaves(storage, kind, [save]);
   // Kept while its save couldn't be written, as with storage full, so it isn't lost.
   if (save === undefined || readJson(storage, kind.key) !== undefined) {
