@@ -6,7 +6,7 @@ import { App } from "./App";
 import type { DailyTripSource } from "./daily/loadDailyTrip";
 import { decodeLinkPayload } from "./freePlay/linkPayload";
 import type { GraphVersionFiles } from "./graph/graphVersionFiles";
-import { memoryStorage } from "./progress/storage";
+import { type KeyValueStorage, memoryStorage } from "./progress/storage";
 
 const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>', {
   url: "https://akle.example/",
@@ -80,7 +80,7 @@ afterEach(() => {
   dom.window.history.replaceState(null, "", "/");
 });
 
-async function mountApp(path: string) {
+async function mountApp(path: string, storage: KeyValueStorage = memoryStorage()) {
   dom.window.history.replaceState(null, "", path);
   const { pathname, search } = dom.window.location;
   const container = dom.window.document.createElement("div");
@@ -92,7 +92,7 @@ async function mountApp(path: string) {
       <App
         source={source}
         now={() => new Date(2026, 9, 24, 12, 0)}
-        storage={memoryStorage()}
+        storage={storage}
         sessionStorage={memoryStorage()}
         path={pathname}
         search={search}
@@ -390,5 +390,91 @@ describe("the itinerary's link", () => {
     });
     expect(title.value).toBe(full);
     expect(title.selectionStart).toBe(20);
+  });
+});
+
+/** Unmounts the app, as a reload would leave it, keeping what it stored. */
+function unmount() {
+  if (!mounted) return;
+  const { root, container } = mounted;
+  act(() => root.unmount());
+  container.remove();
+  mounted = undefined;
+}
+
+const modes = (container: HTMLElement) =>
+  [...container.querySelectorAll<HTMLSelectElement>(".itinerary-trip select")].map(
+    (select) => select.value,
+  );
+
+/** A title, three trips in a changed order, one drawn, with modes and a betänketid. */
+async function buildDraft(container: HTMLElement) {
+  await type(query(container, "#itinerary-title"), "Helgresan");
+  await pick(container, "Nynäshamn", "Salem");
+  await pick(container, "Haninge", "Trosa");
+  for (let step = 0; step < 4; step++) await click(labelled(container, "Färre resor"));
+  await click(query(container, "#itinerary-tab-draw"));
+  await click(drawButton(container));
+  await click(labelled(container, "Flytta ner resa 1"));
+  await choose(rowMode(container, 1), "timed");
+  await type(query(container, ".itinerary-trip:nth-child(1) input[type='range']"), "23");
+  await choose(rowMode(container, 3), "tie-breaker");
+}
+
+async function expectDraft(container: HTMLElement) {
+  expect(query<HTMLInputElement>(container, "#itinerary-title").value).toBe("Helgresan");
+  expect(rows(container)).toEqual([
+    "Haninge → Trosa",
+    "Nynäshamn → Salem",
+    "🎲 Slumpad · avstånd 2",
+  ]);
+  expect(modes(container)).toEqual(["timed", "standard", "tie-breaker"]);
+  expect(query(container, ".itinerary-trip:nth-child(1) output").textContent).toBe("23 s");
+}
+
+describe("the builder's draft", () => {
+  test("the title, trips, their order, modes and betänketider survive a reload", async () => {
+    const storage = memoryStorage();
+    await buildDraft(await mountApp("/resplan", storage));
+    unmount();
+
+    await expectDraft(await mountApp("/resplan", storage));
+  });
+
+  test("the draft is still there after Spela and Back", async () => {
+    const container = await mountApp("/resplan");
+    await buildDraft(container);
+    await click(button(container, "Spela"));
+    expect(container.querySelector("#itinerary-heading")).toBeNull();
+
+    await act(async () => {
+      dom.window.history.replaceState(null, "", "/resplan");
+      dom.window.dispatchEvent(new dom.window.PopStateEvent("popstate"));
+    });
+    await expectDraft(container);
+  });
+
+  test("Ny resplan empties the builder, and it stays empty after a reload", async () => {
+    const storage = memoryStorage();
+    const container = await mountApp("/resplan", storage);
+    expect(button(container, "Ny resplan").disabled).toBe(true);
+    await buildDraft(container);
+    await click(button(container, "Ny resplan"));
+
+    expect(query<HTMLInputElement>(container, "#itinerary-title").value).toBe("");
+    expect(rows(container)).toEqual([]);
+    expect(button(container, "Ny resplan").disabled).toBe(true);
+    unmount();
+
+    const reloaded = await mountApp("/resplan", storage);
+    expect(query(reloaded, ".itinerary-count").textContent).toBe("0 av 20 resor · minst 2");
+  });
+
+  test("a corrupt stored draft is ignored, and the builder opens empty", async () => {
+    const storage = memoryStorage();
+    storage.setItem("akle:itinerary-draft", '{"format":1,"versionOrdinal":1,"title":7}');
+    const container = await mountApp("/resplan", storage);
+    expect(query(container, "#itinerary-heading").textContent).toBe("Bygg en resplan");
+    expect(query(container, ".itinerary-count").textContent).toBe("0 av 20 resor · minst 2");
   });
 });
