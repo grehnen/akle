@@ -31,7 +31,7 @@ describe("GuessInput suggestions", () => {
           text="o"
           suggestions={[{ code: "1880", name: "Örebro" }]}
           highlighted="1880"
-          counter="Gissa (0/5)"
+          counter="Gissa (1/5)"
           onEvent={() => {}}
         />,
       ),

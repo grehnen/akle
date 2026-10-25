@@ -5,6 +5,12 @@ import { saveGame } from "../progress/savedGame";
 import { memoryStorage } from "../progress/storage";
 import { DailyTripView } from "./DailyTripView";
 
+function sessionWith(key: string, value: unknown) {
+  const session = memoryStorage();
+  session.setItem(key, JSON.stringify(value));
+  return session;
+}
+
 /** The text as seen, without what only screen readers read. */
 const visibleText = (markup: string) =>
   markup.replace(/<span class="visually-hidden">.*?<\/span>/g, "").replace(/<[^>]+>/g, "");
@@ -53,7 +59,7 @@ describe("DailyTripView", () => {
       'Res från <strong class="sign sign--start">Nynäshamn</strong> till <strong class="sign sign--destination">Trosa</strong>',
     );
     expect(markup).toContain("#21");
-    expect(visibleText(markup)).toContain("Gissa (0/5)");
+    expect(visibleText(markup)).toContain("Gissa (1/5)");
   });
 
   describe("on the play screen", () => {
@@ -101,14 +107,14 @@ describe("DailyTripView", () => {
 
     test("a game in progress is restored and keeps playing", () => {
       const markup = renderWith(["0136"]);
-      expect(visibleText(markup)).toContain("Gissa (1/5)");
+      expect(visibleText(markup)).toContain("Gissa (2/5)");
       expect(markup).toContain("Haninge");
       expect(markup).not.toContain('aria-labelledby="result-heading"');
     });
 
     test("a game saved for another trip number is not restored", () => {
       const markup = renderWith(["0181"], { ...trip, number: 20 });
-      expect(visibleText(markup)).toContain("Gissa (0/5)");
+      expect(visibleText(markup)).toContain("Gissa (1/5)");
     });
 
     test("a finished game reopens with the result view open", () => {
@@ -176,6 +182,29 @@ describe("DailyTripView", () => {
       expect(renderWith(["0181"], trip, 1)).not.toContain("hint-button");
     });
 
+    test("once the game is over, the Gissa button counts the guesses made", () => {
+      const longer = { number: 21, start: "0192", destination: "0484", n: 2 };
+      const storage = memoryStorage();
+      saveGame(storage, { trip: longer, guesses: ["0136", "0181", "0488"] });
+      const markup = renderToStaticMarkup(
+        <DailyTripView
+          daily={{ kind: "trip", trip: longer, graph }}
+          storage={storage}
+          sessionStorage={sessionWith("akle:result-closed", longer.number)}
+          now={new Date(2026, 9, 21, 13, 5, 9)}
+        />,
+      );
+      expect(visibleText(markup)).toContain("Gissa (3/6)");
+      expect(markup).toMatch(/<button type="submit"[^>]*>.*?3 av 6 använda.*?<\/button>/);
+    });
+
+    test("each guess card shows its number, then the kommun, then its feedback", () => {
+      const longer = { number: 21, start: "0192", destination: "0484", n: 2 };
+      const markup = renderWith(["0136", "0181"], longer, 0, longer);
+      expect(markup).toContain('<li><span aria-hidden="true">1. Haninge 🟥</span>');
+      expect(markup).toContain('<li><span aria-hidden="true">2. Södertälje ✅</span>');
+    });
+
     test("each guess card reads out its number, feedback and connection", () => {
       const longer = { number: 21, start: "0192", destination: "0484", n: 2 };
       const markup = renderWith(["0136", "0181"], longer, 0, longer);
@@ -187,9 +216,9 @@ describe("DailyTripView", () => {
       );
     });
 
-    test("the Gissa button says how many are used, and taken hint buttons say so", () => {
+    test("the Gissa button says which guess is next, and taken hint buttons say so", () => {
       const markup = renderWith(["0136"], trip, 1);
-      expect(markup).toMatch(/<button type="submit"[^>]*>.*?1 av 5 använda.*?<\/button>/);
+      expect(markup).toMatch(/<button type="submit"[^>]*>.*?gissning 2 av 5.*?<\/button>/);
       expect(markup).toMatch(
         /<button[^>]*class="hint-button taken"[^>]*>.*?Visa nästa kommun.*?\(använd\).*?<\/button>/,
       );
