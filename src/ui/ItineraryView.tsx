@@ -2,7 +2,11 @@ import { useCallback, useState } from "react";
 import type { DailyTripSource } from "../daily/loadDailyTrip";
 import type { Clock } from "../engine/clock";
 import { type BuilderDraft, restoreBuilderDraft, saveBuilderDraft } from "../freePlay/builderDraft";
-import { loadCurrentVersion, type PinnedVersion } from "../freePlay/currentVersion";
+import {
+  loadCurrentVersion,
+  loadPinnedVersion,
+  type PinnedVersion,
+} from "../freePlay/currentVersion";
 import {
   itineraryLinkPath,
   type OpenedItineraryLink,
@@ -10,6 +14,7 @@ import {
 } from "../freePlay/itineraryLink";
 import type { ItineraryPlay } from "../freePlay/itineraryPlay";
 import {
+  latestItineraryVersion,
   resumeItinerary,
   saveItinerary,
   type UnfinishedItinerary,
@@ -56,7 +61,7 @@ type Loaded =
 /**
  * The itinerary page: with `r` the itinerary its link opens, on the version it pins, or the
  * free-play error screen when the link is invalid; without `r` the builder, on the current
- * version that every trip of the built itinerary is pinned to. Only that one version loads.
+ * version that every trip of the built itinerary is pinned to. Only the versions needed load.
  * Every itinerary begun keeps a save: its exact link resumes it, finished or not, and the
  * builder links back to the most recently played while it's unfinished. The builder's draft is
  * kept on every change and reopens with it, unless made on another version or unreadable.
@@ -78,12 +83,7 @@ export function ItineraryView({
     useCallback(
       (): Promise<Loaded> =>
         linkPayload === undefined
-          ? loadCurrentVersion(source, now).then((version) => ({
-              kind: "builder",
-              version,
-              draft: restoreBuilderDraft(savesStorage, version),
-              unfinished: unfinishedItinerary(savesStorage),
-            }))
+          ? loadBuilder(source, now, savesStorage)
           : openItineraryLink(source, now, title, linkPayload).then((opened) =>
               opened.kind === "itinerary"
                 ? { ...opened, resumed: resumeItinerary(savesStorage, opened) }
@@ -146,6 +146,26 @@ export function ItineraryView({
   );
 }
 
+/**
+ * The builder on the current version, its draft, and the most recently played itinerary while
+ * it's unfinished, resumed on the version it's pinned to, which is reused when current.
+ */
+async function loadBuilder(
+  source: DailyTripSource,
+  now: Date,
+  storage: KeyValueStorage,
+): Promise<Loaded> {
+  const ordinal = latestItineraryVersion(storage);
+  const pinned = ordinal === undefined ? undefined : await loadPinnedVersion(source, now, ordinal);
+  const version = await loadCurrentVersion(source, now, pinned);
+  return {
+    kind: "builder",
+    version,
+    draft: restoreBuilderDraft(storage, version),
+    unfinished: pinned && unfinishedItinerary(storage, pinned),
+  };
+}
+
 /** The builder's way back to the unfinished itinerary, opened in place like `Spela`. */
 function ResumeBanner({
   unfinished: { title, tripNumber, tripCount, link },
@@ -156,7 +176,7 @@ function ResumeBanner({
 }) {
   const named = title === undefined ? "" : `${title}, `;
   return (
-    <AppLink className="itinerary-resume" href={link} onNavigate={onPlay}>
+    <AppLink className="resume-link itinerary-resume" href={link} onNavigate={onPlay}>
       Fortsätt resplanen: {named}resa {tripNumber} av {tripCount}
     </AppLink>
   );
