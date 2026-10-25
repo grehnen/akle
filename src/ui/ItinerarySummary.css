@@ -50,8 +50,14 @@
   color: var(--muted);
 }
 
+/* Whole facts wrap, never their parts; a line breaks after a separator, not before it. */
+.itinerary-summary-facts > span {
+  white-space: nowrap;
+}
+
 .itinerary-summary-facts > span + span::before {
-  content: " · ";
+  content: "\a0· ";
+  white-space: normal;
 }
 
 .itinerary-summary-score {
