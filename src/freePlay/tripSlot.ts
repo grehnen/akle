@@ -93,6 +93,34 @@ export function resumeTrip(
   return game && { game, drawn: slot.drawn, ...(slot.range && { range: slot.range }) };
 }
 
+const DRAWN_AT_STARTA_KEY = "akle:free-play-drawn-at-starta";
+
+/**
+ * Notes, for this browser session, the range the trip behind Starta at `link` was drawn from:
+ * the slot takes a trip only at Starta, so a reload or Back and Forward over the gate would
+ * otherwise forget that it was drawn.
+ */
+export function noteDrawnAtStarta(
+  sessionStorage: KeyValueStorage,
+  link: string,
+  range: DistanceRange,
+): void {
+  writeJson(sessionStorage, DRAWN_AT_STARTA_KEY, {
+    link,
+    range: { min: range.min, max: range.max },
+  });
+}
+
+/** The range the trip behind Starta at `link` was drawn from, when noted this session. */
+export function drawnAtStarta(
+  sessionStorage: KeyValueStorage,
+  link: string,
+): DistanceRange | undefined {
+  const noted = readJson(sessionStorage, DRAWN_AT_STARTA_KEY);
+  if (!isRecord(noted) || noted.link !== link || !isDistanceRange(noted.range)) return undefined;
+  return { min: noted.range.min, max: noted.range.max };
+}
+
 /** The slot, when it's whole and of this format; any part out of shape makes it unreadable. */
 function readSlot(storage: KeyValueStorage): StoredSlot | undefined {
   const stored = readJson(storage, TRIP_SLOT_KEY);

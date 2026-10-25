@@ -12,7 +12,12 @@ import {
 import type { LinkedTrip, ModeSetting } from "../freePlay/linkPayload";
 import { DEFAULT_THINKING_TIME, freePlayRules, opensAtStarta } from "../freePlay/modeRules";
 import { tripLinkPath } from "../freePlay/tripLink";
-import { type ResumedTrip, saveTripSlot } from "../freePlay/tripSlot";
+import {
+  drawnAtStarta,
+  noteDrawnAtStarta,
+  type ResumedTrip,
+  saveTripSlot,
+} from "../freePlay/tripSlot";
 import type { GraphVersion } from "../graph/graphVersion";
 import type { KeyValueStorage } from "../progress/storage";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
@@ -94,25 +99,34 @@ export function FreePlayScreen({
     setMode(next);
     if (next.kind === "timed") setThinkingTime(next.thinkingTime);
   };
-  const [played, setPlayed] = useState<Played | undefined>(
-    () =>
-      linkedTrip && {
-        trip: linkedTrip,
-        game: resumed?.game ?? newGame(linkedTrip, freePlayRules(linkedTrip.mode)),
-        drawn: resumed?.drawn ?? false,
-        range: resumed?.range,
-        count: 1,
-        opened: true,
-        // A stored trip already started; it never waits behind Starta again.
-        started: resumed !== undefined || !opensAtStarta(linkedTrip.mode),
-      },
-  );
+  const [played, setPlayed] = useState<Played | undefined>(() => {
+    if (linkedTrip === undefined) return undefined;
+    // A drawn trip behind Starta isn't in the slot yet, but may have been noted this session.
+    const drawnFrom = resumed
+      ? resumed.range
+      : drawnAtStarta(sessionStorage, tripLinkPath(ordinal, linkedTrip));
+    return {
+      trip: linkedTrip,
+      game: resumed?.game ?? newGame(linkedTrip, freePlayRules(linkedTrip.mode)),
+      drawn: resumed?.drawn ?? drawnFrom !== undefined,
+      range: drawnFrom,
+      count: 1,
+      opened: true,
+      // A stored trip already started; it never waits behind Starta again.
+      started: resumed !== undefined || !opensAtStarta(linkedTrip.mode),
+    };
+  });
   const link = played && tripLinkPath(ordinal, played.trip);
   const opened = played?.opened ?? false;
 
   useEffect(() => {
     if (link !== undefined) onShowTripLink(link, opened);
   }, [link, opened, onShowTripLink]);
+
+  useEffect(() => {
+    if (played === undefined || played.started || played.range === undefined) return;
+    noteDrawnAtStarta(sessionStorage, tripLinkPath(ordinal, played.trip), played.range);
+  }, [sessionStorage, ordinal, played]);
 
   // A trip takes the slot as it starts, when the board first shows its ends (at Starta for a
   // trip on the clock), and keeps it up to date as it is played.
