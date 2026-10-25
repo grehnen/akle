@@ -19,6 +19,8 @@ type GuessInputProps = {
   counter: ReactNode;
   onEvent: (event: GuessInputEvent) => void;
   inputRef?: Ref<HTMLInputElement>;
+  /** Takes no guesses, as once the trip is over. */
+  disabled?: boolean;
 };
 
 const LISTBOX_ID = "guess-suggestions";
@@ -32,6 +34,7 @@ export function GuessInput({
   counter,
   onEvent,
   inputRef,
+  disabled = false,
 }: GuessInputProps) {
   // Enter, Escape or leaving the input closes the list; coming back, typing or an arrow key opens it again.
   const [dismissed, setDismissed] = useState(false);
@@ -89,6 +92,7 @@ export function GuessInput({
           aria-expanded={expanded}
           aria-activedescendant={expanded && highlighted ? optionId(highlighted) : undefined}
           value={text}
+          disabled={disabled}
           onChange={(event) => {
             setDismissed(false);
             onEvent({ type: "type", text: event.target.value });
@@ -136,7 +140,9 @@ export function GuessInput({
           </ul>
         )}
       </div>
-      <button type="submit">{counter}</button>
+      <button type="submit" disabled={disabled}>
+        {counter}
+      </button>
     </form>
   );
 }

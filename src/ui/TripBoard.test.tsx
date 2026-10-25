@@ -116,4 +116,16 @@ describe("the board on its own", () => {
     await act(async () => new Promise((resolve) => setTimeout(resolve, 100)));
     expect(container.querySelector("#result-heading")?.textContent).toBe("Perfekt!");
   });
+
+  test("a finished trip's board takes no more guesses", async () => {
+    const container = await mount(60);
+    await guess(container, "Haninge");
+    await guess(container, "Salem");
+
+    const input = container.querySelector("#guess-input") as HTMLInputElement;
+    expect(input.disabled).toBe(true);
+    expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(
+      true,
+    );
+  });
 });
