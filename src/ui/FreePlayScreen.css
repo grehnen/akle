@@ -36,6 +36,10 @@
   text-align: left;
 }
 
+.free-play-panel[hidden] {
+  display: none;
+}
+
 .endpoint-field {
   display: flex;
   flex-direction: column;
