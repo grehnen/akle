@@ -1,0 +1,434 @@
+/* PROTOTYPE (G1/G2/I3): throwaway. Never merge to main. */
+
+/* ---------- Page scaffolding (not part of the design) ---------- */
+
+.iip-page {
+  padding-bottom: 6rem;
+}
+
+.iip-page main {
+  /* So the variants answer to the main column's width, which telefon=1 narrows to 390 px. */
+  container: intro / inline-size;
+  width: 100%;
+}
+
+.iip-page--phone main {
+  max-width: 390px;
+  min-height: 844px;
+  margin-top: 0.5rem;
+  outline: 1px dashed #ff2fb4;
+}
+
+.iip-banner {
+  margin: 0;
+  padding: 0.3rem 1rem;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #ff8fd6;
+  text-align: center;
+}
+
+/* ---------- Shared by every variant: the decided actions and the score rule ---------- */
+
+.iip-actions-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  /* Room for the toast floating above Kopiera länk. */
+  margin-top: 1.5rem;
+  width: 100%;
+}
+
+.iip-actions {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.iip-copy .itinerary-copy {
+  min-height: 3.5rem;
+  padding-inline: 1.25rem;
+  font-size: 1.125rem;
+}
+
+.iip-copy {
+  display: flex;
+}
+
+.iip-fallback {
+  width: 100%;
+  max-width: 30rem;
+  display: flex;
+  text-align: left;
+}
+
+.iip-fallback .itinerary-copy-fallback {
+  flex: 1;
+}
+
+.iip-score-rule {
+  margin: 0;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.iip-score-rule strong {
+  color: var(--text);
+}
+
+.iip-score-rule--left {
+  text-align: left;
+}
+
+/* ---------- A and B: card rows under a "Resor" header ---------- */
+
+.itinerary-intro.iip-wide {
+  max-width: 36rem;
+}
+
+.itinerary-intro.iip-wider {
+  max-width: 48rem;
+}
+
+.iip-list {
+  width: 100%;
+  margin-top: 0.75rem;
+  text-align: left;
+}
+
+.iip-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0 0.25rem 0.4rem;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 0.5rem;
+}
+
+.iip-list-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.iip-list-header span {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.iip-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.iip-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.iip-number {
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--rule);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.iip-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  /* Lines up the bold name with the number's middle. */
+  padding-top: 0.15rem;
+  font-size: 1.125rem;
+}
+
+.iip-description {
+  color: var(--muted);
+  font-size: 0.95rem;
+  text-wrap: pretty;
+}
+
+.iip-setting {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.iip-rows--compact {
+  gap: 0.35rem;
+}
+
+.iip-rows--compact .iip-row {
+  align-items: center;
+  padding: 0.55rem 1rem 0.55rem 0.75rem;
+  font-size: 1.125rem;
+}
+
+.iip-row-name {
+  flex: 1;
+}
+
+.iip-glyph {
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+/* ---------- C: tiles ---------- */
+
+.iip-tiles {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+}
+
+@container intro (min-width: 40rem) {
+  .iip-tiles {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Plain, flat panels: no border, no hover, nothing that reads as a choice to click. */
+.iip-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.8rem 0.95rem 0.95rem;
+  border-radius: 10px;
+  border-top: 3px solid var(--rule);
+  background: var(--surface);
+  font-size: 1.125rem;
+}
+
+.iip-tile-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.iip-tile-number {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.iip-tile .iip-description {
+  font-size: 0.9rem;
+}
+
+/* ---------- D: two columns, route timeline ---------- */
+
+.iip-split {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.75rem;
+  text-align: left;
+}
+
+@container intro (min-width: 44rem) {
+  .iip-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 3rem;
+    margin-top: 1.5rem;
+  }
+
+  .iip-split-side {
+    position: sticky;
+    top: 1.5rem;
+    align-self: start;
+  }
+
+  .iip-split .iip-actions-wrap--side .iip-actions {
+    justify-content: flex-start;
+  }
+
+  .iip-split .iip-actions-wrap--side {
+    align-items: flex-start;
+  }
+}
+
+/* On a phone the trips come before the actions. */
+@container intro (max-width: 43.99rem) {
+  .iip-split {
+    gap: 0.75rem;
+  }
+
+  .iip-split .iip-split-main {
+    margin-block: 0.75rem;
+  }
+
+  .iip-split .iip-split-side {
+    display: contents;
+  }
+
+  .iip-split .iip-split-side .iip-actions-wrap {
+    order: 2;
+    margin-top: 0;
+  }
+
+  .iip-split .iip-eyebrow,
+  .iip-split h2,
+  .iip-split .itinerary-intro-note {
+    text-align: center;
+  }
+
+  .iip-split .iip-score-rule--left {
+    text-align: center;
+  }
+}
+
+.iip-split-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.iip-split h2,
+.iip-split p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.iip-split h2 {
+  font-size: 2rem;
+  line-height: 1.15;
+}
+
+.iip-split .itinerary-intro-note {
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.iip-eyebrow {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.iip-split-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.iip-timeline {
+  --dot: 2rem;
+
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The road between the stops. */
+.iip-timeline::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--dot) / 2);
+  bottom: calc(var(--dot) / 2);
+  left: calc(var(--dot) / 2 - 2px);
+  width: 4px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(var(--rule) 0 10px, transparent 10px 16px);
+}
+
+.iip-stop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 3rem;
+  font-size: 1.125rem;
+}
+
+.iip-stop-dot {
+  flex: none;
+  width: var(--dot);
+  height: var(--dot);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--stop, var(--text));
+  color: var(--night);
+  font-size: 0.95rem;
+  font-weight: 700;
+  box-shadow: 0 0 0 4px var(--night);
+}
+
+.iip-stop strong {
+  flex: 1;
+}
+
+.iip-stop-ends {
+  color: var(--muted);
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+}
+
+/* A colour per mode, so the legend ties back to the stops. */
+.iip-stop--standard {
+  --stop: var(--text);
+}
+
+.iip-stop--unlimited {
+  --stop: #9fd3a8;
+}
+
+.iip-stop--timed {
+  --stop: #ff8a8d;
+}
+
+.iip-stop--tie-breaker {
+  --stop: #7fb7e6;
+}
+
+.iip-legend {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.iip-legend dt {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+
+.iip-legend dd {
+  margin: 0.1rem 0 0 1.25rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  text-wrap: pretty;
+}
+
+.iip-legend-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--stop);
+}
