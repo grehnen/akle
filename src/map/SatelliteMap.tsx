@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent, Popup } from "maplibre-gl";
 import type { GuessCard, Trip } from "../engine/game";
 import { type GraphVersion, type KommunCode, kommunName } from "../graph/graphVersion";
@@ -11,6 +11,8 @@ import {
   routeFeatures,
 } from "./mapFeatures";
 import { mapDescription } from "./mapDescription";
+import { MapLibreLoaderContext } from "./mapLibreLoader";
+import { type MapReadiness, mapReadiness } from "./mapReadiness";
 import { mapOptions, satelliteMapStyle, TOOLTIP_LAYER, TOUCH_SCREEN_QUERY } from "./mapStyle";
 import { tooltipText } from "./tooltip";
 import { animateToBounds, zoomResetControl } from "./zoomResetControl";
@@ -31,12 +33,23 @@ type SatelliteMapProps = {
   initials?: boolean;
   /** Once the game is finished: outlines every other kommun too, each with its name as tooltip. */
   allOutlines?: boolean;
+  /**
+   * Told once when the map is drawn, its satellite and endpoints in view, or when it never can
+   * be (`mapReadiness`). Until then its frame shows a skeleton.
+   */
+  onReady?: () => void;
+  /**
+   * The map loads unseen, behind a trip's `Starta`: it names no kommun, in its label or its
+   * description, until it is shown.
+   */
+  concealed?: boolean;
 };
 
 /**
  * Satellite map of the endpoints, guesses and hint outlines, and of every other kommun's outline
  * once the game is finished. Hovering or tapping a drawn kommun
- * shows its tooltip. Display only: clicking or tapping it never guesses.
+ * shows its tooltip. Display only: clicking or tapping it never guesses. Its frame shows a
+ * skeleton until the map is drawn.
  */
 export function SatelliteMap({
   graph,
@@ -46,9 +59,18 @@ export function SatelliteMap({
   hintOutlines,
   initials = false,
   allOutlines = false,
+  onReady,
+  concealed = false,
 }: SatelliteMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap>();
+  const loadMapLibre = useContext(MapLibreLoaderContext);
+  const [ready, setReady] = useState(false);
+  const readiness = useRef<MapReadiness>(undefined);
+  const reportReady = useRef(onReady);
+  useEffect(() => {
+    reportReady.current = onReady;
+  }, [onReady]);
   const routeKommuner = route?.kommuner;
   const routeFrame = route?.frame;
   const drawn = useMemo(
@@ -65,10 +87,12 @@ export function SatelliteMap({
     tooltipFor.current = (kommun) => tooltipText(graph, kommun, { initials });
   }, [graph, initials]);
   const descriptionId = useId();
-  const description = route
-    ? undefined
-    : mapDescription(graph, trip, cards, hintOutlines, { allOutlines });
-  const described = description !== undefined;
+  // Only a map without a route is described; a concealed one is, once shown.
+  const described = route === undefined;
+  const description =
+    described && !concealed
+      ? mapDescription(graph, trip, cards, hintOutlines, { allOutlines })
+      : undefined;
   const resetBounds = useMemo(
     () => (routeFrame ? routeBounds(graph, routeFrame) : defaultBounds(graph, trip, cards)),
     [graph, trip, routeFrame, cards],
@@ -99,17 +123,19 @@ export function SatelliteMap({
       else created?.cooperativeGestures.disable();
     };
     touchScreen.addEventListener("change", followTouchScreen);
-    // MapLibre is heavy and needs WebGL, so it loads in its own chunk on the client only.
+    const watching = mapReadiness(() => {
+      setReady(true);
+      reportReady.current?.();
+    });
+    readiness.current = watching;
     const opening = latest.current;
     fittedFor.current = opening.framing;
-    void Promise.all([
-      import("maplibre-gl"),
-      // MapLibre looks for its worker next to its own module, which the build moves and renames.
-      import("maplibre-gl/dist/maplibre-gl-worker.mjs?url"),
-      import("maplibre-gl/dist/maplibre-gl.css"),
-    ]).then(([maplibre, { default: workerUrl }]) => {
+    const opened = loadMapLibre().then((maplibre) => {
       if (cancelled || !container.current) return;
-      maplibre.setWorkerUrl(workerUrl);
+      if (maplibre === undefined) {
+        watching.unavailable();
+        return;
+      }
       try {
         created = new maplibre.Map({
           container: container.current,
@@ -124,6 +150,7 @@ export function SatelliteMap({
         });
       } catch {
         // Without WebGL MapLibre can't draw; the map stays empty and the game still plays.
+        watching.unavailable();
         return;
       }
       if (described) created.getCanvas().setAttribute("aria-describedby", descriptionId);
@@ -159,14 +186,20 @@ export function SatelliteMap({
       loaded.on("sourcedata", foldAttribution);
       loaded.once("load", () => setMap(loaded));
     });
+    // Without MapLibre, as when its chunk can't be fetched, the game still plays.
+    opened.catch(() => {
+      if (!cancelled) watching.unavailable();
+    });
     return () => {
       cancelled = true;
+      watching.stop();
+      readiness.current = undefined;
       touchScreen.removeEventListener("change", followTouchScreen);
       created?.remove();
       resetControl.current = undefined;
       setMap(undefined);
     };
-  }, [described, descriptionId]);
+  }, [described, descriptionId, loadMapLibre]);
 
   useEffect(() => {
     if (map) resetControl.current?.setBounds(resetBounds);
@@ -180,7 +213,9 @@ export function SatelliteMap({
 
   useEffect(() => {
     const source = map?.getSource<GeoJSONSource>("kommuner");
-    source?.setData(drawn as Parameters<GeoJSONSource["setData"]>[0]);
+    if (!map || !source) return;
+    source.setData(drawn as Parameters<GeoJSONSource["setData"]>[0]);
+    readiness.current?.shapesIn(map);
   }, [map, drawn]);
 
   return (
@@ -188,13 +223,17 @@ export function SatelliteMap({
       className="satellite-map"
       role="region"
       aria-label={
-        route
-          ? `${route.label} från ${kommunName(graph, trip.start)} till ${kommunName(graph, trip.destination)}`
-          : `Karta över ${kommunName(graph, trip.start)} och ${kommunName(graph, trip.destination)}`
+        concealed
+          ? "Karta"
+          : route
+            ? `${route.label} från ${kommunName(graph, trip.start)} till ${kommunName(graph, trip.destination)}`
+            : `Karta över ${kommunName(graph, trip.start)} och ${kommunName(graph, trip.destination)}`
       }
+      aria-busy={ready ? undefined : true}
     >
-      {/* MapLibre owns this element's children, so the description sits beside it. */}
+      {/* MapLibre owns this element's children, so the description and skeleton sit beside it. */}
       <div ref={container} className="satellite-map__canvas" />
+      {!ready && <div className="map-skeleton" aria-hidden="true" />}
       {description && (
         <p id={descriptionId} className="visually-hidden">
           {description}
