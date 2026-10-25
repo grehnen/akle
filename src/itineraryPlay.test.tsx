@@ -411,6 +411,21 @@ describe("an itinerary from its link", () => {
     ]);
   });
 
+  test("Ge upp works from the start of a trip, before any guess", async () => {
+    const container = await mountApp(fridayLink);
+    await click(button(container, "Starta resplanen"));
+
+    const giveUp = query<HTMLButtonElement>(container, ".give-up-button");
+    expect(giveUp.disabled).toBe(false);
+    await click(giveUp);
+    await click(query(container, "dialog.give-up-dialog .give-up-confirm"));
+    await settle();
+    expect(text(container, "#result-heading")).toBe("Gav upp");
+    expect(text(container, ".result-score")).toBe("Gav upp (1 ifrån) · 2 poäng");
+    expect(text(container, ".itinerary-total")).toBe("Totalt 2 poäng");
+    expect(button(container, "Nästa resa")).toBeDefined();
+  });
+
   test("sums the won tie-breaker trips' time, shows each one's time, and shares it all", async () => {
     const link = itineraryLinkPath(0, "", [trosaHaninge, nynashamnSalem]);
     const container = await mountApp(link);
