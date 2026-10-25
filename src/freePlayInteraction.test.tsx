@@ -304,7 +304,7 @@ describe("playing a picked trip", () => {
     expect(query(container, ".result-score").textContent).toBe("+0 (Perfekt) · −1 poäng");
     expect(query(container, ".result-score-note").textContent).toBe("Lägre är bättre");
     expect(fetched).toEqual(["current"]);
-    expect(new Set(progress.writes)).toEqual(new Set(["akle:free-play-trip"]));
+    expect(new Set(progress.writes)).toEqual(new Set(["akle:free-play-trips"]));
     expect(progress.storage.getItem("akle:game")).toBe(progress.savedGame);
     expect(progress.storage.getItem("akle:history")).toBe(progress.history);
   });
@@ -659,20 +659,45 @@ describe("resuming the free-play trip", () => {
     expect(query(container, "#free-play-heading").textContent).toBe("Fri resa");
   });
 
-  test("a different link replaces the slot as it opens, dropping the unfinished trip", async () => {
+  test("opening another trip's link and then this one's resumes it as it was", async () => {
     const storage = memoryStorage();
-    const { container } = await mountApp("/fri", storage);
-    await pick(container, "Nynäshamn", "Trosa");
+    const { container } = await mountApp(nynashamnTrosa, storage);
     await guess(container, "Haninge");
 
-    await reopen(haningeTrosa, storage);
+    const other = await reopen(haningeTrosa, storage);
+    await guess(other.container, "Nynäshamn");
     const back = await reopen(nynashamnTrosa, storage);
-    expect(guessNames(back.container)).toEqual([]);
+    expect(guessNames(back.container)).toEqual(["1. Haninge ✅"]);
+    const otherAgain = await reopen(haningeTrosa, storage);
+    expect(guessNames(otherAgain.container)).toEqual(["1. Nynäshamn 🟧"]);
+  });
 
-    const resumed = await reopen("/fri", storage);
-    expect(query(resumed.container, "#trip-heading").textContent).toBe(
-      "Från: Nynäshamn Till: Trosa",
-    );
+  test("a finished trip's link reopens its result after another trip is played", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp(nynashamnTrosa, storage);
+    await playToTheEnd(container, "Haninge", "Salem");
+
+    const other = await reopen(haningeTrosa, storage);
+    await guess(other.container, "Salem");
+    const back = await reopen(nynashamnTrosa, storage);
+    expect(query(back.container, "#result-heading").textContent).toBe("Perfekt!");
+    expect(back.container.querySelector("#guess-input")).toBeNull();
+  });
+
+  test("a trip picked in setup whose link has a save starts afresh, and its link then resumes the new game", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp(nynashamnTrosa, storage);
+    await playToTheEnd(container, "Haninge", "Salem");
+
+    const setup = await reopen("/fri", storage);
+    await pick(setup.container, "Nynäshamn", "Trosa");
+    expect(guessNames(setup.container)).toEqual([]);
+    expect(setup.container.querySelector("#guess-input")).not.toBeNull();
+    await guess(setup.container, "Haninge");
+
+    const reopened = await reopen(nynashamnTrosa, storage);
+    expect(guessNames(reopened.container)).toEqual(["1. Haninge ✅"]);
+    expect(reopened.container.querySelector("#guess-input")).not.toBeNull();
   });
 
   test("a new trip started from setup replaces the finished one", async () => {
