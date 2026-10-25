@@ -1,8 +1,11 @@
+import { ITINERARY_PATH } from "../freePlay/itineraryLink";
+import { FREE_PLAY_PATH } from "../freePlay/tripLink";
 import "./FreePlayScreen.css";
 
 /**
  * The free-play error screen for a link that can't be played (ADR 0007): it names the trip when
- * one could be decoded, and leads to today's trip or to free play, never to another trip.
+ * one could be decoded, and leads first to where another can be made, free play's setup for a
+ * trip or the builder for an itinerary, then to today's trip; never to another trip.
  */
 export function FreePlayLinkError({
   trip,
@@ -21,8 +24,22 @@ export function FreePlayLinkError({
           : `Resan från ${trip.start} till ${trip.destination} i länken kan inte spelas.`}
       </p>
       <nav className="free-play-error-actions" aria-label="Vidare">
-        <a href="/">Dagens resa</a>
-        <a href="/fri">Fri resa</a>
+        {itinerary ? (
+          <>
+            <a className="primary-link" href={ITINERARY_PATH}>
+              Bygg en resplan
+            </a>
+            <a href="/">Dagens resa</a>
+            <a href={FREE_PLAY_PATH}>Fri resa</a>
+          </>
+        ) : (
+          <>
+            <a className="primary-link" href={FREE_PLAY_PATH}>
+              Fri resa
+            </a>
+            <a href="/">Dagens resa</a>
+          </>
+        )}
       </nav>
     </section>
   );

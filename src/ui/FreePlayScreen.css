@@ -175,9 +175,29 @@
   outline-offset: 4px;
 }
 
+/* The result's next steps take a row of their own, so the score and sharing above never move. */
+.free-play-next {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.free-play-setup-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px var(--rule);
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .free-play-redraw {
-  margin-left: auto;
-  padding-inline: 1.5rem;
+  padding-inline: 1rem;
   background: var(--start);
   color: var(--night);
   font-weight: 700;
@@ -224,4 +244,9 @@
   color: var(--night);
   font-weight: 700;
   text-decoration: none;
+}
+
+/* The way on, in the yellow of the app's main actions. */
+.free-play-error-actions .primary-link {
+  background: var(--start);
 }
