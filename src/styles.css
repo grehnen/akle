@@ -676,3 +676,50 @@ ol[aria-label="Gissningar"] li {
 .credits p {
   margin: 0.4rem 0 0;
 }
+
+/*
+ * The way back to an unfinished game, setup's Fortsätt resan and the builder's banner alike: a
+ * sign-like link with a trailing arrow, lit up on hover and on keyboard focus.
+ */
+.resume-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--rule);
+  border-left: 0.3rem solid var(--start);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  text-align: left;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.resume-link::after {
+  content: "›" / "";
+  margin-left: auto;
+  color: var(--start);
+  font-size: 1.5rem;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.resume-link:hover,
+.resume-link:focus-visible {
+  border-color: var(--start);
+  background: color-mix(in srgb, var(--start) 12%, var(--surface));
+  text-decoration: underline;
+}
+
+.resume-link:hover::after,
+.resume-link:focus-visible::after {
+  transform: translateX(0.2rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resume-link::after {
+    transition: none;
+  }
+}
