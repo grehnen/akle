@@ -330,6 +330,11 @@ describe("an itinerary from its link", () => {
     );
     expect(container.textContent).not.toContain("Trosa");
     expect(container.textContent).toContain("Tiden går även om du lämnar sidan.");
+    expect(text(container, ".start-gate-mode")).toBe(
+      "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng, även före första gissningen.",
+    );
+    // Its trips are played in order, once: no way back to setup.
+    expect(container.querySelector(".start-gate a")).toBeNull();
     await click(button(container, "Starta"));
     expect(container.querySelector(".thinking-time")).not.toBeNull();
     // 25 s on one guess: two timeouts, +0 and 2 ⏱ = 2.
@@ -343,6 +348,9 @@ describe("an itinerary from its link", () => {
     // Trip 3: Tidtagning, its clock on the board, given up after a wrong guess: 1 − 1 + 3·1.
     expect(text(container, ".start-gate .trip-number")).toBe(
       "Fredagsresan · Resa 3 av 3 · Tidtagning · Totalt 1 poäng",
+    );
+    expect(text(container, ".start-gate-mode")).toBe(
+      "Tiden tas. Vid lika poäng vinner den snabbaste.",
     );
     await click(button(container, "Starta"));
     expect(container.querySelector(".trip-clock")).not.toBeNull();

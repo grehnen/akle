@@ -1088,7 +1088,8 @@ describe("Läge", () => {
       },
       {
         name: "Tidspress",
-        description: "Varje gissning måste göras inom betänketiden.",
+        description:
+          "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng, även före första gissningen.",
         checked: false,
         disabled: false,
       },
@@ -1756,6 +1757,29 @@ describe("the board behind Starta", () => {
     await click(starta(container));
     expect(query(container, "#trip-heading").textContent).toBe("Res från Nynäshamn till Trosa");
     expect(dom.window.document.activeElement).toBe(query(container, "#guess-input"));
+  });
+
+  test("a Tidspress gate explains its mode, as setup's card does, and leads back to setup", async () => {
+    const { storage, written } = recordingStorage();
+    const drawMaps = holdMaps();
+    const { container } = await mountApp(timedLink, storage);
+    const tidspress =
+      "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng, även före första gissningen.";
+
+    expect(query(container, ".start-gate .trip-number").textContent).toBe(
+      "Fri resa · Tidspress 10 s",
+    );
+    expect(query(container, ".start-gate-mode").textContent).toBe(tidspress);
+    const back = query<HTMLAnchorElement>(container, ".start-gate a");
+    expect(back.textContent).toBe("Välj läge och resa");
+    expect(back.getAttribute("href")).toBe("/fri");
+    await drawMaps();
+    expect(written).toEqual([]);
+
+    const setup = await reopen("/fri", storage);
+    await click(query(setup.container, 'input[name="free-play-mode"][value="timed"]'));
+    const card = query(setup.container, 'input[value="timed"]').closest(".free-play-mode");
+    expect(card?.querySelector(".free-play-mode-description")?.textContent).toBe(tidspress);
   });
 
   test("a ready map leaves focus where the player put it", async () => {

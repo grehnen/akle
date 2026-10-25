@@ -31,7 +31,8 @@ import { SITE_URL } from "../siteUrl";
 import { CloseIcon } from "./CloseIcon";
 import { useCopyToast } from "./useCopyToast";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
-import { MODES, ThinkingTimeField } from "./ModeCards";
+import { MODES } from "./messages";
+import { ThinkingTimeField } from "./ModeCards";
 import {
   PickTripForm,
   type TripChoiceTab,
