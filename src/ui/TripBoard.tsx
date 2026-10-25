@@ -176,6 +176,7 @@ export function TripBoard<T extends Trip>({
             }
             onEvent={(event) => update((current) => applyGuessInput(graph, current, event))}
             inputRef={guessInput}
+            disabled={finished}
           />
 
           <p role="alert" className="toast">
