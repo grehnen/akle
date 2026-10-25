@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   clockText,
   freePlayHeadline,
+  guessesSoFar,
   rejectionMessage,
   resultOutcome,
   scoreText,
@@ -16,6 +17,16 @@ describe("scoreText", () => {
     [-1, "−1 poäng"],
   ])("%p → %p", (score, text) => {
     expect(scoreText(score)).toBe(text);
+  });
+});
+
+describe("guessesSoFar", () => {
+  test.each([
+    [0, "inga gissningar än"],
+    [1, "1 gissning"],
+    [3, "3 gissningar"],
+  ])("%p → %p", (guesses, text) => {
+    expect(guessesSoFar(guesses)).toBe(text);
   });
 });
 
