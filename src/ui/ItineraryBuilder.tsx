@@ -375,7 +375,8 @@ function AddTrips({
         <DistanceRangeSlider range={range} largest={largest} onChange={setRange} />
         <Stepper value={drawCount} max={Math.max(1, room)} onChange={setCount} />
         <button type="button" className="free-play-go itinerary-draw" onClick={draw}>
-          <span aria-hidden="true">🎲</span> Lägg till {drawCount} slumpade
+          <span aria-hidden="true">🎲</span> Lägg till {drawCount}{" "}
+          {drawCount === 1 ? "slumpad" : "slumpade"}
         </button>
       </div>
       <PickTripForm
