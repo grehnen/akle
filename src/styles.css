@@ -144,13 +144,13 @@ a {
   font-size: 0.95rem;
 }
 
-/* The trip as two road signs: a direction sign pointing on toward the place-name sign. */
+/* The trip as two road signs, each on its own row after its label: a direction sign, then the place-name sign. */
 #trip-heading {
   margin: 0.25rem 0 0.25rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  justify-items: start;
   gap: 0.4rem 0.6rem;
   font-size: 1.2rem;
   font-weight: 400;

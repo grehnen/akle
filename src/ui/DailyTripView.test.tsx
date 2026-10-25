@@ -56,7 +56,7 @@ describe("DailyTripView", () => {
       />,
     );
     expect(markup).toContain(
-      'Res från <strong class="sign sign--start">Nynäshamn</strong> till <strong class="sign sign--destination">Trosa</strong>',
+      '<span>Från:</span> <strong class="sign sign--start">Nynäshamn</strong> <span>Till:</span> <strong class="sign sign--destination">Trosa</strong>',
     );
     expect(markup).toContain("#21");
     expect(visibleText(markup)).toContain("Gissa (1/5)");

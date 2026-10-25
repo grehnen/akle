@@ -89,7 +89,8 @@ export function PlayScreen({ graph, trip, storage, sessionStorage, now }: PlaySc
     <section className="play-screen" aria-labelledby="trip-heading">
       <p className="trip-number">Dagens resa #{trip.number}</p>
       <h2 id="trip-heading">
-        Res från <strong className="sign sign--start">{nameOf(trip.start)}</strong> till{" "}
+        <span>Från:</span> <strong className="sign sign--start">{nameOf(trip.start)}</strong>{" "}
+        <span>Till:</span>{" "}
         <strong className="sign sign--destination">{nameOf(trip.destination)}</strong>
       </h2>
 
