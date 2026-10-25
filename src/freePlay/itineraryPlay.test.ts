@@ -36,20 +36,43 @@ function guess(play: ItineraryPlay, now: number, ...names: string[]): ItineraryP
   return changeTripGame(graph, play, guessed(stage.game, ...names), now);
 }
 
-const begun = beginItinerary(NEW_ITINERARY_PLAY);
+/** `Starta resplanen` at 0, which puts the first trip, standard, straight on the board. */
+const begun = beginItinerary(trips, NEW_ITINERARY_PLAY, 0);
+/** The first trip won at 1, then `Nästa resa` at 2 to the timed second trip's card. */
+const onTimedCard = nextTrip(graph, trips, guess(begun, 1, "Kommun 0101"), 2);
 
 describe("playing an itinerary", () => {
-  test("opens on its intro, then the first trip's card", () => {
+  test("opens on its intro, then puts a trip off the clock straight on the board", () => {
     expect(itineraryStage(graph, trips, NEW_ITINERARY_PLAY)).toEqual({ kind: "intro" });
-    expect(itineraryStage(graph, trips, begun)).toEqual({ kind: "card", index: 0 });
+    const stage = itineraryStage(graph, trips, begun);
+    expect(stage.kind === "trip" && stage.index).toBe(0);
+    expect(stage.kind === "trip" && stage.game.trip).toEqual({
+      start: "0100",
+      destination: "0102",
+    });
+  });
+
+  test("a trip on the clock waits on its card for Starta", () => {
+    expect(itineraryStage(graph, trips, onTimedCard)).toEqual({ kind: "card", index: 1 });
+    const timedFirst = [trips[1], trips[0]];
+    expect(
+      itineraryStage(graph, timedFirst, beginItinerary(timedFirst, NEW_ITINERARY_PLAY, 0)),
+    ).toEqual({
+      kind: "card",
+      index: 0,
+    });
+  });
+
+  test("Nästa resa puts a trip off the clock straight on the board", () => {
+    let play = startTrip(trips, onTimedCard, 3);
+    play = nextTrip(graph, trips, guess(play, 4, "Kommun 0103"), 5);
+    const stage = itineraryStage(graph, trips, play);
+    expect(stage.kind === "trip" && stage.index).toBe(2);
+    expect(stage.kind === "trip" && stage.game.rules.guessLimit).toBe("none");
   });
 
   test("Starta puts the trip on the board under its own mode's rules, its time started", () => {
-    const play = startTrip(
-      trips,
-      nextTrip(graph, guess(startTrip(trips, begun, 0), 1, "Kommun 0101")),
-      5000,
-    );
+    const play = startTrip(trips, onTimedCard, 5000);
     const stage = itineraryStage(graph, trips, play);
     expect(stage.kind).toBe("trip");
     if (stage.kind !== "trip") return;
@@ -66,11 +89,7 @@ describe("playing an itinerary", () => {
   });
 
   test("a timed trip's guesses are stamped for its thinking time", () => {
-    let play = startTrip(
-      trips,
-      nextTrip(graph, guess(startTrip(trips, begun, 0), 1, "Kommun 0101")),
-      0,
-    );
+    let play = startTrip(trips, onTimedCard, 0);
     play = guess(play, 25_000, "Kommun 0103");
     const stage = itineraryStage(graph, trips, play);
     expect(stage.kind === "trip" && stage.game.guessedAt).toEqual([25_000]);
@@ -78,35 +97,36 @@ describe("playing an itinerary", () => {
   });
 
   test("goes on to the next trip only once the trip is over: no skip", () => {
-    const playing = startTrip(trips, begun, 0);
-    expect(nextTrip(graph, playing)).toBe(playing);
-    const over = guess(playing, 1, "Kommun 0101");
-    expect(itineraryStage(graph, trips, nextTrip(graph, over))).toEqual({ kind: "card", index: 1 });
+    expect(nextTrip(graph, trips, begun, 1)).toBe(begun);
+    const over = guess(begun, 1, "Kommun 0101");
+    expect(itineraryStage(graph, trips, nextTrip(graph, trips, over, 2))).toEqual({
+      kind: "card",
+      index: 1,
+    });
   });
 
   test("starts each trip once: no retry", () => {
-    const playing = guess(startTrip(trips, begun, 0), 1, "Kommun 0103");
+    const playing = guess(begun, 1, "Kommun 0103");
     expect(startTrip(trips, playing, 2)).toBe(playing);
+    expect(beginItinerary(trips, playing, 3)).toBe(playing);
   });
 
   test("the trip on the board is the only one that changes", () => {
-    const first = guess(startTrip(trips, begun, 0), 1, "Kommun 0101");
-    const onCard = nextTrip(graph, first);
-    const stage = itineraryStage(graph, trips, first);
+    const stage = itineraryStage(graph, trips, guess(begun, 1, "Kommun 0101"));
     if (stage.kind !== "trip") throw new Error("no trip");
-    expect(changeTripGame(graph, onCard, stage.game, 2)).toBe(onCard);
+    expect(changeTripGame(graph, onTimedCard, stage.game, 2)).toBe(onTimedCard);
   });
 
   test("finishes after the last trip, its total the sum of the trips' scores", () => {
     // Perfect: −1.
-    let play = guess(startTrip(trips, begun, 0), 1, "Kommun 0101");
+    let play = guess(begun, 1, "Kommun 0101");
     expect(itineraryTotal(graph, play)).toBe(-1);
     // Timed: the one winning guess comes 45 s in, two 20 s thinking times over: +0 and 2 ⏱.
-    play = startTrip(trips, nextTrip(graph, play), 0);
+    play = startTrip(trips, nextTrip(graph, trips, play, 0), 0);
     play = guess(play, 45_000, "Kommun 0103");
     expect(itineraryTotal(graph, play)).toBe(-1 + 2);
     // Unlimited, given up with 0102 still missing: 2 guesses − distance 2 + 3·1 away = 3.
-    play = startTrip(trips, nextTrip(graph, play), 50_000);
+    play = nextTrip(graph, trips, play, 50_000);
     play = guess(play, 51_000, "Kommun 0104", "Kommun 0101");
     const stage = itineraryStage(graph, trips, play);
     if (stage.kind !== "trip") throw new Error("no trip");
@@ -115,13 +135,13 @@ describe("playing an itinerary", () => {
     play = changeTripGame(graph, play, giveUp(graph, stage.game), 52_000);
     expect(itineraryTotal(graph, play)).toBe(-1 + 2 + 3);
 
-    play = nextTrip(graph, play);
+    play = nextTrip(graph, trips, play, 53_000);
     expect(itineraryStage(graph, trips, play)).toEqual({ kind: "finished" });
-    expect(nextTrip(graph, play)).toBe(play);
+    expect(nextTrip(graph, trips, play, 54_000)).toBe(play);
   });
 
   test("is one plain value that survives JSON", () => {
-    const play = guess(startTrip(trips, begun, 0), 1, "Kommun 0101");
+    const play = guess(begun, 1, "Kommun 0101");
     expect(JSON.parse(JSON.stringify(play))).toEqual(play);
   });
 });
