@@ -92,7 +92,7 @@ async function guess(container: HTMLElement, name: string) {
 describe("the board on its own", () => {
   test("plays a trip with no trip number to a win, showing the routes and nothing daily", async () => {
     const container = await mount();
-    expect(container.textContent).toContain("Res från Nynäshamn till Trosa");
+    expect(container.textContent).toContain("Från: Nynäshamn Till: Trosa");
 
     await guess(container, "Haninge");
     await guess(container, "Salem");
