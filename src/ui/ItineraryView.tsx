@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import type { DailyTripSource } from "../daily/loadDailyTrip";
 import type { Clock } from "../engine/clock";
+import { type BuilderDraft, restoreBuilderDraft, saveBuilderDraft } from "../freePlay/builderDraft";
 import { loadCurrentVersion, type PinnedVersion } from "../freePlay/currentVersion";
 import {
   itineraryLinkPath,
@@ -30,7 +31,7 @@ type ItineraryViewProps = {
   title?: string;
   /** Opens a built itinerary's link in place, `/resplan?namn=…&r=…`. */
   onPlay: (link: string) => void;
-  /** Where the itinerary slot is kept; localStorage by default. */
+  /** Where the itinerary slot and the builder's draft are kept; localStorage by default. */
   storage?: KeyValueStorage;
   /** Where view choices that last one browser session are kept; sessionStorage by default. */
   sessionStorage?: KeyValueStorage;
@@ -39,7 +40,12 @@ type ItineraryViewProps = {
 };
 
 type Loaded =
-  | { kind: "builder"; version: PinnedVersion; unfinished?: UnfinishedItinerary }
+  | {
+      kind: "builder";
+      version: PinnedVersion;
+      draft?: BuilderDraft;
+      unfinished?: UnfinishedItinerary;
+    }
   | (OpenedItineraryLink & { resumed?: ItineraryPlay });
 
 /**
@@ -47,7 +53,8 @@ type Loaded =
  * free-play error screen when the link is invalid; without `r` the builder, on the current
  * version that every trip of the built itinerary is pinned to. Only that one version loads.
  * The itinerary slot keeps the latest itinerary begun: its exact link resumes it, finished or
- * not, and the builder links back to it while it's unfinished.
+ * not, and the builder links back to it while it's unfinished. The builder's draft is kept on
+ * every change and reopens with it, unless made on another version or unreadable.
  */
 export function ItineraryView({
   source,
@@ -68,6 +75,7 @@ export function ItineraryView({
           ? loadCurrentVersion(source, now).then((version) => ({
               kind: "builder",
               version,
+              draft: restoreBuilderDraft(slotStorage, version),
               unfinished: unfinishedItinerary(slotStorage),
             }))
           : openItineraryLink(source, now, title, linkPayload).then((opened) =>
@@ -93,17 +101,26 @@ export function ItineraryView({
     [loaded, slotStorage],
   );
 
+  const saveDraft = useCallback(
+    (draft: BuilderDraft) => {
+      if (loaded?.kind === "builder") saveBuilderDraft(slotStorage, loaded.version.ordinal, draft);
+    },
+    [loaded, slotStorage],
+  );
+
   if (failed) return <p role="alert">Kunde inte ladda resplanen. Försök igen senare.</p>;
   if (loaded === undefined) return <p>Laddar resplan…</p>;
   if (loaded.kind === "invalid") return <FreePlayLinkError trip={loaded.trip} itinerary />;
   if (loaded.kind === "builder") {
     const { graph, ordinal } = loaded.version;
-    const { unfinished } = loaded;
+    const { draft, unfinished } = loaded;
     return (
       <ItineraryBuilder
         graph={graph}
         ordinal={ordinal}
         onPlay={onPlay}
+        initialDraft={draft}
+        onDraftChange={saveDraft}
         banner={unfinished && <ResumeBanner unfinished={unfinished} onPlay={onPlay} />}
       />
     );
