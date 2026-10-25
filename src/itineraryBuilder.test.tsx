@@ -300,7 +300,9 @@ describe("editing the trip list", () => {
 
     await click(labelled(container, "Dubblera resa 2"));
     expect(rows(container)).toEqual(["Haninge → Trosa", "Nynäshamn → Salem", "Nynäshamn → Salem"]);
-    const modes = [...container.querySelectorAll<HTMLSelectElement>(".itinerary-trip select")];
+    const modes = [
+      ...container.querySelectorAll<HTMLSelectElement>(".itinerary-trip select[id$='-mode']"),
+    ];
     expect(modes.map((select) => select.value)).toEqual(["standard", "unlimited", "unlimited"]);
 
     await click(labelled(container, "Ta bort resa 1"));
@@ -322,14 +324,17 @@ describe("editing the trip list", () => {
 const undoToast = (container: HTMLElement) => container.querySelector(".itinerary-undo");
 /** Row `number`'s betänketid. */
 const rowThinkingTime = (container: HTMLElement, number: number) =>
-  query<HTMLInputElement>(container, `.itinerary-trip:nth-child(${number}) input[type='range']`);
+  query<HTMLSelectElement>(
+    container,
+    `.itinerary-trip:nth-child(${number}) .itinerary-thinking-time`,
+  );
 
 describe("removing a trip", () => {
   test("shows Ångra, which puts the trip back in place with its mode and revealed pair", async () => {
     const container = await mountApp("/resplan");
     await click(drawButton(container));
     await choose(rowMode(container, 3), "timed");
-    await type(rowThinkingTime(container, 3), "23");
+    await choose(rowThinkingTime(container, 3), "23");
     await click(labelled(container, "Visa resa 3"));
     const pair = rows(container)[2];
 
@@ -415,18 +420,17 @@ describe("the itinerary's link", () => {
     expect(query(container, ".itinerary-toast").textContent).toBe("Kopierat!");
   });
 
-  test("a trip's betänketid takes any whole second from 5 to 60, as the setup's does", async () => {
+  test("a trip's betänketid takes any whole second from 5 to 60 from a compact dropdown", async () => {
     const container = await mountApp("/resplan");
     await pick(container, "Nynäshamn", "Salem");
     await pick(container, "Trosa", "Haninge");
     await choose(rowMode(container, 2), "timed");
-    const thinkingTime = query<HTMLInputElement>(
-      container,
-      ".itinerary-trip:nth-child(2) input[type='range']",
+    const thinkingTime = rowThinkingTime(container, 2);
+    expect(thinkingTime.labels[0]?.textContent).toBe("Betänketid, resa 2");
+    expect([...thinkingTime.options].map((option) => option.textContent)).toEqual(
+      Array.from({ length: 56 }, (_, index) => `${index + 5} s`),
     );
-    expect([thinkingTime.min, thinkingTime.max, thinkingTime.step]).toEqual(["5", "60", "1"]);
-    await type(thinkingTime, "23");
-    expect(query(container, ".itinerary-trip:nth-child(2) output").textContent).toBe("23 s");
+    await choose(thinkingTime, "23");
 
     await click(button(container, "Kopiera länk"));
     const url = new URL(copied[0]);
@@ -562,7 +566,7 @@ function unmount() {
 }
 
 const modes = (container: HTMLElement) =>
-  [...container.querySelectorAll<HTMLSelectElement>(".itinerary-trip select")].map(
+  [...container.querySelectorAll<HTMLSelectElement>(".itinerary-trip select[id$='-mode']")].map(
     (select) => select.value,
   );
 
@@ -576,7 +580,7 @@ async function buildDraft(container: HTMLElement) {
   await click(drawButton(container));
   await click(labelled(container, "Flytta ner resa 1"));
   await choose(rowMode(container, 1), "timed");
-  await type(query(container, ".itinerary-trip:nth-child(1) input[type='range']"), "23");
+  await choose(rowThinkingTime(container, 1), "23");
   await choose(rowMode(container, 3), "tie-breaker");
 }
 
@@ -588,7 +592,7 @@ async function expectDraft(container: HTMLElement) {
     "🎲 Slumpad · avstånd 2",
   ]);
   expect(modes(container)).toEqual(["timed", "standard", "tie-breaker"]);
-  expect(query(container, ".itinerary-trip:nth-child(1) output").textContent).toBe("23 s");
+  expect(rowThinkingTime(container, 1).value).toBe("23");
 }
 
 describe("the builder's draft", () => {
