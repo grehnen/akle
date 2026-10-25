@@ -1145,6 +1145,8 @@ describe("the setup choice", () => {
   const SETUP_KEY = "akle:free-play-setup";
   const modeRadio = (container: HTMLElement, kind: string) =>
     query<HTMLInputElement>(container, `input[name="free-play-mode"][value="${kind}"]`);
+  const modeCard = (container: HTMLElement, kind: string) =>
+    modeRadio(container, kind).closest(".free-play-mode") as HTMLElement;
   const chosenMode = (container: HTMLElement) =>
     query<HTMLInputElement>(container, 'input[name="free-play-mode"]:checked').value;
   const rangeValues = (container: HTMLElement) => {
@@ -1236,6 +1238,27 @@ describe("the setup choice", () => {
     await type(distanceThumbs(container).min, "1");
 
     expect(writes.every((key) => key === SETUP_KEY)).toBe(true);
+  });
+
+  test("a click anywhere on a mode's card picks it, even off its label", async () => {
+    const { container } = await mountApp("/fri");
+
+    await click(modeCard(container, "tie-breaker"));
+    expect(chosenMode(container)).toBe("tie-breaker");
+
+    // Tidspress's betänketid keeps its place, hidden, while another mode is chosen.
+    await click(query(container, ".free-play-mode-setting"));
+    expect(chosenMode(container)).toBe("timed");
+  });
+
+  test("once Tidspress is chosen, its betänketid works as before and picks no other mode", async () => {
+    const { container } = await mountApp("/fri");
+    await click(modeRadio(container, "timed"));
+
+    await click(thinkingTimeField(container));
+    await type(thinkingTimeField(container), "20");
+    expect(chosenMode(container)).toBe("timed");
+    expect(query(container, ".free-play-thinking-time output").textContent).toBe("20 s");
   });
 });
 
