@@ -23,7 +23,7 @@ import {
   MAX_ITINERARY_TITLE,
   titleLength,
 } from "../freePlay/itineraryLink";
-import type { ModeSetting } from "../freePlay/linkPayload";
+import { type ModeSetting, THINKING_TIME_RANGE } from "../freePlay/linkPayload";
 import { DEFAULT_THINKING_TIME } from "../freePlay/modeRules";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { shortestRouteLength } from "../graph/routes";
@@ -353,23 +353,30 @@ function TripRow({
   onRemove: () => void;
 }) {
   const { trip } = entry;
+  const start = kommunName(graph, trip.start);
+  const destination = kommunName(graph, trip.destination);
   return (
     <li className="itinerary-trip">
       <span className="itinerary-trip-number" aria-hidden="true">
         {number}
       </span>
       <span className="itinerary-trip-what">
-        <span className="itinerary-trip-pair">
+        {/* Cut short with an ellipsis when it doesn't fit; the whole pair stays in the text. */}
+        <span
+          className="itinerary-trip-pair"
+          title={hidden ? undefined : `${start} → ${destination}`}
+        >
           {hidden ? (
             <>
-              <span aria-hidden="true">🎲</span> Slumpad · avstånd{" "}
+              <span aria-hidden="true">🎲</span>{" "}
+              <span className="itinerary-drawn-word">Slumpad · </span>avstånd{" "}
               {shortestRouteLength(graph, trip.start, trip.destination)}
             </>
           ) : (
             <>
-              <span className="itinerary-start">{kommunName(graph, trip.start)}</span>
+              <span className="itinerary-start">{start}</span>
               {" → "}
-              <span className="itinerary-destination">{kommunName(graph, trip.destination)}</span>
+              <span className="itinerary-destination">{destination}</span>
             </>
           )}
         </span>
@@ -388,6 +395,7 @@ function TripRow({
         id={`itinerary-trip-${entry.id}`}
         label={`Läge, resa ${number}`}
         labelHidden
+        compactThinkingTime={`Betänketid, resa ${number}`}
         mode={trip.mode}
         onChange={onModeChange}
       />
@@ -424,11 +432,15 @@ function TripRow({
   );
 }
 
-/** A trip's mode as a dropdown, and for Tidspress its betänketid beside it. */
+/**
+ * A trip's mode as a dropdown, and for Tidspress its betänketid beside it: the setup's slider, or
+ * given `compactThinkingTime`'s label, a dropdown of seconds that keeps a trip row on one line.
+ */
 function ModeSelect({
   id,
   label,
   labelHidden = false,
+  compactThinkingTime,
   mode,
   onChange,
 }: {
@@ -436,6 +448,7 @@ function ModeSelect({
   id: string;
   label: string;
   labelHidden?: boolean;
+  compactThinkingTime?: string;
   mode: ModeSetting;
   onChange: (mode: ModeSetting) => void;
 }) {
@@ -448,6 +461,7 @@ function ModeSelect({
           }
         : { kind },
     );
+  const chooseSeconds = (seconds: number) => onChange({ kind: "timed", thinkingTime: seconds });
   return (
     <span className="itinerary-mode">
       <label htmlFor={`${id}-mode`} className={labelHidden ? "visually-hidden" : undefined}>
@@ -464,17 +478,42 @@ function ModeSelect({
           </option>
         ))}
       </select>
-      {mode.kind === "timed" && (
-        <ThinkingTimeField
-          id={`${id}-thinking-time`}
-          labelHidden
-          seconds={mode.thinkingTime}
-          onChange={(seconds) => onChange({ kind: "timed", thinkingTime: seconds })}
-        />
-      )}
+      {mode.kind === "timed" &&
+        (compactThinkingTime === undefined ? (
+          <ThinkingTimeField
+            id={`${id}-thinking-time`}
+            labelHidden
+            seconds={mode.thinkingTime}
+            onChange={chooseSeconds}
+          />
+        ) : (
+          <>
+            <label htmlFor={`${id}-thinking-time`} className="visually-hidden">
+              {compactThinkingTime}
+            </label>
+            <select
+              id={`${id}-thinking-time`}
+              className="itinerary-thinking-time"
+              value={mode.thinkingTime}
+              onChange={(event) => chooseSeconds(Number(event.target.value))}
+            >
+              {THINKING_TIMES.map((seconds) => (
+                <option key={seconds} value={seconds}>
+                  {seconds} s
+                </option>
+              ))}
+            </select>
+          </>
+        ))}
     </span>
   );
 }
+
+/** Every whole second a betänketid can be. */
+const THINKING_TIMES = Array.from(
+  { length: THINKING_TIME_RANGE.max - THINKING_TIME_RANGE.min + 1 },
+  (_, index) => THINKING_TIME_RANGE.min + index,
+);
 
 /**
  * Lägg till resor: the mode for new trips, then Slumpa, which draws a number of trips at once,
