@@ -53,8 +53,8 @@ describe("App", () => {
       ([tag]) => tag.match(/aria-label="([^"]*)"/)?.[1] ?? (tag === '<a href="/">' ? "Åkle" : tag),
     );
 
-    // On screen: rules at the left edge, the title centred, then 🗺, 🎲 and stats at the right.
-    expect(controls).toEqual(["Så spelar du", "Åkle", "Resplan", "Fri resa", "Visa statistik"]);
+    // On screen: rules and stats at the left, the title centred, then 🗺 and 🎲 at the right.
+    expect(controls).toEqual(["Så spelar du", "Visa statistik", "Åkle", "Resplan", "Fri resa"]);
   });
 
   test("gives every header button a tooltip that matches its accessible name", () => {
