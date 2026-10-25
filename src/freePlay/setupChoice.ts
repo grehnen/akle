@@ -2,7 +2,7 @@ import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
 import { defaultDistanceRange, type DistanceRange } from "./draw";
 import { isModeKind, isThinkingTime, type ModeKind } from "./linkPayload";
 import { DEFAULT_THINKING_TIME } from "./modeRules";
-import { isDistanceRange, isRecord } from "./storedGame";
+import { hasFormat, isDistanceRange } from "./storedGame";
 
 const SETUP_KEY = "akle:free-play-setup";
 
@@ -32,7 +32,7 @@ export function restoreSetupChoice(storage: KeyValueStorage, largest: number): S
     range: defaultDistanceRange(largest),
   };
   const stored = readJson(storage, SETUP_KEY);
-  if (!isRecord(stored) || stored.format !== SETUP_FORMAT) return defaults;
+  if (!hasFormat(stored, SETUP_FORMAT)) return defaults;
   const { mode, thinkingTime, range } = stored;
   if (!isModeKind(mode) || !isThinkingTime(thinkingTime)) return defaults;
   if (!isDistanceRange(range)) return defaults;

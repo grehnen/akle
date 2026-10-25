@@ -2,7 +2,7 @@ import { type KeyValueStorage, readJson, removeKey, writeJson } from "../progres
 import type { PinnedVersion } from "./currentVersion";
 import { ITINERARY_TRIPS, MAX_ITINERARY_TITLE, titleLength } from "./itineraryLink";
 import type { LinkedTrip } from "./linkPayload";
-import { isRecord, readTrip, storeTrip } from "./storedGame";
+import { hasFormat, isRecord, readTrip, storeTrip } from "./storedGame";
 import { tripProblem } from "./tripLink";
 
 const DRAFT_KEY = "akle:itinerary-draft";
@@ -59,7 +59,7 @@ export function restoreBuilderDraft(
   version: PinnedVersion,
 ): BuilderDraft | undefined {
   const stored = readJson(storage, DRAFT_KEY);
-  if (!isRecord(stored) || stored.format !== DRAFT_FORMAT) return undefined;
+  if (!hasFormat(stored, DRAFT_FORMAT)) return undefined;
   const { versionOrdinal, title, trips } = stored;
   if (versionOrdinal !== version.ordinal) return undefined;
   if (typeof title !== "string" || titleLength(title) > MAX_ITINERARY_TITLE) return undefined;
