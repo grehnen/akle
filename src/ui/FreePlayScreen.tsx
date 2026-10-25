@@ -134,6 +134,8 @@ export function FreePlayScreen({
       started: resumed !== undefined || !opensAtStarta(linkedTrip.mode),
     };
   });
+  // The trip, by its count, whose board's map is drawn.
+  const [mapReadyFor, setMapReadyFor] = useState<number>();
   const link = played && tripLinkPath(ordinal, played.trip);
   const opened = played?.opened ?? false;
 
@@ -190,50 +192,56 @@ export function FreePlayScreen({
     );
   }
   const label = <p className="trip-number">Fri resa · {modeName(played.trip.mode)}</p>;
-  if (!played.started) {
-    return (
-      <StartGate
-        key={played.count}
+  const { count, started } = played;
+  // Behind Starta, the trip's board loads unseen; Starta waits until its map is drawn, and the
+  // reveal shows that same board.
+  return (
+    <>
+      {!started && (
+        <StartGate
+          key={`gate-${count}`}
+          label={label}
+          ready={mapReadyFor === count}
+          onStart={() =>
+            setPlayed({ ...played, started: true, game: startTime(played.game, clock()) })
+          }
+        />
+      )}
+      <FreePlayBoard
+        // A new trip gets a fresh board, so the last one's result state doesn't carry over.
+        key={count}
+        graph={graph}
+        mode={played.trip.mode}
+        game={played.game}
+        link={link}
         label={label}
-        onStart={() =>
-          setPlayed({ ...played, started: true, game: startTime(played.game, clock()) })
+        clock={clock}
+        concealed={!started}
+        onMapReady={() => setMapReadyFor(count)}
+        // Started here behind Starta, so the player can type at once.
+        focusGuessOnOpen={opensAtStarta(played.trip.mode) && played.game.guesses.length === 0}
+        onGameChange={(game) => {
+          const now = clock();
+          const stamped = stampThinkingTime(graph, stopTimeAtWin(graph, game, now), now);
+          setPlayed({ ...played, game: stamped });
+        }}
+        sessionStorage={sessionStorage}
+        resultActions={
+          <div className="free-play-next">
+            <a className="free-play-setup-link" href={FREE_PLAY_PATH}>
+              Välj läge och resa
+            </a>
+            <button
+              type="button"
+              className="free-play-redraw"
+              onClick={() => draw(played.trip.mode, played.range ?? range, played.game.trip)}
+            >
+              Slumpa ny resa
+            </button>
+          </div>
         }
       />
-    );
-  }
-  return (
-    <FreePlayBoard
-      // A new trip gets a fresh board, so the last one's result state doesn't carry over.
-      key={played.count}
-      graph={graph}
-      mode={played.trip.mode}
-      game={played.game}
-      link={link}
-      label={label}
-      clock={clock}
-      // Started here just now, behind Starta, so the player can type at once.
-      focusGuessOnOpen={opensAtStarta(played.trip.mode) && played.game.guesses.length === 0}
-      onGameChange={(game) => {
-        const now = clock();
-        const stamped = stampThinkingTime(graph, stopTimeAtWin(graph, game, now), now);
-        setPlayed({ ...played, game: stamped });
-      }}
-      sessionStorage={sessionStorage}
-      resultActions={
-        <div className="free-play-next">
-          <a className="free-play-setup-link" href={FREE_PLAY_PATH}>
-            Välj läge och resa
-          </a>
-          <button
-            type="button"
-            className="free-play-redraw"
-            onClick={() => draw(played.trip.mode, played.range ?? range, played.game.trip)}
-          >
-            Slumpa ny resa
-          </button>
-        </div>
-      }
-    />
+    </>
   );
 }
 

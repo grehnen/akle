@@ -8,6 +8,7 @@ import { itineraryLinkPath } from "./freePlay/itineraryLink";
 import { encodeLinkPayload, type LinkedTrip } from "./freePlay/linkPayload";
 import { tripLinkPath } from "./freePlay/tripLink";
 import type { GraphVersionFiles } from "./graph/graphVersionFiles";
+import type { LoadMapLibre } from "./map/mapLibreLoader";
 import { type KeyValueStorage, memoryStorage } from "./progress/storage";
 
 const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>', {
@@ -110,8 +111,29 @@ const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve
 
 let mounted: { root: Root; container: HTMLElement } | undefined;
 
+/**
+ * Stands in for MapLibre, which jsdom can't run: each map finds none and so is ready at once,
+ * unless a test holds the maps back with {@link holdMaps}.
+ */
+let heldMaps: (() => void)[] | undefined;
+const loadMap: LoadMapLibre = () =>
+  heldMaps === undefined
+    ? Promise.resolve(undefined)
+    : new Promise((resolve) => heldMaps?.push(() => resolve(undefined)));
+/** Holds every map back from being ready until the returned `drawMaps` is called. */
+function holdMaps() {
+  heldMaps = [];
+  return () =>
+    act(async () => {
+      const waiting = heldMaps ?? [];
+      heldMaps = undefined;
+      for (const draw of waiting) draw();
+    });
+}
+
 afterEach(() => {
   clockTime = OPENED_AT;
+  heldMaps = undefined;
   copied.length = 0;
   if (!mounted) return;
   const { root, container } = mounted;
@@ -138,6 +160,7 @@ async function mountApp(path: string, storage: KeyValueStorage = memoryStorage()
         path={pathname}
         search={search}
         pacing={pacing}
+        loadMap={loadMap}
       />,
     ),
   );
@@ -213,6 +236,41 @@ const fridayLink = itineraryLinkPath(0, "Fredagsresan", [
 ]);
 
 describe("an itinerary from its link", () => {
+  test("a trip's card loads its board behind Starta, which waits for the map; the trip starts at the reveal", async () => {
+    const storage = memoryStorage();
+    const written: string[] = [];
+    const recording: KeyValueStorage = {
+      ...storage,
+      setItem: (key, value) => {
+        written.push(value);
+        storage.setItem(key, value);
+      },
+    };
+    const drawMaps = holdMaps();
+    const container = await mountApp(
+      itineraryLinkPath(0, "Fredagsresan", [haningeTrosa, nynashamnSalem]),
+      recording,
+    );
+    await click(button(container, "Starta resplanen"));
+
+    const starta = query(container, ".start-gate-button");
+    expect(starta.getAttribute("aria-disabled")).toBe("true");
+    expect(query(container, ".play-screen").hasAttribute("inert")).toBe(true);
+    expect(dom.window.document.body.outerHTML).not.toMatch(/Haninge|Trosa/);
+    clockTime += 20_000;
+    await click(starta);
+    expect(container.querySelector("#trip-heading")).toBeNull();
+    await drawMaps();
+    expect(starta.hasAttribute("aria-disabled")).toBe(false);
+    expect(written.join()).not.toContain("startedAt");
+
+    clockTime += 3_000;
+    await click(starta);
+    expect(text(container, "#trip-heading")).toBe("Från: Haninge Till: Trosa");
+    expect(text(container, '.thinking-time [role="timer"]')).toBe("10");
+    expect(written.at(-1)).toContain(`"startedAt":${clockTime}`);
+  });
+
   test("opens on its intro: the title, the number of trips and each trip's mode, ends hidden", async () => {
     const container = await mountApp(fridayLink);
 
