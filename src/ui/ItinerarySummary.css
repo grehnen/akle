@@ -67,6 +67,11 @@
   font-weight: 700;
 }
 
+/* Room above Dela resultat for its toast, so the toast doesn't cover the total. */
+.itinerary-summary .share {
+  margin-top: 1.4rem;
+}
+
 .itinerary-summary-actions {
   display: flex;
   flex-wrap: wrap;
