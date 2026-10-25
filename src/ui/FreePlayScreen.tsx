@@ -212,7 +212,10 @@ export function FreePlayScreen({
         <StartGate
           key={`gate-${count}`}
           label={label}
+          mode={played.trip.mode}
           ready={mapReadyFor === count}
+          // Behind Starta the trip has no save yet, so leaving for setup records nothing of it.
+          wayBack={<SetupLink />}
           onStart={() =>
             setPlayed({ ...played, started: true, game: startTime(played.game, clock()) })
           }
@@ -239,9 +242,7 @@ export function FreePlayScreen({
         sessionStorage={sessionStorage}
         resultActions={
           <div className="free-play-next">
-            <a className="free-play-setup-link" href={FREE_PLAY_PATH}>
-              Välj läge och resa
-            </a>
+            <SetupLink />
             <button
               type="button"
               className="free-play-redraw"
@@ -253,6 +254,15 @@ export function FreePlayScreen({
         }
       />
     </>
+  );
+}
+
+/** The way back to setup, from a trip's result or its Starta gate. */
+function SetupLink() {
+  return (
+    <a className="free-play-setup-link" href={FREE_PLAY_PATH}>
+      Välj läge och resa
+    </a>
   );
 }
 

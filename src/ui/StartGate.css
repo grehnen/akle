@@ -17,6 +17,11 @@
   color: var(--muted);
 }
 
+.start-gate-mode {
+  max-width: 26rem;
+  font-size: 0.95rem;
+}
+
 .start-gate-button {
   min-height: 4rem;
   min-width: 12rem;

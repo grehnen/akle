@@ -1,32 +1,8 @@
 import { type ModeSetting, THINKING_TIME_RANGE } from "../freePlay/linkPayload";
-import { MODE_NAMES } from "./messages";
+import { MODES } from "./messages";
 import "./ModeCards.css";
 
 type ModeKind = ModeSetting["kind"];
-
-/** Every mode in the order the player is offered them, with its name and how it plays. */
-export const MODES: { kind: ModeKind; name: string; description: string }[] = [
-  {
-    kind: "standard",
-    name: MODE_NAMES.standard,
-    description: "Som dagens resa: gissningarna räcker till avståndet och lite till.",
-  },
-  {
-    kind: "unlimited",
-    name: MODE_NAMES.unlimited,
-    description: "Gissa hur många gånger du vill. Ge upp när du vill.",
-  },
-  {
-    kind: "timed",
-    name: MODE_NAMES.timed,
-    description: "Varje gissning måste göras inom betänketiden.",
-  },
-  {
-    kind: "tie-breaker",
-    name: MODE_NAMES["tie-breaker"],
-    description: "Tiden tas. Vid lika poäng vinner den snabbaste.",
-  },
-];
 
 /**
  * The Läge choice: one card per mode, its name and a line on how it plays, as a radio group.
