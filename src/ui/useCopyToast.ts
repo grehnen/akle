@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { COPIED, copyShareText } from "./copyShareText";
+import { copyShareText } from "./copyShareText";
 
 /** How long the toast confirming a copy stays up. */
 const TOAST_MS = 2000;
@@ -16,9 +16,9 @@ export function useCopyToast(): { toast: string; copy: (text: string) => Promise
     return () => clearTimeout(timer);
   }, [toast]);
   const copy = async (text: string) => {
-    const message = await copyShareText(globalThis.navigator?.clipboard, text);
+    const { copied, message } = await copyShareText(globalThis.navigator?.clipboard, text);
     setToast(message);
-    return message === COPIED;
+    return copied;
   };
   return { toast, copy };
 }
