@@ -4,7 +4,7 @@ import type { Clock } from "../engine/clock";
 import { reviewGame } from "../engine/game";
 import { loadCurrentVersion, type PinnedVersion } from "../freePlay/currentVersion";
 import { type OpenedTripLink, openTrip, openTripLink } from "../freePlay/tripLink";
-import { type ResumedTrip, resumeTrip, storedTrip } from "../freePlay/tripSlot";
+import { type ResumedTrip, resumeTrip, latestTrip } from "../freePlay/tripSaves";
 import { browserSessionStorage, browserStorage, type KeyValueStorage } from "../progress/storage";
 import { FreePlayLinkError } from "./FreePlayLinkError";
 import { FreePlayScreen, type ShowTripLink } from "./FreePlayScreen";
@@ -96,7 +96,7 @@ async function loadUnfinishedTrip(
   now: Date,
   storage: KeyValueStorage,
 ): Promise<{ unfinished?: Loaded; version?: PinnedVersion }> {
-  const stored = storedTrip(storage);
+  const stored = latestTrip(storage);
   if (stored === undefined) return {};
   const opened = await openTrip(source, now, stored.versionOrdinal, stored.trip);
   if (opened.kind !== "trip") return {};

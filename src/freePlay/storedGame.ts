@@ -6,7 +6,7 @@ import { isThinkingTime, type LinkedTrip, type ModeSetting } from "./linkPayload
 import { freePlayRules, opensAtStarta } from "./modeRules";
 
 /**
- * A free-play game as a slot stores it: its guesses and whatever its mode keeps besides (a
+ * A free-play game as its save stores it: its guesses and whatever its mode keeps besides (a
  * give-up, a start time, timeouts), each an optional field.
  */
 export type StoredGame = {

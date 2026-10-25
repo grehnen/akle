@@ -16,8 +16,8 @@ import {
   drawnAtStarta,
   noteDrawnAtStarta,
   type ResumedTrip,
-  saveTripSlot,
-} from "../freePlay/tripSlot";
+  saveTrip,
+} from "../freePlay/tripSaves";
 import type { GraphVersion } from "../graph/graphVersion";
 import type { KeyValueStorage } from "../progress/storage";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
@@ -50,7 +50,7 @@ type FreePlayScreenProps = {
   /** The linked trip's game, when it is the stored trip, picked up where it was left. */
   resumed?: ResumedTrip;
   onShowTripLink?: ShowTripLink;
-  /** Where the trip slot is kept, the only free-play record. */
+  /** Where trips' saves are kept, the only free-play record. */
   storage: KeyValueStorage;
   /** For the board's view choices, such as the result tab. */
   sessionStorage: KeyValueStorage;
@@ -62,7 +62,7 @@ type FreePlayScreenProps = {
  * The trip on the board, and whether it was drawn, with the range it was drawn from, which its
  * result draws the next from (none for a trip not drawn, or drawn and stored before ranges were
  * kept: those draw from setup's range). `opened` marks the trip the screen opened with, from a
- * link or the slot, rather than one started here.
+ * link or its save, rather than one started here.
  * `started` is false while a trip on the clock waits behind `Starta`, its ends still hidden.
  */
 type Played = {
@@ -79,7 +79,7 @@ type Played = {
  * Free play: the Fri resa setup screen, or a trip link's or the stored trip, then the drawn,
  * picked or linked trip on the board in its mode, with its score and share text in the
  * result, which leads on to another drawn trip in the same mode or back to setup. The trip on
- * the board is kept in the trip slot; nothing here touches daily progress.
+ * the board is kept as its link's save; nothing here touches daily progress.
  */
 export function FreePlayScreen({
   graph,
@@ -103,7 +103,7 @@ export function FreePlayScreen({
   };
   const [played, setPlayed] = useState<Played | undefined>(() => {
     if (linkedTrip === undefined) return undefined;
-    // A drawn trip behind Starta isn't in the slot yet, but may have been noted this session.
+    // A drawn trip behind Starta has no save yet, but may have been noted this session.
     const drawnFrom = resumed
       ? resumed.range
       : drawnAtStarta(sessionStorage, tripLinkPath(ordinal, linkedTrip));
@@ -130,12 +130,13 @@ export function FreePlayScreen({
     noteDrawnAtStarta(sessionStorage, tripLinkPath(ordinal, played.trip), played.range);
   }, [sessionStorage, ordinal, played]);
 
-  // A trip takes the slot as it starts, when the board first shows its ends (at Starta for a
-  // trip on the clock), and keeps it up to date as it is played.
+  // A trip gets its save as it starts, when the board first shows its ends (at Starta for a
+  // trip on the clock), and keeps it up to date as it is played. A trip started here from setup
+  // or Slumpa ny resa is a new game, so it replaces any save its link had.
   useEffect(() => {
     if (played === undefined || !played.started) return;
     const { trip, game, drawn, range: drawnFrom } = played;
-    saveTripSlot(storage, { versionOrdinal: ordinal, trip, game, drawn, range: drawnFrom });
+    saveTrip(storage, { versionOrdinal: ordinal, trip, game, drawn, range: drawnFrom });
   }, [storage, ordinal, played]);
 
   const play = (picked: Trip, tripMode: ModeSetting, drawnFrom?: DistanceRange) =>
