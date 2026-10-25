@@ -6,12 +6,14 @@ import type { LinkedTrip } from "./linkPayload";
 import { markPlayed, putSave, readSaves, type SavedGameKind } from "./savedGames";
 import {
   isCount,
+  isDistanceRange,
   isRecord,
   readTrip,
   restoreStoredGame,
   sameTrip,
   type StoredGame,
   storeGame,
+  storeRange,
   storeTrip,
 } from "./storedGame";
 
@@ -60,7 +62,7 @@ export function saveTrip(storage: KeyValueStorage, saved: SavedTrip): void {
     versionOrdinal,
     trip: storeTrip(trip),
     drawn,
-    ...(range && { range: { min: range.min, max: range.max } }),
+    ...(range && { range: storeRange(range) }),
     game: storeGame(game),
   };
   putSave(storage, TRIP_SAVES, stored, (other) => isSaveOf(other, versionOrdinal, trip));
@@ -113,10 +115,7 @@ export function noteDrawnAtStarta(
   link: string,
   range: DistanceRange,
 ): void {
-  writeJson(sessionStorage, DRAWN_AT_STARTA_KEY, {
-    link,
-    range: { min: range.min, max: range.max },
-  });
+  writeJson(sessionStorage, DRAWN_AT_STARTA_KEY, { link, range: storeRange(range) });
 }
 
 /** The range the trip behind Starta at `link` was drawn from, when noted this session. */
@@ -126,7 +125,7 @@ export function drawnAtStarta(
 ): DistanceRange | undefined {
   const noted = readJson(sessionStorage, DRAWN_AT_STARTA_KEY);
   if (!isRecord(noted) || noted.link !== link || !isDistanceRange(noted.range)) return undefined;
-  return { min: noted.range.min, max: noted.range.max };
+  return storeRange(noted.range);
 }
 
 /** A trip's save, when it's whole; any part out of shape makes it unreadable. */
@@ -144,13 +143,7 @@ function readTripSave(stored: unknown): StoredTripSave | undefined {
     trip: linkedTrip,
     drawn,
     // Only a convenience for Slumpa ny resa, so one out of shape is dropped, not the trip.
-    ...(isDistanceRange(range) && { range: { min: range.min, max: range.max } }),
+    ...(isDistanceRange(range) && { range: storeRange(range) }),
     game: game as StoredGame,
   };
-}
-
-function isDistanceRange(value: unknown): value is DistanceRange {
-  if (!isRecord(value)) return false;
-  const { min, max } = value;
-  return isCount(min) && isCount(max) && min >= 1 && min <= max;
 }
