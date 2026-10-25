@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { type Clock, systemClock } from "../engine/clock";
 import { type Game, newGame, type Trip } from "../engine/game";
 import { stampThinkingTime, startTime, stopTimeAtWin } from "../engine/tripTime";
@@ -20,10 +20,11 @@ import {
 } from "../freePlay/tripSaves";
 import type { GraphVersion } from "../graph/graphVersion";
 import type { KeyValueStorage } from "../progress/storage";
+import { AppLink } from "./AppLink";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
 import { FreePlayBoard } from "./FreePlayBoard";
 import { ModeCards } from "./ModeCards";
-import { modeName } from "./messages";
+import { MODE_NAMES, modeName } from "./messages";
 import { StartGate } from "./StartGate";
 import {
   PickTripForm,
@@ -36,20 +37,33 @@ import "./FreePlayScreen.css";
 
 /**
  * Shows a trip's link, `/fri?r=…`, in the address bar while the trip is played. `replace` asks
- * for it to stand in for the current address, as for a trip resumed on `/fri`.
+ * for it to stand in for the current address, as for a trip opened from its link.
  */
 export type ShowTripLink = (link: string, replace?: boolean) => void;
+
+/** The most recently played trip, left unfinished: what setup's way back to it names. */
+export type UnfinishedTrip = {
+  mode: ModeSetting;
+  /** The guesses made so far. */
+  guesses: number;
+  /** The trip's link, which resumes it. */
+  link: string;
+};
 
 type FreePlayScreenProps = {
   /** The version trips are played on: the current one, or the one a trip link pins. */
   graph: GraphVersion;
   /** The version's ordinal, which a trip's link pins it by. */
   ordinal: number;
-  /** A trip link's or the stored trip's trip, played at once instead of the setup screen. */
+  /** A trip link's trip, played at once instead of the setup screen. */
   linkedTrip?: LinkedTrip;
-  /** The linked trip's game, when it is the stored trip, picked up where it was left. */
+  /** The linked trip's game, when its link has a save, picked up where it was left. */
   resumed?: ResumedTrip;
+  /** The most recently played trip, when unfinished, which setup offers a way back to. */
+  unfinished?: UnfinishedTrip;
   onShowTripLink?: ShowTripLink;
+  /** Opens another page of the app in place, as the way back to an unfinished trip does. */
+  onNavigate?: (to: string) => void;
   /** Where trips' saves are kept, the only free-play record. */
   storage: KeyValueStorage;
   /** For the board's view choices, such as the result tab. */
@@ -76,7 +90,7 @@ type Played = {
 };
 
 /**
- * Free play: the Fri resa setup screen, or a trip link's or the stored trip, then the drawn,
+ * Free play: the Fri resa setup screen, or a trip link's trip, then the drawn,
  * picked or linked trip on the board in its mode, with its score and share text in the
  * result, which leads on to another drawn trip in the same mode or back to setup. The trip on
  * the board is kept as its link's save; nothing here touches daily progress.
@@ -86,7 +100,9 @@ export function FreePlayScreen({
   ordinal,
   linkedTrip,
   resumed,
+  unfinished,
   onShowTripLink = () => {},
+  onNavigate = (to) => globalThis.location.assign(to),
   storage,
   sessionStorage,
   clock = systemClock,
@@ -169,6 +185,7 @@ export function FreePlayScreen({
         onRangeChange={setRange}
         onDraw={() => draw(mode, range)}
         onPick={(trip) => play(trip, mode)}
+        resume={unfinished && <ResumeTrip unfinished={unfinished} onNavigate={onNavigate} />}
       />
     );
   }
@@ -232,6 +249,7 @@ function FreePlaySetup({
   onRangeChange,
   onDraw,
   onPick,
+  resume,
 }: {
   graph: GraphVersion;
   mode: ModeSetting;
@@ -242,6 +260,8 @@ function FreePlaySetup({
   onRangeChange: (range: DistanceRange) => void;
   onDraw: () => void;
   onPick: (trip: Trip) => void;
+  /** The way back to an unfinished trip, after setup's own choices. */
+  resume?: ReactNode;
 }) {
   const [tab, setTab] = useState<TripChoiceTab>("draw");
   return (
@@ -269,6 +289,25 @@ function FreePlaySetup({
         submitLabel="Res"
         onPick={onPick}
       />
+      {resume}
     </section>
+  );
+}
+
+/**
+ * Setup's way back to the most recently played trip, unfinished, opened in place like its link.
+ * Like a share text, it never names the trip's ends.
+ */
+function ResumeTrip({
+  unfinished: { mode, guesses, link },
+  onNavigate,
+}: {
+  unfinished: UnfinishedTrip;
+  onNavigate: (to: string) => void;
+}) {
+  return (
+    <AppLink className="free-play-resume" href={link} onNavigate={onNavigate}>
+      Fortsätt resan: {MODE_NAMES[mode.kind]}, {guesses} {guesses === 1 ? "gissning" : "gissningar"}
+    </AppLink>
   );
 }
