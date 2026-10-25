@@ -47,8 +47,17 @@ export function ModeCards({
     <fieldset className="free-play-modes">
       <legend className="section-heading">Läge</legend>
       {MODES.map(({ kind, name, description }) => (
-        // The card holds the radio's label and, beside it rather than inside, the betänketid.
-        <div key={kind} className="free-play-mode">
+        // The card holds the radio's label and, beside it rather than inside, the betänketid. A
+        // click anywhere on it picks its mode; the label's own clicks go through the radio, and
+        // the keyboard keeps to the radio group.
+        <div
+          key={kind}
+          className="free-play-mode"
+          onClick={(event) => {
+            const onLabel = (event.target as Element).closest(".free-play-mode-choice") !== null;
+            if (!onLabel && mode.kind !== kind) choose(kind);
+          }}
+        >
           <label className="free-play-mode-choice">
             <input
               type="radio"
