@@ -2,6 +2,7 @@ import { type Game, giveUp, type Trip, newGame, reviewGame, type TakenHints } fr
 import { stampThinkingTime, startTime, stopTimeAtWin } from "../engine/tripTime";
 import type { GraphVersion, KommunCode } from "../graph/graphVersion";
 import { restoreGame } from "../progress/savedGame";
+import type { DistanceRange } from "./draw";
 import { isThinkingTime, type LinkedTrip, type ModeSetting } from "./linkPayload";
 import { freePlayRules, opensAtStarta } from "./modeRules";
 
@@ -120,3 +121,13 @@ export const isRecord = (value: unknown): value is Record<string, unknown> =>
 /** A whole number at least 0. */
 export const isCount = (value: unknown): value is number =>
   Number.isInteger(value) && (value as number) >= 0;
+
+/** A stored distance range: whole distances from 1, its min no more than its max. */
+export function isDistanceRange(value: unknown): value is DistanceRange {
+  if (!isRecord(value)) return false;
+  const { min, max } = value;
+  return isCount(min) && isCount(max) && min >= 1 && min <= max;
+}
+
+/** A range as stored: just its min and max. */
+export const storeRange = ({ min, max }: DistanceRange): DistanceRange => ({ min, max });
