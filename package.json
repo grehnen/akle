@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prototype:starta-gate": "vite --config vite.prototype.config.ts --port 5211 --strictPort",
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "git config core.hooksPath .githooks || true",

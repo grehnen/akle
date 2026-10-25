@@ -1,0 +1,175 @@
+/* PROTOTYPE (B1/B2): throwaway. Never merge to main. */
+
+/* ---------- Page scaffolding (not part of the design) ---------- */
+
+.sgp-page {
+  padding: 1.25rem 0 7rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5rem;
+}
+
+.sgp-intro,
+.sgp-state {
+  width: min(56rem, 100%);
+}
+
+.sgp-page--phone .sgp-intro,
+.sgp-page--phone .sgp-state {
+  width: 390px;
+}
+
+.sgp-intro {
+  padding: 0.75rem 1rem;
+  border: 2px dashed #ff2fb4;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.sgp-intro p {
+  margin: 0.25rem 0;
+}
+
+.sgp-intro strong,
+.sgp-intro em,
+.sgp-intro code {
+  color: var(--text);
+}
+
+.sgp-state-caption {
+  margin: 0 0 0.5rem;
+  padding: 0.2rem 0.6rem;
+  border-left: 3px solid #ff2fb4;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #ff8fd6;
+}
+
+/* The device: the app's `main` column, 56rem on a computer or a 390 px phone (1rem gutters). */
+.sgp-device {
+  padding: 1rem 1rem 2rem;
+  border: 1px dashed var(--rule);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+/* A stand-in for the site header, for scale only. */
+.sgp-app-title {
+  margin: 0 0 0.5rem;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+  opacity: 0.35;
+}
+
+/* Starta shown as focused, as when the gate opens from a link. */
+.sgp-focused {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ---------- Shared by A, B and C ---------- */
+
+/* The decided way back: small, text-styled, top-left of the gate. */
+.sgp-back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  margin: -0.5rem 0 -0.5rem -0.25rem;
+  padding: 0 0.25rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.sgp-back:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+/* Starta at one width loading or ready, so it never resizes when the map is done. */
+.sgp-starta {
+  min-width: 15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.sgp-starta[aria-disabled="true"] {
+  font-size: 1.05rem;
+}
+
+/* ---------- A and B: three blocks ---------- */
+
+.sgp-blocks {
+  gap: 1.25rem;
+}
+
+.sgp-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sgp-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.sgp-rules {
+  width: 100%;
+  max-width: 26rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--rule);
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.sgp-rules p {
+  margin: 0;
+}
+
+.sgp-rules--list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sgp-rules--list li + li {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+.sgp-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sgp-caption {
+  max-width: 24rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* ---------- C: today's order ---------- */
+
+/* `.trip-number` jumps to the front (`order: -1`); the back link stays above it. */
+.sgp-minimal .sgp-back {
+  order: -2;
+}
