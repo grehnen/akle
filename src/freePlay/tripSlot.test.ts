@@ -81,7 +81,7 @@ describe("the trip slot", () => {
     expect(game.givenUp).toBe(true);
   });
 
-  test("ignores a give-up stored before the distance's worth of guesses", () => {
+  test("keeps a give-up stored before the distance's worth of guesses", () => {
     const storage = memoryStorage();
     const slot = {
       format: 1,
@@ -92,7 +92,7 @@ describe("the trip slot", () => {
     };
     storage.setItem("akle:free-play-trip", JSON.stringify(slot));
 
-    expect(resumeTrip(storage, version, trip)?.game.givenUp).toBeUndefined();
+    expect(resumeTrip(storage, version, trip)?.game.givenUp).toBe(true);
   });
 
   test.each<[string, LinkedTrip, number]>([

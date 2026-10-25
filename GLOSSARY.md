@@ -129,7 +129,7 @@ The number a finished free-play trip earns, lower being better: a win's extra, o
 _Avoid_: Points, result, total
 
 **Give up** (in the UI: _ge upp_):
-To end an unwon free-play trip before its guess limit, which counts as a loss; it is allowed once the player has made as many guesses as the distance, and never in a daily trip.
+To end an unwon free-play trip before its guess limit, which counts as a loss; it is allowed at any point in the trip, from before the first guess, and never in a daily trip.
 _Avoid_: Surrender, quit, forfeit, abandon
 
 **Streak**:

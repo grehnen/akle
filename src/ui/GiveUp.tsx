@@ -1,26 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import "./Modal.css";
 
-type GiveUpProps = {
-  /** Whether giving up is allowed yet: only once there are as many guesses as the distance. */
-  enabled: boolean;
-  onGiveUp: () => void;
-};
-
 /**
- * The Ge upp button, shown from the start of a free-play trip and enabled once the player has
- * made as many guesses as the distance. Pressing it asks first, since a give-up ends the trip.
+ * The Ge upp button, shown and enabled throughout a free-play trip. Pressing it asks first, since
+ * a give-up ends the trip.
  */
-export function GiveUp({ enabled, onGiveUp }: GiveUpProps) {
+export function GiveUp({ onGiveUp }: { onGiveUp: () => void }) {
   const [confirming, setConfirming] = useState(false);
   return (
     <>
-      <button
-        type="button"
-        className="give-up-button"
-        disabled={!enabled}
-        onClick={() => setConfirming(true)}
-      >
+      <button type="button" className="give-up-button" onClick={() => setConfirming(true)}>
         Ge upp
       </button>
       {confirming && (
