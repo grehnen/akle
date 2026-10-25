@@ -60,12 +60,15 @@ export function ModeCards({
             <span className="free-play-mode-name">{name}</span>
             <span className="free-play-mode-description">{description}</span>
           </label>
-          {kind === "timed" && mode.kind === "timed" && (
-            <ThinkingTimeField
-              id="free-play-thinking-time"
-              seconds={mode.thinkingTime}
-              onChange={(seconds) => onChange({ kind: "timed", thinkingTime: seconds })}
-            />
+          {/* Kept in place, hidden and inert, until Tidspress is chosen, so the cards don't grow. */}
+          {kind === "timed" && (
+            <div className="free-play-mode-setting" inert={mode.kind !== "timed"}>
+              <ThinkingTimeField
+                id="free-play-thinking-time"
+                seconds={mode.kind === "timed" ? mode.thinkingTime : thinkingTime}
+                onChange={(seconds) => onChange({ kind: "timed", thinkingTime: seconds })}
+              />
+            </div>
           )}
         </div>
       ))}
