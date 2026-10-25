@@ -1,4 +1,4 @@
-import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
+import { type KeyValueStorage, readJson, removeKey, writeJson } from "../progress/storage";
 import { isRecord } from "./storedGame";
 
 /**
@@ -74,11 +74,7 @@ function adoptLegacySlot<Save>(storage: KeyValueStorage, kind: SavedGameKind<Sav
   if (save !== undefined) writeSaves(storage, kind, [save]);
   // Kept while its save couldn't be written, as with storage full, so it isn't lost.
   if (save === undefined || readJson(storage, kind.key) !== undefined) {
-    try {
-      storage.removeItem(kind.legacySlotKey);
-    } catch {
-      // Blocked storage: the slot stays, read again next time.
-    }
+    removeKey(storage, kind.legacySlotKey);
   }
   return save === undefined ? [] : [save];
 }
