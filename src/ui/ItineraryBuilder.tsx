@@ -31,7 +31,7 @@ import { SITE_URL } from "../siteUrl";
 import { CloseIcon } from "./CloseIcon";
 import { useCopyToast } from "./useCopyToast";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
-import { MODES } from "./messages";
+import { MODES, modeDescription } from "./messages";
 import { ThinkingTimeField } from "./ModeCards";
 import {
   PickTripForm,
@@ -440,11 +440,13 @@ function TripRow({
 /**
  * A trip's mode as a dropdown, and for Tidspress its betänketid beside it: the setup's slider, or
  * given `compactThinkingTime`'s label, a dropdown of seconds that keeps a trip row on one line.
+ * `describedBy` names what says how the chosen mode plays.
  */
 function ModeSelect({
   id,
   label,
   labelHidden = false,
+  describedBy,
   compactThinkingTime,
   mode,
   onChange,
@@ -453,6 +455,7 @@ function ModeSelect({
   id: string;
   label: string;
   labelHidden?: boolean;
+  describedBy?: string;
   compactThinkingTime?: string;
   mode: ModeSetting;
   onChange: (mode: ModeSetting) => void;
@@ -474,6 +477,7 @@ function ModeSelect({
       </label>
       <select
         id={`${id}-mode`}
+        aria-describedby={describedBy}
         value={mode.kind}
         onChange={(event) => choose(event.target.value as ModeSetting["kind"])}
       >
@@ -487,7 +491,6 @@ function ModeSelect({
         (compactThinkingTime === undefined ? (
           <ThinkingTimeField
             id={`${id}-thinking-time`}
-            labelHidden
             seconds={mode.thinkingTime}
             onChange={chooseSeconds}
           />
@@ -521,8 +524,9 @@ const THINKING_TIMES = Array.from(
 );
 
 /**
- * Lägg till resor: the mode for new trips, then Slumpa, which draws a number of trips at once,
- * or Välj själv, which adds one hand-picked trip. Disabled once the itinerary is full.
+ * Lägg till resor: the mode for new trips and how it plays, then Slumpa, which draws a number of
+ * trips at once, or Välj själv, which adds one hand-picked trip. Disabled once the itinerary is
+ * full.
  */
 function AddTrips({
   panelRef,
@@ -561,7 +565,16 @@ function AddTrips({
   return (
     <fieldset ref={panelRef} className="itinerary-add" disabled={full}>
       <legend>Lägg till resor{full && " (fullt)"}</legend>
-      <ModeSelect id="itinerary-new" label="Läge för nya resor" mode={mode} onChange={setMode} />
+      <ModeSelect
+        id="itinerary-new"
+        label="Läge för nya resor"
+        describedBy="itinerary-new-mode-description"
+        mode={mode}
+        onChange={setMode}
+      />
+      <p id="itinerary-new-mode-description" className="itinerary-mode-description">
+        {modeDescription(mode.kind)}
+      </p>
       <TripChoiceTabs idPrefix={ID_PREFIX} selected={tab} onSelect={setTab} />
       <div
         id={tripChoicePanelId(ID_PREFIX, "draw")}
