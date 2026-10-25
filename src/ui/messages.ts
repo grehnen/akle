@@ -46,6 +46,9 @@ export function resultOutcome(
  */
 export type LabelPart = string | { timeouts: number };
 
+/** What a label's costs are separated by: where a label too long for its line may break. */
+export const COST_SEPARATOR = ", ";
+
 /** A label as text, its timeouts written `2 ⏱`. */
 export function labelText(parts: readonly LabelPart[]): string {
   return parts.map((part) => (typeof part === "string" ? part : `${part.timeouts} ⏱`)).join("");
@@ -61,7 +64,7 @@ function costs(hintsUsed: number, timeouts = 0): LabelPart[] {
 
 /** `, 2 ledtrådar`, `, 1 ledtråd, 2 ⏱` to close a bracket with, else nothing. */
 export function costsSuffixParts(hintsUsed: number, timeouts?: number): LabelPart[] {
-  return costs(hintsUsed, timeouts).flatMap((cost) => [", ", cost]);
+  return costs(hintsUsed, timeouts).flatMap((cost) => [COST_SEPARATOR, cost]);
 }
 
 export function costsSuffix(hintsUsed: number, timeouts?: number): string {
@@ -72,7 +75,11 @@ export function costsSuffix(hintsUsed: number, timeouts?: number): string {
 export function costsNoteParts(hintsUsed: number, timeouts?: number): LabelPart[] {
   const counted = costs(hintsUsed, timeouts);
   if (counted.length === 0) return [];
-  return [" (", ...counted.flatMap((cost, index) => (index === 0 ? [cost] : [", ", cost])), ")"];
+  return [
+    " (",
+    ...counted.flatMap((cost, index) => (index === 0 ? [cost] : [COST_SEPARATOR, cost])),
+    ")",
+  ];
 }
 
 /** A free-play score: `3 poäng`, `−1 poäng` (with a real minus sign). */
