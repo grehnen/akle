@@ -125,6 +125,7 @@ export function ItineraryScreen({
           // Each card is a fresh gate, its Starta focused.
           key={`gate-${stage.index}`}
           label={label}
+          mode={trip.mode}
           ready={mapReadyFor === stage.index}
           onTheClock={opensAtStarta(trip.mode)}
           onStart={() => moveOn((current) => startTrip(trips, current, clock()))}

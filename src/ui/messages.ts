@@ -73,6 +73,39 @@ export const MODE_NAMES: Record<ModeSetting["kind"], string> = {
   "tie-breaker": "Tidtagning",
 };
 
+/**
+ * Every mode in the order the player is offered them, with its name and how it plays: the one
+ * text that explains a mode, wherever one is chosen or started.
+ */
+export const MODES: readonly { kind: ModeSetting["kind"]; name: string; description: string }[] = [
+  {
+    kind: "standard",
+    name: MODE_NAMES.standard,
+    description: "Som dagens resa: gissningarna räcker till avståndet och lite till.",
+  },
+  {
+    kind: "unlimited",
+    name: MODE_NAMES.unlimited,
+    description: "Gissa hur många gånger du vill. Ge upp när du vill.",
+  },
+  {
+    kind: "timed",
+    name: MODE_NAMES.timed,
+    description:
+      "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng, även före första gissningen.",
+  },
+  {
+    kind: "tie-breaker",
+    name: MODE_NAMES["tie-breaker"],
+    description: "Tiden tas. Vid lika poäng vinner den snabbaste.",
+  },
+];
+
+/** How a mode plays, as {@link MODES} words it. */
+export function modeDescription(kind: ModeSetting["kind"]): string {
+  return MODES.find((mode) => mode.kind === kind)?.description ?? "";
+}
+
 /** A mode as the UI names it, with a timed trip's thinking time: `Standard`, `Tidspress 10 s`. */
 export function modeName(mode: ModeSetting): string {
   const name = MODE_NAMES[mode.kind];
