@@ -36,6 +36,8 @@ export function FreePlayBoard({
   sessionStorage,
   resultActions,
   stripActions,
+  concealed = false,
+  onMapReady,
 }: {
   graph: GraphVersion;
   mode: ModeSetting;
@@ -49,11 +51,14 @@ export function FreePlayBoard({
   sessionStorage: KeyValueStorage;
   resultActions?: ReactNode;
   stripActions?: ReactNode;
+  /** Loads the board unseen behind `Starta`, as `TripBoard` does. */
+  concealed?: boolean;
+  onMapReady?: () => void;
 }) {
   const review = useMemo(() => reviewGame(graph, game), [graph, game]);
   // A timed trip's thinking time runs on real time, read again on each tick while it's played.
   const timed = game.rules.thinkingTime !== undefined;
-  const thinking = timed && review.status === "playing";
+  const thinking = timed && review.status === "playing" && !concealed;
   const now = useNow(clock, thinking);
   const score = tripScore(review);
   const outcome = gameOutcome(review);
@@ -97,6 +102,8 @@ export function FreePlayBoard({
       }
       timeouts={timed ? timeoutRuns(game, now) : undefined}
       focusGuessOnOpen={focusGuessOnOpen}
+      concealed={concealed}
+      onMapReady={onMapReady}
       resultActions={
         <>
           {scoreLine && (

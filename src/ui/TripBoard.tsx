@@ -52,6 +52,13 @@ type TripBoardProps<T extends Trip> = {
    * Each run shows as one ⏱ row among the guesses.
    */
   timeouts?: readonly number[];
+  /**
+   * The board loads unseen behind a trip's `Starta`: only its map, naming no kommun, out of
+   * reach of keyboard and screen reader, until the reveal shows it as it is.
+   */
+  concealed?: boolean;
+  /** Told once when the board's map is drawn, or can't be (see `SatelliteMap`). */
+  onMapReady?: () => void;
 };
 
 /**
@@ -76,6 +83,8 @@ export function TripBoard<T extends Trip>({
   clock,
   focusGuessOnOpen = false,
   timeouts,
+  concealed = false,
+  onMapReady,
 }: TripBoardProps<T>) {
   const [input, setInput] = useState<Omit<GuessSession<T>, "game">>({ text: "" });
   const { toast, announcement } = input;
@@ -114,19 +123,28 @@ export function TripBoard<T extends Trip>({
     if (resultClosed && resultToggled) reopenButton.current?.focus();
   }, [resultClosed, resultToggled]);
   const [focusGuess] = useState(focusGuessOnOpen);
+  // A board loaded behind Starta takes focus at the reveal, as it is shown.
   useEffect(() => {
-    if (focusGuess) guessInput.current?.focus();
-  }, [focusGuess]);
+    if (focusGuess && !concealed) guessInput.current?.focus();
+  }, [focusGuess, concealed]);
   const nameOf = (code: string) => kommunName(graph, code);
 
   return (
-    <section className="play-screen" aria-labelledby="trip-heading">
-      {label}
-      <h2 id="trip-heading">
-        <span>Från:</span> <strong className="sign sign--start">{nameOf(trip.start)}</strong>{" "}
-        <span>Till:</span>{" "}
-        <strong className="sign sign--destination">{nameOf(trip.destination)}</strong>
-      </h2>
+    <section
+      className={concealed ? "play-screen play-screen--concealed" : "play-screen"}
+      aria-labelledby={concealed ? undefined : "trip-heading"}
+      aria-hidden={concealed || undefined}
+      inert={concealed}
+    >
+      {/* Concealed, the board is its map alone, so the reveal keeps the same map, drawn. */}
+      {!concealed && label}
+      {!concealed && (
+        <h2 id="trip-heading">
+          <span>Från:</span> <strong className="sign sign--start">{nameOf(trip.start)}</strong>{" "}
+          <span>Till:</span>{" "}
+          <strong className="sign sign--destination">{nameOf(trip.destination)}</strong>
+        </h2>
+      )}
 
       {showResult && (
         <ResultView
@@ -164,31 +182,35 @@ export function TripBoard<T extends Trip>({
               hintOutlines={reveals.outlines}
               initials={reveals.initials}
               allOutlines={settled}
+              onReady={onMapReady}
+              concealed={concealed}
             />
             <p role="alert" className="toast">
               {toast}
             </p>
           </div>
 
-          {clock}
+          {!concealed && clock}
 
-          <GuessInput
-            text={input.text}
-            exactMatch={resolveKommunName(graph, input.text) !== undefined}
-            suggestions={suggestKommuner(graph, game, input.text)}
-            highlighted={enterTarget(graph, session)}
-            counter={
-              <GuessCounter
-                label="Gissa"
-                made={review.cards.length}
-                limit={review.limit}
-                over={finished}
-              />
-            }
-            onEvent={(event) => update((current) => applyGuessInput(graph, current, event))}
-            inputRef={guessInput}
-            disabled={finished}
-          />
+          {!concealed && (
+            <GuessInput
+              text={input.text}
+              exactMatch={resolveKommunName(graph, input.text) !== undefined}
+              suggestions={suggestKommuner(graph, game, input.text)}
+              highlighted={enterTarget(graph, session)}
+              counter={
+                <GuessCounter
+                  label="Gissa"
+                  made={review.cards.length}
+                  limit={review.limit}
+                  over={finished}
+                />
+              }
+              onEvent={(event) => update((current) => applyGuessInput(graph, current, event))}
+              inputRef={guessInput}
+              disabled={finished}
+            />
+          )}
         </>
       )}
 
@@ -196,7 +218,7 @@ export function TripBoard<T extends Trip>({
         {announcement}
       </p>
 
-      {!showResult && (
+      {!showResult && !concealed && (
         <>
           <section className="past-guesses" aria-labelledby="guesses-heading">
             <h3 id="guesses-heading" className="section-heading">
@@ -250,14 +272,16 @@ export function TripBoard<T extends Trip>({
         </>
       )}
 
-      <footer className="credits">
-        {footerLinks}
-        <p>
-          Kommungränser och grannar bygger på data från{" "}
-          <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a> och är
-          licensierade under ODbL.
-        </p>
-      </footer>
+      {!concealed && (
+        <footer className="credits">
+          {footerLinks}
+          <p>
+            Kommungränser och grannar bygger på data från{" "}
+            <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a> och
+            är licensierade under ODbL.
+          </p>
+        </footer>
+      )}
     </section>
   );
 }
