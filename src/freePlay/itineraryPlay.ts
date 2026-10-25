@@ -78,9 +78,12 @@ export function startTrip(
 ): ItineraryPlay {
   const trip = trips[play.current];
   if (!play.begun || trip === undefined || play.games.length !== play.current) return play;
-  const { start, destination, mode } = trip;
-  const game = startTime(newGame({ start, destination }, freePlayRules(mode)), now);
-  return { ...play, games: [...play.games, game] };
+  return { ...play, games: [...play.games, startTime(unstartedGame(trip), now)] };
+}
+
+/** A trip's game under its own mode's rules, before it starts: what its board loads with. */
+export function unstartedGame({ start, destination, mode }: LinkedTrip): Game {
+  return newGame({ start, destination }, freePlayRules(mode));
 }
 
 /**

@@ -25,3 +25,39 @@
   font-size: 1.25rem;
   font-weight: 700;
 }
+
+.start-gate-button[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+/* One line, loading or ready, so nothing on the gate moves when the map is done. */
+.start-gate-status {
+  min-height: 1.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--muted);
+}
+
+.start-gate-spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: start-gate-spin 0.9s linear infinite;
+}
+
+@keyframes start-gate-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .start-gate-spinner {
+    animation: none;
+  }
+}
