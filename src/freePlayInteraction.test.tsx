@@ -244,6 +244,26 @@ describe("Välj själv", () => {
     expect(resButton(container).hasAttribute("disabled")).toBe(false);
   });
 
+  test("Enter in Mål plays the trip once both ends are set and no list is open", async () => {
+    const { container } = await mountApp("/fri");
+    const pressEnter = (field: HTMLInputElement) =>
+      act(async () => {
+        field.dispatchEvent(
+          new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+        );
+      });
+
+    await type(startField(container), "Nynäshamn");
+    await type(destinationField(container), "Tro");
+    await pressEnter(destinationField(container));
+    // The open list takes the first Enter: it fills Mål.
+    expect(destinationField(container).value).toBe("Trosa");
+    expect(container.querySelector("#trip-heading")).toBeNull();
+
+    await pressEnter(destinationField(container));
+    expect(query(container, "#trip-heading").textContent).toBe("Res från Nynäshamn till Trosa");
+  });
+
   test("a neighbor typed in full keeps Res disabled", async () => {
     const { container } = await mountApp("/fri");
 
