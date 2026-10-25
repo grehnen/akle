@@ -24,6 +24,8 @@ import { browserSessionStorage, browserStorage, type KeyValueStorage } from "../
 import { AppLink } from "./AppLink";
 import { FreePlayLinkError } from "./FreePlayLinkError";
 import { ItineraryBuilder } from "./ItineraryBuilder";
+// PROTOTYPE (F): the redesigned builder replaces the real one in dev. Never merge to main.
+import { ItineraryBuilderPrototype } from "./ItineraryBuilderPrototype";
 import { ItineraryScreen } from "./ItineraryScreen";
 import { useLoaded } from "./useLoaded";
 
@@ -114,6 +116,7 @@ export function ItineraryView({
   if (loaded.kind === "builder") {
     const { graph, ordinal } = loaded.version;
     const { draft, unfinished } = loaded;
+    if (import.meta.env?.DEV) return <ItineraryBuilderPrototype graph={graph} onPlay={onPlay} />;
     return (
       <ItineraryBuilder
         graph={graph}

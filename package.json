@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "prototype:itinerary-builder": "vite --config vite.prototype.config.ts --port 5212 --strictPort",
     "preview": "vite preview",
     "prepare": "git config core.hooksPath .githooks || true",
     "schedule": "bun scripts/schedule.ts",
