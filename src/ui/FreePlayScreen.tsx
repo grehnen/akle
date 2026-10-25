@@ -325,7 +325,7 @@ function ResumeTrip({
   onNavigate: (to: string) => void;
 }) {
   return (
-    <AppLink className="free-play-resume" href={link} onNavigate={onNavigate}>
+    <AppLink className="resume-link free-play-resume" href={link} onNavigate={onNavigate}>
       Fortsätt resan: {modeName(mode)}, {guessesSoFar(guesses)}
     </AppLink>
   );
