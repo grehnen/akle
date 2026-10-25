@@ -19,6 +19,7 @@ import type { KeyValueStorage } from "../progress/storage";
 import { GatedBoard } from "./GatedBoard";
 import { ItinerarySummaryView } from "./ItinerarySummary";
 import { modeName, scoreText } from "./messages";
+import { useNavigation } from "./navigation";
 import "./ItineraryScreen.css";
 
 type ItineraryScreenProps = {
@@ -36,8 +37,6 @@ type ItineraryScreenProps = {
   initialPlay?: ItineraryPlay;
   /** Told where the itinerary stands whenever that changes, from the start. */
   onPlayChange?: (play: ItineraryPlay) => void;
-  /** Opened by a link within the app, not by loading the page: see `ItineraryView`. */
-  openedInApp?: boolean;
 };
 
 /**
@@ -56,14 +55,13 @@ export function ItineraryScreen({
   clock = systemClock,
   initialPlay = NEW_ITINERARY_PLAY,
   onPlayChange,
-  openedInApp = false,
 }: ItineraryScreenProps) {
   const [play, setPlay] = useState<ItineraryPlay>(initialPlay);
-  // Whether the player has moved the itinerary on here, or came to it by a link within the app,
-  // rather than arriving where it stood on loading the page.
-  const [movedOn, setMovedOn] = useState(openedInApp);
+  const { arrivedInApp } = useNavigation();
+  // Whether the player has moved the itinerary on here, rather than it standing where it opened.
+  const [movedOnHere, setMovedOnHere] = useState(false);
   const moveOn = (change: (current: ItineraryPlay) => ItineraryPlay) => {
-    setMovedOn(true);
+    setMovedOnHere(true);
     setPlay(change);
   };
   useEffect(() => onPlayChange?.(play), [play, onPlayChange]);
@@ -132,8 +130,8 @@ export function ItineraryScreen({
       game={game}
       label={label}
       clock={clock}
-      // Put on the board by the player, so they can type at once.
-      openedByPlayer={movedOn}
+      // Put on the board by the player, here or by a link within the app, so they can type at once.
+      openedByPlayer={movedOnHere || arrivedInApp}
       onGameChange={(changed) =>
         setPlay((current) => changeTripGame(graph, current, changed, clock()))
       }
