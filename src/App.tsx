@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { type DailyTripSource, loadDailyTrip } from "./daily/loadDailyTrip";
 import { readHistory } from "./progress/history";
 import { deriveStats } from "./progress/stats";
@@ -7,7 +7,7 @@ import { ITINERARY_PATH } from "./freePlay/itineraryLink";
 import { FREE_PLAY_PATH } from "./freePlay/tripLink";
 import { type LoadMapLibre, loadMapLibre, MapLibreLoaderContext } from "./map/mapLibreLoader";
 import { AppLink } from "./ui/AppLink";
-import { NavigateContext } from "./ui/navigation";
+import { NavigationContext } from "./ui/navigation";
 import { DailyTripView } from "./ui/DailyTripView";
 import { FreePlayView } from "./ui/FreePlayView";
 import { ItineraryView } from "./ui/ItineraryView";
@@ -62,7 +62,7 @@ export function App({
   // Each visit to free play, even from free play itself, starts it afresh on the setup screen.
   const [visit, setVisit] = useState(0);
   // Whether this visit came by a link within the app, rather than loading the page or Back.
-  const [openedInApp, setOpenedInApp] = useState(false);
+  const [arrivedInApp, setArrivedInApp] = useState(false);
   const freePlay = isPagePath(path, FREE_PLAY_PATH);
   const itinerary = isPagePath(path, ITINERARY_PATH);
   // Without today's trip (still loading, or no trip today) there is no streak to keep alive.
@@ -73,7 +73,7 @@ export function App({
       setPath(window.location.pathname);
       setSearch(window.location.search);
       setVisit((count) => count + 1);
-      setOpenedInApp(false);
+      setArrivedInApp(false);
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -89,10 +89,11 @@ export function App({
     setPath(pathname);
     setSearch(query);
     setVisit((count) => count + 1);
-    setOpenedInApp(true);
+    setArrivedInApp(true);
     // Like a page load, the new page opens at its top.
     if (window.scrollY > 0) window.scrollTo(0, 0);
   }, []);
+  const navigation = useMemo(() => ({ navigate, arrivedInApp }), [navigate, arrivedInApp]);
 
   // A trip picked on the setup screen gets its own entry, so Back returns to `/fri`; a trip
   // opened from its link keeps its entry, tidied to just the link.
@@ -109,7 +110,7 @@ export function App({
   return (
     <PacingContext value={pacing}>
       <MapLibreLoaderContext value={loadMap}>
-        <NavigateContext value={navigate}>
+        <NavigationContext value={navigation}>
           <main>
             <header className="site-header">
               {/* In the order they appear, left to right, so Tab follows what the eye sees. */}
@@ -173,7 +174,6 @@ export function App({
                 now={openedAt}
                 linkPayload={new URLSearchParams(search).get("r") ?? undefined}
                 onShowTripLink={showTripLink}
-                openedInApp={openedInApp}
                 storage={progressStorage}
                 sessionStorage={sessionStorage}
                 clock={clock}
@@ -186,7 +186,6 @@ export function App({
                 linkPayload={new URLSearchParams(search).get("r") ?? undefined}
                 title={new URLSearchParams(search).get("namn") ?? undefined}
                 onPlay={navigate}
-                openedInApp={openedInApp}
                 storage={progressStorage}
                 sessionStorage={sessionStorage}
                 clock={clock}
@@ -202,7 +201,7 @@ export function App({
               />
             )}
           </main>
-        </NavigateContext>
+        </NavigationContext>
       </MapLibreLoaderContext>
     </PacingContext>
   );
