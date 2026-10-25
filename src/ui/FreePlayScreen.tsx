@@ -62,8 +62,6 @@ type FreePlayScreenProps = {
   /** The most recently played trip, when unfinished, which setup offers a way back to. */
   unfinished?: UnfinishedTrip;
   onShowTripLink?: ShowTripLink;
-  /** Opens another page of the app in place, as the way back to an unfinished trip does. */
-  onNavigate?: (to: string) => void;
   /** Where trips' saves are kept, the only free-play record, and setup's last choice. */
   storage: KeyValueStorage;
   /** For the board's view choices, such as the result tab. */
@@ -103,7 +101,6 @@ export function FreePlayScreen({
   openedInApp = false,
   unfinished,
   onShowTripLink = () => {},
-  onNavigate = (to) => globalThis.location.assign(to),
   storage,
   sessionStorage,
   clock = systemClock,
@@ -198,7 +195,7 @@ export function FreePlayScreen({
         onRangeChange={(next) => changeChoice({ range: next })}
         onDraw={() => draw(mode, range)}
         onPick={(trip) => play(trip, mode)}
-        resume={unfinished && <ResumeTrip unfinished={unfinished} onNavigate={onNavigate} />}
+        resume={unfinished && <ResumeTrip unfinished={unfinished} />}
       />
     );
   }
@@ -260,9 +257,9 @@ export function FreePlayScreen({
 /** The way back to setup, from a trip's result or its Starta gate. */
 function SetupLink() {
   return (
-    <a className="free-play-setup-link" href={FREE_PLAY_PATH}>
+    <AppLink className="free-play-setup-link" href={FREE_PLAY_PATH}>
       Välj läge och resa
-    </a>
+    </AppLink>
   );
 }
 
@@ -327,15 +324,9 @@ function FreePlaySetup({
  * Setup's way back to the most recently played trip, unfinished, opened in place like its link.
  * Like a share text, it never names the trip's ends.
  */
-function ResumeTrip({
-  unfinished: { mode, guesses, link },
-  onNavigate,
-}: {
-  unfinished: UnfinishedTrip;
-  onNavigate: (to: string) => void;
-}) {
+function ResumeTrip({ unfinished: { mode, guesses, link } }: { unfinished: UnfinishedTrip }) {
   return (
-    <AppLink className="resume-link free-play-resume" href={link} onNavigate={onNavigate}>
+    <AppLink className="resume-link free-play-resume" href={link}>
       Fortsätt resan: {modeName(mode)}, {guessesSoFar(guesses)}
     </AppLink>
   );

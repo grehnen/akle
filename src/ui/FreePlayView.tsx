@@ -17,8 +17,6 @@ type FreePlayViewProps = {
   linkPayload?: string;
   /** Shows a trip's link in the address bar while it is played. */
   onShowTripLink?: ShowTripLink;
-  /** Opens another page of the app in place, as the way back to an unfinished trip does. */
-  onNavigate?: (to: string) => void;
   /** This page was opened by a link within the app, not by loading it (see `FreePlayScreen`). */
   openedInApp?: boolean;
   /** Where trips' saves are kept; localStorage by default. */
@@ -44,7 +42,6 @@ export function FreePlayView({
   now,
   linkPayload,
   onShowTripLink = () => {},
-  onNavigate,
   openedInApp,
   storage,
   sessionStorage,
@@ -84,7 +81,6 @@ export function FreePlayView({
       openedInApp={openedInApp}
       unfinished={loaded.kind === "setup" ? loaded.unfinished : undefined}
       onShowTripLink={onShowTripLink}
-      onNavigate={onNavigate}
       storage={savesStorage}
       sessionStorage={sessionStorage ?? fallbackSessionStorage}
       clock={clock}

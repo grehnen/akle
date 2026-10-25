@@ -485,6 +485,11 @@ describe("an itinerary from its link", () => {
     expect(
       container.querySelector(".itinerary-summary-actions a.primary-link")?.getAttribute("href"),
     ).toBe("/resplan");
+
+    // Within the app, without loading the page again.
+    await click(query(container, ".itinerary-summary-actions a.primary-link"));
+    expect(dom.window.location.pathname).toBe("/resplan");
+    expect(text(container, "#itinerary-heading")).toBe("Bygg en resplan");
   });
 
   test("offers no retry: a finished trip's result has no way to play it again", async () => {
@@ -855,6 +860,11 @@ describe("an invalid itinerary link", () => {
       container.querySelector(".free-play-error-actions a.primary-link")?.getAttribute("href"),
     ).toBe("/resplan");
     expect(button(container, "Starta resplanen")).toBeUndefined();
+
+    // Within the app, without loading the page again.
+    await click(query(container, ".free-play-error-actions a.primary-link"));
+    expect(dom.window.location.pathname).toBe("/resplan");
+    expect(text(container, "#itinerary-heading")).toBe("Bygg en resplan");
   });
 
   test.each([

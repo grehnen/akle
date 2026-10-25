@@ -1238,11 +1238,11 @@ describe("the setup choice", () => {
     await type(distanceThumbs(container).max, "1");
     await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
     await winDistanceOneTrip(container);
-    const setupLink = query<HTMLAnchorElement>(container, ".free-play-setup-link");
-
-    const setup = await reopen(setupLink.getAttribute("href") ?? "", storage);
-    expect(chosenMode(setup.container)).toBe("unlimited");
-    expect(rangeValues(setup.container)).toEqual(["1", "1"]);
+    // Within the app, without loading the page again.
+    await click(query(container, ".free-play-setup-link"));
+    expect(dom.window.location.pathname).toBe("/fri");
+    expect(chosenMode(container)).toBe("unlimited");
+    expect(rangeValues(container)).toEqual(["1", "1"]);
   });
 
   test("a trip link in another mode leaves the kept choice as it was", async () => {
