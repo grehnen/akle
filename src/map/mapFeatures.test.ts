@@ -4,6 +4,7 @@ import { buildGraphVersion, type KommunCode } from "../graph/graphVersion";
 import {
   defaultBounds,
   guessViewBounds,
+  hintViewBounds,
   mapFeatures,
   routeBounds,
   routeFeatures,
@@ -264,6 +265,28 @@ describe("guessViewBounds", () => {
         { code: "C", feedback: "🟩", connected: false },
       ]),
     ).toEqual([12, 56, 17, 59]);
+  });
+});
+
+describe("hintViewBounds", () => {
+  test("frames the endpoints and every hinted kommun, leaving out a far-off unconnected guess", () => {
+    expect(
+      hintViewBounds(graph, trip, [{ code: "F", feedback: "🟥", connected: false }], ["C"]),
+    ).toEqual([12, 56, 17, 59]);
+  });
+
+  test("reaches a hinted kommun outside the default bounds", () => {
+    expect(hintViewBounds(graph, { ...trip, destination: "C" }, [], ["E"])).toEqual([
+      12, 56, 17, 59,
+    ]);
+  });
+
+  test("keeps the guesses the default bounds frame", () => {
+    expect(
+      hintViewBounds(graph, { ...trip, destination: "B" }, [
+        { code: "C", feedback: "🟩", connected: true },
+      ], ["B"]),
+    ).toEqual([12, 56, 15, 57]);
   });
 });
 
