@@ -108,10 +108,12 @@ export function App({
       <MapLibreLoaderContext value={loadMap}>
         <main>
           <header className="site-header">
+            {/* In the order they appear, left to right, so Tab follows what the eye sees. */}
             <button
               type="button"
               className="header-button rules-open"
               aria-label="Så spelar du"
+              title="Så spelar du"
               onClick={() => setRulesOpen(true)}
             >
               <RulesIcon />
@@ -126,27 +128,32 @@ export function App({
               <h1>Åkle</h1>
             )}
             <AppLink
-              href={FREE_PLAY_PATH}
-              className="header-button free-play-open"
-              aria-label="Fri resa"
-              onNavigate={navigate}
-            >
-              {/* A placeholder icon until free play gets its own. */}
-              <span aria-hidden="true">🎲</span>
-            </AppLink>
-            <AppLink
               href={ITINERARY_PATH}
               className="header-button itinerary-open"
               aria-label="Resplan"
+              title="Resplan"
+              aria-current={itinerary ? "page" : undefined}
               onNavigate={navigate}
             >
               {/* A placeholder icon until itineraries get their own. */}
               <span aria-hidden="true">🗺</span>
             </AppLink>
+            <AppLink
+              href={FREE_PLAY_PATH}
+              className="header-button free-play-open"
+              aria-label="Fri resa"
+              title="Fri resa"
+              aria-current={freePlay ? "page" : undefined}
+              onNavigate={navigate}
+            >
+              {/* A placeholder icon until free play gets its own. */}
+              <span aria-hidden="true">🎲</span>
+            </AppLink>
             <button
               type="button"
               className="header-button stats-open"
               aria-label="Visa statistik"
+              title="Visa statistik"
               onClick={() => setStatsOpen(true)}
             >
               <StatsIcon />

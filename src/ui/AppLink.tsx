@@ -15,6 +15,8 @@ export function AppLink({
   children: ReactNode;
   className?: string;
   "aria-label"?: string;
+  "aria-current"?: "page";
+  title?: string;
 }) {
   const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
