@@ -10,6 +10,7 @@ import { loadSavedGame, saveGame } from "../progress/savedGame";
 import { shareText } from "../progress/shareText";
 import { deriveStats } from "../progress/stats";
 import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
+import { GuessCounter } from "./GuessCounter";
 import { GuessInput } from "./GuessInput";
 import { HintSection } from "./HintSection";
 import {
@@ -22,7 +23,6 @@ import {
 import { guessCardText } from "./messages";
 import { reportIssueUrl } from "./reportIssue";
 import { ResultStrip, ResultView } from "./ResultView";
-import { UsedCounter } from "./UsedCounter";
 
 type PlayScreenProps = {
   graph: GraphVersion;
@@ -133,7 +133,14 @@ export function PlayScreen({ graph, trip, storage, sessionStorage, now }: PlaySc
             exactMatch={resolveKommunName(graph, session.text) !== undefined}
             suggestions={suggestKommuner(graph, game, session.text)}
             highlighted={enterTarget(graph, session)}
-            counter={<UsedCounter label="Gissa" used={review.cards.length} limit={review.limit} />}
+            counter={
+              <GuessCounter
+                label="Gissa"
+                made={review.cards.length}
+                limit={review.limit}
+                over={finished}
+              />
+            }
             onEvent={(event) => setSession((current) => applyGuessInput(graph, current, event))}
             inputRef={guessInput}
           />
@@ -163,7 +170,7 @@ export function PlayScreen({ graph, trip, storage, sessionStorage, now }: PlaySc
               {review.cards.map((card, index) => (
                 <li key={card.code}>
                   <span aria-hidden="true">
-                    {card.feedback} {nameOf(card.code)}
+                    {index + 1}. {nameOf(card.code)} {card.feedback}
                   </span>
                   <span className="visually-hidden">
                     {guessCardText(card, { number: index + 1, name: nameOf(card.code) })}
