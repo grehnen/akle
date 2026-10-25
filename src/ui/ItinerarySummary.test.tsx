@@ -27,7 +27,7 @@ function timeoutsHeard(...timeouts: number[]): string[] {
   );
   return [
     ...markup.matchAll(
-      /class="itinerary-summary-timeouts">.*?<span class="visually-hidden">(.*?)<\/span>/g,
+      /class="itinerary-summary-outcome">.*?<span class="visually-hidden">(.*?)<\/span>/g,
     ),
   ].map((match) => match[1] ?? "");
 }

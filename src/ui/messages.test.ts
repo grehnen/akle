@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { clockText, rejectionMessage, resultOutcome, scoreText, timeText } from "./messages";
+import {
+  clockText,
+  freePlayHeadline,
+  rejectionMessage,
+  resultOutcome,
+  scoreText,
+  timeText,
+} from "./messages";
 
 describe("scoreText", () => {
   test.each([
@@ -79,6 +86,17 @@ describe("resultOutcome", () => {
 
   test("nothing while playing", () => {
     expect(resultOutcome({ status: "playing", perfect: false, away: 3 })).toBeUndefined();
+  });
+});
+
+describe("freePlayHeadline, leaving the costs to the score line", () => {
+  test.each([
+    [{ kind: "perfect", extra: 0 }, "Perfekt!"],
+    [{ kind: "won", extra: 2, hintsUsed: 1, timeouts: 0 }, "Framme!"],
+    [{ kind: "lost", away: 3, hintsUsed: 1, timeouts: 2 }, "Slut på gissningar"],
+    [{ kind: "lost", away: 1, hintsUsed: 0, timeouts: 0, givenUp: true }, "Gav upp"],
+  ] as const)("%o → %p", (outcome, headline) => {
+    expect(freePlayHeadline(outcome)).toBe(headline);
   });
 });
 

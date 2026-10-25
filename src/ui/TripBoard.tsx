@@ -30,6 +30,8 @@ type TripBoardProps<T extends Trip> = {
   sessionStorage: KeyValueStorage;
   /** Shown with the heading, such as `Dagens resa #21`. */
   label?: ReactNode;
+  /** Heads the result view and its strip in place of the daily outcome, as free play does. */
+  resultHeadline?: string;
   /** Added beside the outcome in the result view, such as the countdown and sharing. */
   resultActions?: ReactNode;
   /** Added to the collapsed result strip, such as sharing. */
@@ -64,6 +66,7 @@ export function TripBoard<T extends Trip>({
   onGameChange,
   sessionStorage,
   label,
+  resultHeadline,
   resultActions,
   stripActions,
   stats,
@@ -130,6 +133,7 @@ export function TripBoard<T extends Trip>({
           graph={graph}
           game={game}
           review={review}
+          headline={resultHeadline}
           actions={resultActions}
           stats={stats}
           sessionStorage={sessionStorage}
@@ -141,6 +145,7 @@ export function TripBoard<T extends Trip>({
       {settled && !showResult && (
         <ResultStrip
           review={review}
+          headline={resultHeadline}
           actions={stripActions}
           onOpen={() => closeResult(false)}
           openButtonRef={reopenButton}

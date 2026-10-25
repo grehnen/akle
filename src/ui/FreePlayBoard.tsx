@@ -10,7 +10,8 @@ import type { GraphVersion } from "../graph/graphVersion";
 import { emojiLine } from "../progress/history";
 import { gameOutcome } from "../progress/outcome";
 import type { KeyValueStorage } from "../progress/storage";
-import { scoreText, timeText } from "./messages";
+import { freePlayHeadline, LOWER_IS_BETTER, scoreText, timeText } from "./messages";
+import { ScoreLabel } from "./ScoreLabel";
 import { ShareButton } from "./ShareButton";
 import { ThinkingTimeBar } from "./ThinkingTimeBar";
 import { TripBoard } from "./TripBoard";
@@ -18,9 +19,10 @@ import { TripClock } from "./TripClock";
 import { useNow } from "./useNow";
 
 /**
- * A free-play trip on the board in its mode: its clock or thinking time while played, then its
- * score (and a tie-breaker's time) in the result, with a share button when it has a `link` to
- * share. `resultActions` and `stripActions` follow those, in the result view and its strip.
+ * A free-play trip on the board in its mode: its clock or thinking time while played, then in
+ * the result its headline, its outcome label and score as the share text words them (saying lower
+ * is better), a tie-breaker's time, and a share button when it has a `link` to share.
+ * `resultActions` and `stripActions` follow those, in the result view and its strip.
  */
 export function FreePlayBoard({
   graph,
@@ -67,9 +69,13 @@ export function FreePlayBoard({
           link,
         })
       : undefined;
-  const scoreAndShare = score !== undefined && (
+  const scoreLine = score !== undefined && outcome !== undefined && (
+    <p className="result-score">
+      <ScoreLabel outcome={outcome} /> · {scoreText(score)}
+    </p>
+  );
+  const timeAndShare = score !== undefined && (
     <>
-      <p className="result-score">{scoreText(score)}</p>
       {game.rules.keepsTime && <ResultTime time={time} />}
       {share !== undefined && <ShareButton text={share} />}
     </>
@@ -81,6 +87,7 @@ export function FreePlayBoard({
       onGameChange={onGameChange}
       sessionStorage={sessionStorage}
       label={label}
+      resultHeadline={outcome && freePlayHeadline(outcome)}
       clock={
         game.rules.keepsTime ? (
           <TripClock game={game} clock={clock} />
@@ -92,13 +99,20 @@ export function FreePlayBoard({
       focusGuessOnOpen={focusGuessOnOpen}
       resultActions={
         <>
-          {scoreAndShare}
+          {scoreLine && (
+            <div className="result-score-block">
+              {scoreLine}
+              <p className="result-score-note">{LOWER_IS_BETTER}</p>
+            </div>
+          )}
+          {timeAndShare}
           {resultActions}
         </>
       }
       stripActions={
         <>
-          {scoreAndShare}
+          {scoreLine}
+          {timeAndShare}
           {stripActions}
         </>
       }
