@@ -3,6 +3,7 @@ import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
 import type { PinnedVersion } from "./currentVersion";
 import type { DistanceRange } from "./draw";
 import type { LinkedTrip } from "./linkPayload";
+import { markPlayed, putSave, readSaves, type SavedGameKind } from "./savedGames";
 import {
   isCount,
   isRecord,
@@ -14,21 +15,12 @@ import {
   storeTrip,
 } from "./storedGame";
 
-const TRIP_SLOT_KEY = "akle:free-play-trip";
-
 /**
- * The stored shape's format. A slot of any other format is ignored, as if empty, so a change to
- * the shape that older code can't read bumps it; adding an optional field to `game` doesn't.
+ * A trip's save as stored: a free-play trip, finished or not, on the version it's pinned to.
+ * `game` holds the whole game state; a mode that keeps more (a give-up, a start time, timeouts)
+ * adds its own optional fields there.
  */
-const SLOT_FORMAT = 1;
-
-/**
- * The trip slot as stored: the current or latest free-play trip, finished or not, on the
- * version it's pinned to. `game` holds the whole game state; a mode that keeps more (a give-up,
- * a start time, timeouts) adds its own optional fields there.
- */
-type StoredSlot = {
-  format: typeof SLOT_FORMAT;
+type StoredTripSave = {
   versionOrdinal: number;
   trip: LinkedTrip;
   drawn: boolean;
@@ -36,7 +28,15 @@ type StoredSlot = {
   game: StoredGame;
 };
 
-/** A free-play trip as the slot keeps it: its pinned version, its game and how it was set up. */
+/** The trips kept: the 100 most recently played, each its link's one save. */
+const TRIP_SAVES: SavedGameKind<StoredTripSave> = {
+  key: "akle:free-play-trips",
+  legacySlotKey: "akle:free-play-trip",
+  cap: 100,
+  readSave: readTripSave,
+};
+
+/** A free-play trip as its save keeps it: its pinned version, its game and how it was set up. */
 export type SavedTrip = {
   versionOrdinal: number;
   trip: LinkedTrip;
@@ -47,57 +47,65 @@ export type SavedTrip = {
   range?: DistanceRange;
 };
 
-/** A trip opened again from the slot: its game and how it was set up. */
+/** A trip opened again from its save: its game and how it was set up. */
 export type ResumedTrip = Pick<SavedTrip, "game" | "drawn" | "range">;
 
-/** Puts a trip in the slot, replacing whatever trip it held. */
-export function saveTripSlot(storage: KeyValueStorage, saved: SavedTrip): void {
+/**
+ * Keeps a trip's save, replacing the one its link had and making it the most recently played;
+ * other trips' saves stay, but for the least recently played past the cap.
+ */
+export function saveTrip(storage: KeyValueStorage, saved: SavedTrip): void {
   const { versionOrdinal, trip, game, drawn, range } = saved;
-  const stored: StoredSlot = {
-    format: SLOT_FORMAT,
+  const stored: StoredTripSave = {
     versionOrdinal,
     trip: storeTrip(trip),
     drawn,
     ...(range && { range: { min: range.min, max: range.max } }),
     game: storeGame(game),
   };
-  writeJson(storage, TRIP_SLOT_KEY, stored);
+  putSave(storage, TRIP_SAVES, stored, (other) => isSaveOf(other, versionOrdinal, trip));
 }
 
 /**
- * The slot's trip and the version ordinal it's pinned to; undefined when the slot is empty,
- * corrupt or of another format.
+ * The most recently played trip and the version ordinal it's pinned to; undefined with no
+ * readable save.
  */
-export function storedTrip(
+export function latestTrip(
   storage: KeyValueStorage,
 ): { versionOrdinal: number; trip: LinkedTrip } | undefined {
-  const slot = readSlot(storage);
-  return slot && { versionOrdinal: slot.versionOrdinal, trip: slot.trip };
+  const [latest] = readSaves(storage, TRIP_SAVES);
+  return latest && { versionOrdinal: latest.versionOrdinal, trip: latest.trip };
 }
 
 /**
- * The stored game, when the slot holds exactly this trip on this version: the same endpoints,
- * mode, thinking time and version, however its link was spelled, played under its mode's rules.
- * Its guesses, hints and give-up are checked against the version's graph; a range out of shape
- * is dropped. Undefined for any other trip, or an empty or corrupt slot.
+ * The saved game of exactly this trip on this version: the same endpoints, mode, thinking time
+ * and version, however its link was spelled, played under its mode's rules. Its guesses, hints
+ * and give-up are checked against the version's graph; a range out of shape is dropped. Opening
+ * it makes it the most recently played. Undefined for a trip with no readable save.
  */
 export function resumeTrip(
   storage: KeyValueStorage,
   version: PinnedVersion,
   trip: LinkedTrip,
 ): ResumedTrip | undefined {
-  const slot = readSlot(storage);
-  if (slot === undefined || slot.versionOrdinal !== version.ordinal) return undefined;
-  if (!sameTrip(slot.trip, trip)) return undefined;
-  const game = restoreStoredGame(version.graph, trip, trip.mode, slot.game);
-  return game && { game, drawn: slot.drawn, ...(slot.range && { range: slot.range }) };
+  const isSave = (save: StoredTripSave) => isSaveOf(save, version.ordinal, trip);
+  const save = readSaves(storage, TRIP_SAVES).find(isSave);
+  if (save === undefined) return undefined;
+  const game = restoreStoredGame(version.graph, trip, trip.mode, save.game);
+  if (game === undefined) return undefined;
+  markPlayed(storage, TRIP_SAVES, isSave);
+  return { game, drawn: save.drawn, ...(save.range && { range: save.range }) };
+}
+
+function isSaveOf(save: StoredTripSave, versionOrdinal: number, trip: LinkedTrip): boolean {
+  return save.versionOrdinal === versionOrdinal && sameTrip(save.trip, trip);
 }
 
 const DRAWN_AT_STARTA_KEY = "akle:free-play-drawn-at-starta";
 
 /**
  * Notes, for this browser session, the range the trip behind Starta at `link` was drawn from:
- * the slot takes a trip only at Starta, so a reload or Back and Forward over the gate would
+ * a trip gets its save only at Starta, so a reload or Back and Forward over the gate would
  * otherwise forget that it was drawn.
  */
 export function noteDrawnAtStarta(
@@ -121,10 +129,9 @@ export function drawnAtStarta(
   return { min: noted.range.min, max: noted.range.max };
 }
 
-/** The slot, when it's whole and of this format; any part out of shape makes it unreadable. */
-function readSlot(storage: KeyValueStorage): StoredSlot | undefined {
-  const stored = readJson(storage, TRIP_SLOT_KEY);
-  if (!isRecord(stored) || stored.format !== SLOT_FORMAT) return undefined;
+/** A trip's save, when it's whole; any part out of shape makes it unreadable. */
+function readTripSave(stored: unknown): StoredTripSave | undefined {
+  if (!isRecord(stored)) return undefined;
   const { versionOrdinal, trip, drawn, range, game } = stored;
   if (!isCount(versionOrdinal)) return undefined;
   if (typeof drawn !== "boolean" || !isRecord(game) || !Array.isArray(game.guesses)) {
@@ -133,7 +140,6 @@ function readSlot(storage: KeyValueStorage): StoredSlot | undefined {
   const linkedTrip = readTrip(trip);
   if (linkedTrip === undefined) return undefined;
   return {
-    format: SLOT_FORMAT,
     versionOrdinal,
     trip: linkedTrip,
     drawn,

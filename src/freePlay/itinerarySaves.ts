@@ -1,8 +1,9 @@
 import { reviewGame } from "../engine/game";
-import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
+import type { KeyValueStorage } from "../progress/storage";
 import { type Itinerary, itineraryLinkPath } from "./itineraryLink";
 import type { ItineraryPlay } from "./itineraryPlay";
 import type { LinkedTrip } from "./linkPayload";
+import { markPlayed, putSave, readSaves, type SavedGameKind } from "./savedGames";
 import {
   isCount,
   isRecord,
@@ -14,28 +15,26 @@ import {
   storeTrip,
 } from "./storedGame";
 
-const ITINERARY_SLOT_KEY = "akle:itinerary";
-
 /**
- * The stored shape's format. A slot of any other format is ignored, as if empty, so a change to
- * the shape that older code can't read bumps it; adding an optional field doesn't.
+ * An itinerary's save as stored: an itinerary begun, finished or not, on the version its link
+ * pins, kept apart from trips' saves. `play` is where it stands, a game per trip started so far.
  */
-const SLOT_FORMAT = 1;
-
-/**
- * The itinerary slot as stored: the current or latest itinerary, finished or not, on the version
- * its link pins, kept apart from the trip slot. `play` is where it stands, a game per trip
- * started so far.
- */
-type StoredSlot = {
-  format: typeof SLOT_FORMAT;
+type StoredItinerarySave = {
   versionOrdinal: number;
   title?: string;
   trips: LinkedTrip[];
   play: { current: number; games: StoredGame[] };
 };
 
-/** An itinerary as the slot keeps it: its link's parts and its play, begun. */
+/** The itineraries kept: the 50 most recently played, each its link's one save. */
+const ITINERARY_SAVES: SavedGameKind<StoredItinerarySave> = {
+  key: "akle:itineraries",
+  legacySlotKey: "akle:itinerary",
+  cap: 50,
+  readSave: readItinerarySave,
+};
+
+/** An itinerary as its save keeps it: its link's parts and its play, begun. */
 export type SavedItinerary = {
   versionOrdinal: number;
   title?: string;
@@ -43,38 +42,39 @@ export type SavedItinerary = {
   play: ItineraryPlay;
 };
 
-/** Puts an itinerary in the slot, replacing whatever it held; an itinerary not begun isn't. */
-export function saveItinerarySlot(storage: KeyValueStorage, saved: SavedItinerary): void {
+/**
+ * Keeps an itinerary's save, replacing the one its link had and making it the most recently
+ * played; an itinerary not begun gets none. Other itineraries' saves stay, but for the least
+ * recently played past the cap.
+ */
+export function saveItinerary(storage: KeyValueStorage, saved: SavedItinerary): void {
   const { versionOrdinal, title, trips, play } = saved;
   if (!play.begun) return;
-  const stored: StoredSlot = {
-    format: SLOT_FORMAT,
+  const stored: StoredItinerarySave = {
     versionOrdinal,
     ...(title !== undefined && { title }),
     trips: trips.map(storeTrip),
     play: { current: play.current, games: play.games.map(storeGame) },
   };
-  writeJson(storage, ITINERARY_SLOT_KEY, stored);
+  putSave(storage, ITINERARY_SAVES, stored, (other) =>
+    isSaveOf(other, versionOrdinal, title, trips),
+  );
 }
 
 /**
- * The stored play, when the slot holds exactly this itinerary: the same title, version and
- * trips in order, however its link was spelled. Each game is re-checked against the version's
- * graph like a resumed trip, and every trip but the current one must be over. Undefined for any
- * other itinerary, or an empty, corrupt or inconsistent slot.
+ * The saved play of exactly this itinerary: the same title, version and trips in order, however
+ * its link was spelled. Each game is re-checked against the version's graph like a resumed trip,
+ * and every trip but the current one must be over. Opening it makes it the most recently played.
+ * Undefined for an itinerary with no readable, consistent save.
  */
 export function resumeItinerary(
   storage: KeyValueStorage,
   { version, title, trips }: Itinerary,
 ): ItineraryPlay | undefined {
-  const slot = readSlot(storage);
-  if (slot === undefined || slot.versionOrdinal !== version.ordinal || slot.title !== title) {
-    return undefined;
-  }
-  if (slot.trips.length !== trips.length || !slot.trips.every((t, i) => sameTrip(t, trips[i]))) {
-    return undefined;
-  }
-  const { current, games: stored } = slot.play;
+  const isSave = (save: StoredItinerarySave) => isSaveOf(save, version.ordinal, title, trips);
+  const save = readSaves(storage, ITINERARY_SAVES).find(isSave);
+  if (save === undefined) return undefined;
+  const { current, games: stored } = save.play;
   // On a trip's card no game is started for it yet; on its board or result one is.
   if (current > trips.length || (stored.length !== current && stored.length !== current + 1)) {
     return undefined;
@@ -92,7 +92,22 @@ export function resumeItinerary(
     if (index < current && reviewGame(version.graph, game).status === "playing") return undefined;
     games.push(game);
   }
+  markPlayed(storage, ITINERARY_SAVES, isSave);
   return { begun: true, current, games };
+}
+
+function isSaveOf(
+  save: StoredItinerarySave,
+  versionOrdinal: number,
+  title: string | undefined,
+  trips: readonly LinkedTrip[],
+): boolean {
+  return (
+    save.versionOrdinal === versionOrdinal &&
+    save.title === title &&
+    save.trips.length === trips.length &&
+    save.trips.every((trip, index) => sameTrip(trip, trips[index]))
+  );
 }
 
 /** An itinerary left unfinished: where it stands and the link that resumes it. */
@@ -105,13 +120,14 @@ export type UnfinishedItinerary = {
 };
 
 /**
- * The stored itinerary while it's unfinished, from its first trip's card until its last trip's
- * `Avsluta resplanen`; undefined once finished, or with none stored.
+ * The most recently played itinerary while it's unfinished, from its first trip until its last
+ * trip's `Avsluta resplanen`; undefined once finished, or with none saved. An older unfinished
+ * itinerary never stands in for it.
  */
 export function unfinishedItinerary(storage: KeyValueStorage): UnfinishedItinerary | undefined {
-  const slot = readSlot(storage);
-  if (slot === undefined || slot.play.current >= slot.trips.length) return undefined;
-  const { versionOrdinal, title, trips, play } = slot;
+  const [latest] = readSaves(storage, ITINERARY_SAVES);
+  if (latest === undefined || latest.play.current >= latest.trips.length) return undefined;
+  const { versionOrdinal, title, trips, play } = latest;
   return {
     ...(title !== undefined && { title }),
     tripNumber: play.current + 1,
@@ -120,10 +136,9 @@ export function unfinishedItinerary(storage: KeyValueStorage): UnfinishedItinera
   };
 }
 
-/** The slot, when it's whole and of this format; any part out of shape makes it unreadable. */
-function readSlot(storage: KeyValueStorage): StoredSlot | undefined {
-  const stored = readJson(storage, ITINERARY_SLOT_KEY);
-  if (!isRecord(stored) || stored.format !== SLOT_FORMAT) return undefined;
+/** An itinerary's save, when it's whole; any part out of shape makes it unreadable. */
+function readItinerarySave(stored: unknown): StoredItinerarySave | undefined {
+  if (!isRecord(stored)) return undefined;
   const { versionOrdinal, title, trips, play } = stored;
   if (!isCount(versionOrdinal)) return undefined;
   if (title !== undefined && typeof title !== "string") return undefined;
@@ -133,7 +148,6 @@ function readSlot(storage: KeyValueStorage): StoredSlot | undefined {
   const { current, games } = play;
   if (!isCount(current) || !Array.isArray(games)) return undefined;
   return {
-    format: SLOT_FORMAT,
     versionOrdinal,
     ...(title !== undefined && { title }),
     trips: linkedTrips,

@@ -43,7 +43,7 @@ type ItineraryScreenProps = {
  * `Starta` if it's on the clock, the trip in its own mode and its result with `Nästa resa`, and
  * after the last its summary, shared with its `link`. Every trip screen is labelled with the
  * itinerary's title, the trip's place and the running total. One attempt per trip, no skip or
- * retry; nothing here touches the trip slot or daily progress.
+ * retry; nothing here touches trips' saves or daily progress.
  */
 export function ItineraryScreen({
   graph,
