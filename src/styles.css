@@ -31,6 +31,8 @@
   --ui-font: Seravek, "Gill Sans Nova", Ubuntu, Calibri, "DejaVu Sans", source-sans-pro, sans-serif;
 
   color-scheme: dark;
+  /* Pages with and without a scrollbar keep the same width, so the header doesn't shift between them. */
+  scrollbar-gutter: stable;
   font-family: var(--ui-font);
   line-height: 1.45;
   color: var(--text);
