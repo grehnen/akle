@@ -8,7 +8,7 @@ import {
   tripPairs,
 } from "../freePlay/draw";
 import {
-  capTitle,
+  editTitle,
   ITINERARY_TRIPS,
   itineraryLinkPath,
   MAX_ITINERARY_TITLE,
@@ -157,7 +157,16 @@ function TitleField({ title, onChange }: { title: string; onChange: (title: stri
         value={title}
         autoComplete="off"
         aria-describedby="itinerary-title-count"
-        onChange={(event) => onChange(capTitle(event.target.value))}
+        onChange={(event) => {
+          const field = event.target;
+          const edited = editTitle(title, field.value, field.selectionStart ?? undefined);
+          // Set here, so React finds the value already right and leaves the caret alone.
+          if (edited.title !== field.value) {
+            field.value = edited.title;
+            field.setSelectionRange(edited.caret, edited.caret);
+          }
+          onChange(edited.title);
+        }}
       />
       <span id="itinerary-title-count" className="itinerary-title-count">
         {titleLength(title)}/{MAX_ITINERARY_TITLE}
