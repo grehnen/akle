@@ -127,7 +127,7 @@ export function ItineraryView({
         onPlay={onPlay}
         initialDraft={draft}
         onDraftChange={saveDraft}
-        banner={unfinished && <ResumeBanner unfinished={unfinished} onPlay={onPlay} />}
+        banner={unfinished && <ResumeBanner unfinished={unfinished} />}
       />
     );
   }
@@ -169,14 +169,12 @@ async function loadBuilder(
 /** The builder's way back to the unfinished itinerary, opened in place like `Spela`. */
 function ResumeBanner({
   unfinished: { title, tripNumber, tripCount, link },
-  onPlay,
 }: {
   unfinished: UnfinishedItinerary;
-  onPlay: (link: string) => void;
 }) {
   const named = title === undefined ? "" : `${title}, `;
   return (
-    <AppLink className="resume-link itinerary-resume" href={link} onNavigate={onPlay}>
+    <AppLink className="resume-link itinerary-resume" href={link}>
       Fortsätt resplanen: {named}resa {tripNumber} av {tripCount}
     </AppLink>
   );

@@ -1,5 +1,6 @@
 import { ITINERARY_PATH } from "../freePlay/itineraryLink";
 import { FREE_PLAY_PATH } from "../freePlay/tripLink";
+import { AppLink } from "./AppLink";
 import "./FreePlayScreen.css";
 
 /**
@@ -26,18 +27,18 @@ export function FreePlayLinkError({
       <nav className="free-play-error-actions" aria-label="Vidare">
         {itinerary ? (
           <>
-            <a className="primary-link" href={ITINERARY_PATH}>
+            <AppLink className="primary-link" href={ITINERARY_PATH}>
               Bygg en resplan
-            </a>
-            <a href="/">Dagens resa</a>
-            <a href={FREE_PLAY_PATH}>Fri resa</a>
+            </AppLink>
+            <AppLink href="/">Dagens resa</AppLink>
+            <AppLink href={FREE_PLAY_PATH}>Fri resa</AppLink>
           </>
         ) : (
           <>
-            <a className="primary-link" href={FREE_PLAY_PATH}>
+            <AppLink className="primary-link" href={FREE_PLAY_PATH}>
               Fri resa
-            </a>
-            <a href="/">Dagens resa</a>
+            </AppLink>
+            <AppLink href="/">Dagens resa</AppLink>
           </>
         )}
       </nav>
