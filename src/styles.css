@@ -244,6 +244,11 @@ a {
   padding-right: calc(0.75em - 0.14em);
 }
 
+.map-frame {
+  position: relative;
+  width: 100%;
+}
+
 .satellite-map {
   width: 100%;
   aspect-ratio: 4 / 3;
@@ -533,13 +538,36 @@ input:disabled {
   display: none;
 }
 
-/* A rejected guess's toast keeps one line under the input, empty or not, so nothing below moves. */
+/*
+ * A rejected guess's toast floats over the map's bottom edge, above the guess input, so nothing
+ * moves as it comes and goes. It stays clear of the ⓘ button and lets taps through to the map.
+ */
 .toast {
-  max-width: 100%;
-  min-height: 1.45em;
+  position: absolute;
+  z-index: 3;
+  bottom: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 7rem);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  background: var(--text);
+  color: var(--night);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+  pointer-events: none;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+}
+
+/* An empty toast stays in place, so screen readers keep hearing it, but shows nothing. */
+.toast:empty {
+  padding: 0;
 }
 
 [role="status"],
