@@ -1,7 +1,7 @@
 import type { Feedback, GameReview, GameStatus, GuessCard, GuessResult } from "../engine/game";
 import type { HINT_COUNT } from "../engine/hints";
 import { TIMEOUT_COST } from "../engine/score";
-import type { ModeSetting } from "../freePlay/linkPayload";
+import { MODE_KINDS, type ModeKind, type ModeSetting } from "../freePlay/linkPayload";
 import { gameOutcome, type Outcome } from "../progress/outcome";
 
 type RejectionReason = Extract<GuessResult, { kind: "rejected" }>["reason"];
@@ -81,44 +81,33 @@ export function scoreText(score: number): string {
 }
 
 /** Each mode as the UI names it. */
-export const MODE_NAMES: Record<ModeSetting["kind"], string> = {
+export const MODE_NAMES: Record<ModeKind, string> = {
   standard: "Standard",
   unlimited: "Obegränsad",
   timed: "Tidspress",
   "tie-breaker": "Tidtagning",
 };
 
-/**
- * Every mode in the order the player is offered them, with its name and how it plays: the one
- * text that explains a mode, wherever one is chosen or started.
- */
-export const MODES: readonly { kind: ModeSetting["kind"]; name: string; description: string }[] = [
-  {
-    kind: "standard",
-    name: MODE_NAMES.standard,
-    description: "Som dagens resa: gissningarna räcker till avståndet och lite till.",
-  },
-  {
-    kind: "unlimited",
-    name: MODE_NAMES.unlimited,
-    description: "Gissa hur många gånger du vill. Ge upp när du vill.",
-  },
-  {
-    kind: "timed",
-    name: MODE_NAMES.timed,
-    description:
-      "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng, även före första gissningen.",
-  },
-  {
-    kind: "tie-breaker",
-    name: MODE_NAMES["tie-breaker"],
-    description: "Tiden tas. Vid lika poäng vinner den snabbaste.",
-  },
-];
+/** How each mode plays: the one text that explains a mode, wherever one is chosen or started. */
+const MODE_DESCRIPTIONS: Record<ModeKind, string> = {
+  standard: "Som dagens resa: gissningarna räcker till avståndet och lite till.",
+  unlimited: "Gissa hur många gånger du vill. Ge upp när du vill.",
+  timed:
+    "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng, även före första gissningen.",
+  "tie-breaker": "Tiden tas. Vid lika poäng vinner den snabbaste.",
+};
 
-/** How a mode plays, as {@link MODES} words it. */
-export function modeDescription(kind: ModeSetting["kind"]): string {
-  return MODES.find((mode) => mode.kind === kind)?.description ?? "";
+/** Every mode in the order the player is offered them, with its name and how it plays. */
+export const MODES: readonly { kind: ModeKind; name: string; description: string }[] =
+  MODE_KINDS.map((kind) => ({
+    kind,
+    name: MODE_NAMES[kind],
+    description: MODE_DESCRIPTIONS[kind],
+  }));
+
+/** How a mode plays. */
+export function modeDescription(kind: ModeKind): string {
+  return MODE_DESCRIPTIONS[kind];
 }
 
 /** A mode as the UI names it, with a timed trip's thinking time: `Standard`, `Tidspress 10 s`. */
