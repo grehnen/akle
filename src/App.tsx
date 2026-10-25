@@ -60,6 +60,8 @@ export function App({
   const [search, setSearch] = useState(initialSearch);
   // Each visit to free play, even from free play itself, starts it afresh on the setup screen.
   const [visit, setVisit] = useState(0);
+  // Whether this visit came by a link within the app, rather than loading the page or Back.
+  const [openedInApp, setOpenedInApp] = useState(false);
   const freePlay = isPagePath(path, FREE_PLAY_PATH);
   const itinerary = isPagePath(path, ITINERARY_PATH);
   // Without today's trip (still loading, or no trip today) there is no streak to keep alive.
@@ -70,6 +72,7 @@ export function App({
       setPath(window.location.pathname);
       setSearch(window.location.search);
       setVisit((count) => count + 1);
+      setOpenedInApp(false);
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -85,6 +88,7 @@ export function App({
     setPath(pathname);
     setSearch(query);
     setVisit((count) => count + 1);
+    setOpenedInApp(true);
   };
 
   // A trip picked on the setup screen gets its own entry, so Back returns to `/fri`; a trip
@@ -163,6 +167,7 @@ export function App({
               linkPayload={new URLSearchParams(search).get("r") ?? undefined}
               onShowTripLink={showTripLink}
               onNavigate={navigate}
+              openedInApp={openedInApp}
               storage={progressStorage}
               sessionStorage={sessionStorage}
               clock={clock}
@@ -175,6 +180,7 @@ export function App({
               linkPayload={new URLSearchParams(search).get("r") ?? undefined}
               title={new URLSearchParams(search).get("namn") ?? undefined}
               onPlay={navigate}
+              openedInApp={openedInApp}
               storage={progressStorage}
               sessionStorage={sessionStorage}
               clock={clock}

@@ -31,7 +31,7 @@ export function FreePlayBoard({
   link,
   label,
   clock,
-  focusGuessOnOpen,
+  openedByPlayer,
   onGameChange,
   sessionStorage,
   resultActions,
@@ -46,7 +46,8 @@ export function FreePlayBoard({
   link?: string;
   label: ReactNode;
   clock: Clock;
-  focusGuessOnOpen: boolean;
+  /** The board opens by the player's own action, as `TripBoard` takes it. */
+  openedByPlayer: boolean;
   onGameChange: (game: Game) => void;
   sessionStorage: KeyValueStorage;
   resultActions?: ReactNode;
@@ -103,7 +104,7 @@ export function FreePlayBoard({
         )
       }
       timeouts={timed ? timeoutRuns(game, now) : undefined}
-      focusGuessOnOpen={focusGuessOnOpen}
+      openedByPlayer={openedByPlayer}
       concealed={concealed}
       onMapReady={onMapReady}
       resultActions={
