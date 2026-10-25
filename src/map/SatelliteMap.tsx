@@ -6,6 +6,7 @@ import {
   defaultBounds,
   type DrawnKommun,
   guessViewBounds,
+  hintViewBounds,
   mapFeatures,
   routeBounds,
   routeFeatures,
@@ -24,7 +25,8 @@ type SatelliteMapProps = {
   /**
    * Draws this route instead, with the guessed and missed kommuner on it marked. The label names
    * the map, and the map is fitted to the kommuner in `frame`. Without a route, the map is fitted
-   * to `defaultBounds`, and each new guess eases it to `guessViewBounds`.
+   * to `defaultBounds`, each new guess eases it to `guessViewBounds`, and each new hint outline
+   * to `hintViewBounds`.
    */
   route?: { kommuner: readonly KommunCode[]; label: string; frame: readonly KommunCode[] };
   /** Kommuner revealed by hints, drawn as unfilled outlines. */
@@ -101,11 +103,17 @@ export function SatelliteMap({
     () => (routeFrame ? resetBounds : guessViewBounds(graph, trip, cards)),
     [graph, trip, routeFrame, cards, resetBounds],
   );
-  // What the map is framed for: a new guess, trip or route eases the map to `viewBounds`.
+  const hintBounds = useMemo(
+    () => (routeFrame ? resetBounds : hintViewBounds(graph, trip, cards, hintOutlines ?? [])),
+    [graph, trip, routeFrame, cards, hintOutlines, resetBounds],
+  );
+  // What the map is framed for: a new guess, trip or route eases the map to `viewBounds`, and a
+  // hint that adds an outline, with nothing else new, to `hintBounds`.
   const { start, destination } = trip;
+  const hintCount = hintOutlines?.length ?? 0;
   const framing = useMemo(
-    () => ({ start, destination, routeFrame, guessCount: cards.length }),
-    [start, destination, routeFrame, cards.length],
+    () => ({ start, destination, routeFrame, guessCount: cards.length, hintCount }),
+    [start, destination, routeFrame, cards.length, hintCount],
   );
   const latest = useRef({ framing, resetBounds, viewBounds });
   useEffect(() => {
@@ -206,10 +214,17 @@ export function SatelliteMap({
   }, [map, resetBounds]);
 
   useEffect(() => {
-    if (!map || framing === fittedFor.current) return;
+    const last = fittedFor.current;
+    if (!map || framing === last) return;
     fittedFor.current = framing;
-    animateToBounds(map, viewBounds);
-  }, [map, framing, viewBounds]);
+    const hintedOnly =
+      framing.start === last.start &&
+      framing.destination === last.destination &&
+      framing.routeFrame === last.routeFrame &&
+      framing.guessCount === last.guessCount;
+    if (!hintedOnly) animateToBounds(map, viewBounds);
+    else if (framing.hintCount > last.hintCount) animateToBounds(map, hintBounds);
+  }, [map, framing, viewBounds, hintBounds]);
 
   useEffect(() => {
     const source = map?.getSource<GeoJSONSource>("kommuner");
