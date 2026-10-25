@@ -371,4 +371,23 @@ describe("the itinerary's link", () => {
     expect(title.value).toBe("🚂".repeat(40));
     expect(query(container, ".itinerary-title-count").textContent).toBe("40/40 tecken");
   });
+
+  test("typing into a full title loses nothing and leaves the caret where it was", async () => {
+    const container = await mountApp("/resplan");
+    const title = query<HTMLInputElement>(container, "#itinerary-title");
+    const full = "a".repeat(20) + "b".repeat(20);
+    await type(title, full);
+
+    const setValue = Object.getOwnPropertyDescriptor(
+      dom.window.HTMLInputElement.prototype,
+      "value",
+    );
+    await act(async () => {
+      setValue?.set?.call(title, "a".repeat(20) + "x" + "b".repeat(20));
+      title.setSelectionRange(21, 21);
+      title.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+    });
+    expect(title.value).toBe(full);
+    expect(title.selectionStart).toBe(20);
+  });
 });
