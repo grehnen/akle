@@ -15,9 +15,35 @@ export const MAX_ITINERARY_TITLE = 40;
 /** A title's length in characters, as `MAX_ITINERARY_TITLE` counts them. */
 export const titleLength = (title: string): number => [...title].length;
 
-/** A title cut down to its first `MAX_ITINERARY_TITLE` characters, never splitting one. */
-export const capTitle = (title: string): string =>
-  [...title].slice(0, MAX_ITINERARY_TITLE).join("");
+/**
+ * A title edited from `before` to `after`, with the caret at `caret` (in UTF-16 units), kept to
+ * `MAX_ITINERARY_TITLE` characters: only what the edit inserted, just before the caret, is cut
+ * down to the room left, at a grapheme boundary, so nothing already there is lost and no emoji
+ * sequence is split. The caret moves to the end of what was kept.
+ */
+export function editTitle(
+  before: string,
+  after: string,
+  caret = after.length,
+): { title: string; caret: number } {
+  if (titleLength(after) <= MAX_ITINERARY_TITLE) return { title: after, caret };
+  const suffix = after.slice(caret);
+  const head = before.slice(0, before.length - suffix.length);
+  let start = 0;
+  while (start < Math.min(head.length, caret) && head[start] === after[start]) start++;
+  // Never between the halves of a surrogate pair.
+  if (/[\uD800-\uDBFF]$/.test(after.slice(0, start))) start--;
+  const prefix = after.slice(0, start);
+  let room = MAX_ITINERARY_TITLE - titleLength(prefix) - titleLength(suffix);
+  let kept = "";
+  const segmenter = new Intl.Segmenter("sv", { granularity: "grapheme" });
+  for (const { segment } of segmenter.segment(after.slice(start, caret))) {
+    room -= titleLength(segment);
+    if (room < 0) break;
+    kept += segment;
+  }
+  return { title: prefix + kept + suffix, caret: prefix.length + kept.length };
+}
 
 /**
  * An itinerary's link (ADR 0007): `/resplan?namn=<title>&r=<payload>`, all its trips pinned to
