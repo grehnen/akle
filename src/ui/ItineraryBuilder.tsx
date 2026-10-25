@@ -1,5 +1,6 @@
-import { type ReactNode, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import type { Trip } from "../engine/game";
+import type { BuilderDraft, DraftTrip } from "../freePlay/builderDraft";
 import {
   defaultDistanceRange,
   drawTrips,
@@ -14,7 +15,7 @@ import {
   MAX_ITINERARY_TITLE,
   titleLength,
 } from "../freePlay/itineraryLink";
-import type { LinkedTrip, ModeSetting } from "../freePlay/linkPayload";
+import type { ModeSetting } from "../freePlay/linkPayload";
 import { DEFAULT_THINKING_TIME } from "../freePlay/modeRules";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { shortestRouteLength } from "../graph/routes";
@@ -41,10 +42,14 @@ type ItineraryBuilderProps = {
   random?: RandomSource;
   /** Shown under the heading: the way back to an unfinished itinerary, when there is one. */
   banner?: ReactNode;
+  /** The draft the builder opens with, empty by default. */
+  initialDraft?: BuilderDraft;
+  /** Told the draft whenever it changes, from the start. */
+  onDraftChange?: (draft: BuilderDraft) => void;
 };
 
 /** A trip in the itinerary being built, with a key for its row and whether it was drawn. */
-type BuilderTrip = { id: number; trip: LinkedTrip; drawn: boolean };
+type BuilderTrip = DraftTrip & { id: number };
 
 /** How many trips Slumpa adds at once unless the player asks for another number. */
 const DEFAULT_DRAW_COUNT = 5;
@@ -63,12 +68,23 @@ export function ItineraryBuilder({
   onPlay,
   random = Math.random,
   banner,
+  initialDraft,
+  onDraftChange,
 }: ItineraryBuilderProps) {
-  const [title, setTitle] = useState("");
-  const [trips, setTrips] = useState<readonly BuilderTrip[]>([]);
+  const [title, setTitle] = useState(initialDraft?.title ?? "");
+  // A restored draft's rows are numbered from 1, and new rows after them.
+  const [trips, setTrips] = useState<readonly BuilderTrip[]>(() =>
+    (initialDraft?.trips ?? []).map((trip, index) => ({ ...trip, id: index + 1 })),
+  );
+  const nextId = useRef((initialDraft?.trips.length ?? 0) + 1);
+  const withIds = (added: readonly DraftTrip[]) =>
+    added.map((trip) => ({ ...trip, id: nextId.current++ }));
   // A drawn trip's pair shows only once the player asks for it, for this visit to the builder.
   const [revealed, setRevealed] = useState<ReadonlySet<number>>(new Set());
-  const nextId = useRef(1);
+  useEffect(
+    () => onDraftChange?.({ title, trips: trips.map(({ trip, drawn }) => ({ trip, drawn })) }),
+    [title, trips, onDraftChange],
+  );
   const room = ITINERARY_TRIPS.max - trips.length;
   const link =
     trips.length >= ITINERARY_TRIPS.min
@@ -79,9 +95,7 @@ export function ItineraryBuilder({
         )
       : undefined;
 
-  const withIds = (added: readonly Omit<BuilderTrip, "id">[]) =>
-    added.map((trip) => ({ ...trip, id: nextId.current++ }));
-  const add = (added: readonly Omit<BuilderTrip, "id">[]) =>
+  const add = (added: readonly DraftTrip[]) =>
     setTrips((current) => [...current, ...withIds(added)].slice(0, ITINERARY_TRIPS.max));
   const changeTrip = (id: number, mode: ModeSetting) =>
     setTrips((current) =>
@@ -104,6 +118,11 @@ export function ItineraryBuilder({
       ].slice(0, ITINERARY_TRIPS.max),
     );
   const remove = (id: number) => setTrips((current) => current.filter((entry) => entry.id !== id));
+  const startOver = () => {
+    setTitle("");
+    setTrips([]);
+    setRevealed(new Set());
+  };
 
   return (
     <section className="itinerary-builder" aria-labelledby="itinerary-heading">
@@ -111,6 +130,14 @@ export function ItineraryBuilder({
       <h2 id="itinerary-heading">Bygg en resplan</h2>
       {banner}
       <TitleField title={title} onChange={setTitle} />
+      <button
+        type="button"
+        className="itinerary-new"
+        disabled={title === "" && trips.length === 0}
+        onClick={startOver}
+      >
+        Ny resplan
+      </button>
       {trips.length === 0 ? (
         <p className="itinerary-empty">Inga resor än. Lägg till minst två nedan.</p>
       ) : (
