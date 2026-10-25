@@ -1,4 +1,4 @@
-import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
+import { type KeyValueStorage, readJson, removeKey, writeJson } from "../progress/storage";
 import type { PinnedVersion } from "./currentVersion";
 import { ITINERARY_TRIPS, MAX_ITINERARY_TITLE, titleLength } from "./itineraryLink";
 import type { LinkedTrip } from "./linkPayload";
@@ -46,11 +46,7 @@ export function saveBuilderDraft(
 }
 
 export function clearBuilderDraft(storage: KeyValueStorage): void {
-  try {
-    storage.removeItem(DRAFT_KEY);
-  } catch {
-    // Blocked storage: there's nothing kept to clear.
-  }
+  removeKey(storage, DRAFT_KEY);
 }
 
 /**
