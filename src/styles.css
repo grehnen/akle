@@ -682,10 +682,9 @@ ol[aria-label="Gissningar"] li {
  * sign-like link with a trailing arrow, lit up on hover and on keyboard focus.
  */
 .resume-link {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  position: relative;
+  display: block;
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
   border: 1px solid var(--rule);
   border-left: 0.3rem solid var(--start);
   border-radius: 0.5rem;
@@ -697,12 +696,16 @@ ol[aria-label="Gissningar"] li {
   overflow-wrap: anywhere;
 }
 
+/* Out of the flow, so the link's underline never runs under it. */
 .resume-link::after {
   content: "›" / "";
-  margin-left: auto;
+  position: absolute;
+  top: 50%;
+  right: 1rem;
   color: var(--start);
   font-size: 1.5rem;
   line-height: 1;
+  transform: translateY(-55%);
   transition: transform 0.15s ease;
 }
 
@@ -715,7 +718,7 @@ ol[aria-label="Gissningar"] li {
 
 .resume-link:hover::after,
 .resume-link:focus-visible::after {
-  transform: translateX(0.2rem);
+  transform: translate(0.2rem, -55%);
 }
 
 @media (prefers-reduced-motion: reduce) {
