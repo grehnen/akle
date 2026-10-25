@@ -153,8 +153,10 @@ describe("DailyTripView", () => {
       );
     });
 
-    test("shows the toast right under the guess input", () => {
-      expect(renderWith([])).toMatch(/<\/form><p role="alert" class="toast">/);
+    test("shows the toast over the bottom of the map, before the guess input", () => {
+      expect(renderWith([])).toMatch(
+        /<div class="map-frame"><div class="satellite-map"[^]*?<\/div><p role="alert" class="toast"><\/p><\/div>(?:(?!<\/form>)[^])*<form/,
+      );
     });
 
     test("lists past guesses under a heading, before the hints", () => {
