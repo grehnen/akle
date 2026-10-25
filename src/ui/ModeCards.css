@@ -94,8 +94,9 @@
   accent-color: var(--start);
 }
 
+/* Wide enough for "60 s", so the slider keeps its width as the seconds go from one digit to two. */
 .free-play-thinking-time output {
-  min-inline-size: 3ch;
+  min-inline-size: 4ch;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   text-align: right;
