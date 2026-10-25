@@ -298,7 +298,7 @@ describe("Välj själv", () => {
     expect(container.querySelector("#trip-heading")).toBeNull();
 
     await pressEnter(destinationField(container));
-    expect(query(container, "#trip-heading").textContent).toBe("Res från Nynäshamn till Trosa");
+    expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
   });
 
   test("a neighbor typed in full keeps Res disabled", async () => {
@@ -320,7 +320,7 @@ describe("playing a picked trip", () => {
     await type(startField(container), "Nynäshamn");
     await type(destinationField(container), "Trosa");
     await click(resButton(container));
-    expect(query(container, "#trip-heading").textContent).toBe("Res från Nynäshamn till Trosa");
+    expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
     expect(container.textContent).toContain("Fri resa · Standard");
 
     for (const name of ["Haninge", "Salem"]) {
@@ -588,7 +588,7 @@ describe("trip links", () => {
 
   test("/fri?r=… opens straight on the trip, showing just its link", async () => {
     const { container, fetched } = await mountApp(`${nynashamnTrosa}&utm_source=chat`);
-    expect(query(container, "#trip-heading").textContent).toBe("Res från Nynäshamn till Trosa");
+    expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
     expect(container.textContent).toContain("Fri resa · Standard");
     expect(address()).toBe(nynashamnTrosa);
     expect(fetched).toEqual(["current"]);
@@ -680,7 +680,7 @@ describe("resuming the free-play trip", () => {
 
     const reloaded = await reopen(address(), storage);
     expect(query(reloaded.container, "#trip-heading").textContent).toBe(
-      "Res från Nynäshamn till Trosa",
+      "Från: Nynäshamn Till: Trosa",
     );
     expect(guessNames(reloaded.container)).toEqual(["1. Haninge ✅"]);
     expect(takenHints(reloaded.container)).toBe(1);
@@ -1143,7 +1143,7 @@ describe("Läge", () => {
       Trosa: "0488",
     };
     const [, start, destination] =
-      /^Res från (.+) till (.+)$/.exec(query(container, "#trip-heading").textContent ?? "") ?? [];
+      /^Från: (.+) Till: (.+)$/.exec(query(container, "#trip-heading").textContent ?? "") ?? [];
     expect(address()).toBe(unlimitedLink(code[start], code[destination]));
   });
 
@@ -1151,7 +1151,7 @@ describe("Läge", () => {
     const storage = memoryStorage();
     const link = unlimitedLink("0192", "0488");
     const { container } = await mountApp(link, storage);
-    expect(query(container, "#trip-heading").textContent).toBe("Res från Nynäshamn till Trosa");
+    expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
     expect(container.textContent).toContain("Fri resa · Obegränsad");
     await guess(container, "Haninge");
 
@@ -1317,7 +1317,7 @@ describe("Tidtagning", () => {
     expect(container.textContent).toContain(NOTICE);
 
     await click(startaButton(container));
-    expect(query(container, "#trip-heading").textContent).toBe("Res från Nynäshamn till Trosa");
+    expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
     expect(container.textContent).not.toContain(NOTICE);
     expect(clockShown(container)).toBe("0:00");
     // Visible, sitting above the guess input, but never announced live.
@@ -1542,7 +1542,7 @@ describe("Tidspress", () => {
     expect(container.textContent).toContain("Fri resa · Tidspress 25 s");
     expect(address()).toBe(timedLink("0192", "0488", 25));
     await click(startaButton(container));
-    expect(query(container, "#trip-heading").textContent).toBe("Res från Nynäshamn till Trosa");
+    expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
   });
 
   test("Slumpa ny resa keeps the betänketid", async () => {
@@ -1759,7 +1759,7 @@ describe("the board behind Starta", () => {
     expect(dom.window.document.activeElement).toBe(starta(container));
 
     await click(starta(container));
-    expect(query(container, "#trip-heading").textContent).toBe("Res från Nynäshamn till Trosa");
+    expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
     expect(dom.window.document.activeElement).toBe(query(container, "#guess-input"));
   });
 
@@ -1889,7 +1889,7 @@ describe("the board behind Starta", () => {
     );
 
     expect(container.querySelector(".start-gate")).toBeNull();
-    expect(query(container, "#trip-heading").textContent).toBe("Res från Nynäshamn till Trosa");
+    expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
     expect(query<HTMLInputElement>(container, "#guess-input").disabled).toBe(false);
     expect(query(container, ".satellite-map .map-skeleton")).not.toBeNull();
     await drawMaps();

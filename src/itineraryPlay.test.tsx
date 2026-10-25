@@ -270,7 +270,7 @@ describe("an itinerary from its link", () => {
 
     clockTime += 3_000;
     await click(starta);
-    expect(text(container, "#trip-heading")).toBe("Res från Haninge till Trosa");
+    expect(text(container, "#trip-heading")).toBe("Från: Haninge Till: Trosa");
     expect(text(container, '.thinking-time [role="timer"]')).toBe("10");
     expect(written.at(-1)).toContain(`"startedAt":${clockTime}`);
   });
