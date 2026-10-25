@@ -3,7 +3,7 @@ import { tripScore } from "../engine/score";
 import { stampThinkingTime, startTime, stopTimeAtWin } from "../engine/tripTime";
 import type { GraphVersion } from "../graph/graphVersion";
 import type { LinkedTrip } from "./linkPayload";
-import { freePlayRules } from "./modeRules";
+import { freePlayRules, opensAtStarta } from "./modeRules";
 
 /**
  * Where an itinerary's play stands, as one plain value that can be stored: whether
@@ -20,8 +20,8 @@ export type ItineraryPlay = {
 export const NEW_ITINERARY_PLAY: ItineraryPlay = { begun: false, current: 0, games: [] };
 
 /**
- * What an itinerary shows: its intro, a trip's card before `Starta`, a trip on the board (its
- * result once `over`), or the finish after the last trip.
+ * What an itinerary shows: its intro, a trip's card before `Starta` (only a trip on the clock
+ * has one), a trip on the board (its result once `over`), or the finish after the last trip.
  */
 export type ItineraryStage =
   | { kind: "intro" }
@@ -42,14 +42,34 @@ export function itineraryStage(
   return { kind: "trip", index, game, over: reviewGame(graph, game).status !== "playing" };
 }
 
-/** `Starta resplanen`: from the intro to the first trip's card. */
-export function beginItinerary(play: ItineraryPlay): ItineraryPlay {
-  return play.begun ? play : { ...play, begun: true };
+/** `Starta resplanen` at `now`: from the intro to the first trip, as {@link arriveAtTrip} says. */
+export function beginItinerary(
+  trips: readonly LinkedTrip[],
+  play: ItineraryPlay,
+  now: number,
+): ItineraryPlay {
+  return play.begun ? play : arriveAtTrip(trips, { ...play, begun: true }, now);
 }
 
 /**
- * `Starta` on a trip's card: the trip goes on the board under its own mode's rules, its time
- * started at `now`. A trip is started once, so anywhere but its card nothing changes.
+ * Where the itinerary goes on reaching its current trip at `now`: the one place that decides
+ * whether a trip waits on its card behind `Starta` or goes straight on the board. Only a trip on
+ * the clock waits, so its time starts when the player is ready.
+ */
+function arriveAtTrip(
+  trips: readonly LinkedTrip[],
+  play: ItineraryPlay,
+  now: number,
+): ItineraryPlay {
+  const trip = trips[play.current];
+  if (trip === undefined || opensAtStarta(trip.mode)) return play;
+  return startTrip(trips, play, now);
+}
+
+/**
+ * `Starta` on a trip's card, or arriving at a trip off the clock: the trip goes on the board
+ * under its own mode's rules, its time started at `now`. A trip is started once, so anywhere but
+ * its card nothing changes.
  */
 export function startTrip(
   trips: readonly LinkedTrip[],
@@ -82,13 +102,18 @@ export function changeTripGame(
 }
 
 /**
- * `Nästa resa`: on to the next trip's card, or the finish after the last, only once the trip on
- * the board is over. A trip can't be skipped.
+ * `Nästa resa` at `now`: on to the next trip, as {@link arriveAtTrip} says, or the finish after
+ * the last, only once the trip on the board is over. A trip can't be skipped.
  */
-export function nextTrip(graph: GraphVersion, play: ItineraryPlay): ItineraryPlay {
+export function nextTrip(
+  graph: GraphVersion,
+  trips: readonly LinkedTrip[],
+  play: ItineraryPlay,
+  now: number,
+): ItineraryPlay {
   const game = play.games[play.current];
   if (game === undefined || reviewGame(graph, game).status === "playing") return play;
-  return { ...play, current: play.current + 1 };
+  return arriveAtTrip(trips, { ...play, current: play.current + 1 }, now);
 }
 
 /** The itinerary's running total: the sum of its finished trips' scores. */
