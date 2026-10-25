@@ -1200,6 +1200,24 @@ describe("Tidspress", () => {
     expect(counter.querySelector('[aria-hidden="true"]')?.textContent).toBe("(1/6)");
   });
 
+  test("a timeout moves nothing: the ⏱ row has its place held, and no guess is still no guess", async () => {
+    const { container } = await startedTimedTrip();
+    const list = query(container, 'ol[aria-label="Gissningar"]');
+    const heldRow = () => list.lastElementChild as HTMLElement;
+    expect(heldRow().classList.contains("timeout-row--held")).toBe(true);
+    expect(heldRow().getAttribute("aria-hidden")).toBe("true");
+
+    await awhile(10_000);
+    expect(heldRow().classList.contains("timeout-row--held")).toBe(false);
+    expect(container.querySelector(".past-guesses .section-empty")?.textContent).toContain(
+      "Inga gissningar än",
+    );
+
+    await guess(container, "Haninge");
+    expect(guessNames(container)).toEqual(["⏱ ×1", "1. Haninge ✅"]);
+    expect(heldRow().classList.contains("timeout-row--held")).toBe(true);
+  });
+
   test("only a counted guess restarts it: not an unknown name, a repeat or a hint", async () => {
     const { container } = await startedTimedTrip();
     await awhile(2_000);

@@ -563,6 +563,17 @@ ol[aria-label="Gissningar"] li {
   background: var(--surface);
 }
 
+/* Wide enough for `⏱ ×99`, so a run's row keeps its width as its count grows. */
+.timeout-row {
+  min-width: 4.5em;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.timeout-row--held {
+  visibility: hidden;
+}
+
 .credits {
   margin-top: 1.5rem;
   max-width: 56rem;
