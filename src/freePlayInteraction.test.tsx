@@ -1623,6 +1623,7 @@ describe("Tidspress", () => {
     await awhile(10_000);
 
     expect(guessNames(container)).toEqual(["⏱ ×1"]);
+    expect(query(container, ".timeout-row").title).toBe("Tiden ute 1 gång, 1 poäng");
     expect(announced(container)).toBe("Tiden ute");
     expect(secondsLeft(container)).toBe("10");
     const counter = query(container, '.guess-input button[type="submit"]');
@@ -1669,6 +1670,9 @@ describe("Tidspress", () => {
     // Hidden or asleep: five thinking times run out before the page is back.
     await awhile(52_000);
     expect(guessNames(container)).toEqual(["1. Haninge ✅", "⏱ ×5"]);
+    expect(query(container, ".timeout-row:not(.timeout-row--held)").title).toBe(
+      "Tiden ute 5 gånger, 5 poäng",
+    );
     expect(secondsLeft(container)).toBe("8");
     expect(announced(container)).toBe("Tiden ute 5 gånger");
 

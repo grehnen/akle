@@ -4,6 +4,8 @@ import type { GameReview } from "./game";
 const AWAY_WEIGHT_AT_LIMIT = 2;
 /** How much each kommun still away weighs in a give-up, more than at the guess limit. */
 const AWAY_WEIGHT_GIVEN_UP = 3;
+/** What each timeout adds to a score; each hint adds one too. */
+export const TIMEOUT_COST = 1;
 
 /**
  * A finished free-play trip's score, lower being better: a win's extra plus one per hint and per
@@ -14,7 +16,7 @@ const AWAY_WEIGHT_GIVEN_UP = 3;
 export function tripScore(review: GameReview): number | undefined {
   if (review.status === "playing") return undefined;
   if (review.perfect) return -1;
-  const costs = review.hintsUsed + review.timeouts;
+  const costs = review.hintsUsed + TIMEOUT_COST * review.timeouts;
   if (review.status === "won") return (review.extra ?? 0) + costs;
   const awayWeight = review.givenUp ? AWAY_WEIGHT_GIVEN_UP : AWAY_WEIGHT_AT_LIMIT;
   return review.cards.length - review.n + awayWeight * review.away + costs;
