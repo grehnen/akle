@@ -52,13 +52,14 @@ function tripLabel({
 }
 
 /**
- * A win reads as in the daily label; a loss keeps its hints and timeouts in one bracket with the
- * away, as the result headline does: `(2 ifrån, 1 ledtråd)`, `Gav upp (1 ifrån, 2 ⏱)`.
+ * A win reads as in the daily label; a loss is labelled and keeps its hints and timeouts in one
+ * bracket with the away, as the result headline does: `Slut på gissningar (2 ifrån, 1 ledtråd)`,
+ * `Gav upp (1 ifrån, 2 ⏱)`.
  */
 function outcomeLabel(outcome: Outcome): string {
   if (outcome.kind !== "lost") return resultLabel(outcome);
   const away = `${outcome.away} ifrån${costsSuffix(outcome.hintsUsed, outcome.timeouts)}`;
-  return `${outcome.givenUp ? "Gav upp " : ""}(${away})`;
+  return `${outcome.givenUp ? "Gav upp" : "Slut på gissningar"} (${away})`;
 }
 
 /**
