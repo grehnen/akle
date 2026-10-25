@@ -176,6 +176,10 @@ _Avoid_: Playlist, challenge, set, quiz, pack
 The itinerary being built in the builder, its title and trips kept on this device until _Ny resplan_ empties it; one made on an older version is dropped.
 _Avoid_: Unsaved itinerary, work in progress
 
+**Saved game**:
+A free-play trip's or an itinerary's game kept on this device under its link, finished or not, so opening the link resumes it or reopens its result; the 100 most recently played trips and 50 itineraries are kept.
+_Avoid_: Slot, history, record
+
 **Reveal**:
 The moment `Starta` shows a trip's board, its endpoints together with its already drawn map; the trip starts then, and so do its time and thinking time.
 _Avoid_: Start screen, unveil
