@@ -1,6 +1,7 @@
 import { connectedTo, type Feedback, type GuessCard, type Trip } from "../engine/game";
 import { routeStops } from "../engine/routeStops";
 import type { GraphVersion, KommunCode } from "../graph/graphVersion";
+import { splitExclaves } from "./exclaves";
 
 export const START_COLOR = "#fecc02";
 export const DESTINATION_COLOR = "#006aa7";
@@ -31,7 +32,8 @@ export type DrawnKommun = {
 
 export type DrawnFeature = {
   type: "Feature";
-  properties: DrawnKommun;
+  /** `exclave` marks a feature holding a kommun's exclaves, which are filled but never outlined. */
+  properties: DrawnKommun & { exclave?: true };
   geometry: unknown;
 };
 
@@ -129,7 +131,16 @@ function withShapes(graph: GraphVersion, drawn: readonly DrawnKommun[]): DrawnFe
   const features: DrawnFeature[] = [];
   for (const kommun of drawn) {
     const geometry = shapes.get(kommun.code);
-    if (geometry !== undefined) features.push({ type: "Feature", properties: kommun, geometry });
+    if (geometry === undefined) continue;
+    const { main, exclaves } = splitExclaves(geometry);
+    features.push({ type: "Feature", properties: kommun, geometry: main });
+    if (exclaves !== undefined) {
+      features.push({
+        type: "Feature",
+        properties: { ...kommun, exclave: true },
+        geometry: exclaves,
+      });
+    }
   }
   return { type: "FeatureCollection", features };
 }

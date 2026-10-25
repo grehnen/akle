@@ -132,6 +132,38 @@ describe("mapFeatures", () => {
     expect(start?.geometry).toEqual(square("A", 12, 56).geometry);
   });
 
+  test("draws a kommun's exclaves as a feature of their own, marked as exclaves, after its main part", () => {
+    const mainPart = square("A", 12, 56).geometry.coordinates;
+    const exclave = square("A", 10, 50).geometry.coordinates.map((ring) =>
+      ring.map(([x, y]) => [x / 10 + 9, y / 10 + 45]),
+    );
+    const split = buildGraphVersion({
+      ...graphSource,
+      shapes: {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: { code: "A" },
+            geometry: { type: "MultiPolygon", coordinates: [exclave, mainPart] },
+          },
+        ],
+      },
+    });
+    expect(mapFeatures(split, trip, []).features).toEqual([
+      {
+        type: "Feature",
+        properties: { code: "A", kind: "start", color: "#fecc02", connected: true },
+        geometry: { type: "Polygon", coordinates: mainPart },
+      },
+      {
+        type: "Feature",
+        properties: { code: "A", kind: "start", color: "#fecc02", connected: true, exclave: true },
+        geometry: { type: "MultiPolygon", coordinates: [exclave] },
+      },
+    ]);
+  });
+
   test("skips kommuner that have no shape", () => {
     expect(mapFeatures(shapeless, trip, []).features).toEqual([]);
   });

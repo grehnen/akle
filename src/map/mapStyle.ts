@@ -56,6 +56,9 @@ const ENDPOINT: ExpressionSpecification = [
   ["literal", ["start", "destination"]],
 ];
 
+/** Exclaves are filled but not outlined, so an outline only ever traces a kommun's main part. */
+const NOT_EXCLAVE: ExpressionSpecification = ["!=", ["get", "exclave"], true];
+
 /** The endpoints get their own outline layer, above every other outline. */
 const NOT_UNFILLED_OR_ENDPOINT: ExpressionSpecification = [
   "!",
@@ -95,14 +98,14 @@ export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
       id: "kommun-outline-solid",
       type: "line",
       source: "kommuner",
-      filter: ["all", NOT_UNFILLED_OR_ENDPOINT, ["==", ["get", "connected"], true]],
+      filter: ["all", NOT_UNFILLED_OR_ENDPOINT, ["==", ["get", "connected"], true], NOT_EXCLAVE],
       paint: { "line-color": ["get", "color"], "line-width": 1, "line-opacity": 1 },
     },
     {
       id: "kommun-outline-dashed",
       type: "line",
       source: "kommuner",
-      filter: ["==", ["get", "connected"], false],
+      filter: ["all", ["==", ["get", "connected"], false], NOT_EXCLAVE],
       paint: {
         "line-color": ["get", "color"],
         "line-width": 1,
@@ -115,7 +118,7 @@ export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
       id: "endpoint-outline",
       type: "line",
       source: "kommuner",
-      filter: ENDPOINT,
+      filter: ["all", ENDPOINT, NOT_EXCLAVE],
       paint: {
         "line-color": [
           "match",
