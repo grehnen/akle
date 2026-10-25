@@ -17,10 +17,9 @@ import type { GraphVersion } from "../graph/graphVersion";
 import type { KeyValueStorage } from "../progress/storage";
 import { AppLink } from "./AppLink";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
-import { FreePlayBoard } from "./FreePlayBoard";
+import { GatedBoard } from "./GatedBoard";
 import { ModeCards } from "./ModeCards";
 import { guessesSoFar, modeName } from "./messages";
-import { StartGate } from "./StartGate";
 import {
   PickTripForm,
   type TripChoiceTab,
@@ -142,8 +141,6 @@ export function FreePlayScreen({
       started: resumed !== undefined || !opensAtStarta(linkedTrip.mode),
     };
   });
-  // The trip, by its count, whose board's map is drawn.
-  const [mapReadyFor, setMapReadyFor] = useState<number>();
   const link = played && tripLinkPath(ordinal, played.trip);
   const opened = played?.opened ?? false;
 
@@ -201,56 +198,47 @@ export function FreePlayScreen({
   }
   const label = <p className="trip-number">Fri resa · {modeName(played.trip.mode)}</p>;
   const { count, started } = played;
-  // Behind Starta, the trip's board loads unseen; Starta waits until its map is drawn, and the
-  // reveal shows that same board.
   return (
-    <>
-      {!started && (
-        <StartGate
-          key={`gate-${count}`}
-          label={label}
-          mode={played.trip.mode}
-          ready={mapReadyFor === count}
-          // Behind Starta the trip has no save yet, so leaving for setup records nothing of it.
-          wayBack={<SetupLink />}
-          onStart={() =>
-            setPlayed({ ...played, started: true, game: startTime(played.game, clock()) })
-          }
-        />
-      )}
-      <FreePlayBoard
-        // A new trip gets a fresh board, so the last one's result state doesn't carry over.
-        key={count}
-        graph={graph}
-        mode={played.trip.mode}
-        game={played.game}
-        link={link}
-        label={label}
-        clock={clock}
-        concealed={!started}
-        onMapReady={() => setMapReadyFor(count)}
-        // Started here, at Starta or from a link within the app, so the player can type at once.
-        openedByPlayer={!started || !opened || openedInApp}
-        onGameChange={(game) => {
-          const now = clock();
-          const stamped = stampThinkingTime(graph, stopTimeAtWin(graph, game, now), now);
-          setPlayed({ ...played, game: stamped });
-        }}
-        sessionStorage={sessionStorage}
-        resultActions={
-          <div className="free-play-next">
-            <SetupLink />
-            <button
-              type="button"
-              className="free-play-redraw"
-              onClick={() => draw(played.trip.mode, played.range ?? range, played.game.trip)}
-            >
-              Slumpa ny resa
-            </button>
-          </div>
-        }
-      />
-    </>
+    <GatedBoard
+      // A new trip gets a fresh gate and board, so the last one's result state doesn't carry over.
+      key={count}
+      gate={
+        started
+          ? undefined
+          : {
+              // Behind Starta the trip has no save yet, so leaving for setup records nothing of it.
+              wayBack: <SetupLink />,
+              onStart: () =>
+                setPlayed({ ...played, started: true, game: startTime(played.game, clock()) }),
+            }
+      }
+      graph={graph}
+      mode={played.trip.mode}
+      game={played.game}
+      link={link}
+      label={label}
+      clock={clock}
+      // Started here or from a link within the app, so the player can type at once.
+      openedByPlayer={!opened || openedInApp}
+      onGameChange={(game) => {
+        const now = clock();
+        const stamped = stampThinkingTime(graph, stopTimeAtWin(graph, game, now), now);
+        setPlayed({ ...played, game: stamped });
+      }}
+      sessionStorage={sessionStorage}
+      resultActions={
+        <div className="free-play-next">
+          <SetupLink />
+          <button
+            type="button"
+            className="free-play-redraw"
+            onClick={() => draw(played.trip.mode, played.range ?? range, played.game.trip)}
+          >
+            Slumpa ny resa
+          </button>
+        </div>
+      }
+    />
   );
 }
 
