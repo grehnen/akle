@@ -118,6 +118,10 @@ function readMode(stored: unknown): ModeSetting | undefined {
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+/** A stored record of the shape `format` names; one of any other format reads as none kept. */
+export const hasFormat = (value: unknown, format: number): value is Record<string, unknown> =>
+  isRecord(value) && value.format === format;
+
 /** A whole number at least 0. */
 export const isCount = (value: unknown): value is number =>
   Number.isInteger(value) && (value as number) >= 0;
