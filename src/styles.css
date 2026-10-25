@@ -529,9 +529,17 @@ input:disabled {
   cursor: default;
 }
 
-[role="status"]:empty,
-.toast:empty {
+[role="status"]:empty {
   display: none;
+}
+
+/* A rejected guess's toast keeps one line under the input, empty or not, so nothing below moves. */
+.toast {
+  max-width: 100%;
+  min-height: 1.45em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 [role="status"],
