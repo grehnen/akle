@@ -36,11 +36,6 @@ type ItineraryViewProps = {
   title?: string;
   /** Opens a built itinerary's link in place, `/resplan?namn=…&r=…`. */
   onPlay: (link: string) => void;
-  /**
-   * This page was opened by a link within the app, as the builder's Fortsätt resplanen, not by
-   * loading it: a trip it opens on goes on the board as if by the player's own action.
-   */
-  openedInApp?: boolean;
   /** Where itineraries' saves and the builder's draft are kept; localStorage by default. */
   storage?: KeyValueStorage;
   /** Where view choices that last one browser session are kept; sessionStorage by default. */
@@ -72,7 +67,6 @@ export function ItineraryView({
   linkPayload,
   title,
   onPlay,
-  openedInApp,
   storage,
   sessionStorage,
   clock,
@@ -140,7 +134,6 @@ export function ItineraryView({
       sessionStorage={sessionStorage ?? fallbackSessionStorage}
       clock={clock}
       initialPlay={loaded.resumed}
-      openedInApp={openedInApp}
       onPlayChange={savePlay}
     />
   );
