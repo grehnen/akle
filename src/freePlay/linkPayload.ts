@@ -1,11 +1,17 @@
 import type { Trip } from "../engine/game";
 
+/** Every free-play mode, in the order the player is offered them. */
+export const MODE_KINDS = ["standard", "unlimited", "timed", "tie-breaker"] as const;
+
+export type ModeKind = (typeof MODE_KINDS)[number];
+
+export const isModeKind = (value: unknown): value is ModeKind =>
+  (MODE_KINDS as readonly unknown[]).includes(value);
+
 /** A free-play trip's mode, with the thinking time a timed-mode trip is played with. */
 export type ModeSetting =
-  | { kind: "standard" }
-  | { kind: "unlimited" }
-  | { kind: "timed"; thinkingTime: number }
-  | { kind: "tie-breaker" };
+  | { kind: Exclude<ModeKind, "timed"> }
+  | { kind: "timed"; thinkingTime: number };
 
 /** A free-play trip as a link carries it: its endpoints and its mode. */
 export type LinkedTrip = Trip & { mode: ModeSetting };
@@ -49,7 +55,11 @@ const V1 = {
   modeBits: 2,
   thinkingTimeBits: 6,
   checksumBits: 8,
-  modes: ["standard", "unlimited", "timed", "tie-breaker"] as const,
+  /**
+   * Each mode's 2-bit id is its index here. Frozen with the layout, so it's its own list rather
+   * than MODE_KINDS: offering the modes in another order must never change a link.
+   */
+  modes: ["standard", "unlimited", "timed", "tie-breaker"] as const satisfies readonly ModeKind[],
 };
 
 /** The format version the encoder writes. */

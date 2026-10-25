@@ -23,7 +23,7 @@ import {
   MAX_ITINERARY_TITLE,
   titleLength,
 } from "../freePlay/itineraryLink";
-import { type ModeSetting, THINKING_TIME_RANGE } from "../freePlay/linkPayload";
+import { type ModeKind, type ModeSetting, THINKING_TIME_RANGE } from "../freePlay/linkPayload";
 import { DEFAULT_THINKING_TIME } from "../freePlay/modeRules";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { shortestRouteLength } from "../graph/routes";
@@ -460,7 +460,7 @@ function ModeSelect({
   mode: ModeSetting;
   onChange: (mode: ModeSetting) => void;
 }) {
-  const choose = (kind: ModeSetting["kind"]) =>
+  const choose = (kind: ModeKind) =>
     onChange(
       kind === "timed"
         ? {
@@ -479,7 +479,7 @@ function ModeSelect({
         id={`${id}-mode`}
         aria-describedby={describedBy}
         value={mode.kind}
-        onChange={(event) => choose(event.target.value as ModeSetting["kind"])}
+        onChange={(event) => choose(event.target.value as ModeKind)}
       >
         {MODES.map(({ kind, name }) => (
           <option key={kind} value={kind}>

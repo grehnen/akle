@@ -1,6 +1,6 @@
 import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
 import { defaultDistanceRange, type DistanceRange } from "./draw";
-import { isThinkingTime, type ModeSetting } from "./linkPayload";
+import { isModeKind, isThinkingTime, type ModeKind } from "./linkPayload";
 import { DEFAULT_THINKING_TIME } from "./modeRules";
 import { isRecord } from "./storedGame";
 
@@ -8,9 +8,6 @@ const SETUP_KEY = "akle:free-play-setup";
 
 /** The stored shape's format; a choice of any other format is ignored, as if none were kept. */
 const SETUP_FORMAT = 1;
-
-type ModeKind = ModeSetting["kind"];
-const MODE_KINDS: readonly ModeKind[] = ["standard", "unlimited", "timed", "tie-breaker"];
 
 /**
  * What the player last chose in free play's setup: the mode, the betänketid Tidspress takes
@@ -37,12 +34,12 @@ export function restoreSetupChoice(storage: KeyValueStorage, largest: number): S
   const stored = readJson(storage, SETUP_KEY);
   if (!isRecord(stored) || stored.format !== SETUP_FORMAT) return defaults;
   const { mode, thinkingTime, range } = stored;
-  if (!MODE_KINDS.includes(mode as ModeKind) || !isThinkingTime(thinkingTime)) return defaults;
+  if (!isModeKind(mode) || !isThinkingTime(thinkingTime)) return defaults;
   if (!isRecord(range) || !isDistance(range.min) || !isDistance(range.max)) return defaults;
   if (range.min > range.max) return defaults;
   const fit = (distance: number) => Math.max(1, Math.min(distance, largest));
   return {
-    mode: mode as ModeKind,
+    mode,
     thinkingTime,
     range: { min: fit(range.min), max: fit(range.max) },
   };
