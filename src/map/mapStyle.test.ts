@@ -52,7 +52,11 @@ describe("satelliteMapStyle", () => {
     const endpoints = style.layers.find((layer) => layer.id === "endpoint-outline");
     expect(endpoints).toMatchObject({
       type: "line",
-      filter: ["in", ["get", "kind"], ["literal", ["start", "destination"]]],
+      filter: [
+        "all",
+        ["in", ["get", "kind"], ["literal", ["start", "destination"]]],
+        ["!=", ["get", "exclave"], true],
+      ],
       paint: {
         "line-color": [
           "match",
@@ -91,12 +95,33 @@ describe("satelliteMapStyle", () => {
       "all",
       ["!", ["in", ["get", "kind"], ["literal", ["hint", "other", "start", "destination"]]]],
       ["==", ["get", "connected"], true],
+      ["!=", ["get", "exclave"], true],
     ]);
     expect(dashed && "filter" in dashed ? dashed.filter : undefined).toEqual([
-      "==",
-      ["get", "connected"],
-      false,
+      "all",
+      ["==", ["get", "connected"], false],
+      ["!=", ["get", "exclave"], true],
     ]);
+  });
+
+  test("outlines no exclave of a guessed, missed or endpoint kommun, though it's still filled", () => {
+    const outlines = style.layers.filter(
+      (layer) => layer.type === "line" && !["hint-outline", "other-outline"].includes(layer.id),
+    );
+    expect(outlines.map((layer) => layer.id)).toEqual([
+      "kommun-outline-solid",
+      "kommun-outline-dashed",
+      "endpoint-outline",
+    ]);
+    for (const layer of outlines) {
+      expect("filter" in layer ? layer.filter : undefined).toContainEqual([
+        "!=",
+        ["get", "exclave"],
+        true,
+      ]);
+    }
+    const fill = style.layers.find((layer) => layer.id === "kommun-fill");
+    expect(JSON.stringify(fill)).not.toContain("exclave");
   });
 
   test("draws hint outlines unfilled, as a thin white line at half opacity", () => {
