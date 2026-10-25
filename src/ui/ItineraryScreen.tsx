@@ -16,10 +16,9 @@ import type { LinkedTrip } from "../freePlay/linkPayload";
 import { opensAtStarta } from "../freePlay/modeRules";
 import type { GraphVersion } from "../graph/graphVersion";
 import type { KeyValueStorage } from "../progress/storage";
-import { FreePlayBoard } from "./FreePlayBoard";
+import { GatedBoard } from "./GatedBoard";
 import { ItinerarySummaryView } from "./ItinerarySummary";
 import { modeName, scoreText } from "./messages";
-import { StartGate } from "./StartGate";
 import "./ItineraryScreen.css";
 
 type ItineraryScreenProps = {
@@ -70,8 +69,6 @@ export function ItineraryScreen({
   useEffect(() => onPlayChange?.(play), [play, onPlayChange]);
   const stage = itineraryStage(graph, trips, play);
   const total = itineraryTotal(graph, play);
-  // The trip, by its place, whose board's map is drawn.
-  const [mapReadyFor, setMapReadyFor] = useState<number>();
   // The board a trip's card loads behind its Starta, until the trip starts.
   const cardTrip = stage.kind === "card" ? trips[stage.index] : undefined;
   const cardGame = useMemo(() => cardTrip && unstartedGame(cardTrip), [cardTrip]);
@@ -116,41 +113,34 @@ export function ItineraryScreen({
       </button>
     </>
   );
-  // A trip's card loads its board unseen behind Starta, which waits until its map is drawn; the
-  // reveal shows that same board.
+  // A trip's card is its board's Starta gate.
   return (
-    <>
-      {onCard && (
-        <StartGate
-          // Each card is a fresh gate, its Starta focused.
-          key={`gate-${stage.index}`}
-          label={label}
-          mode={trip.mode}
-          ready={mapReadyFor === stage.index}
-          onTheClock={opensAtStarta(trip.mode)}
-          onStart={() => moveOn((current) => startTrip(trips, current, clock()))}
-        />
-      )}
-      <FreePlayBoard
-        // Each trip gets a fresh board, so the last one's result state doesn't carry over.
-        key={stage.index}
-        graph={graph}
-        mode={trip.mode}
-        game={game}
-        label={label}
-        clock={clock}
-        concealed={onCard}
-        onMapReady={() => setMapReadyFor(stage.index)}
-        // Started from its card, or put on the board by the player, so they can type at once.
-        openedByPlayer={onCard || movedOn}
-        onGameChange={(changed) =>
-          setPlay((current) => changeTripGame(graph, current, changed, clock()))
-        }
-        sessionStorage={sessionStorage}
-        resultActions={tripEnd}
-        stripActions={tripEnd}
-      />
-    </>
+    <GatedBoard
+      // Each trip gets a fresh card, its Starta focused, and a fresh board, so the last one's
+      // result state doesn't carry over.
+      key={stage.index}
+      gate={
+        onCard
+          ? {
+              onTheClock: opensAtStarta(trip.mode),
+              onStart: () => moveOn((current) => startTrip(trips, current, clock())),
+            }
+          : undefined
+      }
+      graph={graph}
+      mode={trip.mode}
+      game={game}
+      label={label}
+      clock={clock}
+      // Put on the board by the player, so they can type at once.
+      openedByPlayer={movedOn}
+      onGameChange={(changed) =>
+        setPlay((current) => changeTripGame(graph, current, changed, clock()))
+      }
+      sessionStorage={sessionStorage}
+      resultActions={tripEnd}
+      stripActions={tripEnd}
+    />
   );
 }
 
