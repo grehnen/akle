@@ -195,7 +195,7 @@ export function TripBoard<T extends Trip>({
             <h3 id="guesses-heading" className="section-heading">
               Tidigare gissningar
             </h3>
-            {review.cards.length === 0 && !timeouts?.some((run) => run > 0) && (
+            {review.cards.length === 0 && (
               <p className="section-empty">
                 Inga gissningar än. Börja med en granne till {nameOf(trip.start)}.
               </p>
@@ -214,7 +214,10 @@ export function TripBoard<T extends Trip>({
                   </li>
                 </Fragment>
               ))}
-              <TimeoutRow timeouts={timeouts?.[review.cards.length]} />
+              <TimeoutRow
+                timeouts={timeouts?.[review.cards.length]}
+                held={timeouts !== undefined && !finished}
+              />
             </ol>
           </section>
 
@@ -253,9 +256,18 @@ export function TripBoard<T extends Trip>({
   );
 }
 
-/** Consecutive timeouts as one row among the guesses, `⏱ ×5`; not a guess, so not numbered. */
-function TimeoutRow({ timeouts = 0 }: { timeouts?: number }) {
-  if (timeouts === 0) return null;
+/**
+ * Consecutive timeouts as one row among the guesses, `⏱ ×5`; not a guess, so not numbered.
+ * A `held` row with no timeouts yet keeps its place, unseen, so a timeout moves nothing below it.
+ */
+function TimeoutRow({ timeouts = 0, held = false }: { timeouts?: number; held?: boolean }) {
+  if (timeouts === 0) {
+    return held ? (
+      <li className="timeout-row timeout-row--held" aria-hidden="true">
+        ⏱ ×1
+      </li>
+    ) : null;
+  }
   return (
     <li className="timeout-row">
       <span aria-hidden="true">⏱ ×{timeouts}</span>
