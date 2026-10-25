@@ -18,6 +18,25 @@ import { TripBoard } from "./TripBoard";
 import { TripClock } from "./TripClock";
 import { useNow } from "./useNow";
 
+export type FreePlayBoardProps = {
+  graph: GraphVersion;
+  mode: ModeSetting;
+  game: Game;
+  /** The trip's own link, shared from its result; an itinerary's trips have none. */
+  link?: string;
+  label: ReactNode;
+  clock: Clock;
+  /** The board opens by the player's own action, as `TripBoard` takes it. */
+  openedByPlayer: boolean;
+  onGameChange: (game: Game) => void;
+  sessionStorage: KeyValueStorage;
+  resultActions?: ReactNode;
+  stripActions?: ReactNode;
+  /** Loads the board unseen behind `Starta`, as `TripBoard` does. */
+  concealed?: boolean;
+  onMapReady?: () => void;
+};
+
 /**
  * A free-play trip on the board in its mode: its clock or thinking time while played, then in
  * the result its headline, its outcome label and score as the share text words them (saying lower
@@ -38,24 +57,7 @@ export function FreePlayBoard({
   stripActions,
   concealed = false,
   onMapReady,
-}: {
-  graph: GraphVersion;
-  mode: ModeSetting;
-  game: Game;
-  /** The trip's own link, shared from its result; an itinerary's trips have none. */
-  link?: string;
-  label: ReactNode;
-  clock: Clock;
-  /** The board opens by the player's own action, as `TripBoard` takes it. */
-  openedByPlayer: boolean;
-  onGameChange: (game: Game) => void;
-  sessionStorage: KeyValueStorage;
-  resultActions?: ReactNode;
-  stripActions?: ReactNode;
-  /** Loads the board unseen behind `Starta`, as `TripBoard` does. */
-  concealed?: boolean;
-  onMapReady?: () => void;
-}) {
+}: FreePlayBoardProps) {
   const review = useMemo(() => reviewGame(graph, game), [graph, game]);
   // A timed trip's thinking time runs on real time, read again on each tick while it's played.
   const timed = game.rules.thinkingTime !== undefined;
