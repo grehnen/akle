@@ -91,3 +91,8 @@
   font-weight: 700;
   text-decoration: none;
 }
+
+/* The way on, in the yellow of the app's main actions. */
+.itinerary-summary-actions .primary-link {
+  background: var(--start);
+}
