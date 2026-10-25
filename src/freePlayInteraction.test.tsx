@@ -6,6 +6,7 @@ import { App } from "./App";
 import type { DailyTripSource } from "./daily/loadDailyTrip";
 import { tripLinkPath } from "./freePlay/tripLink";
 import type { GraphVersionFiles } from "./graph/graphVersionFiles";
+import type { LoadMapLibre } from "./map/mapLibreLoader";
 import { type KeyValueStorage, memoryStorage } from "./progress/storage";
 
 const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>', {
@@ -112,6 +113,29 @@ const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve
 
 let mounted: { root: Root; container: HTMLElement } | undefined;
 
+/**
+ * Stands in for MapLibre, which jsdom can't run: each map finds none and so is ready at once,
+ * unless a test holds the maps back with {@link holdMaps}.
+ */
+let heldMaps: (() => void)[] | undefined;
+/** A test's own stand-in for MapLibre, used instead of {@link loadMap} while set. */
+let mapLoaderOverride: LoadMapLibre | undefined;
+const loadMap: LoadMapLibre = () =>
+  heldMaps === undefined
+    ? Promise.resolve(undefined)
+    : new Promise((resolve) => heldMaps?.push(() => resolve(undefined)));
+/** Holds every map back from being ready until the returned `drawMaps` is called. */
+function holdMaps() {
+  heldMaps = [];
+  return () =>
+    act(async () => {
+      const waiting = heldMaps ?? [];
+      heldMaps = undefined;
+      mapLoaderOverride = undefined;
+      for (const draw of waiting) draw();
+    });
+}
+
 const OPENED_AT = new Date(2026, 9, 24, 12, 0).getTime();
 /** The app's clock, which a test moves on to let real time pass, as across a reload or sleep. */
 let clockTime = OPENED_AT;
@@ -121,6 +145,7 @@ const passTime = (milliseconds: number) => {
 
 afterEach(() => {
   clockTime = OPENED_AT;
+  heldMaps = undefined;
   if (!mounted) return;
   const { root, container } = mounted;
   act(() => root.unmount());
@@ -152,6 +177,7 @@ async function mountApp(
         path={pathname}
         search={search}
         pacing={pacing}
+        loadMap={mapLoaderOverride ?? loadMap}
       />,
     ),
   );
@@ -1437,5 +1463,195 @@ describe("Tidspress", () => {
     expect(reloaded.container.querySelector(".start-gate")).toBeNull();
     expect(guessNames(reloaded.container)).toEqual(["1. Haninge ✅", "⏱ ×360"]);
     expect(secondsLeft(reloaded.container)).toBe("8");
+  });
+});
+
+describe("the board behind Starta", () => {
+  const tieBreakerLink = tripLinkPath(0, {
+    start: "0192",
+    destination: "0488",
+    mode: { kind: "tie-breaker" },
+  });
+  const timedLink = tripLinkPath(0, {
+    start: "0192",
+    destination: "0488",
+    mode: { kind: "timed", thinkingTime: 10 },
+  });
+  const starta = (container: HTMLElement) => query(container, ".start-gate-button");
+  const gate = (container: HTMLElement) => query(container, ".start-gate");
+  /** The gate's elements in order, by tag and class: what decides its layout. */
+  const gateLayout = (container: HTMLElement) =>
+    [...gate(container).querySelectorAll("*")]
+      .filter((element) => !element.classList.contains("start-gate-spinner"))
+      .map((element) => `${element.tagName}.${element.className}`);
+  /** A storage that keeps every value written to it. */
+  function recordingStorage() {
+    const storage = memoryStorage();
+    const written: string[] = [];
+    const recording: KeyValueStorage = {
+      ...storage,
+      setItem: (key, value) => {
+        written.push(`${key}=${value}`);
+        storage.setItem(key, value);
+      },
+    };
+    return { storage: recording, written };
+  }
+
+  test("Starta waits, busy and saying so, until the map is drawn, then says once it's ready", async () => {
+    const drawMaps = holdMaps();
+    const { container } = await mountApp(tieBreakerLink);
+    const loadingLayout = gateLayout(container);
+
+    expect(gate(container).getAttribute("aria-busy")).toBe("true");
+    expect(starta(container).getAttribute("aria-disabled")).toBe("true");
+    expect(query(container, ".start-gate-status").textContent).toBe("Laddar kartan…");
+    expect(query(container, ".start-gate-spinner")).not.toBeNull();
+    expect(dom.window.document.activeElement).toBe(starta(container));
+    // Pressed too soon, Starta does nothing.
+    await click(starta(container));
+    expect(container.querySelector("#trip-heading")).toBeNull();
+
+    await drawMaps();
+    expect(gate(container).hasAttribute("aria-busy")).toBe(false);
+    expect(starta(container).hasAttribute("aria-disabled")).toBe(false);
+    const status = query(container, ".start-gate-status");
+    expect(status.textContent).toBe("Kartan är klar");
+    expect(status.getAttribute("aria-live")).toBe("polite");
+    expect(gateLayout(container)).toEqual(loadingLayout);
+    expect(dom.window.document.activeElement).toBe(starta(container));
+
+    await click(starta(container));
+    expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
+    expect(dom.window.document.activeElement).toBe(query(container, "#guess-input"));
+  });
+
+  test("a ready map leaves focus where the player put it", async () => {
+    const drawMaps = holdMaps();
+    const { container } = await mountApp(tieBreakerLink);
+    const elsewhere = query(container, ".rules-open");
+    elsewhere.focus();
+
+    await drawMaps();
+    expect(dom.window.document.activeElement).toBe(elsewhere);
+  });
+
+  test("no time runs while the map loads: the tie-breaker clock starts at 0:00 at the reveal", async () => {
+    const storage = memoryStorage();
+    const drawMaps = holdMaps();
+    const { container } = await mountApp(tieBreakerLink, storage);
+    passTime(30_000);
+    await click(starta(container));
+    passTime(30_000);
+    await drawMaps();
+    passTime(5_000);
+
+    await click(starta(container));
+    expect(query(container, '.trip-clock [role="timer"]').textContent).toBe("0:00");
+    await guess(container, "Haninge");
+    passTime(1_500);
+    await playToTheEnd(container, "Salem");
+    expect(query(container, ".result-time").textContent).toBe("Tid 0:01,5");
+  });
+
+  test("no time runs while the map loads: the first betänketid starts full at the reveal", async () => {
+    const drawMaps = holdMaps();
+    const { container } = await mountApp(timedLink);
+    passTime(60_000);
+    await drawMaps();
+    passTime(4_000);
+
+    await click(starta(container));
+    expect(query(container, '.thinking-time [role="timer"]').textContent).toBe("10");
+    expect(container.querySelector(".timeout-row:not(.timeout-row--held)")).toBeNull();
+    await settle();
+  });
+
+  test("the trip's save is written at the reveal, with its start then", async () => {
+    const { storage, written } = recordingStorage();
+    const drawMaps = holdMaps();
+    const { container } = await mountApp(tieBreakerLink, storage);
+    await drawMaps();
+    passTime(7_000);
+    expect(written).toEqual([]);
+
+    await click(starta(container));
+    expect(written.at(-1)).toContain(`"startedAt":${clockTime}`);
+  });
+
+  test("before the reveal, no end of the trip is named anywhere, and the board is out of reach", async () => {
+    const { storage, written } = recordingStorage();
+    const session = recordingStorage();
+    const drawMaps = holdMaps();
+    const { container } = await mountApp("/fri", storage, session.storage);
+    await click(query(container, 'input[name="free-play-mode"][value="tie-breaker"]'));
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+
+    const named = () =>
+      [
+        dom.window.document.body.outerHTML,
+        dom.window.document.title,
+        ...written,
+        ...session.written,
+      ].filter((text) => /Nynäshamn|Haninge|Salem|Trosa/.test(text));
+    expect(named()).toEqual([]);
+    const board = query(container, ".play-screen");
+    expect(board.hasAttribute("inert")).toBe(true);
+    expect(board.getAttribute("aria-hidden")).toBe("true");
+    await drawMaps();
+    expect(named()).toEqual([]);
+    // The drawn trip's range is still noted for a reload behind Starta.
+    expect(session.written).toHaveLength(1);
+  });
+
+  test("the reveal shows the board loaded behind Starta, with no second map load", async () => {
+    let loads = 0;
+    const counting: LoadMapLibre = () => {
+      loads += 1;
+      return loadMap();
+    };
+    mapLoaderOverride = counting;
+    const drawMaps = holdMaps();
+    const { container } = await mountApp(tieBreakerLink);
+    const preloaded = query(container, ".satellite-map");
+    await drawMaps();
+
+    await click(starta(container));
+    expect(query(container, ".satellite-map")).toBe(preloaded);
+    expect(preloaded.getAttribute("aria-label")).toBe("Karta över Nynäshamn och Trosa");
+    expect(loads).toBe(1);
+  });
+
+  test("an untimed trip shows its ends and guess input at once, its map a skeleton until drawn", async () => {
+    const drawMaps = holdMaps();
+    const { container } = await mountApp(
+      tripLinkPath(0, { start: "0192", destination: "0488", mode: { kind: "standard" } }),
+    );
+
+    expect(container.querySelector(".start-gate")).toBeNull();
+    expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
+    expect(query<HTMLInputElement>(container, "#guess-input").disabled).toBe(false);
+    expect(query(container, ".satellite-map .map-skeleton")).not.toBeNull();
+    await drawMaps();
+    expect(container.querySelector(".map-skeleton")).toBeNull();
+  });
+
+  test("a resumed tie-breaker trip keeps real time while its map loads under a skeleton", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp(tieBreakerLink, storage);
+    await click(starta(container));
+    passTime(65_000);
+
+    const drawMaps = holdMaps();
+    const reloaded = await reopen(tieBreakerLink, storage);
+    expect(reloaded.container.querySelector(".start-gate")).toBeNull();
+    expect(query(reloaded.container, ".map-skeleton")).not.toBeNull();
+    expect(query(reloaded.container, '.trip-clock [role="timer"]').textContent).toBe("1:05");
+    passTime(5_000);
+    await drawMaps();
+    await settle();
+    expect(query(reloaded.container, '.trip-clock [role="timer"]').textContent).toBe("1:10");
+    expect(reloaded.container.querySelector(".map-skeleton")).toBeNull();
+    await settle();
   });
 });
