@@ -1,8 +1,6 @@
-import { type ModeSetting, THINKING_TIME_RANGE } from "../freePlay/linkPayload";
+import { type ModeKind, type ModeSetting, THINKING_TIME_RANGE } from "../freePlay/linkPayload";
 import { MODES } from "./messages";
 import "./ModeCards.css";
-
-type ModeKind = ModeSetting["kind"];
 
 /**
  * The Läge choice: one card per mode, its name and a line on how it plays, as a radio group.
