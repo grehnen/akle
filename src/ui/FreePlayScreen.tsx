@@ -19,7 +19,7 @@ import { AppLink } from "./AppLink";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
 import { FreePlayBoard } from "./FreePlayBoard";
 import { ModeCards } from "./ModeCards";
-import { MODE_NAMES, modeName } from "./messages";
+import { guessesSoFar, modeName } from "./messages";
 import { StartGate } from "./StartGate";
 import {
   PickTripForm,
@@ -279,13 +279,14 @@ function FreePlaySetup({
   onRangeChange: (range: DistanceRange) => void;
   onDraw: () => void;
   onPick: (trip: Trip) => void;
-  /** The way back to an unfinished trip, after setup's own choices. */
+  /** The way back to an unfinished trip, first under the heading so it's seen without scrolling. */
   resume?: ReactNode;
 }) {
   const [tab, setTab] = useState<TripChoiceTab>("draw");
   return (
     <section className="free-play-setup" aria-labelledby="free-play-heading">
       <h2 id="free-play-heading">Fri resa</h2>
+      {resume}
       <ModeCards mode={mode} thinkingTime={thinkingTime} onChange={onModeChange} />
       <TripChoiceTabs idPrefix={ID_PREFIX} selected={tab} onSelect={setTab} />
       <div
@@ -308,7 +309,6 @@ function FreePlaySetup({
         submitLabel="Res"
         onPick={onPick}
       />
-      {resume}
     </section>
   );
 }
@@ -326,7 +326,7 @@ function ResumeTrip({
 }) {
   return (
     <AppLink className="free-play-resume" href={link} onNavigate={onNavigate}>
-      Fortsätt resan: {MODE_NAMES[mode.kind]}, {guesses} {guesses === 1 ? "gissning" : "gissningar"}
+      Fortsätt resan: {modeName(mode)}, {guessesSoFar(guesses)}
     </AppLink>
   );
 }
