@@ -183,19 +183,21 @@ describe("with no guess limit", () => {
 describe("giving up", () => {
   const freePlay: Rules = { guessLimit: "distance", giveUp: true, keepsTime: false };
 
-  test("is allowed once there are as many guesses as the distance, and ends the trip as a loss", () => {
-    const tooSoon = playUnder(freePlay, "Kommun Z");
-    expect(reviewGame(graph, tooSoon).canGiveUp).toBe(false);
-    expect(giveUp(graph, tooSoon)).toBe(tooSoon);
-
-    const game = playUnder(freePlay, "Kommun Z", "Kommun A");
-    expect(reviewGame(graph, game).canGiveUp).toBe(true);
-    const review = reviewGame(graph, giveUp(graph, game));
+  test("is allowed from the start, before any guess, and ends the trip as a loss", () => {
+    const fresh = playUnder(freePlay);
+    expect(reviewGame(graph, fresh).canGiveUp).toBe(true);
+    const review = reviewGame(graph, giveUp(graph, fresh));
     expect(review.status).toBe("lost");
     expect(review.givenUp).toBe(true);
-    expect(review.away).toBe(1);
-    expect(review.missing).toEqual(["B"]);
+    expect(review.away).toBe(2);
+    expect(review.missing).toEqual(["A", "B"]);
     expect(review.canGiveUp).toBe(false);
+  });
+
+  test("is allowed after fewer guesses than the distance", () => {
+    const game = playUnder(freePlay, "Kommun Z");
+    expect(reviewGame(graph, game).canGiveUp).toBe(true);
+    expect(reviewGame(graph, giveUp(graph, game)).status).toBe("lost");
   });
 
   test("is never allowed under rules without it, as in a daily trip", () => {
