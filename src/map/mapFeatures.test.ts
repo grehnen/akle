@@ -210,12 +210,12 @@ describe("guessViewBounds", () => {
 describe("routeFeatures", () => {
   const route = ["A", "B", "C", "D", "E"];
 
-  test("draws guesses off the route like unconnected guesses, then the endpoints, then the route's guessed kommuner green and missed ones red", () => {
+  test("draws guesses off the route grey with a solid outline, then the endpoints, then the route's guessed kommuner green and missed ones red", () => {
     const properties = routeFeatures(graph, trip, route, new Set(["C", "F"])).features.map(
       (feature) => feature.properties,
     );
     expect(properties).toEqual([
-      { code: "F", kind: "guess", color: "#9ca3af", connected: false },
+      { code: "F", kind: "guess", color: "#9ca3af", connected: true },
       { code: "A", kind: "start", color: "#fecc02", connected: true },
       { code: "E", kind: "destination", color: "#006aa7", connected: true },
       { code: "B", kind: "missed", color: "#f87171", connected: false },

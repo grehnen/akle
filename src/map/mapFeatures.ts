@@ -22,7 +22,10 @@ export type DrawnKommun = {
    */
   kind: "start" | "destination" | "guess" | "missed" | "hint" | "other";
   color: string;
-  /** Unconnected guesses get a dashed outline; endpoints are always drawn solid. */
+  /**
+   * Drawn with a solid outline when true, dashed otherwise: unconnected guesses while playing and
+   * missed kommuner on the result view's route are dashed. Endpoints are always drawn solid.
+   */
   connected: boolean;
 };
 
@@ -75,7 +78,7 @@ export function mapFeatures(
 }
 
 /**
- * The result view's map: guesses off the route underneath, drawn like unconnected guesses, then the endpoints, then the
+ * The result view's map: guesses off the route underneath, grey with a solid outline, then the endpoints, then the
  * route's kommuner, guessed or missed, over the outlines of every other kommun when
  * `allOutlines` is set.
  */
@@ -94,7 +97,7 @@ export function routeFeatures(
         code,
         kind: "guess" as const,
         color: UNCONNECTED_COLOR,
-        connected: false,
+        connected: true,
       })),
     { code: trip.start, kind: "start", color: START_COLOR, connected: true },
     { code: trip.destination, kind: "destination", color: DESTINATION_COLOR, connected: true },
