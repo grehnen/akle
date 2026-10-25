@@ -17,13 +17,20 @@ import {
 } from "./storedGame";
 
 /**
- * An itinerary's save as stored: an itinerary begun, finished or not, on the version its link
- * pins, kept apart from trips' saves. `play` is where it stands, a game per trip started so far.
+ * What makes an itinerary the one it is, as its link holds it: the version it pins, its title and
+ * its trips in order. However its link was spelled, the same parts are the same itinerary.
  */
-type StoredItinerarySave = {
+type ItineraryIdentity = {
   versionOrdinal: number;
   title?: string;
-  trips: LinkedTrip[];
+  trips: readonly LinkedTrip[];
+};
+
+/**
+ * An itinerary's save as stored: an itinerary begun, finished or not, kept apart from trips'
+ * saves. `play` is where it stands, a game per trip started so far.
+ */
+type StoredItinerarySave = ItineraryIdentity & {
   play: { current: number; games: StoredGame[] };
 };
 
@@ -36,12 +43,7 @@ const ITINERARY_SAVES: SavedGameKind<StoredItinerarySave> = {
 };
 
 /** An itinerary as its save keeps it: its link's parts and its play, begun. */
-export type SavedItinerary = {
-  versionOrdinal: number;
-  title?: string;
-  trips: readonly LinkedTrip[];
-  play: ItineraryPlay;
-};
+export type SavedItinerary = ItineraryIdentity & { play: ItineraryPlay };
 
 /**
  * Keeps an itinerary's save, replacing the one its link had and making it the most recently
@@ -57,9 +59,7 @@ export function saveItinerary(storage: KeyValueStorage, saved: SavedItinerary): 
     trips: trips.map(storeTrip),
     play: { current: play.current, games: play.games.map(storeGame) },
   };
-  putSave(storage, ITINERARY_SAVES, stored, (other) =>
-    isSaveOf(other, versionOrdinal, title, trips),
-  );
+  putSave(storage, ITINERARY_SAVES, stored, (other) => isSaveOf(other, saved));
 }
 
 /**
@@ -72,7 +72,8 @@ export function resumeItinerary(
   storage: KeyValueStorage,
   { version, title, trips }: Itinerary,
 ): ItineraryPlay | undefined {
-  const isSave = (save: StoredItinerarySave) => isSaveOf(save, version.ordinal, title, trips);
+  const identity = { versionOrdinal: version.ordinal, title, trips };
+  const isSave = (save: StoredItinerarySave) => isSaveOf(save, identity);
   const save = readSaves(storage, ITINERARY_SAVES).find(isSave);
   if (save === undefined) return undefined;
   const { current, games: stored } = save.play;
@@ -98,12 +99,7 @@ export function resumeItinerary(
   return { begun: true, current, games };
 }
 
-function isSaveOf(
-  save: StoredItinerarySave,
-  versionOrdinal: number,
-  title: string | undefined,
-  trips: readonly LinkedTrip[],
-): boolean {
+function isSaveOf(save: ItineraryIdentity, { versionOrdinal, title, trips }: ItineraryIdentity) {
   return (
     save.versionOrdinal === versionOrdinal &&
     save.title === title &&
