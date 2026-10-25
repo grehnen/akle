@@ -1,4 +1,12 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  type RefObject,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { Trip } from "../engine/game";
 import type { BuilderDraft, DraftTrip } from "../freePlay/builderDraft";
 import {
@@ -20,6 +28,7 @@ import { DEFAULT_THINKING_TIME } from "../freePlay/modeRules";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { shortestRouteLength } from "../graph/routes";
 import { SITE_URL } from "../siteUrl";
+import { CloseIcon } from "./CloseIcon";
 import { useCopyToast } from "./useCopyToast";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
 import { MODES, ThinkingTimeField } from "./ModeCards";
@@ -55,6 +64,9 @@ type BuilderTrip = DraftTrip & { id: number };
 const DEFAULT_DRAW_COUNT = 5;
 
 const ID_PREFIX = "itinerary";
+
+/** How long Ångra stays up after a removal, unless the pointer or focus is on it. */
+const UNDO_MS = 5000;
 
 /**
  * The itinerary builder (Bygg en resplan): a title, the ordered trip list, a panel that adds
@@ -95,8 +107,50 @@ export function ItineraryBuilder({
         )
       : undefined;
 
-  const add = (added: readonly DraftTrip[]) =>
+  // What the next render focuses, and an element to keep where it is on screen across it.
+  const section = useRef<HTMLElement>(null);
+  const focusAfterRender = useRef<string>(undefined);
+  const keepInPlace = useRef<{ element: HTMLElement; top: number }>(undefined);
+  const addPanel = useRef<HTMLFieldSetElement>(null);
+  const scrollRoom = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const kept = keepInPlace.current;
+    keepInPlace.current = undefined;
+    // Room made to keep the add panel in place goes once the list is empty again.
+    if (trips.length === 0 && scrollRoom.current !== null) scrollRoom.current.style.height = "";
+    if (kept !== undefined) keepOnScreen(kept, scrollRoom.current);
+    const selector = focusAfterRender.current;
+    focusAfterRender.current = undefined;
+    if (selector !== undefined) section.current?.querySelector<HTMLElement>(selector)?.focus();
+  });
+  const removeButton = (number: number) => `[aria-label="Ta bort resa ${number}"]`;
+
+  const { announcement, announce } = useAnnouncer();
+  // The latest removal, until Ångra, its time running out, or another trip added.
+  const [removed, setRemoved] = useState<{ entry: BuilderTrip; index: number }>();
+  const [undoHeld, setUndoHeld] = useState(false);
+  useEffect(() => {
+    if (removed === undefined || undoHeld) return;
+    const timer = setTimeout(() => setRemoved(undefined), UNDO_MS);
+    return () => clearTimeout(timer);
+  }, [removed, undoHeld]);
+
+  const add = (added: readonly DraftTrip[], drawn: boolean) => {
+    const count = Math.min(added.length, room);
+    if (count === 0) return;
+    // Rows go in above the panel: it stays put on screen, so the button just used never moves.
+    if (addPanel.current !== null) {
+      keepInPlace.current = {
+        element: addPanel.current,
+        top: addPanel.current.getBoundingClientRect().top,
+      };
+    }
     setTrips((current) => [...current, ...withIds(added)].slice(0, ITINERARY_TRIPS.max));
+    setRemoved(undefined);
+    announce(count === 1 ? `Resa ${trips.length + 1} tillagd` : `${count} resor tillagda`);
+    focusAfterRender.current =
+      count === room ? ".itinerary-count" : drawn ? ".itinerary-draw" : `#${ID_PREFIX}-start`;
+  };
   const changeTrip = (id: number, mode: ModeSetting) =>
     setTrips((current) =>
       current.map((entry) =>
@@ -109,7 +163,7 @@ export function ItineraryBuilder({
       [next[index], next[index + by]] = [next[index + by], next[index]];
       return next;
     });
-  const duplicate = (index: number) =>
+  const duplicate = (index: number) => {
     setTrips((current) =>
       [
         ...current.slice(0, index + 1),
@@ -117,15 +171,36 @@ export function ItineraryBuilder({
         ...current.slice(index + 1),
       ].slice(0, ITINERARY_TRIPS.max),
     );
-  const remove = (id: number) => setTrips((current) => current.filter((entry) => entry.id !== id));
+    setRemoved(undefined);
+  };
+  const remove = (index: number) => {
+    const entry = trips[index];
+    setTrips(trips.filter((_, other) => other !== index));
+    setRemoved({ entry, index });
+    announce(`Resa ${index + 1} borttagen`);
+    // Focus the ✕ that took its place, the one before it for the last row, or the empty list.
+    const left = trips.length - 1;
+    focusAfterRender.current =
+      left === 0 ? ".itinerary-empty" : removeButton(index < left ? index + 1 : index);
+  };
+  const undoRemoval = () => {
+    if (removed === undefined) return;
+    const { entry, index } = removed;
+    setTrips((current) => [...current.slice(0, index), entry, ...current.slice(index)]);
+    setRemoved(undefined);
+    setUndoHeld(false);
+    announce(`Resa ${index + 1} tillbaka`);
+    focusAfterRender.current = removeButton(index + 1);
+  };
   const startOver = () => {
     setTitle("");
     setTrips([]);
     setRevealed(new Set());
+    setRemoved(undefined);
   };
 
   return (
-    <section className="itinerary-builder" aria-labelledby="itinerary-heading">
+    <section ref={section} className="itinerary-builder" aria-labelledby="itinerary-heading">
       <p className="trip-number">Resplan</p>
       <h2 id="itinerary-heading">Bygg en resplan</h2>
       {banner}
@@ -139,7 +214,9 @@ export function ItineraryBuilder({
         Ny resplan
       </button>
       {trips.length === 0 ? (
-        <p className="itinerary-empty">Inga resor än. Lägg till minst två nedan.</p>
+        <p className="itinerary-empty" tabIndex={-1}>
+          Inga resor än. Lägg till minst två nedan.
+        </p>
       ) : (
         <ol className="itinerary-trips" aria-label="Resor">
           {trips.map((entry, index) => (
@@ -156,22 +233,67 @@ export function ItineraryBuilder({
               onModeChange={(mode) => changeTrip(entry.id, mode)}
               onMove={(by) => move(index, by)}
               onDuplicate={() => duplicate(index)}
-              onRemove={() => remove(entry.id)}
+              onRemove={() => remove(index)}
             />
           ))}
         </ol>
       )}
       <AddTrips
+        panelRef={addPanel}
         graph={graph}
         room={room}
         random={random}
         onAdd={(added, mode, drawn) =>
-          add(added.map((trip) => ({ trip: { ...trip, mode }, drawn })))
+          add(
+            added.map((trip) => ({ trip: { ...trip, mode }, drawn })),
+            drawn,
+          )
         }
       />
-      <LinkBar count={trips.length} link={link} onPlay={onPlay} />
+      <LinkBar
+        count={trips.length}
+        link={link}
+        onPlay={onPlay}
+        undo={
+          removed && {
+            number: removed.index + 1,
+            onUndo: undoRemoval,
+            onHold: setUndoHeld,
+          }
+        }
+      />
+      <div ref={scrollRoom} className="itinerary-scroll-room" aria-hidden="true" />
+      <p role="status" className="visually-hidden itinerary-announcer">
+        {announcement}
+      </p>
     </section>
   );
+}
+
+/**
+ * Scrolls so `kept.element` is back where it was on screen, `top` from the viewport. A page too
+ * short to scroll that far first grows `room` at its end by what's missing.
+ */
+function keepOnScreen(kept: { element: HTMLElement; top: number }, room: HTMLElement | null) {
+  const moved = kept.element.getBoundingClientRect().top - kept.top;
+  if (moved === 0) return;
+  const target = window.scrollY + moved;
+  const scrollEnd = document.documentElement.scrollHeight - window.innerHeight;
+  if (room !== null && target > scrollEnd) {
+    room.style.height = `${room.offsetHeight + target - scrollEnd}px`;
+  }
+  window.scrollTo(0, target);
+}
+
+/**
+ * A polite announcement for the builder's live region. The same words twice in a row differ by
+ * a trailing no-break space, so screen readers read them again.
+ */
+function useAnnouncer(): { announcement: string; announce: (text: string) => void } {
+  const [announcement, setAnnouncement] = useState("");
+  const announce = (text: string) =>
+    setAnnouncement((previous) => (previous === text ? `${text}\u00a0` : text));
+  return { announcement, announce };
 }
 
 function TitleField({ title, onChange }: { title: string; onChange: (title: string) => void }) {
@@ -359,11 +481,13 @@ function ModeSelect({
  * or Välj själv, which adds one hand-picked trip. Disabled once the itinerary is full.
  */
 function AddTrips({
+  panelRef,
   graph,
   room,
   random,
   onAdd,
 }: {
+  panelRef: RefObject<HTMLFieldSetElement | null>;
   graph: GraphVersion;
   /** How many more trips fit. */
   room: number;
@@ -391,7 +515,7 @@ function AddTrips({
   };
 
   return (
-    <fieldset className="itinerary-add" disabled={full}>
+    <fieldset ref={panelRef} className="itinerary-add" disabled={full}>
       <legend>Lägg till resor{full && " (fullt)"}</legend>
       <ModeSelect id="itinerary-new" label="Läge för nya resor" mode={mode} onChange={setMode} />
       <TripChoiceTabs idPrefix={ID_PREFIX} selected={tab} onSelect={setTab} />
@@ -457,21 +581,49 @@ function Stepper({
   );
 }
 
-/** The sticky bar: how many trips, and Kopiera länk and Spela once the itinerary has two. */
+/**
+ * The sticky bar: how many trips, and Kopiera länk and Spela once the itinerary has two. Above it
+ * float, without moving it, the latest removal's Ångra, the link to copy by hand when copying
+ * failed, and the copy toast.
+ */
 function LinkBar({
   count,
   link,
   onPlay,
+  undo,
 }: {
   count: number;
   link?: string;
   onPlay: (link: string) => void;
+  undo?: { number: number; onUndo: () => void; onHold: (held: boolean) => void };
 }) {
   const { toast, copy } = useCopyToast();
+  // The link that failed to copy, shown until a copy works or the itinerary is edited.
+  const [uncopied, setUncopied] = useState<string>();
+  const [linkCopied, setLinkCopied] = useState(link);
+  if (link !== linkCopied) {
+    setLinkCopied(link);
+    setUncopied(undefined);
+  }
+  const copyLink = async (url: string) => setUncopied((await copy(url)) ? undefined : url);
+
   return (
     <div className="itinerary-bar">
       <div className="itinerary-bar-content">
-        <p className="itinerary-count">
+        <div className="itinerary-bar-overlays">
+          {undo && <UndoToast {...undo} />}
+          {uncopied !== undefined && (
+            <CopyFallback key={uncopied} url={uncopied} onClose={() => setUncopied(undefined)} />
+          )}
+          <p
+            role="status"
+            aria-live="polite"
+            className={uncopied === undefined ? "itinerary-toast" : "visually-hidden"}
+          >
+            {toast}
+          </p>
+        </div>
+        <p className="itinerary-count" tabIndex={-1}>
           {count} av {ITINERARY_TRIPS.max} resor
           {count < ITINERARY_TRIPS.min && (
             <span className="itinerary-count-minimum"> · minst {ITINERARY_TRIPS.min}</span>
@@ -481,7 +633,7 @@ function LinkBar({
           type="button"
           className="itinerary-copy"
           disabled={link === undefined}
-          onClick={() => link !== undefined && copy(`${SITE_URL}${link}`)}
+          onClick={() => link !== undefined && void copyLink(`${SITE_URL}${link}`)}
         >
           Kopiera länk
         </button>
@@ -493,10 +645,57 @@ function LinkBar({
         >
           Spela
         </button>
-        <p role="status" aria-live="polite" className="itinerary-toast">
-          {toast}
-        </p>
       </div>
+    </div>
+  );
+}
+
+/** "Resa N borttagen" and Ångra; held up while the pointer or focus is on it. */
+function UndoToast({
+  number,
+  onUndo,
+  onHold,
+}: {
+  number: number;
+  onUndo: () => void;
+  onHold: (held: boolean) => void;
+}) {
+  return (
+    <div
+      className="itinerary-undo"
+      onPointerEnter={() => onHold(true)}
+      onPointerLeave={() => onHold(false)}
+      onFocus={() => onHold(true)}
+      onBlur={() => onHold(false)}
+    >
+      <span>Resa {number} borttagen</span>
+      <button type="button" onClick={onUndo}>
+        Ångra
+      </button>
+    </div>
+  );
+}
+
+/** The link in a read-only field, selected, for the player to copy by hand. */
+function CopyFallback({ url, onClose }: { url: string; onClose: () => void }) {
+  const field = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    field.current?.focus();
+    field.current?.select();
+  }, []);
+  return (
+    <div className="itinerary-copy-fallback">
+      <label htmlFor="itinerary-copy-fallback">Kunde inte kopiera. Kopiera länken själv:</label>
+      <input
+        ref={field}
+        id="itinerary-copy-fallback"
+        readOnly
+        value={url}
+        onFocus={(event) => event.target.select()}
+      />
+      <button type="button" aria-label="Stäng" onClick={onClose}>
+        <CloseIcon />
+      </button>
     </div>
   );
 }

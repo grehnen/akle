@@ -236,6 +236,36 @@ describe("drawing trips", () => {
   });
 });
 
+/** What the builder last announced, as a screen reader hears it. */
+const announced = (container: HTMLElement) =>
+  query(container, ".itinerary-announcer").textContent?.trim();
+const focused = () => dom.window.document.activeElement;
+
+describe("announcing added trips", () => {
+  test("Lägg till announces the trip and focuses Start for the next pair", async () => {
+    const container = await mountApp("/resplan");
+    await pick(container, "Nynäshamn", "Salem");
+    expect(announced(container)).toBe("Resa 1 tillagd");
+    await pick(container, "Haninge", "Trosa");
+    expect(announced(container)).toBe("Resa 2 tillagd");
+    expect(focused()).toBe(query(container, "#itinerary-start"));
+  });
+
+  test("a draw of five announces them all, focus staying on the draw button", async () => {
+    const container = await mountApp("/resplan");
+    await click(drawButton(container));
+    expect(announced(container)).toBe("5 resor tillagda");
+    expect(focused()).toBe(drawButton(container));
+  });
+
+  test("the add that fills the itinerary moves focus to the bar's count", async () => {
+    const container = await mountApp("/resplan");
+    for (let draw = 0; draw < 4; draw++) await click(drawButton(container));
+    expect(announced(container)).toBe("5 resor tillagda");
+    expect(focused()).toBe(query(container, ".itinerary-count"));
+  });
+});
+
 describe("a full itinerary", () => {
   test("at 20 trips the panel and duplicating are disabled, until a trip is removed", async () => {
     const container = await mountApp("/resplan");
@@ -286,6 +316,67 @@ describe("editing the trip list", () => {
     await click(labelled(container, "Visa resa 1"));
     await click(labelled(container, "Visa resa 2"));
     expect(rows(container)[0]).toBe(rows(container)[1]);
+  });
+});
+
+const undoToast = (container: HTMLElement) => container.querySelector(".itinerary-undo");
+/** Row `number`'s betänketid. */
+const rowThinkingTime = (container: HTMLElement, number: number) =>
+  query<HTMLInputElement>(container, `.itinerary-trip:nth-child(${number}) input[type='range']`);
+
+describe("removing a trip", () => {
+  test("shows Ångra, which puts the trip back in place with its mode and revealed pair", async () => {
+    const container = await mountApp("/resplan");
+    await click(drawButton(container));
+    await choose(rowMode(container, 3), "timed");
+    await type(rowThinkingTime(container, 3), "23");
+    await click(labelled(container, "Visa resa 3"));
+    const pair = rows(container)[2];
+
+    await click(labelled(container, "Ta bort resa 3"));
+    expect(rows(container)).toHaveLength(4);
+    expect(undoToast(container)?.textContent).toBe("Resa 3 borttagenÅngra");
+    expect(announced(container)).toBe("Resa 3 borttagen");
+    expect(focused()).toBe(labelled(container, "Ta bort resa 3"));
+
+    await click(button(container, "Ångra"));
+    expect(rows(container)).toHaveLength(5);
+    expect(rows(container)[2]).toBe(pair);
+    expect(rowMode(container, 3).value).toBe("timed");
+    expect(rowThinkingTime(container, 3).value).toBe("23");
+    expect(undoToast(container)).toBeNull();
+    expect(focused()).toBe(labelled(container, "Ta bort resa 3"));
+  });
+
+  test("a hidden drawn trip comes back still hidden", async () => {
+    const container = await mountApp("/resplan");
+    await click(drawButton(container));
+    await click(labelled(container, "Ta bort resa 4"));
+    await click(button(container, "Ångra"));
+    expect(rows(container)[3]).toBe("🎲 Slumpad · avstånd 2");
+  });
+
+  test("only the latest removal can be undone", async () => {
+    const container = await mountApp("/resplan");
+    await pick(container, "Nynäshamn", "Salem");
+    await pick(container, "Haninge", "Trosa");
+    await pick(container, "Trosa", "Haninge");
+    await click(labelled(container, "Ta bort resa 1"));
+    await click(labelled(container, "Ta bort resa 1"));
+    expect(undoToast(container)?.textContent).toBe("Resa 1 borttagenÅngra");
+    await click(button(container, "Ångra"));
+    expect(rows(container)).toEqual(["Haninge → Trosa", "Trosa → Haninge"]);
+    expect(undoToast(container)).toBeNull();
+  });
+
+  test("the last row's removal focuses the row before, and the only row's the empty list", async () => {
+    const container = await mountApp("/resplan");
+    await pick(container, "Nynäshamn", "Salem");
+    await pick(container, "Haninge", "Trosa");
+    await click(labelled(container, "Ta bort resa 2"));
+    expect(focused()).toBe(labelled(container, "Ta bort resa 1"));
+    await click(labelled(container, "Ta bort resa 1"));
+    expect(focused()).toBe(query(container, ".itinerary-empty"));
   });
 });
 
@@ -344,6 +435,60 @@ describe("the itinerary's link", () => {
       kind: "timed",
       thinkingTime: 23,
     });
+  });
+
+  test("a failed copy shows the link selected in a read-only field, until the next edit", async () => {
+    const container = await mountApp("/resplan");
+    await pick(container, "Nynäshamn", "Salem");
+    await pick(container, "Haninge", "Trosa");
+    const clipboard = globalThis.navigator.clipboard;
+    Object.defineProperty(globalThis.navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: () => Promise.reject(new Error("denied")) },
+    });
+    try {
+      await click(button(container, "Kopiera länk"));
+    } finally {
+      Object.defineProperty(globalThis.navigator, "clipboard", {
+        configurable: true,
+        value: clipboard,
+      });
+    }
+
+    const field = query<HTMLInputElement>(container, ".itinerary-copy-fallback input");
+    expect(field.readOnly).toBe(true);
+    expect(new URL(field.value).origin).toBe("https://akle.grehn.net");
+    expect(focused()).toBe(field);
+    expect([field.selectionStart, field.selectionEnd]).toEqual([0, field.value.length]);
+    expect(query(container, ".itinerary-copy-fallback label").textContent).toBe(
+      "Kunde inte kopiera. Kopiera länken själv:",
+    );
+
+    await click(button(container, "Kopiera länk"));
+    expect(container.querySelector(".itinerary-copy-fallback")).toBeNull();
+    expect(query(container, ".itinerary-toast").textContent).toBe("Kopierat!");
+  });
+
+  test("the link to copy by hand goes away after an edit", async () => {
+    const container = await mountApp("/resplan");
+    await pick(container, "Nynäshamn", "Salem");
+    await pick(container, "Haninge", "Trosa");
+    const clipboard = globalThis.navigator.clipboard;
+    Object.defineProperty(globalThis.navigator, "clipboard", {
+      configurable: true,
+      value: undefined,
+    });
+    try {
+      await click(button(container, "Kopiera länk"));
+    } finally {
+      Object.defineProperty(globalThis.navigator, "clipboard", {
+        configurable: true,
+        value: clipboard,
+      });
+    }
+    expect(container.querySelector(".itinerary-copy-fallback")).not.toBeNull();
+    await type(query(container, "#itinerary-title"), "Helgresan");
+    expect(container.querySelector(".itinerary-copy-fallback")).toBeNull();
   });
 
   test("Kopiera länk and Spela wait for the second trip", async () => {
