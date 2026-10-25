@@ -89,17 +89,23 @@ export function timeText(tenths: number): string {
   return `${hoursMinutesSeconds(Math.floor(tenths / 10))},${tenths % 10}`;
 }
 
-/** A summary row's outcome: `Perfekt`, `+2`, `3 ifrån` or, for a give-up, `Gav upp, 3 ifrån`. */
-export function summaryOutcomeText(outcome: Outcome): string {
+/**
+ * A free-play result's heading, which leaves the costs to its score line: `Perfekt!`, `Framme!`,
+ * `Slut på gissningar` or `Gav upp`.
+ */
+export function freePlayHeadline(outcome: Outcome): string {
   switch (outcome.kind) {
     case "perfect":
-      return "Perfekt";
+      return "Perfekt!";
     case "won":
-      return `+${outcome.extra}`;
+      return "Framme!";
     case "lost":
-      return `${outcome.givenUp ? "Gav upp, " : ""}${outcome.away} ifrån`;
+      return outcome.givenUp ? "Gav upp" : "Slut på gissningar";
   }
 }
+
+/** Said beside a free-play score, which never says on its own which way is better. */
+export const LOWER_IS_BETTER = "Lägre är bättre";
 
 /** An itinerary's total time and its won tie-breaker trips: `4:12,3 (2 vunna)`. */
 export function totalTimeText(tenths: number, won: number): string {

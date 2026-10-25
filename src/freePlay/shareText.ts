@@ -46,17 +46,18 @@ function tripLabel({
   score,
   time,
 }: Pick<FreePlayShareResult, "outcome" | "score" | "time">): string {
-  const label = [outcomeLabel(outcome), scoreText(score)];
+  const label = [tripOutcomeLabel(outcome), scoreText(score)];
   if (time !== undefined) label.push(timeText(time));
   return label.join(" · ");
 }
 
 /**
- * A win reads as in the daily label; a loss is labelled and keeps its hints and timeouts in one
- * bracket with the away, as the result headline does: `Slut på gissningar (2 ifrån, 1 ledtråd)`,
- * `Gav upp (1 ifrån, 2 ⏱)`.
+ * How a free-play trip went, with its score's costs, worded one way in its result, the itinerary
+ * summary and both share texts. A win reads as in the daily label (`+0 (Perfekt)`, `+1 (1 ledtråd)`);
+ * a loss is labelled and keeps its hints and timeouts in one bracket with the away:
+ * `Slut på gissningar (2 ifrån, 1 ledtråd)`, `Gav upp (1 ifrån, 2 ⏱)`.
  */
-function outcomeLabel(outcome: Outcome): string {
+export function tripOutcomeLabel(outcome: Outcome): string {
   if (outcome.kind !== "lost") return resultLabel(outcome);
   const away = `${outcome.away} ifrån${costsSuffix(outcome.hintsUsed, outcome.timeouts)}`;
   return `${outcome.givenUp ? "Gav upp" : "Slut på gissningar"} (${away})`;
