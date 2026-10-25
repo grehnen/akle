@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { DailyTripSource } from "../daily/loadDailyTrip";
 import type { GraphVersionFiles } from "../graph/graphVersionFiles";
-import { itineraryLinkPath, openItineraryLink } from "./itineraryLink";
+import { editTitle, itineraryLinkPath, openItineraryLink } from "./itineraryLink";
 import { decodeLinkPayload, encodeLinkPayload, type LinkedTrip } from "./linkPayload";
 
 const trips: LinkedTrip[] = [
@@ -82,6 +82,41 @@ const standard = (start: string, destination: string): LinkedTrip => ({
 });
 const packed = (versionOrdinal: number, ...linked: LinkedTrip[]) =>
   encodeLinkPayload({ versionOrdinal, trips: linked });
+
+describe("editing a title at its 40-character limit", () => {
+  const full = "a".repeat(20) + "b".repeat(20);
+
+  test("takes an edit that fits as it is", () => {
+    expect(editTitle("Helg", "Helgresan", 9)).toEqual({ title: "Helgresan", caret: 9 });
+  });
+
+  test("drops what's typed into a full title, losing nothing already there", () => {
+    const typed = "a".repeat(20) + "x" + "b".repeat(20);
+    expect(editTitle(full, typed, 21)).toEqual({ title: full, caret: 20 });
+  });
+
+  test("cuts a paste down to the room left, keeping the text after it", () => {
+    const before = "a".repeat(30) + "b".repeat(5);
+    const after = "a".repeat(30) + "1234567890" + "b".repeat(5);
+    expect(editTitle(before, after, 40)).toEqual({
+      title: "a".repeat(30) + "12345" + "b".repeat(5),
+      caret: 35,
+    });
+  });
+
+  test("never cuts inside an emoji sequence, though its code points are counted", () => {
+    // A family: five code points joined into one grapheme.
+    const family = "👨‍👩‍👧";
+    const before = "x".repeat(37);
+    expect(editTitle(before, before + family, before.length + family.length)).toEqual({
+      title: before,
+      caret: 37,
+    });
+    expect(
+      editTitle("x".repeat(35), "x".repeat(35) + family + "y", 35 + family.length + 1),
+    ).toEqual({ title: "x".repeat(35) + family, caret: 35 + family.length });
+  });
+});
 
 describe("opening an itinerary link", () => {
   test("gives its title and every trip in order on its pinned version, loaded once", async () => {
