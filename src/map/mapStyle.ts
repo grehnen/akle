@@ -50,13 +50,16 @@ export function fitPadding({ width, height }: MapSize): number {
   return Math.round(Math.min(width, height) * FIT_PADDING_SHARE);
 }
 
-/** The endpoints' sign-coloured edges are drawn a little heavier than other outlines. */
-const ENDPOINT_OR_ONE_PX: ExpressionSpecification = [
-  "match",
+const ENDPOINT: ExpressionSpecification = [
+  "in",
   ["get", "kind"],
-  ["start", "destination"],
-  2,
-  1,
+  ["literal", ["start", "destination"]],
+];
+
+/** The endpoints get their own outline layer, above every other outline. */
+const NOT_UNFILLED_OR_ENDPOINT: ExpressionSpecification = [
+  "!",
+  ["in", ["get", "kind"], ["literal", ["hint", "other", "start", "destination"]]],
 ];
 
 export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
@@ -92,20 +95,8 @@ export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
       id: "kommun-outline-solid",
       type: "line",
       source: "kommuner",
-      filter: ["all", FILLED, ["==", ["get", "connected"], true]],
-      paint: {
-        "line-color": [
-          "match",
-          ["get", "kind"],
-          "start",
-          START_EDGE_COLOR,
-          "destination",
-          DESTINATION_EDGE_COLOR,
-          ["get", "color"],
-        ],
-        "line-width": ENDPOINT_OR_ONE_PX,
-        "line-opacity": 1,
-      },
+      filter: ["all", NOT_UNFILLED_OR_ENDPOINT, ["==", ["get", "connected"], true]],
+      paint: { "line-color": ["get", "color"], "line-width": 1, "line-opacity": 1 },
     },
     {
       id: "kommun-outline-dashed",
@@ -117,6 +108,26 @@ export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
         "line-width": 1,
         "line-opacity": 1,
         "line-dasharray": [3, 2],
+      },
+    },
+    // Last of the outlines, so no neighbouring guess's edge hides the endpoints' sign-coloured, heavier edges.
+    {
+      id: "endpoint-outline",
+      type: "line",
+      source: "kommuner",
+      filter: ENDPOINT,
+      paint: {
+        "line-color": [
+          "match",
+          ["get", "kind"],
+          "start",
+          START_EDGE_COLOR,
+          "destination",
+          DESTINATION_EDGE_COLOR,
+          ["get", "color"],
+        ],
+        "line-width": 2,
+        "line-opacity": 1,
       },
     },
     // Invisible, but MapLibre still finds its features under the pointer.

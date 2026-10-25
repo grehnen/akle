@@ -49,31 +49,47 @@ describe("satelliteMapStyle", () => {
   });
 
   test("edges start in red and destination in white, 2 px, like their road signs", () => {
-    const solid = style.layers.find((layer) => layer.id === "kommun-outline-solid");
-    expect(solid?.paint).toEqual({
-      "line-color": [
-        "match",
-        ["get", "kind"],
-        "start",
-        START_EDGE_COLOR,
-        "destination",
-        DESTINATION_EDGE_COLOR,
-        ["get", "color"],
-      ],
-      "line-width": ["match", ["get", "kind"], ["start", "destination"], 2, 1],
-      "line-opacity": 1,
+    const endpoints = style.layers.find((layer) => layer.id === "endpoint-outline");
+    expect(endpoints).toMatchObject({
+      type: "line",
+      filter: ["in", ["get", "kind"], ["literal", ["start", "destination"]]],
+      paint: {
+        "line-color": [
+          "match",
+          ["get", "kind"],
+          "start",
+          START_EDGE_COLOR,
+          "destination",
+          DESTINATION_EDGE_COLOR,
+          ["get", "color"],
+        ],
+        "line-width": 2,
+        "line-opacity": 1,
+      },
     });
+  });
+
+  test("draws the endpoints' edges above every other outline", () => {
+    const lineIds = style.layers.filter((layer) => layer.type === "line").map((layer) => layer.id);
+    expect(lineIds.at(-1)).toBe("endpoint-outline");
   });
 
   test("outlines connected kommuner solid and unconnected guesses dashed", () => {
     const lines = style.layers.filter(
-      (layer) => layer.type === "line" && !["hint-outline", "other-outline"].includes(layer.id),
+      (layer) =>
+        layer.type === "line" &&
+        !["hint-outline", "other-outline", "endpoint-outline"].includes(layer.id),
     );
     const solid = lines.find((layer) => !("line-dasharray" in (layer.paint ?? {})));
     const dashed = lines.find((layer) => "line-dasharray" in (layer.paint ?? {}));
+    expect(solid?.paint).toEqual({
+      "line-color": ["get", "color"],
+      "line-width": 1,
+      "line-opacity": 1,
+    });
     expect(solid && "filter" in solid ? solid.filter : undefined).toEqual([
       "all",
-      ["!", ["in", ["get", "kind"], ["literal", ["hint", "other"]]]],
+      ["!", ["in", ["get", "kind"], ["literal", ["hint", "other", "start", "destination"]]]],
       ["==", ["get", "connected"], true],
     ]);
     expect(dashed && "filter" in dashed ? dashed.filter : undefined).toEqual([
