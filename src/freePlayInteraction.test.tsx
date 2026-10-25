@@ -386,7 +386,7 @@ describe("Slumpa", () => {
     expect(buttonNamed(container, "Slumpa ny resa")).toBeDefined();
   });
 
-  test("a picked trip offers no Slumpa ny resa", async () => {
+  test("Slumpa ny resa after a picked trip draws from setup's range", async () => {
     const { container } = await mountApp("/fri");
 
     await click(query(container, "#free-play-tab-pick"));
@@ -395,7 +395,56 @@ describe("Slumpa", () => {
     await click(resButton(container));
     await winDistanceOneTrip(container);
     expect(query(container, "#result-heading").textContent).toBe("Perfekt!");
-    expect(buttonNamed(container, "Slumpa ny resa")).toBeUndefined();
+    await click(buttonNamed(container, "Slumpa ny resa") as HTMLElement);
+    // The default range, cut down to 2, holds only Nynäshamn–Trosa.
+    expect(pairIn(query(container, "#trip-heading").textContent ?? "")).toEqual([
+      "Nynäshamn",
+      "Trosa",
+    ]);
+  });
+
+  test("Slumpa ny resa after a linked trip draws in its mode from setup's range", async () => {
+    const haningeTrosa = tripLinkPath(0, {
+      start: "0136",
+      destination: "0488",
+      mode: { kind: "unlimited" },
+    });
+    const { container } = await mountApp(haningeTrosa);
+    await winDistanceOneTrip(container);
+
+    await click(buttonNamed(container, "Slumpa ny resa") as HTMLElement);
+    expect(pairIn(query(container, "#trip-heading").textContent ?? "")).toEqual([
+      "Nynäshamn",
+      "Trosa",
+    ]);
+    expect(container.textContent).toContain("Fri resa · Obegränsad");
+  });
+
+  test.each([
+    ["drawn", undefined],
+    ["picked", ["Nynäshamn", "Salem"]],
+  ])("a %s trip's result leads back to setup", async (_, picked) => {
+    const { container } = await mountApp("/fri");
+    if (picked === undefined) {
+      const { min, max } = distanceThumbs(container);
+      await type(min, "1");
+      await type(max, "1");
+      await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+    } else {
+      await click(query(container, "#free-play-tab-pick"));
+      await type(startField(container), picked[0] as string);
+      await type(destinationField(container), picked[1] as string);
+      await click(resButton(container));
+    }
+    await winDistanceOneTrip(container);
+
+    const next = [...container.querySelectorAll(".result-header .free-play-next > *")].map(
+      (element) => [element.textContent, element.getAttribute("href")],
+    );
+    expect(next).toEqual([
+      ["Välj läge och resa", "/fri"],
+      ["Slumpa ny resa", null],
+    ]);
   });
 });
 
@@ -464,9 +513,10 @@ describe("trip links", () => {
       anchor.getAttribute("href"),
     ]);
     expect(links).toEqual([
-      ["Dagens resa", "/"],
       ["Fri resa", "/fri"],
+      ["Dagens resa", "/"],
     ]);
+    expect(query(container, ".free-play-error a.primary-link").getAttribute("href")).toBe("/fri");
   });
 
   test("an invalid link names its trip when it can", async () => {

@@ -11,7 +11,7 @@ import {
 } from "../freePlay/draw";
 import type { LinkedTrip, ModeSetting } from "../freePlay/linkPayload";
 import { DEFAULT_THINKING_TIME, freePlayRules, opensAtStarta } from "../freePlay/modeRules";
-import { tripLinkPath } from "../freePlay/tripLink";
+import { FREE_PLAY_PATH, tripLinkPath } from "../freePlay/tripLink";
 import {
   drawnAtStarta,
   noteDrawnAtStarta,
@@ -59,9 +59,10 @@ type FreePlayScreenProps = {
 };
 
 /**
- * The trip on the board, and whether it was drawn, which lets its result draw another from the
- * range it was drawn from (none for a drawn trip stored before ranges were kept). `opened`
- * marks the trip the screen opened with, from a link or the slot, rather than one started here.
+ * The trip on the board, and whether it was drawn, with the range it was drawn from, which its
+ * result draws the next from (none for a trip not drawn, or drawn and stored before ranges were
+ * kept: those draw from setup's range). `opened` marks the trip the screen opened with, from a
+ * link or the slot, rather than one started here.
  * `started` is false while a trip on the clock waits behind `Starta`, its ends still hidden.
  */
 type Played = {
@@ -77,7 +78,8 @@ type Played = {
 /**
  * Free play: the Fri resa setup screen, or a trip link's or the stored trip, then the drawn,
  * picked or linked trip on the board in its mode, with its score and share text in the
- * result. The trip on the board is kept in the trip slot; nothing here touches daily progress.
+ * result, which leads on to another drawn trip in the same mode or back to setup. The trip on
+ * the board is kept in the trip slot; nothing here touches daily progress.
  */
 export function FreePlayScreen({
   graph,
@@ -200,7 +202,10 @@ export function FreePlayScreen({
       }}
       sessionStorage={sessionStorage}
       resultActions={
-        played.drawn && (
+        <div className="free-play-next">
+          <a className="free-play-setup-link" href={FREE_PLAY_PATH}>
+            Välj läge och resa
+          </a>
           <button
             type="button"
             className="free-play-redraw"
@@ -208,7 +213,7 @@ export function FreePlayScreen({
           >
             Slumpa ny resa
           </button>
-        )
+        </div>
       }
     />
   );

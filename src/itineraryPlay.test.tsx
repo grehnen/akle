@@ -394,9 +394,13 @@ describe("an itinerary from its link", () => {
         a.getAttribute("href"),
       ]),
     ).toEqual([
+      ["Bygg en resplan", "/resplan"],
       ["Dagens resa", "/"],
       ["Fri resa", "/fri"],
     ]);
+    expect(
+      container.querySelector(".itinerary-summary-actions a.primary-link")?.getAttribute("href"),
+    ).toBe("/resplan");
   });
 
   test("offers no retry: a finished trip's result has no way to play it again", async () => {
@@ -658,9 +662,13 @@ describe("an invalid itinerary link", () => {
         a.getAttribute("href"),
       ]),
     ).toEqual([
+      ["Bygg en resplan", "/resplan"],
       ["Dagens resa", "/"],
       ["Fri resa", "/fri"],
     ]);
+    expect(
+      container.querySelector(".free-play-error-actions a.primary-link")?.getAttribute("href"),
+    ).toBe("/resplan");
     expect(button(container, "Starta resplanen")).toBeUndefined();
   });
 
