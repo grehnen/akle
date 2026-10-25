@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useRef } from "react";
 import "./StartGate.css";
 
 /**
- * The `Starta` gate a trip on the clock, or any itinerary trip, opens behind: its ends stay
+ * The `Starta` gate a trip on the clock opens behind, in free play or an itinerary: its ends stay
  * hidden, with no free look, until the player presses `Starta`, which is when its time starts.
  * `onTheClock` says whether real time counts for the trip, which the gate then warns of.
  */

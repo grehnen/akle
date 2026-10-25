@@ -40,8 +40,9 @@ type ItineraryScreenProps = {
 
 /**
  * An itinerary played from its link: its intro, then for each trip in order a card with
- * `Starta`, the trip in its own mode and its result with the running total and `Nästa resa`,
- * and after the last its summary, shared with its `link`. One attempt per trip, no skip or
+ * `Starta` if it's on the clock, the trip in its own mode and its result with `Nästa resa`, and
+ * after the last its summary, shared with its `link`. Every trip screen is labelled with the
+ * itinerary's title, the trip's place and the running total. One attempt per trip, no skip or
  * retry; nothing here touches the trip slot or daily progress.
  */
 export function ItineraryScreen({
@@ -60,7 +61,13 @@ export function ItineraryScreen({
   const total = itineraryTotal(graph, play);
 
   if (stage.kind === "intro") {
-    return <ItineraryIntro title={title} trips={trips} onBegin={() => setPlay(beginItinerary)} />;
+    return (
+      <ItineraryIntro
+        title={title}
+        trips={trips}
+        onBegin={() => setPlay((last) => beginItinerary(trips, last, clock()))}
+      />
+    );
   }
   if (stage.kind === "finished") {
     const summary = itinerarySummary(graph, trips, play);
@@ -71,8 +78,9 @@ export function ItineraryScreen({
 
   const trip = trips[stage.index];
   const label = (
-    <p className="trip-number">
-      Resa {stage.index + 1} av {trips.length} · {modeName(trip.mode)}
+    <p className="trip-number itinerary-progress">
+      {title ?? "Resplan"} · Resa {stage.index + 1} av {trips.length} · {modeName(trip.mode)} ·
+      Totalt {scoreText(total)}
     </p>
   );
   if (stage.kind === "card") {
@@ -93,7 +101,7 @@ export function ItineraryScreen({
       <button
         type="button"
         className="itinerary-next"
-        onClick={() => setPlay((current) => nextTrip(graph, current))}
+        onClick={() => setPlay((current) => nextTrip(graph, trips, current, clock()))}
       >
         {last ? "Avsluta resplanen" : "Nästa resa"}
       </button>
@@ -108,7 +116,7 @@ export function ItineraryScreen({
       game={stage.game}
       label={label}
       clock={clock}
-      // Started just now from its card, so the player can type at once.
+      // Started just now, from its card or straight on arriving, so the player can type at once.
       focusGuessOnOpen={stage.game.guesses.length === 0}
       onGameChange={(game) => setPlay((current) => changeTripGame(graph, current, game, clock()))}
       sessionStorage={sessionStorage}

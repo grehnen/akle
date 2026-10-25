@@ -66,12 +66,20 @@ function guess(play: ItineraryPlay, now: number, ...names: string[]): ItineraryP
   return changeTripGame(graph, play, guessed(stage.game, ...names), now);
 }
 
-const begun = beginItinerary(NEW_ITINERARY_PLAY);
-/** The first trip won at 1 s, the second started at 2 s with one wrong guess at 5 s. */
-const secondTripPlaying = guess(
-  startTrip(trips, nextTrip(graph, guess(startTrip(trips, begun, 0), 1000, "Haninge")), 2000),
-  5000,
-  "Nynäshamn",
+/** `Starta resplanen` at 0, which puts the first trip, standard, straight on the board. */
+const begun = beginItinerary(trips, NEW_ITINERARY_PLAY, 0);
+/** The first trip won at 1 s, then `Nästa resa` to the timed second trip's card. */
+const onCard = nextTrip(graph, trips, guess(begun, 1000, "Haninge"), 1500);
+/** The second trip started at 2 s with one wrong guess at 5 s. */
+const secondTripPlaying = guess(startTrip(trips, onCard, 2000), 5000, "Nynäshamn");
+/** On to the tie-breaker third trip's card, the second won at 7 s. */
+const onThirdCard = nextTrip(graph, trips, guess(secondTripPlaying, 7000, "Salem"), 7500);
+/** The third trip won after starting at 8 s, then `Avsluta resplanen`. */
+const finished = nextTrip(
+  graph,
+  trips,
+  guess(startTrip(trips, onThirdCard, 8000), 9000, "Salem"),
+  9500,
 );
 
 describe("the itinerary slot", () => {
@@ -81,18 +89,14 @@ describe("the itinerary slot", () => {
   });
 
   test("resumes a trip on its card, not yet started", () => {
-    const onCard = nextTrip(graph, guess(startTrip(trips, begun, 0), 1000, "Haninge"));
     const resumed = resumeItinerary(save(memoryStorage(), onCard), friday);
     expect(resumed).toEqual(onCard);
     expect(resumed && itineraryStage(graph, trips, resumed)).toEqual({ kind: "card", index: 1 });
   });
 
   test("resumes a finished itinerary as finished", () => {
-    let play = guess(startTrip(trips, nextTrip(graph, secondTripPlaying), 6000), 7000, "Salem");
-    play = nextTrip(graph, guess(startTrip(trips, nextTrip(graph, play), 8000), 9000, "Salem"));
-    expect(itineraryStage(graph, trips, play)).toEqual({ kind: "finished" });
-
-    expect(resumeItinerary(save(memoryStorage(), play), friday)).toEqual(play);
+    expect(itineraryStage(graph, trips, finished)).toEqual({ kind: "finished" });
+    expect(resumeItinerary(save(memoryStorage(), finished), friday)).toEqual(finished);
   });
 
   test.each<[string, Itinerary]>([
@@ -171,8 +175,7 @@ describe("the itinerary slot", () => {
 describe("real time across the gap", () => {
   test("a resumed tie-breaker trip's time includes the time away", () => {
     // The tie-breaker trip started at 10 s, the player then away for an hour before the win.
-    let play = guess(startTrip(trips, nextTrip(graph, secondTripPlaying), 6000), 7000, "Salem");
-    play = startTrip(trips, nextTrip(graph, play), 10_000);
+    const play = startTrip(trips, onThirdCard, 10_000);
     const resumed = resumeItinerary(save(memoryStorage(), play), friday);
     if (resumed === undefined) throw new Error("not resumed");
 
@@ -202,7 +205,7 @@ describe("the unfinished itinerary", () => {
     });
   });
 
-  test("is there from the first trip's card", () => {
+  test("is there from the first trip on", () => {
     const storage = save(memoryStorage(), begun, { ...friday, title: undefined });
     expect(unfinishedItinerary(storage)).toEqual({
       tripNumber: 1,
@@ -212,9 +215,7 @@ describe("the unfinished itinerary", () => {
   });
 
   test("is nothing once the itinerary is finished, or with none stored", () => {
-    let play = guess(startTrip(trips, nextTrip(graph, secondTripPlaying), 6000), 7000, "Salem");
-    play = nextTrip(graph, guess(startTrip(trips, nextTrip(graph, play), 8000), 9000, "Salem"));
-    expect(unfinishedItinerary(save(memoryStorage(), play))).toBeUndefined();
+    expect(unfinishedItinerary(save(memoryStorage(), finished))).toBeUndefined();
     expect(unfinishedItinerary(memoryStorage())).toBeUndefined();
   });
 });
