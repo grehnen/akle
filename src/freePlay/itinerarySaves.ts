@@ -83,7 +83,8 @@ export function resumeItinerary(
   if (stored.length > trips.length) return undefined;
   const games = [];
   for (const [index, storedGame] of stored.entries()) {
-    // Every trip of an itinerary opens at its Starta, so every game has a start.
+    // An itinerary's game is started with its time, at Starta or on arriving off the clock, so
+    // every stored game has a start.
     if (!isRecord(storedGame) || typeof storedGame.startedAt !== "number") return undefined;
     // An itinerary's game is of the plain trip, its mode coming from the itinerary.
     const { start, destination, mode } = trips[index];
