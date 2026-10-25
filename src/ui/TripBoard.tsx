@@ -231,7 +231,6 @@ export function TripBoard<T extends Trip>({
             >
               {game.rules.giveUp && (
                 <GiveUp
-                  enabled={review.canGiveUp}
                   onGiveUp={() =>
                     update((current) => ({
                       ...current,

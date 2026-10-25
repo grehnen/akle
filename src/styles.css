@@ -452,7 +452,7 @@ input::placeholder {
   text-underline-offset: 0.2em;
 }
 
-.give-up-button:hover:not(:disabled) {
+.give-up-button:hover {
   color: var(--text);
 }
 

@@ -711,15 +711,24 @@ describe("giving up", () => {
     await settle();
   }
 
-  test("Ge upp sits with the hints from the start, enabled once there are distance guesses", async () => {
+  test("Ge upp sits with the hints, enabled from the start", async () => {
     const { container } = await mountApp("/fri");
     await pick(container, "Nynäshamn", "Salem");
     expect(giveUpButton(container).textContent).toBe("Ge upp");
     expect(giveUpButton(container).closest(".hint-section")).not.toBeNull();
-    expect(giveUpButton(container).disabled).toBe(true);
-
-    await guess(container, "Trosa");
     expect(giveUpButton(container).disabled).toBe(false);
+  });
+
+  test("giving up before any guess is a loss scored by the same rule", async () => {
+    const { container } = await mountApp("/fri");
+    await pick(container, "Nynäshamn", "Salem");
+    await click(giveUpButton(container));
+    await click(confirmButton(container));
+    await settle();
+
+    expect(query(container, "#result-heading").textContent).toBe("Gav upp (1 ifrån)");
+    // 0 guesses − distance 1 + 3·1 away.
+    expect(query(container, ".result-score").textContent).toBe("2 poäng");
   });
 
   test("asks before ending the trip, and going back keeps playing", async () => {
