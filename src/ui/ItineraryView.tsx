@@ -11,10 +11,10 @@ import {
 import type { ItineraryPlay } from "../freePlay/itineraryPlay";
 import {
   resumeItinerary,
-  saveItinerarySlot,
+  saveItinerary,
   type UnfinishedItinerary,
   unfinishedItinerary,
-} from "../freePlay/itinerarySlot";
+} from "../freePlay/itinerarySaves";
 import { browserSessionStorage, browserStorage, type KeyValueStorage } from "../progress/storage";
 import { AppLink } from "./AppLink";
 import { FreePlayLinkError } from "./FreePlayLinkError";
@@ -31,7 +31,7 @@ type ItineraryViewProps = {
   title?: string;
   /** Opens a built itinerary's link in place, `/resplan?namn=…&r=…`. */
   onPlay: (link: string) => void;
-  /** Where the itinerary slot and the builder's draft are kept; localStorage by default. */
+  /** Where itineraries' saves and the builder's draft are kept; localStorage by default. */
   storage?: KeyValueStorage;
   /** Where view choices that last one browser session are kept; sessionStorage by default. */
   sessionStorage?: KeyValueStorage;
@@ -52,9 +52,9 @@ type Loaded =
  * The itinerary page: with `r` the itinerary its link opens, on the version it pins, or the
  * free-play error screen when the link is invalid; without `r` the builder, on the current
  * version that every trip of the built itinerary is pinned to. Only that one version loads.
- * The itinerary slot keeps the latest itinerary begun: its exact link resumes it, finished or
- * not, and the builder links back to it while it's unfinished. The builder's draft is kept on
- * every change and reopens with it, unless made on another version or unreadable.
+ * Every itinerary begun keeps a save: its exact link resumes it, finished or not, and the
+ * builder links back to the most recently played while it's unfinished. The builder's draft is
+ * kept on every change and reopens with it, unless made on another version or unreadable.
  */
 export function ItineraryView({
   source,
@@ -66,7 +66,7 @@ export function ItineraryView({
   sessionStorage,
   clock,
 }: ItineraryViewProps) {
-  const [slotStorage] = useState(() => storage ?? browserStorage());
+  const [savesStorage] = useState(() => storage ?? browserStorage());
   const [fallbackSessionStorage] = useState(browserSessionStorage);
   const { loaded, failed } = useLoaded(
     useCallback(
@@ -75,15 +75,15 @@ export function ItineraryView({
           ? loadCurrentVersion(source, now).then((version) => ({
               kind: "builder",
               version,
-              draft: restoreBuilderDraft(slotStorage, version),
-              unfinished: unfinishedItinerary(slotStorage),
+              draft: restoreBuilderDraft(savesStorage, version),
+              unfinished: unfinishedItinerary(savesStorage),
             }))
           : openItineraryLink(source, now, title, linkPayload).then((opened) =>
               opened.kind === "itinerary"
-                ? { ...opened, resumed: resumeItinerary(slotStorage, opened) }
+                ? { ...opened, resumed: resumeItinerary(savesStorage, opened) }
                 : opened,
             ),
-      [source, now, linkPayload, title, slotStorage],
+      [source, now, linkPayload, title, savesStorage],
     ),
   );
 
@@ -91,21 +91,21 @@ export function ItineraryView({
     (play: ItineraryPlay) => {
       if (loaded?.kind !== "itinerary") return;
       const { version, title: savedTitle, trips } = loaded;
-      saveItinerarySlot(slotStorage, {
+      saveItinerary(savesStorage, {
         versionOrdinal: version.ordinal,
         title: savedTitle,
         trips,
         play,
       });
     },
-    [loaded, slotStorage],
+    [loaded, savesStorage],
   );
 
   const saveDraft = useCallback(
     (draft: BuilderDraft) => {
-      if (loaded?.kind === "builder") saveBuilderDraft(slotStorage, loaded.version.ordinal, draft);
+      if (loaded?.kind === "builder") saveBuilderDraft(savesStorage, loaded.version.ordinal, draft);
     },
-    [loaded, slotStorage],
+    [loaded, savesStorage],
   );
 
   if (failed) return <p role="alert">Kunde inte ladda resplanen. Försök igen senare.</p>;

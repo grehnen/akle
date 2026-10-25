@@ -14,7 +14,7 @@ import {
   startTrip,
 } from "./itineraryPlay";
 import { type Itinerary, itineraryLinkPath } from "./itineraryLink";
-import { resumeItinerary, saveItinerarySlot, unfinishedItinerary } from "./itinerarySlot";
+import { resumeItinerary, saveItinerary, unfinishedItinerary } from "./itinerarySaves";
 import type { LinkedTrip } from "./linkPayload";
 
 // Nynäshamn ── Haninge ── Salem ── Trosa.
@@ -42,7 +42,7 @@ const trips: LinkedTrip[] = [
 ];
 const friday: Itinerary = { version, title: "Fredagsresan", trips };
 const save = (storage = memoryStorage(), play: ItineraryPlay, itinerary = friday) => {
-  saveItinerarySlot(storage, {
+  saveItinerary(storage, {
     versionOrdinal: itinerary.version.ordinal,
     title: itinerary.title,
     trips: itinerary.trips,
@@ -82,7 +82,7 @@ const finished = nextTrip(
   9500,
 );
 
-describe("the itinerary slot", () => {
+describe("an itinerary's save", () => {
   test("resumes the stored itinerary where it was: past results and the current trip", () => {
     const storage = save(memoryStorage(), secondTripPlaying);
     expect(resumeItinerary(storage, friday)).toEqual(secondTripPlaying);
@@ -125,25 +125,35 @@ describe("the itinerary slot", () => {
     expect(resumeItinerary(storage, other)).toBeUndefined();
   });
 
-  test("a begun itinerary replaces the stored one", () => {
+  test("beginning another itinerary leaves this one, which its link resumes as it was", () => {
     const storage = save(memoryStorage(), secondTripPlaying);
     const other = { ...friday, title: "Lördagsresan" };
     save(storage, begun, other);
     expect(resumeItinerary(storage, other)).toEqual(begun);
-    expect(resumeItinerary(storage, friday)).toBeUndefined();
+    expect(resumeItinerary(storage, friday)).toEqual(secondTripPlaying);
   });
 
-  test("leaves the trip slot alone", () => {
+  test("saving the same itinerary again replaces its save", () => {
+    const storage = save(memoryStorage(), secondTripPlaying);
+    save(storage, finished);
+    expect(resumeItinerary(storage, friday)).toEqual(finished);
+  });
+
+  test("leaves trips' saves alone", () => {
     const storage = memoryStorage();
-    storage.setItem("akle:free-play-trip", "a stored trip");
+    storage.setItem("akle:free-play-trips", "stored trips");
     save(storage, secondTripPlaying);
-    expect(storage.getItem("akle:free-play-trip")).toBe("a stored trip");
+    expect(storage.getItem("akle:free-play-trips")).toBe("stored trips");
+  });
+
+  test("a trip of the itinerary is never a trip save", () => {
+    const storage = save(memoryStorage(), secondTripPlaying);
+    expect(storage.getItem("akle:free-play-trips")).toBeNull();
   });
 
   const startedGame = { guesses: [], startedAt: 0 };
   test.each<[string, string | object]>([
-    ["text that isn't JSON", "{"],
-    ["another format", { format: 2 }],
+    ["no record", "a save"],
     ["a trip with a bad mode", { trips: [{ start: "0192", destination: "0128", mode: {} }] }],
     ["a current trip past the end", { play: { current: 4, games: [] } }],
     ["a game too many", { play: { current: 0, games: [startedGame, startedGame] } }],
@@ -161,14 +171,25 @@ describe("the itinerary slot", () => {
         },
       },
     ],
-  ])("ignores a slot with %s", (_, change) => {
-    const storage = save(memoryStorage(), secondTripPlaying);
-    const whole = JSON.parse(storage.getItem("akle:itinerary") ?? "");
-    storage.setItem(
-      "akle:itinerary",
-      typeof change === "string" ? change : JSON.stringify({ ...whole, ...change }),
-    );
+  ])("ignores a save with %s, leaving the others readable", (_, change) => {
+    const other = { ...friday, title: "Lördagsresan" };
+    const storage = save(save(memoryStorage(), begun, other), secondTripPlaying);
+    const { saves } = JSON.parse(storage.getItem("akle:itineraries") ?? "");
+    const broken = typeof change === "string" ? change : { ...saves[0], ...change };
+    storage.setItem("akle:itineraries", JSON.stringify({ format: 1, saves: [broken, saves[1]] }));
     expect(resumeItinerary(storage, friday)).toBeUndefined();
+    expect(resumeItinerary(storage, other)).toEqual(begun);
+  });
+
+  test.each([
+    ["no JSON", "{"],
+    ["an unknown format", JSON.stringify({ format: 2, saves: [] })],
+    ["no list of saves", JSON.stringify({ format: 1 })],
+  ])("reads stored saves with %s as none", (_, text) => {
+    const storage = memoryStorage();
+    storage.setItem("akle:itineraries", text);
+    expect(resumeItinerary(storage, friday)).toBeUndefined();
+    expect(unfinishedItinerary(storage)).toBeUndefined();
   });
 });
 
@@ -217,5 +238,68 @@ describe("the unfinished itinerary", () => {
   test("is nothing once the itinerary is finished, or with none stored", () => {
     expect(unfinishedItinerary(save(memoryStorage(), finished))).toBeUndefined();
     expect(unfinishedItinerary(memoryStorage())).toBeUndefined();
+  });
+
+  test("is only ever the most recently played, never an older unfinished one", () => {
+    const storage = save(memoryStorage(), secondTripPlaying);
+    save(storage, finished, { ...friday, title: "Lördagsresan" });
+    expect(unfinishedItinerary(storage)).toBeUndefined();
+
+    resumeItinerary(storage, friday);
+    expect(unfinishedItinerary(storage)?.title).toBe("Fredagsresan");
+  });
+});
+
+describe("past the cap of 50 itineraries", () => {
+  // Distinct itineraries by their title.
+  const titled = (number: number) => ({ ...friday, title: `Resa ${number}` });
+  const isKept = (storage: ReturnType<typeof memoryStorage>, number: number) =>
+    resumeItinerary(storage, titled(number)) !== undefined;
+
+  test("the 51st itinerary drops the least recently played, keeping 50", () => {
+    const storage = memoryStorage();
+    for (let number = 1; number <= 51; number++) save(storage, begun, titled(number));
+    expect(JSON.parse(storage.getItem("akle:itineraries") ?? "").saves).toHaveLength(50);
+    expect(isKept(storage, 1)).toBe(false);
+    expect(isKept(storage, 2)).toBe(true);
+    expect(isKept(storage, 51)).toBe(true);
+  });
+
+  test("reopening a save protects it from being the next dropped", () => {
+    const storage = memoryStorage();
+    for (let number = 1; number <= 50; number++) save(storage, begun, titled(number));
+    expect(isKept(storage, 1)).toBe(true);
+    save(storage, begun, titled(51));
+    expect(isKept(storage, 2)).toBe(false);
+    expect(isKept(storage, 1)).toBe(true);
+  });
+});
+
+describe("an itinerary slot from before the upgrade", () => {
+  const oldSlot = () => {
+    const { saves } = JSON.parse(
+      save(memoryStorage(), secondTripPlaying).getItem("akle:itineraries") ?? "",
+    );
+    return { format: 1, ...saves[0] };
+  };
+
+  test("becomes the most recently played save, resumed from its link, and the old key goes", () => {
+    const storage = memoryStorage();
+    storage.setItem("akle:itinerary", JSON.stringify(oldSlot()));
+    expect(unfinishedItinerary(storage)?.title).toBe("Fredagsresan");
+    expect(resumeItinerary(storage, friday)).toEqual(secondTripPlaying);
+    expect(storage.getItem("akle:itinerary")).toBeNull();
+  });
+
+  test.each([
+    ["no JSON", "{"],
+    ["an unknown format", JSON.stringify({ ...oldSlot(), format: 2 })],
+    ["no trips", JSON.stringify({ ...oldSlot(), trips: undefined })],
+  ])("with %s is dropped quietly", (_, text) => {
+    const storage = memoryStorage();
+    storage.setItem("akle:itinerary", text);
+    expect(resumeItinerary(storage, friday)).toBeUndefined();
+    expect(unfinishedItinerary(storage)).toBeUndefined();
+    expect(storage.getItem("akle:itinerary")).toBeNull();
   });
 });
