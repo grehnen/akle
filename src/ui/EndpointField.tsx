@@ -17,6 +17,7 @@ type EndpointFieldProps = {
 /**
  * A Start or Mål field: a combobox whose suggestions fill the field when picked, by click, by
  * Enter, or by the arrow keys and Enter. Disabled suggestions show their tag and can't be picked.
+ * With no list open, Enter submits the field's form.
  */
 export function EndpointField({
   id,
@@ -52,7 +53,11 @@ export function EndpointField({
       setHighlighted(pickable[next]?.code);
     } else if (event.key === "Enter") {
       event.preventDefault();
-      if (expanded && active) pick(active);
+      if (expanded) {
+        if (active) pick(active);
+      } else {
+        event.currentTarget.form?.requestSubmit();
+      }
     } else if (event.key === "Escape" && expanded) {
       event.preventDefault();
       setDismissed(true);
