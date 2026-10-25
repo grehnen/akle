@@ -209,6 +209,17 @@
   font-weight: 700;
 }
 
+.result-score-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.result-score-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
 .result-time {
   font-variant-numeric: tabular-nums;
 }

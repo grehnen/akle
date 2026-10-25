@@ -25,6 +25,8 @@ type ResultViewProps = {
   graph: GraphVersion;
   game: Game;
   review: GameReview;
+  /** Heads the result in place of the daily outcome, such as a free-play headline. */
+  headline?: string;
   /** What the screen around the board adds beside the outcome, such as sharing. */
   actions?: ReactNode;
   /** Adds the Statistik tab. */
@@ -44,6 +46,7 @@ export function ResultView({
   graph,
   game,
   review,
+  headline,
   actions,
   stats,
   sessionStorage,
@@ -60,7 +63,7 @@ export function ResultView({
   useEffect(() => {
     if (focusOnOpen) heading.current?.focus();
   }, [focusOnOpen]);
-  const outcome = resultOutcome(review);
+  const outcome = headline ?? resultOutcome(review);
   const { cheapestRoute, shortestRoute } = review;
   // Both route maps share one framing, so switching tabs doesn't move the map.
   const frame = useMemo(
@@ -136,6 +139,8 @@ export function ResultView({
 
 type ResultStripProps = {
   review: GameReview;
+  /** Heads the strip in place of the daily outcome, such as a free-play headline. */
+  headline?: string;
   /** What the screen around the board adds before Visa resultat, such as sharing. */
   actions?: ReactNode;
   onOpen: () => void;
@@ -143,10 +148,16 @@ type ResultStripProps = {
 };
 
 /** The result view collapsed to one row over the board: the outcome, the actions and Visa resultat. */
-export function ResultStrip({ review, actions, onOpen, openButtonRef }: ResultStripProps) {
+export function ResultStrip({
+  review,
+  headline,
+  actions,
+  onOpen,
+  openButtonRef,
+}: ResultStripProps) {
   return (
     <div className="result-strip">
-      <p className="result-outcome">{resultOutcome(review)}</p>
+      <p className="result-outcome">{headline ?? resultOutcome(review)}</p>
       <div className="result-actions">
         {actions}
         <button ref={openButtonRef} type="button" className="result-reopen" onClick={onOpen}>

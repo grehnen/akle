@@ -67,6 +67,13 @@
   font-weight: 700;
 }
 
+/* Tucked under the total it explains. */
+.itinerary-summary .itinerary-summary-note {
+  margin-top: -0.6rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
 /* Room above Dela resultat for its toast, so the toast doesn't cover the total. */
 .itinerary-summary .share {
   margin-top: 1.4rem;

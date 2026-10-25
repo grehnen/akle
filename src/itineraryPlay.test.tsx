@@ -148,6 +148,12 @@ async function mountApp(path: string, storage: KeyValueStorage = memoryStorage()
 
 const query = <E extends Element = HTMLElement>(container: HTMLElement, selector: string) =>
   container.querySelector(selector) as E;
+/** What an element shows on screen, without its words for screen readers only. */
+function seenText(element: Element): string {
+  const shown = element.cloneNode(true) as Element;
+  for (const hidden of shown.querySelectorAll(".visually-hidden")) hidden.remove();
+  return shown.textContent ?? "";
+}
 const text = (container: HTMLElement, selector: string) =>
   query(container, selector)?.textContent ?? undefined;
 const button = (container: HTMLElement, label: string) =>
@@ -176,15 +182,14 @@ async function guess(container: HTMLElement, name: string) {
 /** The summary's rows, each field by its class; a field a trip doesn't have is undefined. */
 const summaryRows = (container: HTMLElement) =>
   [...container.querySelectorAll(".itinerary-summary-trip")].map((row) => {
-    const field = (name: string) =>
-      row.querySelector(`.itinerary-summary-${name}`)?.textContent ?? undefined;
+    const field = (name: string) => {
+      const element = row.querySelector(`.itinerary-summary-${name}`);
+      return element === null ? undefined : seenText(element);
+    };
     return {
       pair: field("pair"),
       mode: field("mode"),
       outcome: field("outcome"),
-      hints: field("hints"),
-      timeouts:
-        row.querySelector(".itinerary-summary-timeouts [aria-hidden]")?.textContent ?? undefined,
       time: field("time"),
       score: field("score"),
     };
@@ -248,7 +253,8 @@ describe("an itinerary from its link", () => {
     // Trip end: the result with the shortest route, the trip's score and the running total.
     expect(text(container, "#result-heading")).toBe("Perfekt!");
     expect(container.textContent).toContain("Kortaste rutt");
-    expect(text(container, ".result-score")).toBe("−1 poäng");
+    expect(text(container, ".result-score")).toBe("+0 (Perfekt) · −1 poäng");
+    expect(text(container, ".result-score-note")).toBe("Lägre är bättre");
     expect(text(container, ".itinerary-total")).toBe("Totalt −1 poäng");
     expect(container.querySelector(".share-button")).toBeNull();
     await click(button(container, "Nästa resa"));
@@ -262,7 +268,7 @@ describe("an itinerary from its link", () => {
     clockTime += 25_000;
     await guess(container, "Salem");
     await settle();
-    expect(text(container, ".result-score")).toBe("2 poäng");
+    expect(seenText(query(container, ".result-score"))).toBe("+0 (2 ⏱) · 2 poäng");
     expect(text(container, ".itinerary-total")).toBe("Totalt 1 poäng");
     await click(button(container, "Nästa resa"));
 
@@ -275,8 +281,8 @@ describe("an itinerary from its link", () => {
     await click(query(container, ".give-up-button"));
     await click(query(container, "dialog.give-up-dialog .give-up-confirm"));
     await settle();
-    expect(text(container, "#result-heading")).toBe("Gav upp (1 ifrån)");
-    expect(text(container, ".result-score")).toBe("3 poäng");
+    expect(text(container, "#result-heading")).toBe("Gav upp");
+    expect(text(container, ".result-score")).toBe("Gav upp (1 ifrån) · 3 poäng");
     expect(text(container, ".itinerary-total")).toBe("Totalt 4 poäng");
     expect(container.querySelector(".share-button")).toBeNull();
     expect(button(container, "Nästa resa")).toBeUndefined();
@@ -288,32 +294,27 @@ describe("an itinerary from its link", () => {
       {
         pair: "Nynäshamn → Salem",
         mode: "Standard",
-        outcome: "Perfekt",
-        hints: "0 ledtrådar",
-        timeouts: undefined,
+        outcome: "+0 (Perfekt)",
         time: undefined,
         score: "−1 poäng",
       },
       {
         pair: "Haninge → Trosa",
         mode: "Tidspress 10 s",
-        outcome: "+0",
-        hints: "0 ledtrådar",
-        timeouts: "2 ⏱",
+        outcome: "+0 (2 ⏱)",
         time: undefined,
         score: "2 poäng",
       },
       {
         pair: "Trosa → Haninge",
         mode: "Tidtagning",
-        outcome: "Gav upp, 1 ifrån",
-        hints: "0 ledtrådar",
-        timeouts: undefined,
+        outcome: "Gav upp (1 ifrån)",
         time: undefined,
         score: "3 poäng",
       },
     ]);
     expect(text(container, ".itinerary-summary-total")).toBe("Totalt 4 poäng");
+    expect(text(container, ".itinerary-summary-note")).toBe("Lägre är bättre");
     // A tie-breaker trip, lost: the total time is there, with nothing won.
     expect(text(container, ".itinerary-summary-total-time")).toBe("Total tid 0:00,0 (0 vunna)");
     expect(button(container, "Nästa resa")).toBeUndefined();
@@ -349,15 +350,14 @@ describe("an itinerary from its link", () => {
 
     expect(text(container, "#itinerary-summary-heading")).toBe("Resplan");
     expect(
-      summaryRows(container).map(({ outcome, hints, time, score }) => ({
+      summaryRows(container).map(({ outcome, time, score }) => ({
         outcome,
-        hints,
         time,
         score,
       })),
     ).toEqual([
-      { outcome: "Perfekt", hints: "0 ledtrådar", time: "0:12,3", score: "−1 poäng" },
-      { outcome: "+0", hints: "1 ledtråd", time: undefined, score: "1 poäng" },
+      { outcome: "+0 (Perfekt)", time: "0:12,3", score: "−1 poäng" },
+      { outcome: "+0 (1 ledtråd)", time: undefined, score: "1 poäng" },
     ]);
     expect(text(container, ".itinerary-summary-total")).toBe("Totalt 0 poäng");
     expect(text(container, ".itinerary-summary-total-time")).toBe("Total tid 0:12,3 (1 vunnen)");
@@ -473,7 +473,7 @@ describe("resuming an itinerary", () => {
     await guess(container, "Salem");
     await settle();
     // The first trip's −1 is still in the total: +1 for the wrong guess.
-    expect(text(container, ".result-score")).toBe("1 poäng");
+    expect(text(container, ".result-score")).toBe("+1 · 1 poäng");
     expect(text(container, ".itinerary-total")).toBe("Totalt 0 poäng");
   });
 
@@ -572,7 +572,7 @@ describe("resuming an itinerary", () => {
     clockTime += 900_000;
     await guess(container, "Salem");
     await settle();
-    expect(text(container, ".result-score")).toBe("90 poäng");
+    expect(seenText(query(container, ".result-score"))).toBe("+0 (90 ⏱) · 90 poäng");
   });
 });
 
