@@ -18,6 +18,7 @@
 
 .free-play-modes legend {
   float: left;
+  grid-column: 1 / -1;
   width: 100%;
   margin-bottom: 0.25rem;
   padding: 0;
