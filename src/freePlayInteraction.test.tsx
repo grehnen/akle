@@ -1073,9 +1073,13 @@ describe("Tidspress", () => {
     container.querySelector<HTMLInputElement>('.free-play-modes input[type="range"]');
   const startaButton = (container: HTMLElement) => buttonNamed(container, "Starta") as HTMLElement;
 
+  // Until Tidspress is chosen, its betänketid keeps its place in the card, hidden and inert.
+  const isShown = (field: HTMLInputElement | null) =>
+    field !== null && field.closest("[inert]") === null;
+
   test("choosing Tidspress shows its betänketid in its card: 5–60 whole seconds, 10 by default", async () => {
     const { container } = await mountApp("/fri");
-    expect(thinkingTimeField(container)).toBeNull();
+    expect(isShown(thinkingTimeField(container))).toBe(false);
 
     await chooseTimed(container);
     const field = thinkingTimeField(container) as HTMLInputElement;
@@ -1088,8 +1092,9 @@ describe("Tidspress", () => {
     expect(query(container, ".free-play-thinking-time output").textContent).toBe("25 s");
     // Another mode and back keeps the betänketid.
     await click(query(container, 'input[name="free-play-mode"][value="standard"]'));
-    expect(thinkingTimeField(container)).toBeNull();
+    expect(isShown(thinkingTimeField(container))).toBe(false);
     await chooseTimed(container);
+    expect(isShown(thinkingTimeField(container))).toBe(true);
     expect(thinkingTimeField(container)?.value).toBe("25");
   });
 

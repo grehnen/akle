@@ -75,6 +75,10 @@
   font-size: 0.9rem;
 }
 
+.free-play-mode-setting[inert] {
+  visibility: hidden;
+}
+
 .free-play-thinking-time {
   display: grid;
   grid-template-columns: auto 1fr auto;
