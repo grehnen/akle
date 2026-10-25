@@ -79,6 +79,12 @@ export function modeName(mode: ModeSetting): string {
   return mode.kind === "timed" ? `${name} ${mode.thinkingTime} s` : name;
 }
 
+/** The guesses made so far, with the board's own words for none: `inga gissningar än`, `1 gissning`, `3 gissningar`. */
+export function guessesSoFar(guesses: number): string {
+  if (guesses === 0) return "inga gissningar än";
+  return `${guesses} ${guesses === 1 ? "gissning" : "gissningar"}`;
+}
+
 /** A running time, in whole seconds: `1:23`, or `1:02:05` past an hour. */
 export function clockText(milliseconds: number): string {
   return hoursMinutesSeconds(Math.floor(milliseconds / 1000));

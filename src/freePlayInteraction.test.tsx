@@ -699,9 +699,13 @@ describe("resuming the free-play trip", () => {
     const entry = resumeEntry(reopened.container);
     expect(entry?.textContent).toBe("Fortsätt resan: Standard, 1 gissning");
     expect(entry?.getAttribute("href")).toBe(nynashamnTrosa);
-    // After setup's own choices: the mode cards, the tabs and their panels come first.
-    const setup = query(reopened.container, ".free-play-setup");
-    expect(setup.lastElementChild).toBe(entry as Element);
+    // At the top, right under the heading: first in tab order, before the mode cards.
+    const heading = query(reopened.container, "#free-play-heading");
+    expect(heading.nextElementSibling).toBe(entry as Element);
+    const focusable = reopened.container.querySelectorAll(
+      ".free-play-setup a, .free-play-setup input",
+    );
+    expect(focusable[0]).toBe(entry as Element);
 
     await click(entry as Element);
     expect(address()).toBe(nynashamnTrosa);
@@ -720,6 +724,32 @@ describe("resuming the free-play trip", () => {
     expect(address()).toBe("/fri");
     expect(query(container, "#free-play-heading").textContent).toBe("Fri resa");
     expect(resumeEntry(container)?.textContent).toBe("Fortsätt resan: Standard, 1 gissning");
+  });
+
+  test("the way back to a trip with no guesses yet says so, in the board's words", async () => {
+    const storage = memoryStorage();
+    await mountApp(nynashamnTrosa, storage);
+    const setup = await reopen("/fri", storage);
+    expect(resumeEntry(setup.container)?.textContent).toBe(
+      "Fortsätt resan: Standard, inga gissningar än",
+    );
+  });
+
+  test("the way back to a Tidspress trip names its betänketid, as the board's label does", async () => {
+    const storage = memoryStorage();
+    const timed = tripLinkPath(0, {
+      start: "0192",
+      destination: "0488",
+      mode: { kind: "timed", thinkingTime: 12 },
+    });
+    const { container } = await mountApp(timed, storage);
+    await click(buttonNamed(container, "Starta") as HTMLElement);
+
+    const setup = await reopen("/fri", storage);
+    const entry = resumeEntry(setup.container) as HTMLAnchorElement;
+    expect(entry.textContent).toBe("Fortsätt resan: Tidspress 12 s, inga gissningar än");
+    await click(entry);
+    expect(setup.container.textContent).toContain("Fri resa · Tidspress 12 s");
   });
 
   test("the way back is only for the most recently played trip, never an older unfinished one", async () => {
@@ -1442,7 +1472,7 @@ describe("Tidtagning", () => {
     await click(startaButton(opened.container));
     const started = await reopen("/fri", storage);
     expect(resumeEntry(started.container)?.textContent).toBe(
-      "Fortsätt resan: Tidtagning, 0 gissningar",
+      "Fortsätt resan: Tidtagning, inga gissningar än",
     );
   });
 
