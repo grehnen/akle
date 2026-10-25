@@ -6,6 +6,7 @@ import {
   rejectionMessage,
   resultOutcome,
   scoreText,
+  timeoutRowTitle,
   timeText,
 } from "./messages";
 
@@ -17,6 +18,15 @@ describe("scoreText", () => {
     [-1, "−1 poäng"],
   ])("%p → %p", (score, text) => {
     expect(scoreText(score)).toBe(text);
+  });
+});
+
+describe("timeoutRowTitle", () => {
+  test.each([
+    [1, "Tiden ute 1 gång, 1 poäng"],
+    [3, "Tiden ute 3 gånger, 3 poäng"],
+  ])("%p → %p", (timeouts, text) => {
+    expect(timeoutRowTitle(timeouts)).toBe(text);
   });
 });
 
