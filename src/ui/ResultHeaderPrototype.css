@@ -557,3 +557,260 @@
     padding-inline: 0.4rem;
   }
 }
+
+/* ---------- D, E, F: C's columns on a computer, A's button grid on a phone ---------- */
+
+.rhp-m {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto 15rem;
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas:
+    "head  marks  marks  close buttons"
+    "score detail detail close buttons"
+    "total total  total  close buttons";
+  align-items: baseline;
+  /* Rows get their spacing from margins, so an empty row (no total, no chips) takes no room. */
+  gap: 0 1rem;
+  text-align: start;
+}
+
+.rhp-m-score,
+.rhp-m-detail,
+.rhp-m-total,
+.rhp-m-extra {
+  margin-top: 0.5rem !important;
+}
+
+/* E: the tiles take the row under the headline. */
+.rhp-m--e {
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "head  marks marks close buttons"
+    "extra extra extra close buttons";
+}
+
+/* F: the chips take the third row. */
+.rhp-m--f {
+  grid-template-areas:
+    "head  marks  marks  close buttons"
+    "score detail detail close buttons"
+    "extra extra  extra  close buttons";
+}
+
+.rhp-m p {
+  margin: 0;
+}
+
+.rhp-m-line {
+  display: contents;
+}
+
+.rhp-m-head {
+  grid-area: head;
+}
+
+.rhp-m-marks {
+  grid-area: marks;
+  font-size: 1.25rem;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+}
+
+.rhp-m-score {
+  grid-area: score;
+  font-size: 1.25rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rhp-m-detail {
+  grid-area: detail;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rhp-m-total {
+  grid-area: total;
+  color: var(--muted);
+}
+
+.rhp-m-total strong {
+  color: var(--text);
+}
+
+.rhp-m-extra {
+  grid-area: extra;
+  align-self: start;
+}
+
+.rhp-m-close {
+  grid-area: close;
+  align-self: start;
+  margin-top: 0.4rem;
+}
+
+.rhp-m-buttons {
+  grid-area: buttons;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--rule);
+}
+
+/* E's tiles, kept compact: the number with its caption on one line, the label under it. */
+.rhp-m-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rhp-m-tile {
+  display: flex;
+  flex-direction: column;
+  padding: 0.3rem 0.75rem 0.35rem;
+  border-radius: 10px;
+  background: var(--night);
+  box-shadow: inset 0 0 0 1px var(--rule);
+  line-height: 1.2;
+}
+
+.rhp-m-tile--total {
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+
+.rhp-m-num {
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rhp-m-cap {
+  margin-left: 0.3rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.rhp-m-sub {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.rhp-m-sub--muted {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* F's chips: lighter than tiles, only for the numbers beside the score. */
+.rhp-m-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.rhp-m-chip {
+  padding: 0.15rem 0.65rem;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--rule);
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rhp-m-chip strong {
+  color: var(--text);
+}
+
+.rhp-m-chip--total {
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+
+@container rhp (max-width: 36rem) {
+  .rhp-m,
+  .rhp-m--f {
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: none;
+    grid-template-areas:
+      "head    score   close"
+      "line    line    line"
+      "total   total   total"
+      "extra   extra   extra"
+      "buttons buttons buttons";
+    column-gap: 0.75rem;
+  }
+
+  .rhp-m-score {
+    margin-top: 0 !important;
+  }
+
+  .rhp-m-line {
+    grid-area: line;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem 0.75rem;
+    margin-top: 0.35rem;
+  }
+
+  .rhp-m-detail {
+    margin-top: 0 !important;
+  }
+
+  .rhp-m-total {
+    margin-top: 0.35rem !important;
+  }
+
+  .rhp-m--e {
+    grid-template-areas:
+      "head    head    close"
+      "line    line    line"
+      "extra   extra   extra"
+      "buttons buttons buttons";
+  }
+
+  .rhp-m--e .rhp-m-line {
+    margin-top: 0.2rem;
+  }
+
+  .rhp-m--e .rhp-m-extra {
+    margin-top: 0.4rem !important;
+  }
+
+  .rhp-m-close {
+    align-self: center;
+    margin-top: 0;
+  }
+
+  .rhp-m-buttons {
+    margin-top: 0.75rem;
+    padding-left: 0;
+    border-left: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* A's order on a phone: the setup link left, Slumpa right, Dela on a full row below. */
+  .rhp-m-buttons .rhp-setup {
+    order: -1;
+  }
+
+  .rhp-m-buttons .rhp-share,
+  .rhp-m-buttons .rhp-next {
+    grid-column: 1 / -1;
+  }
+
+  .rhp-m-tile {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 0.5rem;
+  }
+
+  .rhp-m-num {
+    font-size: 1.2rem;
+  }
+}

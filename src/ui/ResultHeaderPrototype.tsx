@@ -1,6 +1,6 @@
 // PROTOTYPE (D3): throwaway. Never merge to main.
 // Three variants of the free-play / itinerary result header (plus today's, as "nu"), each shown in
-// every result state stacked on one page, switchable via `?variant=nu|a|b|c` and the pink bar.
+// every result state stacked on one page, switchable via `?variant=nu|a|b|c|d|e|f` and the pink bar.
 // `?telefon=1` narrows each state to a 390 px phone; `?karta=0` hides the placeholder maps.
 import { StrictMode, type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -143,6 +143,9 @@ const VARIANTS = [
   { key: "a", name: "Kompakt" },
   { key: "b", name: "Poängkort" },
   { key: "c", name: "Två spalter" },
+  { key: "d", name: "C + A:s telefonknappar" },
+  { key: "e", name: "C med poängkort" },
+  { key: "f", name: "C med lätta brickor" },
 ] as const;
 type VariantKey = (typeof VARIANTS)[number]["key"];
 
@@ -491,17 +494,152 @@ function ColumnsStrip({ state }: { state: ResultState }) {
   );
 }
 
+/*
+ * D, E, F: mixes after the first round. C's two columns on a computer (the summary left, the
+ * button stack right); on a phone A's arrangement with its equal-width two-column button grid.
+ * D keeps A's score line, E puts in B's tiles, kept compact, and F keeps the plain score line but
+ * adds small chips for the other numbers (the time, the itinerary total) only when there are any.
+ */
+
+function CompactTiles({ state }: { state: ResultState }) {
+  return (
+    <div className="rhp-m-tiles">
+      <div className="rhp-m-tile">
+        <span className="rhp-m-num">
+          {state.score < 0 ? `−${-state.score}` : state.score}
+          <span className="rhp-m-cap">
+            poäng
+            <ScoreInfo />
+          </span>
+        </span>
+        <span className="rhp-m-sub">{state.label}</span>
+      </div>
+      {state.time && (
+        <div className="rhp-m-tile">
+          <span className="rhp-m-num">{state.time}</span>
+          <span className="rhp-m-sub rhp-m-sub--muted">tid</span>
+        </div>
+      )}
+      {state.itinerary && (
+        <div className="rhp-m-tile rhp-m-tile--total">
+          <span className="rhp-m-num">
+            {state.itinerary.total < 0 ? `−${-state.itinerary.total}` : state.itinerary.total}
+            <span className="rhp-m-cap">totalt</span>
+          </span>
+          <span className="rhp-m-sub rhp-m-sub--muted">
+            resa {state.itinerary.index + 1}/{state.itinerary.count}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Chips({ state }: { state: ResultState }) {
+  if (!state.time && !state.itinerary) return null;
+  return (
+    <div className="rhp-m-chips">
+      {state.time && (
+        <span className="rhp-m-chip">
+          Tid <strong>{state.time}</strong>
+        </span>
+      )}
+      {state.itinerary && (
+        <span className="rhp-m-chip rhp-m-chip--total">
+          Totalt <strong>{points(state.itinerary.total)}</strong> · resa {state.itinerary.index + 1}
+          /{state.itinerary.count}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function MixedHeader({ state, kind }: { state: ResultState; kind: "d" | "e" | "f" }) {
+  const scoreLine = kind !== "e";
+  return (
+    <header className={`rhp-m rhp-m--${kind}`}>
+      <h2 className="result-outcome rhp-m-head">{state.headline}</h2>
+      {scoreLine && (
+        <p className="rhp-m-score">
+          {points(state.score)}
+          <ScoreInfo />
+        </p>
+      )}
+      {/* Its own row on a phone; on a computer its two parts sit in the grid apart. */}
+      <div className="rhp-m-line">
+        <Marks state={state} className="rhp-m-marks" />
+        {scoreLine && (
+          <p className="rhp-m-detail">
+            {state.label}
+            {kind === "d" && state.time && <> · Tid {state.time}</>}
+          </p>
+        )}
+      </div>
+      {kind === "d" && state.itinerary && (
+        <p className="rhp-m-total">
+          <strong>Totalt {points(state.itinerary.total)}</strong> · efter resa{" "}
+          {state.itinerary.index + 1} av {state.itinerary.count}
+        </p>
+      )}
+      {kind === "e" && (
+        <div className="rhp-m-extra">
+          <CompactTiles state={state} />
+        </div>
+      )}
+      {kind === "f" && (state.time || state.itinerary) && (
+        <div className="rhp-m-extra">
+          <Chips state={state} />
+        </div>
+      )}
+      <span className="rhp-m-close">
+        <Close />
+      </span>
+      <div className="rhp-m-buttons">
+        {state.itinerary ? (
+          <NextTrip state={state} />
+        ) : (
+          <>
+            <Redraw />
+            <SetupLink />
+            <Share />
+          </>
+        )}
+      </div>
+    </header>
+  );
+}
+
+function MixedStrip({ state }: { state: ResultState }) {
+  return (
+    <div className="result-strip rhp-a-strip">
+      <div className="rhp-a-hero rhp-a-hero--strip">
+        <CompactHero state={state} strip />
+      </div>
+      <div className="rhp-a-strip-actions">
+        {state.itinerary ? <NextTrip state={state} /> : <Share />}
+        <Reopen />
+      </div>
+    </div>
+  );
+}
+
 const HEADERS: Record<VariantKey, (props: { state: ResultState }) => ReactNode> = {
   nu: NowHeader,
   a: CompactHeader,
   b: CardHeader,
   c: ColumnsHeader,
+  d: (props) => <MixedHeader {...props} kind="d" />,
+  e: (props) => <MixedHeader {...props} kind="e" />,
+  f: (props) => <MixedHeader {...props} kind="f" />,
 };
 const STRIPS: Record<VariantKey, (props: { state: ResultState }) => ReactNode> = {
   nu: NowStrip,
   a: CompactStrip,
   b: CardStrip,
   c: ColumnsStrip,
+  d: MixedStrip,
+  e: CardStrip,
+  f: MixedStrip,
 };
 
 /* One state on its board: the label, the Från/Till signs, the result (or strip) and the map. */
@@ -632,9 +770,15 @@ function ResultHeaderPrototype() {
         </p>
         <p>
           Byt variant med pilarna i den rosa listen (eller ← →). <em>NU</em> är dagens huvud som
-          jämförelse. A, B och C tappar rubriken ur förlust- och Perfekt-etiketterna, visar
-          resplanens totalt bara en gång (inte i etiketten ovanför), och lägger "Lägre är bättre"
-          bakom ⓘ vid poäng (klicka).
+          jämförelse. A–F tappar rubriken ur förlust- och Perfekt-etiketterna, visar resplanens
+          totalt bara en gång (inte i etiketten ovanför), och lägger "Lägre är bättre" bakom ⓘ vid
+          poäng (klicka).
+        </p>
+        <p>
+          Andra rundan: <strong>D</strong> = C:s två spalter på datorn, A:s knapprutnät på
+          telefonen. <strong>E</strong> = D med kompakta poängkort. <strong>F</strong> = D med
+          vanlig poängrad och små brickor bara för tid och totalt. Remsan (hopfällt) är A:s i D och
+          F, B:s i E.
         </p>
         <p>
           Knapptexterna är <strong>arbetstitlar</strong>, inte bestämda: "Ändra inställningar" (idag
