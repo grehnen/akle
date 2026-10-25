@@ -15,6 +15,9 @@ const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>', {
 // The satellite map asks for the touch-screen media query; jsdom has no matchMedia.
 const matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
 Object.assign(dom.window, { matchMedia });
+// jsdom doesn't scroll; each scroll the page asks for is recorded instead.
+const scrolls: [number, number][] = [];
+Object.assign(dom.window, { scrollTo: (x: number, y: number) => void scrolls.push([x, y]) });
 // jsdom has no modal dialogs: opening one only marks it open, and closing it fires close.
 Object.assign(dom.window.HTMLDialogElement.prototype, {
   showModal(this: HTMLDialogElement) {
@@ -152,6 +155,7 @@ afterEach(() => {
   container.remove();
   mounted = undefined;
   copied.length = 0;
+  scrolls.length = 0;
   dom.window.history.replaceState(null, "", "/");
 });
 
@@ -483,6 +487,66 @@ describe("Slumpa", () => {
 });
 
 const address = () => dom.window.location.pathname + dom.window.location.search;
+
+describe("a trip going on the board", () => {
+  const unlimitedTrip = tripLinkPath(0, {
+    start: "0192",
+    destination: "0488",
+    mode: { kind: "unlimited" },
+  });
+  const focused = () => dom.window.document.activeElement;
+  const chooseUnlimited = (container: HTMLElement) =>
+    click(query(container, 'input[name="free-play-mode"][value="unlimited"]'));
+
+  test("Slumpa resa on an Obegränsad trip scrolls to the top and focuses the guess input", async () => {
+    const { container } = await mountApp("/fri");
+    await chooseUnlimited(container);
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+
+    expect(focused()).toBe(query(container, "#guess-input"));
+    expect(scrolls).toEqual([[0, 0]]);
+  });
+
+  test("Res and Slumpa ny resa do too", async () => {
+    const { container } = await mountApp("/fri");
+    await chooseUnlimited(container);
+    await click(query(container, "#free-play-tab-pick"));
+    await pick(container, "Haninge", "Trosa");
+    expect(focused()).toBe(query(container, "#guess-input"));
+    await winDistanceOneTrip(container);
+
+    (focused() as HTMLElement | null)?.blur();
+    scrolls.length = 0;
+    await click(buttonNamed(container, "Slumpa ny resa") as HTMLElement);
+    expect(focused()).toBe(query(container, "#guess-input"));
+    expect(scrolls).toEqual([[0, 0]]);
+  });
+
+  test("opening or reloading an untimed trip's link leaves focus and scroll alone", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp(unlimitedTrip, storage);
+    expect(query(container, "#trip-heading")).not.toBeNull();
+    expect(focused()).toBe(dom.window.document.body);
+    await guess(container, "Haninge");
+
+    (focused() as HTMLElement | null)?.blur();
+    await reopen(unlimitedTrip, storage);
+    expect(focused()).toBe(dom.window.document.body);
+    expect(scrolls).toEqual([]);
+  });
+
+  test("Fortsätt resan puts the trip on the board, focused", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp(unlimitedTrip, storage);
+    await guess(container, "Haninge");
+    (focused() as HTMLElement | null)?.blur();
+
+    const setup = await reopen("/fri", storage);
+    await click(resumeEntry(setup.container) as Element);
+    expect(focused()).toBe(query(setup.container, "#guess-input"));
+    expect(scrolls).toEqual([[0, 0]]);
+  });
+});
 
 async function playToTheEnd(container: HTMLElement, ...names: string[]) {
   for (const name of names) {
