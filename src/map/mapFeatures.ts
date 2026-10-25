@@ -179,6 +179,24 @@ export function guessViewBounds(
   ]);
 }
 
+/**
+ * The box the map is fitted to after a hint outlines a kommun: the default bounds, plus every
+ * hinted kommun. A far-off guess outside the default bounds is left out, so the outlines show.
+ */
+export function hintViewBounds(
+  graph: GraphVersion,
+  trip: Pick<Trip, "start" | "destination">,
+  cards: readonly FramedCard[],
+  hintOutlines: readonly KommunCode[],
+): Bounds | undefined {
+  return routeBounds(graph, [
+    trip.start,
+    trip.destination,
+    ...framedGuesses(graph, trip, cards),
+    ...hintOutlines,
+  ]);
+}
+
 function framedGuesses(
   graph: GraphVersion,
   trip: Pick<Trip, "start" | "destination">,
