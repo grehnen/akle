@@ -158,6 +158,13 @@ async function mountApp(
   return { container, fetched };
 }
 
+/** What an element shows on screen, without its words for screen readers only. */
+function seenText(element: Element): string {
+  const shown = element.cloneNode(true) as Element;
+  for (const hidden of shown.querySelectorAll(".visually-hidden")) hidden.remove();
+  return shown.textContent ?? "";
+}
+
 const query = <E extends Element = HTMLElement>(container: HTMLElement, selector: string) =>
   container.querySelector(selector) as E;
 
@@ -294,7 +301,8 @@ describe("playing a picked trip", () => {
     await settle();
 
     expect(query(container, "#result-heading").textContent).toBe("Perfekt!");
-    expect(query(container, ".result-score").textContent).toBe("−1 poäng");
+    expect(query(container, ".result-score").textContent).toBe("+0 (Perfekt) · −1 poäng");
+    expect(query(container, ".result-score-note").textContent).toBe("Lägre är bättre");
     expect(fetched).toEqual(["current"]);
     expect(new Set(progress.writes)).toEqual(new Set(["akle:free-play-trip"]));
     expect(progress.storage.getItem("akle:game")).toBe(progress.savedGame);
@@ -617,7 +625,7 @@ describe("resuming the free-play trip", () => {
 
     const reopened = await reopen(`${nynashamnTrosa}&utm_source=chat`, storage);
     expect(query(reopened.container, "#result-heading").textContent).toBe("Perfekt!");
-    expect(query(reopened.container, ".result-score").textContent).toBe("−1 poäng");
+    expect(query(reopened.container, ".result-score").textContent).toBe("+0 (Perfekt) · −1 poäng");
     await click(query(reopened.container, ".share-button"));
     expect(copied).toEqual([
       `#åkle Fri resa · Standard\n+0 (Perfekt) · −1 poäng\n✅✅\nhttps://akle.grehn.net${nynashamnTrosa}`,
@@ -778,9 +786,9 @@ describe("giving up", () => {
     await click(confirmButton(container));
     await settle();
 
-    expect(query(container, "#result-heading").textContent).toBe("Gav upp (1 ifrån)");
+    expect(query(container, "#result-heading").textContent).toBe("Gav upp");
     // 0 guesses − distance 1 + 3·1 away.
-    expect(query(container, ".result-score").textContent).toBe("2 poäng");
+    expect(query(container, ".result-score").textContent).toBe("Gav upp (1 ifrån) · 2 poäng");
   });
 
   test("asks before ending the trip, and going back keeps playing", async () => {
@@ -799,9 +807,9 @@ describe("giving up", () => {
     const { container } = await mountApp("/fri");
     await giveUpAfterTrosa(container);
 
-    expect(query(container, "#result-heading").textContent).toBe("Gav upp (1 ifrån)");
+    expect(query(container, "#result-heading").textContent).toBe("Gav upp");
     // 1 guess − distance 1 + 3·1 away.
-    expect(query(container, ".result-score").textContent).toBe("3 poäng");
+    expect(query(container, ".result-score").textContent).toBe("Gav upp (1 ifrån) · 3 poäng");
     await click(query(container, ".share-button"));
     expect(copied).toEqual([
       `#åkle Fri resa · Standard\nGav upp (1 ifrån) · 3 poäng\n🟧\nhttps://akle.grehn.net${nynashamnSalem}`,
@@ -815,8 +823,10 @@ describe("giving up", () => {
     expect(address()).toBe(nynashamnSalem);
 
     const reloaded = await reopen(nynashamnSalem, storage);
-    expect(query(reloaded.container, "#result-heading").textContent).toBe("Gav upp (1 ifrån)");
-    expect(query(reloaded.container, ".result-score").textContent).toBe("3 poäng");
+    expect(query(reloaded.container, "#result-heading").textContent).toBe("Gav upp");
+    expect(query(reloaded.container, ".result-score").textContent).toBe(
+      "Gav upp (1 ifrån) · 3 poäng",
+    );
     expect(reloaded.container.querySelector("#guess-input")).toBeNull();
   });
 });
@@ -1120,7 +1130,7 @@ describe("Tidtagning", () => {
     await click(query(container, "dialog.give-up-dialog .give-up-confirm"));
     await settle();
 
-    expect(query(container, "#result-heading").textContent).toBe("Gav upp (1 ifrån)");
+    expect(query(container, "#result-heading").textContent).toBe("Gav upp");
     expect(query(container, '.result-time [aria-hidden="true"]').textContent).toBe("–");
     await click(query(container, ".share-button"));
     expect(copied[0]?.split("\n")[1]).toBe("Gav upp (1 ifrån) · 3 poäng");
@@ -1303,8 +1313,11 @@ describe("Tidspress", () => {
     expect(announced(container)).toBe("Tiden ute 5 gånger");
 
     await playToTheEnd(container, "Salem");
-    expect(query(container, "#result-heading").textContent).toBe("Framme! (+0, 5 ⏱)");
-    expect(query(container, ".result-score").textContent).toBe("5 poäng");
+    expect(query(container, "#result-heading").textContent).toBe("Framme!");
+    expect(seenText(query(container, ".result-score"))).toBe("+0 (5 ⏱) · 5 poäng");
+    expect(query(container, ".result-score .visually-hidden").textContent).toBe(
+      "Tiden ute 5 gånger",
+    );
     expect(container.querySelector(".result-time")).toBeNull();
     await click(query(container, ".share-button"));
     expect(copied).toEqual([

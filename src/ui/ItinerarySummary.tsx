@@ -2,22 +2,16 @@ import type { ItinerarySummary, ItinerarySummaryRow } from "../freePlay/itinerar
 import { ITINERARY_PATH } from "../freePlay/itineraryLink";
 import { itineraryShareText } from "../freePlay/shareText";
 import { FREE_PLAY_PATH } from "../freePlay/tripLink";
-import {
-  hintCount,
-  modeName,
-  scoreText,
-  summaryOutcomeText,
-  timeoutsText,
-  timeText,
-  totalTimeText,
-} from "./messages";
+import { LOWER_IS_BETTER, modeName, scoreText, timeText, totalTimeText } from "./messages";
+import { ScoreLabel } from "./ScoreLabel";
 import { ShareButton } from "./ShareButton";
 import "./ItinerarySummary.css";
 
 /**
- * A finished itinerary's summary: its title, a row per trip (its ends, mode, outcome, hints,
- * a timed trip's timeouts, a won tie-breaker trip's time and its score), the total score with
- * the total time when it has a tie-breaker trip, then share, the builder, today's trip and free play.
+ * A finished itinerary's summary: its title, a row per trip (its ends, mode, outcome label as the
+ * share text words it, a won tie-breaker trip's time and its score), the total score, saying lower
+ * is better, with the total time when it has a tie-breaker trip, then share, the builder, today's
+ * trip and free play.
  */
 export function ItinerarySummaryView({
   title,
@@ -41,6 +35,7 @@ export function ItinerarySummaryView({
         ))}
       </ol>
       <p className="itinerary-summary-total">Totalt {scoreText(standing.score)}</p>
+      <p className="itinerary-summary-note">{LOWER_IS_BETTER}</p>
       {hasTieBreaker && (
         <p className="itinerary-summary-total-time">
           Total tid {totalTimeText(standing.totalTime, standing.wonTieBreakers)}
@@ -66,14 +61,9 @@ function SummaryRow({ row }: { row: ItinerarySummaryRow }) {
       </p>
       <p className="itinerary-summary-facts">
         <span className="itinerary-summary-mode">{modeName(row.mode)}</span>
-        <span className="itinerary-summary-outcome">{summaryOutcomeText(row.outcome)}</span>
-        <span className="itinerary-summary-hints">{hintCount(row.hintsUsed)}</span>
-        {row.mode.kind === "timed" && (
-          <span className="itinerary-summary-timeouts">
-            <span aria-hidden="true">{row.timeouts} ⏱</span>
-            <span className="visually-hidden">{timeoutsText(row.timeouts)}</span>
-          </span>
-        )}
+        <span className="itinerary-summary-outcome">
+          <ScoreLabel outcome={row.outcome} />
+        </span>
         {row.time !== undefined && (
           <span className="itinerary-summary-time">{timeText(row.time)}</span>
         )}
