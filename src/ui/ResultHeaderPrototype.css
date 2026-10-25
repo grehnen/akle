@@ -1,0 +1,559 @@
+/* PROTOTYPE (D3): throwaway. Never merge to main. */
+
+/* ---------- Page scaffolding (not part of the design) ---------- */
+
+.rhp-page {
+  padding: 1.25rem 0 7rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5rem;
+}
+
+.rhp-intro,
+.rhp-state {
+  width: min(56rem, 100%);
+}
+
+.rhp-page--phone .rhp-intro,
+.rhp-page--phone .rhp-state {
+  width: 390px;
+}
+
+.rhp-intro {
+  padding: 0.75rem 1rem;
+  border: 2px dashed #ff2fb4;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.rhp-intro p {
+  margin: 0.25rem 0;
+}
+
+.rhp-intro strong,
+.rhp-intro em {
+  color: var(--text);
+}
+
+.rhp-caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin: 0 0 0.5rem;
+  padding: 0.2rem 0.6rem;
+  border-left: 3px solid #ff2fb4;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #ff8fd6;
+}
+
+.rhp-measure {
+  color: var(--text);
+}
+
+/* The device: the app's `main` column, 56rem on a computer or a 390 px phone (1rem gutters). */
+.rhp-device {
+  container: rhp / inline-size;
+  padding: 0 1rem;
+  border: 1px dashed var(--rule);
+  border-radius: 12px;
+  padding-block: 1rem;
+  text-align: center;
+}
+
+.rhp-trip-heading {
+  margin: 0.25rem 0;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  justify-items: start;
+  gap: 0.4rem 0.6rem;
+  font-size: 1.2rem;
+  font-weight: 400;
+}
+
+.rhp-map {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.rhp-route {
+  height: 3rem;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px var(--rule);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* ---------- Shared bits ---------- */
+
+.rhp-result-view .result-close {
+  margin: -0.6rem -0.6rem -0.6rem 0;
+}
+
+.rhp-info {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.rhp-info-button {
+  min-height: 0;
+  margin: -0.4rem 0 -0.4rem 0.15rem;
+  padding: 0.3rem 0.35rem;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.95em;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.rhp-info-button:hover,
+.rhp-info-button[aria-expanded="true"] {
+  color: var(--text);
+}
+
+.rhp-info-pop {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--night);
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rhp-setup {
+  justify-content: center;
+}
+
+.rhp-share,
+.free-play-redraw,
+.rhp-next {
+  white-space: nowrap;
+}
+
+/* ---------- A: compact ---------- */
+
+.rhp-a {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: start;
+}
+
+.rhp-a-hero {
+  display: grid;
+  grid-template-columns: auto auto auto 1fr auto;
+  grid-template-areas: "head score detail marks close";
+  align-items: baseline;
+  column-gap: 1rem;
+}
+
+.rhp-a-hero p {
+  margin: 0;
+}
+
+.rhp-a-head {
+  grid-area: head;
+}
+
+.rhp-a-score {
+  grid-area: score;
+  font-size: 1.25rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rhp-a-detail {
+  grid-area: detail;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rhp-a-marks {
+  grid-area: marks;
+  justify-self: end;
+  font-size: 1.25rem;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+}
+
+.rhp-a-close {
+  grid-area: close;
+  align-self: center;
+  margin-left: 0.5rem;
+}
+
+.rhp-a-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rhp-a-gap {
+  flex: 1;
+}
+
+.rhp-a-actions--trip {
+  justify-content: space-between;
+}
+
+.rhp-a-total {
+  margin: 0;
+  color: var(--muted);
+}
+
+.rhp-a-total strong {
+  color: var(--text);
+}
+
+.rhp-a-strip {
+  flex-wrap: nowrap;
+}
+
+.rhp-a-hero--strip {
+  flex: 1;
+  grid-template-columns: auto auto auto 1fr;
+  grid-template-areas: "head score detail marks";
+}
+
+.rhp-a-hero--strip .result-outcome {
+  font-size: 1.125rem;
+}
+
+.rhp-a-hero--strip .rhp-a-score {
+  font-size: 1rem;
+}
+
+.rhp-a-strip-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@container rhp (max-width: 36rem) {
+  .rhp-a-hero {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "head score close"
+      "marks detail detail";
+    row-gap: 0.35rem;
+    column-gap: 0.75rem;
+  }
+
+  .rhp-a-marks {
+    justify-self: start;
+  }
+
+  .rhp-a-actions:not(.rhp-a-actions--trip) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rhp-a-actions:not(.rhp-a-actions--trip) .rhp-a-gap {
+    display: none;
+  }
+
+  /* Dela takes a full row, below the two ways on. */
+  .rhp-a-actions .rhp-share {
+    grid-column: 1 / -1;
+    order: 1;
+  }
+
+  .rhp-a-strip {
+    flex-wrap: wrap;
+  }
+
+  .rhp-a-hero--strip {
+    flex-basis: 100%;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "head score"
+      "marks detail";
+  }
+
+  .rhp-a-strip-actions {
+    flex-basis: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ---------- B: score card ---------- */
+
+.rhp-b {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: start;
+}
+
+.rhp-b-top {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.rhp-b-marks {
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: 0.1em;
+}
+
+.rhp-b-close {
+  margin-left: auto;
+}
+
+.rhp-b-tiles {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rhp-b-tile {
+  min-width: 7rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.45rem 0.9rem 0.5rem;
+  border-radius: 10px;
+  background: var(--night);
+  box-shadow: inset 0 0 0 1px var(--rule);
+  text-align: center;
+}
+
+.rhp-b-tile--total {
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+
+.rhp-b-num {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.rhp-b-cap {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.rhp-b-sub {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.rhp-b-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.rhp-b-gap {
+  flex: 1;
+}
+
+.rhp-b-strip {
+  flex-wrap: nowrap;
+}
+
+.rhp-b-tiles--small .rhp-b-tile {
+  min-width: 0;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+}
+
+.rhp-b-tiles--small .rhp-b-num {
+  font-size: 1.125rem;
+}
+
+.rhp-b-strip-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 0.5rem;
+}
+
+@container rhp (max-width: 36rem) {
+  .rhp-b-tile {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 0.4rem;
+  }
+
+  .rhp-b-tiles--small .rhp-b-tile {
+    flex: 0 1 auto;
+  }
+
+  .rhp-b-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rhp-b-actions .rhp-b-gap {
+    display: none;
+  }
+
+  .rhp-b-actions .rhp-share {
+    grid-column: 1 / -1;
+    order: 1;
+  }
+
+  .rhp-b-actions .rhp-next {
+    grid-column: 1 / -1;
+  }
+
+  .rhp-b-strip {
+    flex-wrap: wrap;
+  }
+
+  .rhp-b-strip-actions {
+    flex-basis: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ---------- C: two columns ---------- */
+
+.rhp-c {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 15rem;
+  grid-template-areas: "summary close buttons";
+  column-gap: 1rem;
+  align-items: start;
+  text-align: start;
+}
+
+.rhp-c-summary {
+  grid-area: summary;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rhp-c-summary p {
+  margin: 0;
+}
+
+.rhp-c-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+}
+
+.rhp-c-marks {
+  font-size: 1.25rem;
+  letter-spacing: 0.1em;
+}
+
+.rhp-c-score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.9rem;
+  margin: 0;
+}
+
+.rhp-c-score strong {
+  font-size: 1.25rem;
+}
+
+.rhp-c-label {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rhp-c-total {
+  color: var(--muted);
+}
+
+.rhp-c-total strong {
+  color: var(--text);
+}
+
+.rhp-c-close {
+  grid-area: close;
+  margin-top: 0.4rem;
+}
+
+.rhp-c-buttons {
+  grid-area: buttons;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--rule);
+}
+
+.rhp-c-strip {
+  flex-wrap: nowrap;
+}
+
+.rhp-c-strip-summary {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  text-align: start;
+}
+
+.rhp-c-strip-summary .rhp-c-score strong {
+  font-size: 1rem;
+}
+
+.rhp-c-strip-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@container rhp (max-width: 36rem) {
+  .rhp-c {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "summary close"
+      "buttons buttons";
+    row-gap: 0.75rem;
+  }
+
+  .rhp-c-buttons {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .rhp-c-strip {
+    flex-wrap: wrap;
+  }
+
+  .rhp-c-strip-buttons {
+    flex-basis: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* In the phone's two-column button grids, the setup link keeps to one line where it can. */
+@container rhp (max-width: 36rem) {
+  .rhp-setup {
+    padding-inline: 0.4rem;
+  }
+}
