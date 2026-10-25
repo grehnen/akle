@@ -182,10 +182,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The setup's betänketid slider beside the mode, its label hidden, rather than in a card. */
+/* The setup's betänketid slider beside the mode, labelled, rather than in a card. */
 .itinerary-mode .free-play-thinking-time {
-  flex: 1 1 8rem;
-  grid-template-columns: 1fr auto;
+  flex: 1 1 14rem;
   min-height: 2.75rem;
   padding: 0;
 }
@@ -237,8 +236,14 @@
   opacity: 0.6;
 }
 
-.itinerary-add > .itinerary-mode label {
+.itinerary-add > .itinerary-mode > label {
   font-weight: 700;
+}
+
+.itinerary-mode-description {
+  margin: -0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .itinerary-stepper {

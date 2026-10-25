@@ -420,6 +420,28 @@ describe("the itinerary's link", () => {
     expect(query(container, ".itinerary-toast").textContent).toBe("Kopierat!");
   });
 
+  test("the mode for new trips says how it plays, and its betänketid slider is labelled in sight", async () => {
+    const container = await mountApp("/resplan");
+    const description = () => query(container, ".itinerary-add .itinerary-mode-description");
+    const select = query<HTMLSelectElement>(container, "#itinerary-new-mode");
+    expect(description().textContent).toBe(
+      "Som dagens resa: gissningarna räcker till avståndet och lite till.",
+    );
+    expect(select.getAttribute("aria-describedby")).toBe(description().id);
+
+    await choose(select, "timed");
+    expect(description().textContent).toBe(
+      "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng, även före första gissningen.",
+    );
+    const label = query<HTMLInputElement>(container, "#itinerary-new-thinking-time").labels?.[0];
+    expect(label?.textContent).toBe("Betänketid");
+    expect(label?.classList.contains("visually-hidden")).toBe(false);
+
+    // Not repeated on each trip.
+    await pick(container, "Nynäshamn", "Salem");
+    expect(container.querySelector(".itinerary-trip .itinerary-mode-description")).toBeNull();
+  });
+
   test("a trip's betänketid takes any whole second from 5 to 60 from a compact dropdown", async () => {
     const container = await mountApp("/resplan");
     await pick(container, "Nynäshamn", "Salem");

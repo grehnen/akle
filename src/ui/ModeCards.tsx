@@ -64,21 +64,17 @@ export function ModeCards({
 /** The betänketid: whole seconds within the range a trip link can carry. */
 export function ThinkingTimeField({
   id,
-  labelHidden = false,
   seconds,
   onChange,
 }: {
   /** Unique on the page. */
   id: string;
-  labelHidden?: boolean;
   seconds: number;
   onChange: (seconds: number) => void;
 }) {
   return (
     <div className="free-play-thinking-time">
-      <label htmlFor={id} className={labelHidden ? "visually-hidden" : undefined}>
-        Betänketid
-      </label>
+      <label htmlFor={id}>Betänketid</label>
       <input
         id={id}
         type="range"
