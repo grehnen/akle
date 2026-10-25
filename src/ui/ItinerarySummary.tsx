@@ -5,6 +5,7 @@ import {
   modeName,
   scoreText,
   summaryOutcomeText,
+  timeoutsText,
   timeText,
   totalTimeText,
 } from "./messages";
@@ -65,7 +66,7 @@ function SummaryRow({ row }: { row: ItinerarySummaryRow }) {
         {row.mode.kind === "timed" && (
           <span className="itinerary-summary-timeouts">
             <span aria-hidden="true">{row.timeouts} ⏱</span>
-            <span className="visually-hidden">Tiden ute {row.timeouts} gånger</span>
+            <span className="visually-hidden">{timeoutsText(row.timeouts)}</span>
           </span>
         )}
         {row.time !== undefined && (
