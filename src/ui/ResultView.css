@@ -94,7 +94,10 @@
   width: 100%;
 }
 
-/* A name wraps only between words; one too long for its stop spills evenly to both sides. */
+/*
+ * A name wraps between words, or is hyphenated (Swedish, from the page's lang) when one word is
+ * too long for its stop, so long neighbors never touch.
+ */
 .result-route li {
   position: relative;
   display: flex;
@@ -104,6 +107,8 @@
   padding-top: 1.35rem;
   font-size: 0.85rem;
   line-height: 1.25;
+  text-align: center;
+  hyphens: auto;
 }
 
 .result-route li::before {
