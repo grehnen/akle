@@ -739,6 +739,18 @@ describe("the builder's banner", () => {
     );
   });
 
+  test("at a trip's result, before Nästa resa, names the next trip", async () => {
+    const storage = memoryStorage();
+    let container = await mountApp(fridayLink, storage);
+    await click(button(container, "Starta resplanen"));
+    await guess(container, "Haninge");
+    await settle();
+    expect(button(container, "Nästa resa")).toBeDefined();
+
+    container = await reopen("/resplan", storage);
+    expect(banner(container).textContent).toBe("Fortsätt resplanen: Fredagsresan, resa 2 av 3");
+  });
+
   test("names an untitled itinerary by its trip alone", async () => {
     const storage = memoryStorage();
     const link = itineraryLinkPath(0, "", [nynashamnSalem, haningeTrosa]);

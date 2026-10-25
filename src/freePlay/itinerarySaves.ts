@@ -1,7 +1,8 @@
 import { reviewGame } from "../engine/game";
 import type { KeyValueStorage } from "../progress/storage";
 import { type Itinerary, itineraryLinkPath } from "./itineraryLink";
-import type { ItineraryPlay } from "./itineraryPlay";
+import type { PinnedVersion } from "./currentVersion";
+import { type ItineraryPlay, itineraryStage } from "./itineraryPlay";
 import type { LinkedTrip } from "./linkPayload";
 import { markPlayed, putSave, readSaves, type SavedGameKind } from "./savedGames";
 import {
@@ -113,26 +114,44 @@ function isSaveOf(
 /** An itinerary left unfinished: where it stands and the link that resumes it. */
 export type UnfinishedItinerary = {
   title?: string;
-  /** The trip it is on, counted from 1, of `tripCount`. */
+  /**
+   * The trip it goes on with, counted from 1, of `tripCount`: the current trip, or once that
+   * trip is over, before `Nästa resa`, the next one.
+   */
   tripNumber: number;
   tripCount: number;
   link: string;
 };
 
+/** The version ordinal the most recently played itinerary is pinned to; undefined with none. */
+export function latestItineraryVersion(storage: KeyValueStorage): number | undefined {
+  return readSaves(storage, ITINERARY_SAVES)[0]?.versionOrdinal;
+}
+
 /**
  * The most recently played itinerary while it's unfinished, from its first trip until its last
- * trip's `Avsluta resplanen`; undefined once finished, or with none saved. An older unfinished
+ * trip's `Avsluta resplanen`, resumed on `version`, the one it's pinned to; undefined once
+ * finished, when its save can't be resumed there, or with none saved. An older unfinished
  * itinerary never stands in for it.
  */
-export function unfinishedItinerary(storage: KeyValueStorage): UnfinishedItinerary | undefined {
+export function unfinishedItinerary(
+  storage: KeyValueStorage,
+  version: PinnedVersion,
+): UnfinishedItinerary | undefined {
   const [latest] = readSaves(storage, ITINERARY_SAVES);
-  if (latest === undefined || latest.play.current >= latest.trips.length) return undefined;
-  const { versionOrdinal, title, trips, play } = latest;
+  if (latest === undefined || latest.versionOrdinal !== version.ordinal) return undefined;
+  const { title, trips } = latest;
+  // Already the most recently played, so resuming it changes nothing stored.
+  const play = resumeItinerary(storage, { version, title, trips });
+  if (play === undefined) return undefined;
+  const stage = itineraryStage(version.graph, trips, play);
+  if (stage.kind === "intro" || stage.kind === "finished") return undefined;
+  const goesOn = stage.kind === "trip" && stage.over && stage.index + 1 < trips.length;
   return {
     ...(title !== undefined && { title }),
-    tripNumber: play.current + 1,
+    tripNumber: stage.index + (goesOn ? 2 : 1),
     tripCount: trips.length,
-    link: itineraryLinkPath(versionOrdinal, title ?? "", trips),
+    link: itineraryLinkPath(version.ordinal, title ?? "", trips),
   };
 }
 

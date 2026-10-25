@@ -14,7 +14,12 @@ import {
   startTrip,
 } from "./itineraryPlay";
 import { type Itinerary, itineraryLinkPath } from "./itineraryLink";
-import { resumeItinerary, saveItinerary, unfinishedItinerary } from "./itinerarySaves";
+import {
+  latestItineraryVersion,
+  resumeItinerary,
+  saveItinerary,
+  unfinishedItinerary,
+} from "./itinerarySaves";
 import type { LinkedTrip } from "./linkPayload";
 
 // Nynäshamn ── Haninge ── Salem ── Trosa.
@@ -189,7 +194,7 @@ describe("an itinerary's save", () => {
     const storage = memoryStorage();
     storage.setItem("akle:itineraries", text);
     expect(resumeItinerary(storage, friday)).toBeUndefined();
-    expect(unfinishedItinerary(storage)).toBeUndefined();
+    expect(unfinishedItinerary(storage, version)).toBeUndefined();
   });
 });
 
@@ -218,7 +223,7 @@ describe("real time across the gap", () => {
 describe("the unfinished itinerary", () => {
   test("is the stored itinerary while unfinished: its title, current trip and link", () => {
     const storage = save(memoryStorage(), secondTripPlaying);
-    expect(unfinishedItinerary(storage)).toEqual({
+    expect(unfinishedItinerary(storage, version)).toEqual({
       title: "Fredagsresan",
       tripNumber: 2,
       tripCount: 3,
@@ -228,7 +233,7 @@ describe("the unfinished itinerary", () => {
 
   test("is there from the first trip on", () => {
     const storage = save(memoryStorage(), begun, { ...friday, title: undefined });
-    expect(unfinishedItinerary(storage)).toEqual({
+    expect(unfinishedItinerary(storage, version)).toEqual({
       tripNumber: 1,
       tripCount: 3,
       link: itineraryLinkPath(2, "", trips),
@@ -236,17 +241,34 @@ describe("the unfinished itinerary", () => {
   });
 
   test("is nothing once the itinerary is finished, or with none stored", () => {
-    expect(unfinishedItinerary(save(memoryStorage(), finished))).toBeUndefined();
-    expect(unfinishedItinerary(memoryStorage())).toBeUndefined();
+    expect(unfinishedItinerary(save(memoryStorage(), finished), version)).toBeUndefined();
+    expect(unfinishedItinerary(memoryStorage(), version)).toBeUndefined();
+  });
+
+  test("at a trip's result, before Nästa resa, names the next trip", () => {
+    const firstTripWon = guess(begun, 1000, "Haninge");
+    expect(unfinishedItinerary(save(memoryStorage(), firstTripWon), version)?.tripNumber).toBe(2);
+  });
+
+  test("at the last trip's result, before Avsluta resplanen, still names the last trip", () => {
+    const lastTripWon = guess(startTrip(trips, onThirdCard, 8000), 9000, "Salem");
+    expect(unfinishedItinerary(save(memoryStorage(), lastTripWon), version)?.tripNumber).toBe(3);
+  });
+
+  test("is nothing for a save that can't be resumed on its version", () => {
+    const storage = save(memoryStorage(), secondTripPlaying);
+    expect(unfinishedItinerary(storage, { ...version, ordinal: 3 })).toBeUndefined();
+    expect(latestItineraryVersion(storage)).toBe(2);
+    expect(latestItineraryVersion(memoryStorage())).toBeUndefined();
   });
 
   test("is only ever the most recently played, never an older unfinished one", () => {
     const storage = save(memoryStorage(), secondTripPlaying);
     save(storage, finished, { ...friday, title: "Lördagsresan" });
-    expect(unfinishedItinerary(storage)).toBeUndefined();
+    expect(unfinishedItinerary(storage, version)).toBeUndefined();
 
     resumeItinerary(storage, friday);
-    expect(unfinishedItinerary(storage)?.title).toBe("Fredagsresan");
+    expect(unfinishedItinerary(storage, version)?.title).toBe("Fredagsresan");
   });
 });
 
@@ -286,7 +308,7 @@ describe("an itinerary slot from before the upgrade", () => {
   test("becomes the most recently played save, resumed from its link, and the old key goes", () => {
     const storage = memoryStorage();
     storage.setItem("akle:itinerary", JSON.stringify(oldSlot()));
-    expect(unfinishedItinerary(storage)?.title).toBe("Fredagsresan");
+    expect(unfinishedItinerary(storage, version)?.title).toBe("Fredagsresan");
     expect(resumeItinerary(storage, friday)).toEqual(secondTripPlaying);
     expect(storage.getItem("akle:itinerary")).toBeNull();
   });
@@ -299,7 +321,7 @@ describe("an itinerary slot from before the upgrade", () => {
     const storage = memoryStorage();
     storage.setItem("akle:itinerary", text);
     expect(resumeItinerary(storage, friday)).toBeUndefined();
-    expect(unfinishedItinerary(storage)).toBeUndefined();
+    expect(unfinishedItinerary(storage, version)).toBeUndefined();
     expect(storage.getItem("akle:itinerary")).toBeNull();
   });
 });
