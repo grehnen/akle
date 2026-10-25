@@ -128,16 +128,16 @@ export function ItineraryBuilder({
 
   const { announcement, announce } = useAnnouncer();
   // The latest removal, until Ångra, its time running out, or another trip added.
-  const [removed, setRemovedTrip] = useState<{ entry: BuilderTrip; index: number }>();
+  const [removed, setRemoved] = useState<{ entry: BuilderTrip; index: number }>();
   const [undoHeld, setUndoHeld] = useState(false);
-  // A new or gone toast is never held, wherever the pointer or focus was on the last one.
-  const setRemoved = (trip: typeof removed) => {
-    setRemovedTrip(trip);
+  // A new or gone Ångra toast is never held, wherever the pointer or focus was on the last one.
+  const replaceUndoToast = (trip: typeof removed) => {
+    setRemoved(trip);
     setUndoHeld(false);
   };
   useEffect(() => {
     if (removed === undefined || undoHeld) return;
-    const timer = setTimeout(() => setRemovedTrip(undefined), UNDO_MS);
+    const timer = setTimeout(() => setRemoved(undefined), UNDO_MS);
     return () => clearTimeout(timer);
   }, [removed, undoHeld]);
 
@@ -152,7 +152,7 @@ export function ItineraryBuilder({
       };
     }
     setTrips((current) => [...current, ...withIds(added)].slice(0, ITINERARY_TRIPS.max));
-    setRemoved(undefined);
+    replaceUndoToast(undefined);
     announce(count === 1 ? `Resa ${trips.length + 1} tillagd` : `${count} resor tillagda`);
     focusAfterRender.current =
       count === room ? ".itinerary-count" : drawn ? ".itinerary-draw" : `#${ID_PREFIX}-start`;
@@ -177,12 +177,12 @@ export function ItineraryBuilder({
         ...current.slice(index + 1),
       ].slice(0, ITINERARY_TRIPS.max),
     );
-    setRemoved(undefined);
+    replaceUndoToast(undefined);
   };
   const remove = (index: number) => {
     const entry = trips[index];
     setTrips(trips.filter((_, other) => other !== index));
-    setRemoved({ entry, index });
+    replaceUndoToast({ entry, index });
     announce(`Resa ${index + 1} borttagen`);
     // Focus the ✕ that took its place, the one before it for the last row, or the empty list.
     const left = trips.length - 1;
@@ -193,7 +193,7 @@ export function ItineraryBuilder({
     if (removed === undefined) return;
     const { entry, index } = removed;
     setTrips((current) => [...current.slice(0, index), entry, ...current.slice(index)]);
-    setRemoved(undefined);
+    replaceUndoToast(undefined);
     announce(`Resa ${index + 1} tillbaka`);
     focusAfterRender.current = removeButton(index + 1);
   };
@@ -201,7 +201,7 @@ export function ItineraryBuilder({
     setTitle("");
     setTrips([]);
     setRevealed(new Set());
-    setRemoved(undefined);
+    replaceUndoToast(undefined);
   };
 
   return (
@@ -657,9 +657,9 @@ function LinkBar({
   const { toast, copy } = useCopyToast();
   // The link that failed to copy, shown until a copy works or the itinerary is edited.
   const [uncopied, setUncopied] = useState<string>();
-  const [linkCopied, setLinkCopied] = useState(link);
-  if (link !== linkCopied) {
-    setLinkCopied(link);
+  const [previousLink, setPreviousLink] = useState(link);
+  if (link !== previousLink) {
+    setPreviousLink(link);
     setUncopied(undefined);
   }
   const copyLink = async (url: string) => setUncopied((await copy(url)) ? undefined : url);
