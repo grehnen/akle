@@ -38,3 +38,15 @@
   margin: 0;
   font-weight: 700;
 }
+
+.itinerary-progress {
+  max-width: 100%;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* The way on, in the yellow of the app's main actions. */
+.itinerary-next {
+  background: var(--start);
+  color: var(--night);
+}

@@ -33,17 +33,22 @@ function played(
   trips: readonly LinkedTrip[],
   plays: { startAt: number; moves: [number, Move][] }[],
 ): ItineraryPlay {
-  let play = beginItinerary(NEW_ITINERARY_PLAY);
+  let play = NEW_ITINERARY_PLAY;
+  let lastAt = 0;
   for (const { startAt, moves } of plays) {
+    // A trip on the clock waits on its card for Starta; one off it is on the board already.
+    play = play.begun
+      ? nextTrip(graph, trips, play, startAt)
+      : beginItinerary(trips, play, startAt);
     play = startTrip(trips, play, startAt);
     for (const [at, move] of moves) {
       const stage = itineraryStage(graph, trips, play);
       if (stage.kind !== "trip") throw new Error(`no trip on the board but ${stage.kind}`);
       play = changeTripGame(graph, play, move(stage.game), at);
+      lastAt = at;
     }
-    play = nextTrip(graph, play);
   }
-  return play;
+  return nextTrip(graph, trips, play, lastAt);
 }
 
 const standard = { kind: "standard" } as const;
