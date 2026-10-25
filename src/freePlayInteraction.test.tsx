@@ -130,7 +130,11 @@ afterEach(() => {
   dom.window.history.replaceState(null, "", "/");
 });
 
-async function mountApp(path: string, storage: KeyValueStorage = memoryStorage()) {
+async function mountApp(
+  path: string,
+  storage: KeyValueStorage = memoryStorage(),
+  sessionStorage: KeyValueStorage = memoryStorage(),
+) {
   dom.window.history.replaceState(null, "", path);
   const { pathname, search } = dom.window.location;
   const container = dom.window.document.createElement("div");
@@ -144,7 +148,7 @@ async function mountApp(path: string, storage: KeyValueStorage = memoryStorage()
         source={source}
         now={() => new Date(clockTime)}
         storage={storage}
-        sessionStorage={memoryStorage()}
+        sessionStorage={sessionStorage}
         path={pathname}
         search={search}
         pacing={pacing}
@@ -459,11 +463,11 @@ describe("trip links", () => {
 });
 
 /** Unmounts the app and mounts it again on the same storage, as a reload or a reopened tab. */
-async function reopen(path: string, storage: KeyValueStorage) {
+async function reopen(path: string, storage: KeyValueStorage, sessionStorage?: KeyValueStorage) {
   const { root, container } = mounted as { root: Root; container: HTMLElement };
   act(() => root.unmount());
   container.remove();
-  return mountApp(path, storage);
+  return mountApp(path, storage, sessionStorage);
 }
 
 const guessNames = (container: HTMLElement) =>
@@ -910,6 +914,43 @@ describe("Tidtagning", () => {
       "Nynäshamn",
       "Trosa",
     ]);
+  });
+
+  test("a drawn trip reloaded behind Starta keeps Slumpa ny resa and its range", async () => {
+    const storage = memoryStorage();
+    const session = memoryStorage();
+    const { container } = await mountApp("/fri", storage, session);
+    await chooseTieBreaker(container);
+    const { min, max } = distanceThumbs(container);
+    await type(min, "1");
+    await type(max, "1");
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+
+    const reloaded = await reopen(address(), storage, session);
+    await click(startaButton(reloaded.container));
+    await winDistanceOneTrip(reloaded.container);
+    await click(buttonNamed(reloaded.container, "Slumpa ny resa") as HTMLElement);
+    await click(startaButton(reloaded.container));
+    // Still distance 1, not the default range's only pair, Nynäshamn–Trosa at distance 2.
+    const heading = query(reloaded.container, "#trip-heading").textContent ?? "";
+    expect(pairIn(heading)).not.toEqual(["Nynäshamn", "Trosa"]);
+    expect(pairIn(heading)).toHaveLength(2);
+  });
+
+  test("a drawn trip keeps Slumpa ny resa across Back and Forward over its Starta", async () => {
+    const { container } = await mountApp("/fri");
+    await chooseTieBreaker(container);
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+
+    for (const step of ["back", "forward"] as const) {
+      await act(async () => {
+        dom.window.history[step]();
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      });
+    }
+    await click(startaButton(container));
+    await playToTheEnd(container, "Haninge", "Salem");
+    expect(buttonNamed(container, "Slumpa ny resa")).toBeDefined();
   });
 
   test("the time shown runs on real time, past an hour as h:mm:ss", async () => {
