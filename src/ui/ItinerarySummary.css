@@ -55,6 +55,15 @@
   white-space: nowrap;
 }
 
+/* The outcome, which can be long, may break after a comma inside its brackets, never elsewhere. */
+.itinerary-summary-facts > .itinerary-summary-outcome {
+  white-space: normal;
+}
+
+.itinerary-summary-outcome .score-label-piece {
+  white-space: nowrap;
+}
+
 .itinerary-summary-facts > span + span::before {
   content: "\a0· ";
   white-space: normal;
