@@ -234,10 +234,11 @@ describe("a full itinerary", () => {
       "Lägg till resor (fullt)",
     );
     expect(labelled(container, "Dubblera resa 1").disabled).toBe(true);
+    expect(drawButton(container).textContent).toBe("🎲 Lägg till 1 slumpad");
 
     await click(labelled(container, "Ta bort resa 20"));
     expect(panel.disabled).toBe(false);
-    expect(drawButton(container).textContent).toBe("🎲 Lägg till 1 slumpade");
+    expect(drawButton(container).textContent).toBe("🎲 Lägg till 1 slumpad");
   });
 });
 
