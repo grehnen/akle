@@ -14,7 +14,7 @@ export type Trip = {
 export type Rules = {
   /** `distance`: the daily guess limit, set by the distance; `none`: guess until the route is found. */
   guessLimit: "distance" | "none";
-  /** Whether the player may give up once they've made as many guesses as the distance. */
+  /** Whether the player may give up, at any point while the trip is being played. */
   giveUp: boolean;
   /** Whether a win's time is kept: the real time from Starta to the winning guess. */
   keepsTime: boolean;
@@ -73,7 +73,7 @@ export type GameReview = {
   status: GameStatus;
   /** A loss the player chose by giving up, rather than one at the guess limit. */
   givenUp: boolean;
-  /** Whether giving up is allowed right now: the rules allow it and there are N guesses or more. */
+  /** Whether giving up is allowed right now: the rules allow it and the trip is still being played. */
   canGiveUp: boolean;
   cards: GuessCard[];
   /** Kommuner still missing from the cheapest route (the "k ifrån" on a loss). */
@@ -173,7 +173,7 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
     limit,
     status,
     givenUp,
-    canGiveUp: status === "playing" && game.rules.giveUp && cards.length >= n,
+    canGiveUp: status === "playing" && game.rules.giveUp,
     cards,
     away,
     cheapestRoute: resultRoute,

@@ -270,6 +270,7 @@ describe("an itinerary from its link", () => {
     expect(text(container, ".start-gate .trip-number")).toBe("Resa 3 av 3 · Tidtagning");
     await click(button(container, "Starta"));
     expect(container.querySelector(".trip-clock")).not.toBeNull();
+    expect(query<HTMLButtonElement>(container, ".give-up-button").disabled).toBe(false);
     await guess(container, "Nynäshamn");
     await click(query(container, ".give-up-button"));
     await click(query(container, "dialog.give-up-dialog .give-up-confirm"));
