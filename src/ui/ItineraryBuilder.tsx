@@ -443,7 +443,9 @@ function LinkBar({
       <div className="itinerary-bar-content">
         <p className="itinerary-count">
           {count} av {ITINERARY_TRIPS.max} resor
-          {count < ITINERARY_TRIPS.min && ` · minst ${ITINERARY_TRIPS.min}`}
+          {count < ITINERARY_TRIPS.min && (
+            <span className="itinerary-count-minimum"> · minst {ITINERARY_TRIPS.min}</span>
+          )}
         </p>
         <button
           type="button"
