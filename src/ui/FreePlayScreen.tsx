@@ -20,6 +20,7 @@ import { DistanceRangeSlider } from "./DistanceRangeSlider";
 import { GatedBoard } from "./GatedBoard";
 import { ModeCards } from "./ModeCards";
 import { guessesSoFar, modeName } from "./messages";
+import { useNavigation } from "./navigation";
 import {
   PickTripForm,
   type TripChoiceTab,
@@ -53,11 +54,6 @@ type FreePlayScreenProps = {
   linkedTrip?: LinkedTrip;
   /** The linked trip's game, when its link has a save, picked up where it was left. */
   resumed?: ResumedTrip;
-  /**
-   * The linked trip was opened by a link within the app, as setup's Fortsätt resan, not by
-   * loading the page: its board opens as if by the player's own action.
-   */
-  openedInApp?: boolean;
   /** The most recently played trip, when unfinished, which setup offers a way back to. */
   unfinished?: UnfinishedTrip;
   onShowTripLink?: ShowTripLink;
@@ -72,8 +68,8 @@ type FreePlayScreenProps = {
 /**
  * The trip on the board, and whether it was drawn, with the range it was drawn from, which its
  * result draws the next from (none for a trip not drawn, or drawn and stored before ranges were
- * kept: those draw from setup's range). `opened` marks the trip the screen opened with, from a
- * link or its save, rather than one started here.
+ * kept: those draw from setup's range). `startedHere` marks a trip started on this screen, from
+ * setup or Slumpa ny resa, rather than the one it opened with, from a link or its save.
  * `started` is false while a trip on the clock waits behind `Starta`, its ends still hidden.
  */
 type Played = {
@@ -82,7 +78,7 @@ type Played = {
   drawn: boolean;
   range?: DistanceRange;
   count: number;
-  opened: boolean;
+  startedHere: boolean;
   started: boolean;
 };
 
@@ -97,7 +93,6 @@ export function FreePlayScreen({
   ordinal,
   linkedTrip,
   resumed,
-  openedInApp = false,
   unfinished,
   onShowTripLink = () => {},
   storage,
@@ -136,17 +131,19 @@ export function FreePlayScreen({
       drawn: resumed?.drawn ?? drawnFrom !== undefined,
       range: drawnFrom,
       count: 1,
-      opened: true,
+      startedHere: false,
       // A stored trip already started; it never waits behind Starta again.
       started: resumed !== undefined || !opensAtStarta(linkedTrip.mode),
     };
   });
   const link = played && tripLinkPath(ordinal, played.trip);
-  const opened = played?.opened ?? false;
+  const startedHere = played?.startedHere ?? false;
+  const { arrivedInApp } = useNavigation();
 
+  // A trip opened from its link keeps its address; one started here gets its own.
   useEffect(() => {
-    if (link !== undefined) onShowTripLink(link, opened);
-  }, [link, opened, onShowTripLink]);
+    if (link !== undefined) onShowTripLink(link, !startedHere);
+  }, [link, startedHere, onShowTripLink]);
 
   useEffect(() => {
     if (played === undefined || played.started || played.range === undefined) return;
@@ -171,7 +168,7 @@ export function FreePlayScreen({
         drawn: drawnFrom !== undefined,
         range: drawnFrom,
         count: (last?.count ?? 0) + 1,
-        opened: false,
+        startedHere: true,
         started: !opensAtStarta(tripMode),
       };
     });
@@ -218,8 +215,8 @@ export function FreePlayScreen({
       link={link}
       label={label}
       clock={clock}
-      // Started here or from a link within the app, so the player can type at once.
-      openedByPlayer={!opened || openedInApp}
+      // Put on the board by the player, here or by a link within the app, so they can type at once.
+      openedByPlayer={startedHere || arrivedInApp}
       onGameChange={(game) => {
         const now = clock();
         const stamped = stampThinkingTime(graph, stopTimeAtWin(graph, game, now), now);
