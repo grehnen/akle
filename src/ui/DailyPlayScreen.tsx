@@ -7,7 +7,7 @@ import { gameOutcome } from "../progress/outcome";
 import { loadSavedGame, saveGame } from "../progress/savedGame";
 import { shareText } from "../progress/shareText";
 import { deriveStats } from "../progress/stats";
-import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
+import { type KeyValueStorage, readJson, removeKey, writeJson } from "../progress/storage";
 import { reportIssueUrl } from "./reportIssue";
 import { Countdown } from "./ResultView";
 import { ShareButton } from "./ShareButton";
@@ -75,7 +75,7 @@ export function DailyPlayScreen({
       resultClosed={resultClosed}
       onResultClosedChange={(closed) => {
         if (closed) writeJson(sessionStorage, CLOSED_RESULT_KEY, trip.number);
-        else sessionStorage.removeItem(CLOSED_RESULT_KEY);
+        else removeKey(sessionStorage, CLOSED_RESULT_KEY);
       }}
       footerLinks={
         <a href={reportIssueUrl({ tripNumber: trip.number, graphVersion: graph.id })}>
