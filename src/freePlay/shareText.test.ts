@@ -34,7 +34,7 @@ describe("a free-play trip's share text", () => {
     );
   });
 
-  test("a loss shows how far away it ended", () => {
+  test("a guess-limit loss says so, and how far away it ended", () => {
     expect(
       freePlayShareText({
         mode: standard,
@@ -44,7 +44,8 @@ describe("a free-play trip's share text", () => {
         link,
       }),
     ).toBe(
-      "#åkle Fri resa · Standard\n(3 ifrån) · 9 poäng\n🟥🟥🟧🟥🟥\nhttps://akle.grehn.net" + link,
+      "#åkle Fri resa · Standard\nSlut på gissningar (3 ifrån) · 9 poäng\n🟥🟥🟧🟥🟥\nhttps://akle.grehn.net" +
+        link,
     );
   });
 
@@ -57,7 +58,7 @@ describe("a free-play trip's share text", () => {
         emojiLine: "🟥🟧",
         link,
       }).split("\n")[1],
-    ).toBe("(2 ifrån, 1 ledtråd) · 7 poäng");
+    ).toBe("Slut på gissningar (2 ifrån, 1 ledtråd) · 7 poäng");
   });
 
   test("labels a give-up beside the guess-limit loss", () => {
@@ -120,7 +121,7 @@ describe("a free-play trip's share text", () => {
       freePlayShareText({ mode: timed, outcome, score: 0, emojiLine: "✅", link }).split("\n")[1];
     expect(label({ kind: "won", extra: 0, hintsUsed: 0, timeouts: 2 })).toBe("+0 (2 ⏱) · 0 poäng");
     expect(label({ kind: "lost", away: 3, hintsUsed: 0, timeouts: 1 })).toBe(
-      "(3 ifrån, 1 ⏱) · 0 poäng",
+      "Slut på gissningar (3 ifrån, 1 ⏱) · 0 poäng",
     );
     expect(label({ kind: "lost", away: 1, hintsUsed: 2, timeouts: 3, givenUp: true })).toBe(
       "Gav upp (1 ifrån, 2 ledtrådar, 3 ⏱) · 0 poäng",
@@ -213,7 +214,7 @@ describe("an itinerary's share text", () => {
         "2. Tidspress 10 s · Gav upp (2 ifrån) · 8 poäng",
         "3. Tidtagning · +0 (1 ledtråd) · 1 poäng · 2:03,4",
         "4. Tidtagning · +0 (Perfekt) · −1 poäng · 2:08,9",
-        "5. Tidtagning · (1 ifrån, 1 ledtråd) · 1 poäng",
+        "5. Tidtagning · Slut på gissningar (1 ifrån, 1 ledtråd) · 1 poäng",
         "https://akle.grehn.net/resplan?namn=Norrlandsturen&r=EIYFoKAAoAUMXhQwBgdq",
       ].join("\n"),
     );
