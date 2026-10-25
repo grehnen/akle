@@ -150,14 +150,20 @@ export function TripBoard<T extends Trip>({
       {/* The board steps aside while the result view is open; closing it brings the board back. */}
       {!showResult && (
         <>
-          <SatelliteMap
-            graph={graph}
-            trip={trip}
-            cards={review.cards}
-            hintOutlines={reveals.outlines}
-            initials={reveals.initials}
-            allOutlines={settled}
-          />
+          {/* A rejected guess's toast floats over the map's bottom edge, so nothing moves for it. */}
+          <div className="map-frame">
+            <SatelliteMap
+              graph={graph}
+              trip={trip}
+              cards={review.cards}
+              hintOutlines={reveals.outlines}
+              initials={reveals.initials}
+              allOutlines={settled}
+            />
+            <p role="alert" className="toast">
+              {toast}
+            </p>
+          </div>
 
           {clock}
 
@@ -178,10 +184,6 @@ export function TripBoard<T extends Trip>({
             inputRef={guessInput}
             disabled={finished}
           />
-
-          <p role="alert" className="toast">
-            {toast}
-          </p>
         </>
       )}
 
