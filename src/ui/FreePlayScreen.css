@@ -46,6 +46,11 @@
   gap: 0.25rem;
 }
 
+/* A column here, so the guess row's flex basis would set the field's height, not its width. */
+.endpoint-field .guess-input__field {
+  flex: none;
+}
+
 .endpoint-field label {
   font-weight: 700;
 }
