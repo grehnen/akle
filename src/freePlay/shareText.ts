@@ -1,7 +1,15 @@
 import type { Outcome } from "../progress/outcome";
-import { resultLabel } from "../progress/shareText";
+import { resultLabelParts } from "../progress/shareText";
 import { SITE_URL } from "../siteUrl";
-import { modeName, costsSuffix, scoreText, timeText, totalTimeText } from "../ui/messages";
+import {
+  costsSuffixParts,
+  type LabelPart,
+  labelText,
+  modeName,
+  scoreText,
+  timeText,
+  totalTimeText,
+} from "../ui/messages";
 import type { ItinerarySummary } from "./itinerarySummary";
 import type { ModeSetting } from "./linkPayload";
 
@@ -58,9 +66,17 @@ function tripLabel({
  * `Slut på gissningar (2 ifrån, 1 ledtråd)`, `Gav upp (1 ifrån, 2 ⏱)`.
  */
 export function tripOutcomeLabel(outcome: Outcome): string {
-  if (outcome.kind !== "lost") return resultLabel(outcome);
-  const away = `${outcome.away} ifrån${costsSuffix(outcome.hintsUsed, outcome.timeouts)}`;
-  return `${outcome.givenUp ? "Gav upp" : "Slut på gissningar"} (${away})`;
+  return labelText(tripOutcomeLabelParts(outcome));
+}
+
+/** {@link tripOutcomeLabel} in parts, its timeouts kept as a count. */
+export function tripOutcomeLabelParts(outcome: Outcome): LabelPart[] {
+  if (outcome.kind !== "lost") return resultLabelParts(outcome);
+  return [
+    `${outcome.givenUp ? "Gav upp" : "Slut på gissningar"} (${outcome.away} ifrån`,
+    ...costsSuffixParts(outcome.hintsUsed, outcome.timeouts),
+    ")",
+  ];
 }
 
 /**

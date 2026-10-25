@@ -40,25 +40,39 @@ export function resultOutcome(
   }
 }
 
+/**
+ * A piece of a result label: plain text, or its timeouts kept as a count, which the share text
+ * writes `2 ⏱` and the UI can also read out in words.
+ */
+export type LabelPart = string | { timeouts: number };
+
+/** A label as text, its timeouts written `2 ⏱`. */
+export function labelText(parts: readonly LabelPart[]): string {
+  return parts.map((part) => (typeof part === "string" ? part : `${part.timeouts} ⏱`)).join("");
+}
+
 /** The hints and timeouts a result counts: `1 ledtråd`, `2 ⏱`; none when there are none. */
-function costs(hintsUsed: number, timeouts = 0): string[] {
+function costs(hintsUsed: number, timeouts = 0): LabelPart[] {
   return [
     ...(hintsUsed > 0 ? [hintCount(hintsUsed)] : []),
-    ...(timeouts > 0 ? [`${timeouts} ⏱`] : []),
+    ...(timeouts > 0 ? [{ timeouts }] : []),
   ];
 }
 
 /** `, 2 ledtrådar`, `, 1 ledtråd, 2 ⏱` to close a bracket with, else nothing. */
+export function costsSuffixParts(hintsUsed: number, timeouts?: number): LabelPart[] {
+  return costs(hintsUsed, timeouts).flatMap((cost) => [", ", cost]);
+}
+
 export function costsSuffix(hintsUsed: number, timeouts?: number): string {
-  return costs(hintsUsed, timeouts)
-    .map((cost) => `, ${cost}`)
-    .join("");
+  return labelText(costsSuffixParts(hintsUsed, timeouts));
 }
 
 /** ` (2 ledtrådar)`, ` (1 ledtråd, 2 ⏱)` after a result with hints or timeouts, else nothing. */
-export function costsNote(hintsUsed: number, timeouts?: number): string {
+export function costsNoteParts(hintsUsed: number, timeouts?: number): LabelPart[] {
   const counted = costs(hintsUsed, timeouts);
-  return counted.length > 0 ? ` (${counted.join(", ")})` : "";
+  if (counted.length === 0) return [];
+  return [" (", ...counted.flatMap((cost, index) => (index === 0 ? [cost] : [", ", cost])), ")"];
 }
 
 /** A free-play score: `3 poäng`, `−1 poäng` (with a real minus sign). */
