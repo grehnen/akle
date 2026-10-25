@@ -7,6 +7,7 @@ import { ITINERARY_PATH } from "./freePlay/itineraryLink";
 import { FREE_PLAY_PATH } from "./freePlay/tripLink";
 import { type LoadMapLibre, loadMapLibre, MapLibreLoaderContext } from "./map/mapLibreLoader";
 import { AppLink } from "./ui/AppLink";
+import { NavigateContext } from "./ui/navigation";
 import { DailyTripView } from "./ui/DailyTripView";
 import { FreePlayView } from "./ui/FreePlayView";
 import { ItineraryView } from "./ui/ItineraryView";
@@ -82,14 +83,16 @@ export function App({
     document.title = freePlay ? "Åkle – Fri resa" : itinerary ? "Åkle – Resplan" : "Åkle";
   }, [freePlay, itinerary]);
 
-  const navigate = (to: string) => {
+  const navigate = useCallback((to: string) => {
     window.history.pushState(null, "", to);
     const { pathname, search: query } = window.location;
     setPath(pathname);
     setSearch(query);
     setVisit((count) => count + 1);
     setOpenedInApp(true);
-  };
+    // Like a page load, the new page opens at its top.
+    if (window.scrollY > 0) window.scrollTo(0, 0);
+  }, []);
 
   // A trip picked on the setup screen gets its own entry, so Back returns to `/fri`; a trip
   // opened from its link keeps its entry, tidied to just the link.
@@ -106,103 +109,100 @@ export function App({
   return (
     <PacingContext value={pacing}>
       <MapLibreLoaderContext value={loadMap}>
-        <main>
-          <header className="site-header">
-            {/* In the order they appear, left to right, so Tab follows what the eye sees. */}
-            <button
-              type="button"
-              className="header-button rules-open"
-              aria-label="Så spelar du"
-              title="Så spelar du"
-              onClick={() => setRulesOpen(true)}
-            >
-              <RulesIcon />
-            </button>
-            {freePlay || itinerary ? (
-              <h1>
-                <AppLink href="/" onNavigate={navigate}>
-                  Åkle
-                </AppLink>
-              </h1>
-            ) : (
-              <h1>Åkle</h1>
+        <NavigateContext value={navigate}>
+          <main>
+            <header className="site-header">
+              {/* In the order they appear, left to right, so Tab follows what the eye sees. */}
+              <button
+                type="button"
+                className="header-button rules-open"
+                aria-label="Så spelar du"
+                title="Så spelar du"
+                onClick={() => setRulesOpen(true)}
+              >
+                <RulesIcon />
+              </button>
+              {freePlay || itinerary ? (
+                <h1>
+                  <AppLink href="/">Åkle</AppLink>
+                </h1>
+              ) : (
+                <h1>Åkle</h1>
+              )}
+              <AppLink
+                href={ITINERARY_PATH}
+                className="header-button itinerary-open"
+                aria-label="Resplan"
+                title="Resplan"
+                aria-current={itinerary ? "page" : undefined}
+              >
+                {/* A placeholder icon until itineraries get their own. */}
+                <span aria-hidden="true">🗺</span>
+              </AppLink>
+              <AppLink
+                href={FREE_PLAY_PATH}
+                className="header-button free-play-open"
+                aria-label="Fri resa"
+                title="Fri resa"
+                aria-current={freePlay ? "page" : undefined}
+              >
+                {/* A placeholder icon until free play gets its own. */}
+                <span aria-hidden="true">🎲</span>
+              </AppLink>
+              <button
+                type="button"
+                className="header-button stats-open"
+                aria-label="Visa statistik"
+                title="Visa statistik"
+                onClick={() => setStatsOpen(true)}
+              >
+                <StatsIcon />
+              </button>
+            </header>
+            {rulesOpen && <RulesDialog onClose={() => setRulesOpen(false)} />}
+            {statsOpen && (
+              <StatsDialog
+                stats={deriveStats(readHistory(progressStorage), today)}
+                onClose={() => setStatsOpen(false)}
+              />
             )}
-            <AppLink
-              href={ITINERARY_PATH}
-              className="header-button itinerary-open"
-              aria-label="Resplan"
-              title="Resplan"
-              aria-current={itinerary ? "page" : undefined}
-              onNavigate={navigate}
-            >
-              {/* A placeholder icon until itineraries get their own. */}
-              <span aria-hidden="true">🗺</span>
-            </AppLink>
-            <AppLink
-              href={FREE_PLAY_PATH}
-              className="header-button free-play-open"
-              aria-label="Fri resa"
-              title="Fri resa"
-              aria-current={freePlay ? "page" : undefined}
-              onNavigate={navigate}
-            >
-              {/* A placeholder icon until free play gets its own. */}
-              <span aria-hidden="true">🎲</span>
-            </AppLink>
-            <button
-              type="button"
-              className="header-button stats-open"
-              aria-label="Visa statistik"
-              title="Visa statistik"
-              onClick={() => setStatsOpen(true)}
-            >
-              <StatsIcon />
-            </button>
-          </header>
-          {rulesOpen && <RulesDialog onClose={() => setRulesOpen(false)} />}
-          {statsOpen && (
-            <StatsDialog
-              stats={deriveStats(readHistory(progressStorage), today)}
-              onClose={() => setStatsOpen(false)}
-            />
-          )}
-          {freePlay ? (
-            <FreePlayView
-              key={visit}
-              source={source}
-              now={openedAt}
-              linkPayload={new URLSearchParams(search).get("r") ?? undefined}
-              onShowTripLink={showTripLink}
-              onNavigate={navigate}
-              openedInApp={openedInApp}
-              storage={progressStorage}
-              sessionStorage={sessionStorage}
-              clock={clock}
-            />
-          ) : itinerary ? (
-            <ItineraryView
-              key={visit}
-              source={source}
-              now={openedAt}
-              linkPayload={new URLSearchParams(search).get("r") ?? undefined}
-              title={new URLSearchParams(search).get("namn") ?? undefined}
-              onPlay={navigate}
-              openedInApp={openedInApp}
-              storage={progressStorage}
-              sessionStorage={sessionStorage}
-              clock={clock}
-            />
-          ) : failed ? (
-            <p role="alert">Kunde inte ladda dagens resa. Försök igen senare.</p>
-          ) : (
-            <DailyTripView
-              daily={daily}
-              storage={progressStorage}
-              sessionStorage={sessionStorage}
-              now={openedAt}
-            />
-          )}
-        </main>
+            {freePlay ? (
+              <FreePlayView
+                key={visit}
+                source={source}
+                now={openedAt}
+                linkPayload={new URLSearchParams(search).get("r") ?? undefined}
+                onShowTripLink={showTripLink}
+                openedInApp={openedInApp}
+                storage={progressStorage}
+                sessionStorage={sessionStorage}
+                clock={clock}
+              />
+            ) : itinerary ? (
+              <ItineraryView
+                key={visit}
+                source={source}
+                now={openedAt}
+                linkPayload={new URLSearchParams(search).get("r") ?? undefined}
+                title={new URLSearchParams(search).get("namn") ?? undefined}
+                onPlay={navigate}
+                openedInApp={openedInApp}
+                storage={progressStorage}
+                sessionStorage={sessionStorage}
+                clock={clock}
+              />
+            ) : failed ? (
+              <p role="alert">Kunde inte ladda dagens resa. Försök igen senare.</p>
+            ) : (
+              <DailyTripView
+                daily={daily}
+                storage={progressStorage}
+                sessionStorage={sessionStorage}
+                now={openedAt}
+              />
+            )}
+          </main>
+        </NavigateContext>
       </MapLibreLoaderContext>
     </PacingContext>
   );

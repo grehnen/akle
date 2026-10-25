@@ -2,6 +2,7 @@ import type { ItinerarySummary, ItinerarySummaryRow } from "../freePlay/itinerar
 import { ITINERARY_PATH } from "../freePlay/itineraryLink";
 import { itineraryShareText } from "../freePlay/shareText";
 import { FREE_PLAY_PATH } from "../freePlay/tripLink";
+import { AppLink } from "./AppLink";
 import { LOWER_IS_BETTER, modeName, scoreText, timeText, totalTimeText } from "./messages";
 import { ScoreLabel } from "./ScoreLabel";
 import { ShareButton } from "./ShareButton";
@@ -43,11 +44,11 @@ export function ItinerarySummaryView({
       )}
       <ShareButton text={itineraryShareText({ title, summary, link })} />
       <nav className="itinerary-summary-actions" aria-label="Vidare">
-        <a className="primary-link" href={ITINERARY_PATH}>
+        <AppLink className="primary-link" href={ITINERARY_PATH}>
           Bygg en resplan
-        </a>
-        <a href="/">Dagens resa</a>
-        <a href={FREE_PLAY_PATH}>Fri resa</a>
+        </AppLink>
+        <AppLink href="/">Dagens resa</AppLink>
+        <AppLink href={FREE_PLAY_PATH}>Fri resa</AppLink>
       </nav>
     </section>
   );
