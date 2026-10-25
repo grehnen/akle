@@ -94,13 +94,16 @@
   width: 100%;
 }
 
+/* A name wraps only between words; one too long for its stop spills evenly to both sides. */
 .result-route li {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   min-width: 0;
   padding-top: 1.35rem;
   font-size: 0.85rem;
   line-height: 1.25;
-  overflow-wrap: anywhere;
 }
 
 .result-route li::before {
