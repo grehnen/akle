@@ -2,15 +2,10 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { type Clock, systemClock } from "../engine/clock";
 import { type Game, newGame, type Trip } from "../engine/game";
 import { stampThinkingTime, startTime, stopTimeAtWin } from "../engine/tripTime";
-import {
-  defaultDistanceRange,
-  type DistanceRange,
-  drawTrip,
-  largestDistance,
-  tripPairs,
-} from "../freePlay/draw";
+import { type DistanceRange, drawTrip, largestDistance, tripPairs } from "../freePlay/draw";
 import type { LinkedTrip, ModeSetting } from "../freePlay/linkPayload";
-import { DEFAULT_THINKING_TIME, freePlayRules, opensAtStarta } from "../freePlay/modeRules";
+import { freePlayRules, opensAtStarta } from "../freePlay/modeRules";
+import { restoreSetupChoice, type SetupChoice, saveSetupChoice } from "../freePlay/setupChoice";
 import { FREE_PLAY_PATH, tripLinkPath } from "../freePlay/tripLink";
 import {
   drawnAtStarta,
@@ -69,7 +64,7 @@ type FreePlayScreenProps = {
   onShowTripLink?: ShowTripLink;
   /** Opens another page of the app in place, as the way back to an unfinished trip does. */
   onNavigate?: (to: string) => void;
-  /** Where trips' saves are kept, the only free-play record. */
+  /** Where trips' saves are kept, the only free-play record, and setup's last choice. */
   storage: KeyValueStorage;
   /** For the board's view choices, such as the result tab. */
   sessionStorage: KeyValueStorage;
@@ -115,14 +110,24 @@ export function FreePlayScreen({
 }: FreePlayScreenProps) {
   const pairs = useMemo(() => tripPairs(graph), [graph]);
   const largest = largestDistance(pairs);
-  const [range, setRange] = useState(() => defaultDistanceRange(largest));
-  const [mode, setMode] = useState<ModeSetting>({ kind: "standard" });
-  // Kept apart from the mode, so choosing another mode and Tidspress again keeps it.
-  const [thinkingTime, setThinkingTime] = useState(DEFAULT_THINKING_TIME);
-  const changeMode = (next: ModeSetting) => {
-    setMode(next);
-    if (next.kind === "timed") setThinkingTime(next.thinkingTime);
+  // Setup opens on the choice last made in it on this device; a trip's link never changes it.
+  const [choice, setChoice] = useState(() => restoreSetupChoice(storage, largest));
+  const changeChoice = (changes: Partial<SetupChoice>) => {
+    const next = { ...choice, ...changes };
+    setChoice(next);
+    saveSetupChoice(storage, next);
   };
+  // The betänketid is kept apart from the mode, so choosing another mode and Tidspress again
+  // keeps it.
+  const { range, thinkingTime } = choice;
+  const mode: ModeSetting =
+    choice.mode === "timed" ? { kind: "timed", thinkingTime } : { kind: choice.mode };
+  const changeMode = (next: ModeSetting) =>
+    changeChoice(
+      next.kind === "timed"
+        ? { mode: next.kind, thinkingTime: next.thinkingTime }
+        : { mode: next.kind },
+    );
   const [played, setPlayed] = useState<Played | undefined>(() => {
     if (linkedTrip === undefined) return undefined;
     // A drawn trip behind Starta has no save yet, but may have been noted this session.
@@ -190,7 +195,7 @@ export function FreePlayScreen({
         onModeChange={changeMode}
         range={range}
         largest={largest}
-        onRangeChange={setRange}
+        onRangeChange={(next) => changeChoice({ range: next })}
         onDraw={() => draw(mode, range)}
         onPick={(trip) => play(trip, mode)}
         resume={unfinished && <ResumeTrip unfinished={unfinished} onNavigate={onNavigate} />}
