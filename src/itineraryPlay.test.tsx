@@ -17,6 +17,9 @@ const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>', {
 // The satellite map asks for the touch-screen media query; jsdom has no matchMedia.
 const matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
 Object.assign(dom.window, { matchMedia });
+// jsdom doesn't scroll; each scroll the page asks for is recorded instead.
+const scrolls: [number, number][] = [];
+Object.assign(dom.window, { scrollTo: (x: number, y: number) => void scrolls.push([x, y]) });
 // jsdom has no modal dialogs: opening one only marks it open, and closing it fires close.
 Object.assign(dom.window.HTMLDialogElement.prototype, {
   showModal(this: HTMLDialogElement) {
@@ -135,6 +138,7 @@ afterEach(() => {
   clockTime = OPENED_AT;
   heldMaps = undefined;
   copied.length = 0;
+  scrolls.length = 0;
   if (!mounted) return;
   const { root, container } = mounted;
   act(() => root.unmount());
@@ -668,6 +672,48 @@ describe("resuming an itinerary", () => {
     await guess(container, "Salem");
     await settle();
     expect(seenText(query(container, ".result-score"))).toBe("+0 (90 ⏱) · 90 poäng");
+  });
+});
+
+describe("a trip going on the board", () => {
+  const focusedId = () => dom.window.document.activeElement?.id;
+  const untimedLink = itineraryLinkPath(0, "", [
+    nynashamnSalem,
+    trip("0136", "0488", { kind: "unlimited" }),
+  ]);
+
+  test("Starta resplanen and Nästa resa onto an untimed trip scroll to the top and focus its input", async () => {
+    const container = await mountApp(untimedLink);
+    await click(button(container, "Starta resplanen"));
+    expect(focusedId()).toBe("guess-input");
+    expect(scrolls).toEqual([[0, 0]]);
+    await guess(container, "Haninge");
+    await settle();
+
+    (dom.window.document.activeElement as HTMLElement | null)?.blur();
+    scrolls.length = 0;
+    await click(button(container, "Nästa resa"));
+    expect(focusedId()).toBe("guess-input");
+    expect(scrolls).toEqual([[0, 0]]);
+  });
+
+  test("a reload onto a trip leaves focus and scroll alone, but Fortsätt resplanen focuses it", async () => {
+    const storage = memoryStorage();
+    let container = await mountApp(untimedLink, storage);
+    await click(button(container, "Starta resplanen"));
+    (dom.window.document.activeElement as HTMLElement | null)?.blur();
+    scrolls.length = 0;
+
+    container = await reopen(untimedLink, storage);
+    expect(text(container, "#trip-heading")).toContain("Nynäshamn");
+    expect(dom.window.document.activeElement).toBe(dom.window.document.body);
+    expect(scrolls).toEqual([]);
+
+    container = await reopen("/resplan", storage);
+    await click(query(container, ".itinerary-resume"));
+    expect(text(container, "#trip-heading")).toContain("Nynäshamn");
+    expect(focusedId()).toBe("guess-input");
+    expect(scrolls).toEqual([[0, 0]]);
   });
 });
 
