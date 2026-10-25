@@ -168,6 +168,10 @@ _Avoid_: Race, time trial, stopwatch mode
 A trip played in free play rather than taken from the schedule, whether picked or drawn at random.
 _Avoid_: Practice puzzle, custom puzzle, random puzzle
 
+**Distance range** (in the UI: _avstånd_):
+The shortest and longest distance a free-play trip may be drawn at; a drawn trip in a draft keeps the range it was drawn from, and the builder shows that range rather than the trip.
+_Avoid_: Difficulty, span, interval
+
 **Itinerary** (in the UI: _resplan_):
 An ordered list of free-play trips, each with its own mode, shared as a link.
 _Avoid_: Playlist, challenge, set, quiz, pack
@@ -176,7 +180,7 @@ _Avoid_: Playlist, challenge, set, quiz, pack
 The itinerary being built in the builder, its title and trips kept on this device until _Ny resplan_ empties it; one made on an older version is dropped.
 _Avoid_: Unsaved itinerary, work in progress
 
-**Setup choice**:
+**Setup choice** (in the UI: _inställningar_):
 The mode, thinking time and distance range last chosen in free play's setup, kept on this device so setup opens on them; a view preference, never a record, that a trip's link doesn't change.
 _Avoid_: Settings, preferences, defaults
 
