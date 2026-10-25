@@ -114,6 +114,16 @@ h1 {
   }
 }
 
+/* The page the player is on: a bar under its button, the colour of the start sign. */
+.header-button[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0.55rem 0.1rem;
+  height: 0.15rem;
+  border-radius: 0.075rem;
+  background: var(--start);
+}
+
 /* In free play the title leads back to today's trip. */
 h1 a {
   text-decoration: none;
