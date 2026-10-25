@@ -169,12 +169,13 @@ function GateNow({ state, ready }: GateProps) {
   );
 }
 
-/** A: heading, rules box, action with one merged caption. */
+/** A: heading row with the way back, rules box, action with its two notes on two lines. */
 function GateA({ state, ready }: GateProps) {
   return (
     <section className="start-gate sgp-blocks" aria-busy={ready ? undefined : true}>
-      {state.wayBack && <BackLink />}
-      <header className="sgp-header">
+      {/* The way back on the heading's row, the heading still centred in the gate. */}
+      <header className="sgp-header sgp-header--row">
+        {state.wayBack && <BackLink />}
         <h2>Redo att resa?</h2>
         <TripLabel state={state} className="sgp-subtitle" />
       </header>
@@ -184,7 +185,9 @@ function GateA({ state, ready }: GateProps) {
       <div className="sgp-action">
         <LoadingStarta ready={ready} focused={state.focused} />
         <p className="sgp-caption">
-          {HIDDEN_ENDS} {CLOCK_NOTE}
+          {HIDDEN_ENDS}
+          <br />
+          {CLOCK_NOTE}
         </p>
       </div>
     </section>
