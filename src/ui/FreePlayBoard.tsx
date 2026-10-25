@@ -21,7 +21,7 @@ import { useNow } from "./useNow";
 /**
  * A free-play trip on the board in its mode: its clock or thinking time while played, then in
  * the result its headline, its outcome label and score as the share text words them (saying lower
- * is better), a tie-breaker's time, and a share button when it has a `link` to share.
+ * is better), a won tie-breaker's time, and a share button when it has a `link` to share.
  * `resultActions` and `stripActions` follow those, in the result view and its strip.
  */
 export function FreePlayBoard({
@@ -81,7 +81,9 @@ export function FreePlayBoard({
   );
   const timeAndShare = score !== undefined && (
     <>
-      {game.rules.keepsTime && <ResultTime time={time} />}
+      {game.rules.keepsTime && time !== undefined && (
+        <p className="result-time">Tid {timeText(time)}</p>
+      )}
       {share !== undefined && <ShareButton text={share} />}
     </>
   );
@@ -124,22 +126,5 @@ export function FreePlayBoard({
         </>
       }
     />
-  );
-}
-
-/** A tie-breaker trip's time in the result: a win's to tenths, or `–` for a loss, which has none. */
-function ResultTime({ time }: { time?: number }) {
-  return (
-    <p className="result-time">
-      Tid{" "}
-      {time === undefined ? (
-        <>
-          <span aria-hidden="true">–</span>
-          <span className="visually-hidden">saknas, bara en vinst får tid</span>
-        </>
-      ) : (
-        timeText(time)
-      )}
-    </p>
   );
 }

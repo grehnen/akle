@@ -43,7 +43,7 @@ type TripBoardProps<T extends Trip> = {
   onResultClosedChange?: (closed: boolean) => void;
   /** Links put in the footer before the data credits, such as Rapportera fel. */
   footerLinks?: ReactNode;
-  /** Shown above the guess input while the board is up, such as a trip's running clock. */
+  /** Shown above the guess input while the trip is played, such as its running clock. */
   clock?: ReactNode;
   /** Puts focus in the guess input as the board opens, as after `Starta`. */
   focusGuessOnOpen?: boolean;
@@ -190,7 +190,8 @@ export function TripBoard<T extends Trip>({
             </p>
           </div>
 
-          {!concealed && clock}
+          {/* A trip over shows its time, if any, in the result alone. */}
+          {!concealed && !finished && clock}
 
           {!concealed && (
             <GuessInput
