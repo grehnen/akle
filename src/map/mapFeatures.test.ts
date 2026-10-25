@@ -255,9 +255,12 @@ describe("hintViewBounds", () => {
 
   test("keeps the guesses the default bounds frame", () => {
     expect(
-      hintViewBounds(graph, { ...trip, destination: "B" }, [
-        { code: "C", feedback: "🟩", connected: true },
-      ], ["B"]),
+      hintViewBounds(
+        graph,
+        { ...trip, destination: "B" },
+        [{ code: "C", feedback: "🟩", connected: true }],
+        ["B"],
+      ),
     ).toEqual([12, 56, 15, 57]);
   });
 });
