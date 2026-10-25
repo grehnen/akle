@@ -9,6 +9,11 @@
   text-align: left;
 }
 
+/* Room at the end the add panel may need to stay in place as rows go in above it. */
+.itinerary-scroll-room {
+  margin-top: -1rem;
+}
+
 .itinerary-builder h2,
 .itinerary-builder .trip-number {
   margin: 0;
@@ -269,11 +274,27 @@
   cursor: default;
 }
 
-/* The toast floats above the bar, as on the share button, so the bar keeps its height. */
-.itinerary-toast {
+/*
+ * What floats above the bar, as the share button's toast does, so the bar keeps its height and no
+ * control moves: the latest removal's Ångra, the link to copy by hand, and the copy toast.
+ */
+.itinerary-bar-overlays {
   position: absolute;
+  left: 0;
   right: 0;
   bottom: calc(100% + 0.75rem + 0.4rem);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  pointer-events: none;
+}
+
+.itinerary-bar-overlays > * {
+  pointer-events: auto;
+}
+
+.itinerary-toast {
   margin: 0;
   padding: 0.25rem 0.75rem;
   border-radius: 999px;
@@ -286,4 +307,58 @@
 
 .itinerary-toast:empty {
   display: none;
+}
+
+.itinerary-undo,
+.itinerary-copy-fallback {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.25rem 0.25rem 0.25rem 1rem;
+  border-radius: 0.75rem;
+  background: var(--text);
+  color: var(--night);
+  font-weight: 700;
+  box-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--night) 60%, transparent);
+}
+
+.itinerary-undo {
+  align-self: flex-start;
+}
+
+.itinerary-undo button {
+  background: var(--night);
+  color: var(--text);
+}
+
+.itinerary-copy-fallback {
+  align-self: stretch;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  padding: 0.5rem 0.25rem 0.5rem 0.75rem;
+}
+
+.itinerary-copy-fallback label {
+  flex: 1 1 100%;
+  font-size: 0.85rem;
+}
+
+.itinerary-copy-fallback input {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 400;
+}
+
+.itinerary-copy-fallback button {
+  min-width: 2.75rem;
+  padding: 0;
+  background: transparent;
+  color: var(--night);
 }
