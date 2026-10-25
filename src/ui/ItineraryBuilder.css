@@ -55,6 +55,11 @@
   color: var(--muted);
 }
 
+/*
+ * Trip rows in aligned columns: number, pair, Läge, actions. On a phone a row takes two lines,
+ * the pair on the first and Läge and the actions under it; wider, one line, every row on the
+ * list's shared columns so Läge and the actions line up whatever the mode.
+ */
 .itinerary-trips {
   margin: 0;
   padding: 0;
@@ -64,43 +69,68 @@
 
 .itinerary-trip {
   display: grid;
-  grid-template-columns: 1.5rem 1fr;
-  gap: 0.35rem 0.5rem;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  grid-template-areas:
+    "number what what"
+    "mode mode actions";
+  gap: 0.25rem 0.5rem;
   align-items: center;
-  padding: 0.5rem 0;
+  padding: 0.35rem 0;
   border-bottom: 1px solid var(--rule);
 }
 
-.itinerary-trip > .itinerary-mode,
-.itinerary-trip > .itinerary-trip-actions {
-  grid-column: 2;
-}
-
-@media (min-width: 36rem) {
-  .itinerary-trip {
-    grid-template-columns: 1.5rem 1fr auto;
-  }
-
-  .itinerary-trip > .itinerary-mode {
-    grid-column: 3;
-  }
-
-  .itinerary-trip > .itinerary-trip-actions {
-    grid-column: 2 / -1;
-    justify-self: end;
-  }
-}
-
 .itinerary-trip-number {
+  grid-area: number;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
 .itinerary-trip-what {
+  grid-area: what;
   display: flex;
-  flex-wrap: wrap;
   gap: 0.5rem;
   align-items: baseline;
+  min-width: 0;
+}
+
+.itinerary-trip > .itinerary-mode {
+  grid-area: mode;
+  flex-wrap: nowrap;
+}
+
+.itinerary-trip-actions {
+  grid-area: actions;
+}
+
+@media (min-width: 30rem) {
+  .itinerary-trips {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr) auto auto;
+  }
+
+  .itinerary-trip {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    grid-template-areas: "number what mode actions";
+    column-gap: 0.4rem;
+  }
+
+  /* The die says a hidden trip was drawn, so on one line only screen readers hear the word. */
+  .itinerary-drawn-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+.itinerary-trip-pair {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .itinerary-start {
@@ -117,6 +147,7 @@
 }
 
 .itinerary-reveal {
+  flex-shrink: 0;
   min-height: 0;
   padding: 0;
   background: none;
@@ -140,6 +171,15 @@
   background: var(--surface);
   color: var(--text);
   font: inherit;
+}
+
+/* A row's dropdowns trimmed to leave the pair room. */
+.itinerary-trip select {
+  padding: 0 0.15rem 0 0.35rem;
+}
+
+.itinerary-mode .itinerary-thinking-time {
+  font-variant-numeric: tabular-nums;
 }
 
 /* The setup's betänketid slider beside the mode, its label hidden, rather than in a card. */
@@ -170,6 +210,11 @@
   color: var(--muted);
   opacity: 0.5;
   cursor: default;
+}
+
+/* Narrower actions leave room for the pair and Läge; they stay 2.75rem tall to tap. */
+.itinerary-trip-actions button {
+  min-width: 2.25rem;
 }
 
 .itinerary-add {
