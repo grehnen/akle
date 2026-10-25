@@ -127,11 +127,16 @@ export function ItineraryBuilder({
 
   const { announcement, announce } = useAnnouncer();
   // The latest removal, until Ångra, its time running out, or another trip added.
-  const [removed, setRemoved] = useState<{ entry: BuilderTrip; index: number }>();
+  const [removed, setRemovedTrip] = useState<{ entry: BuilderTrip; index: number }>();
   const [undoHeld, setUndoHeld] = useState(false);
+  // A new or gone toast is never held, wherever the pointer or focus was on the last one.
+  const setRemoved = (trip: typeof removed) => {
+    setRemovedTrip(trip);
+    setUndoHeld(false);
+  };
   useEffect(() => {
     if (removed === undefined || undoHeld) return;
-    const timer = setTimeout(() => setRemoved(undefined), UNDO_MS);
+    const timer = setTimeout(() => setRemovedTrip(undefined), UNDO_MS);
     return () => clearTimeout(timer);
   }, [removed, undoHeld]);
 
@@ -188,7 +193,6 @@ export function ItineraryBuilder({
     const { entry, index } = removed;
     setTrips((current) => [...current.slice(0, index), entry, ...current.slice(index)]);
     setRemoved(undefined);
-    setUndoHeld(false);
     announce(`Resa ${index + 1} tillbaka`);
     focusAfterRender.current = removeButton(index + 1);
   };
