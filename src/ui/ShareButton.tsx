@@ -5,7 +5,7 @@ export function ShareButton({ text }: { text: string }) {
   const { toast, copy } = useCopyToast();
   return (
     <div className="share">
-      <button type="button" className="share-button" onClick={() => copy(text)}>
+      <button type="button" className="share-button" onClick={() => void copy(text)}>
         Dela resultat
       </button>
       <p role="status" aria-live="polite" className="share-toast">
