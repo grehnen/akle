@@ -1,0 +1,7 @@
+#!/bin/sh
+# The quick required checks; CI runs the rest (see docs/development.md). Skip with `git push --no-verify`.
+set -e
+bun run format:check
+bun run lint
+bun run typecheck
+bun run test
