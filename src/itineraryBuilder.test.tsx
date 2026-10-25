@@ -220,6 +220,20 @@ describe("drawing trips", () => {
     expect(drawButton(container).textContent).toBe("🎲 Lägg till 2 slumpade");
     expect(labelled(container, "Fler resor").disabled).toBe(true);
   });
+
+  test("Antal drops to the room left after adding, and stays there when trips are removed", async () => {
+    const container = await mountApp("/resplan");
+    for (let step = 0; step < 3; step++) await click(labelled(container, "Fler resor"));
+    await click(drawButton(container));
+    await click(drawButton(container));
+    expect(query(container, ".itinerary-count").textContent).toBe("16 av 20 resor");
+    expect(query(container, ".itinerary-stepper output").textContent).toBe("4");
+
+    await click(labelled(container, "Ta bort resa 1"));
+    await click(labelled(container, "Ta bort resa 1"));
+    expect(query(container, ".itinerary-stepper output").textContent).toBe("4");
+    expect(drawButton(container).textContent).toBe("🎲 Lägg till 4 slumpade");
+  });
 });
 
 describe("a full itinerary", () => {
