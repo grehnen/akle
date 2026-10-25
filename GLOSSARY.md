@@ -176,12 +176,16 @@ _Avoid_: Playlist, challenge, set, quiz, pack
 The itinerary being built in the builder, its title and trips kept on this device until _Ny resplan_ empties it; one made on an older version is dropped.
 _Avoid_: Unsaved itinerary, work in progress
 
+**Reveal**:
+The moment `Starta` shows a trip's board, its endpoints together with its already drawn map; the trip starts then, and so do its time and thinking time.
+_Avoid_: Start screen, unveil
+
 **Time**:
-The elapsed real time from starting a tie-breaker-mode trip to winning it, including any time the player is away; only a won tie-breaker trip has a time.
+The elapsed real time from a tie-breaker-mode trip's reveal to winning it, including any time the player is away; only a won tie-breaker trip has a time.
 _Avoid_: Clock, timer, stopwatch
 
 **Thinking time** (in the UI: _betänketid_):
-The whole seconds a player has for each guess in a timed-mode trip, set per trip; each counted guess starts it again, and it keeps running while the player is away.
+The whole seconds a player has for each guess in a timed-mode trip, set per trip; it first starts at the trip's reveal, each counted guess starts it again, and it keeps running while the player is away.
 _Avoid_: Clock, timer, time limit, shot clock
 
 **Timeout** (in the UI: _tiden ute_):
