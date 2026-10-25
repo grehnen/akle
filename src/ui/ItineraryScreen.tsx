@@ -37,6 +37,8 @@ type ItineraryScreenProps = {
   initialPlay?: ItineraryPlay;
   /** Told where the itinerary stands whenever that changes, from the start. */
   onPlayChange?: (play: ItineraryPlay) => void;
+  /** Opened by a link within the app, not by loading the page: see `ItineraryView`. */
+  openedInApp?: boolean;
 };
 
 /**
@@ -55,8 +57,16 @@ export function ItineraryScreen({
   clock = systemClock,
   initialPlay = NEW_ITINERARY_PLAY,
   onPlayChange,
+  openedInApp = false,
 }: ItineraryScreenProps) {
   const [play, setPlay] = useState<ItineraryPlay>(initialPlay);
+  // Whether the player has moved the itinerary on here, or came to it by a link within the app,
+  // rather than arriving where it stood on loading the page.
+  const [movedOn, setMovedOn] = useState(openedInApp);
+  const moveOn = (change: (current: ItineraryPlay) => ItineraryPlay) => {
+    setMovedOn(true);
+    setPlay(change);
+  };
   useEffect(() => onPlayChange?.(play), [play, onPlayChange]);
   const stage = itineraryStage(graph, trips, play);
   const total = itineraryTotal(graph, play);
@@ -71,7 +81,7 @@ export function ItineraryScreen({
       <ItineraryIntro
         title={title}
         trips={trips}
-        onBegin={() => setPlay((last) => beginItinerary(trips, last, clock()))}
+        onBegin={() => moveOn((last) => beginItinerary(trips, last, clock()))}
       />
     );
   }
@@ -100,7 +110,7 @@ export function ItineraryScreen({
       <button
         type="button"
         className="itinerary-next"
-        onClick={() => setPlay((current) => nextTrip(graph, trips, current, clock()))}
+        onClick={() => moveOn((current) => nextTrip(graph, trips, current, clock()))}
       >
         {last ? "Avsluta resplanen" : "Nästa resa"}
       </button>
@@ -117,7 +127,7 @@ export function ItineraryScreen({
           label={label}
           ready={mapReadyFor === stage.index}
           onTheClock={opensAtStarta(trip.mode)}
-          onStart={() => setPlay((current) => startTrip(trips, current, clock()))}
+          onStart={() => moveOn((current) => startTrip(trips, current, clock()))}
         />
       )}
       <FreePlayBoard
@@ -130,8 +140,8 @@ export function ItineraryScreen({
         clock={clock}
         concealed={onCard}
         onMapReady={() => setMapReadyFor(stage.index)}
-        // Started from its card or straight on arriving, so the player can type at once.
-        focusGuessOnOpen={game.guesses.length === 0}
+        // Started from its card, or put on the board by the player, so they can type at once.
+        openedByPlayer={onCard || movedOn}
         onGameChange={(changed) =>
           setPlay((current) => changeTripGame(graph, current, changed, clock()))
         }

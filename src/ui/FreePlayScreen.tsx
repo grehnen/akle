@@ -59,6 +59,11 @@ type FreePlayScreenProps = {
   linkedTrip?: LinkedTrip;
   /** The linked trip's game, when its link has a save, picked up where it was left. */
   resumed?: ResumedTrip;
+  /**
+   * The linked trip was opened by a link within the app, as setup's Fortsätt resan, not by
+   * loading the page: its board opens as if by the player's own action.
+   */
+  openedInApp?: boolean;
   /** The most recently played trip, when unfinished, which setup offers a way back to. */
   unfinished?: UnfinishedTrip;
   onShowTripLink?: ShowTripLink;
@@ -100,6 +105,7 @@ export function FreePlayScreen({
   ordinal,
   linkedTrip,
   resumed,
+  openedInApp = false,
   unfinished,
   onShowTripLink = () => {},
   onNavigate = (to) => globalThis.location.assign(to),
@@ -218,8 +224,8 @@ export function FreePlayScreen({
         clock={clock}
         concealed={!started}
         onMapReady={() => setMapReadyFor(count)}
-        // Started here behind Starta, so the player can type at once.
-        focusGuessOnOpen={opensAtStarta(played.trip.mode) && played.game.guesses.length === 0}
+        // Started here, at Starta or from a link within the app, so the player can type at once.
+        openedByPlayer={!started || !opened || openedInApp}
         onGameChange={(game) => {
           const now = clock();
           const stamped = stampThinkingTime(graph, stopTimeAtWin(graph, game, now), now);
