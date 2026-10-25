@@ -1141,6 +1141,104 @@ describe("Läge", () => {
   });
 });
 
+describe("the setup choice", () => {
+  const SETUP_KEY = "akle:free-play-setup";
+  const modeRadio = (container: HTMLElement, kind: string) =>
+    query<HTMLInputElement>(container, `input[name="free-play-mode"][value="${kind}"]`);
+  const chosenMode = (container: HTMLElement) =>
+    query<HTMLInputElement>(container, 'input[name="free-play-mode"]:checked').value;
+  const rangeValues = (container: HTMLElement) => {
+    const { min, max } = distanceThumbs(container);
+    return [min.value, max.value];
+  };
+  const thinkingTimeField = (container: HTMLElement) =>
+    query<HTMLInputElement>(container, '.free-play-modes input[type="range"]');
+
+  test("a reload of /fri shows the mode and range last chosen", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    await click(modeRadio(container, "tie-breaker"));
+    await type(distanceThumbs(container).min, "1");
+
+    const reloaded = await reopen("/fri", storage);
+    expect(chosenMode(reloaded.container)).toBe("tie-breaker");
+    expect(rangeValues(reloaded.container)).toEqual(["1", "2"]);
+  });
+
+  test("setup opens on a kept choice, its range cut to the version's largest distance", async () => {
+    const storage = memoryStorage();
+    const kept = { format: 1, mode: "unlimited", thinkingTime: 10, range: { min: 1, max: 9 } };
+    storage.setItem(SETUP_KEY, JSON.stringify(kept));
+    const { container } = await mountApp("/fri", storage);
+
+    expect(chosenMode(container)).toBe("unlimited");
+    expect(rangeValues(container)).toEqual(["1", "2"]);
+  });
+
+  test("a corrupt kept choice gives the defaults", async () => {
+    const storage = memoryStorage();
+    storage.setItem(SETUP_KEY, JSON.stringify({ format: 1, mode: "blitz" }));
+    const { container } = await mountApp("/fri", storage);
+
+    expect(chosenMode(container)).toBe("standard");
+    expect(rangeValues(container)).toEqual(["2", "2"]);
+  });
+
+  test("the betänketid is kept while another mode is chosen, across a reload", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    await click(modeRadio(container, "timed"));
+    await type(thinkingTimeField(container), "12");
+    await click(modeRadio(container, "standard"));
+
+    const reloaded = await reopen("/fri", storage);
+    expect(chosenMode(reloaded.container)).toBe("standard");
+    await click(modeRadio(reloaded.container, "timed"));
+    expect(thinkingTimeField(reloaded.container).value).toBe("12");
+  });
+
+  test("Välj läge och resa after a trip opens setup with that trip's choices", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    await click(modeRadio(container, "unlimited"));
+    await type(distanceThumbs(container).min, "1");
+    await type(distanceThumbs(container).max, "1");
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+    await winDistanceOneTrip(container);
+    const setupLink = query<HTMLAnchorElement>(container, ".free-play-setup-link");
+
+    const setup = await reopen(setupLink.getAttribute("href") ?? "", storage);
+    expect(chosenMode(setup.container)).toBe("unlimited");
+    expect(rangeValues(setup.container)).toEqual(["1", "1"]);
+  });
+
+  test("a trip link in another mode leaves the kept choice as it was", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    await click(modeRadio(container, "tie-breaker"));
+    const kept = storage.getItem(SETUP_KEY);
+
+    const link = tripLinkPath(0, {
+      start: "0192",
+      destination: "0488",
+      mode: { kind: "timed", thinkingTime: 30 },
+    });
+    await reopen(link, storage);
+    expect(storage.getItem(SETUP_KEY)).toBe(kept);
+    const setup = await reopen("/fri", storage);
+    expect(chosenMode(setup.container)).toBe("tie-breaker");
+  });
+
+  test("never touches daily progress", async () => {
+    const { storage, writes } = dailyProgress();
+    const { container } = await mountApp("/fri", storage);
+    await click(modeRadio(container, "unlimited"));
+    await type(distanceThumbs(container).min, "1");
+
+    expect(writes.every((key) => key === SETUP_KEY)).toBe(true);
+  });
+});
+
 describe("Tidtagning", () => {
   const tieBreakerLink = (start: string, destination: string) =>
     tripLinkPath(0, { start, destination, mode: { kind: "tie-breaker" } });

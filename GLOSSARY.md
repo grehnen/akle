@@ -176,6 +176,10 @@ _Avoid_: Playlist, challenge, set, quiz, pack
 The itinerary being built in the builder, its title and trips kept on this device until _Ny resplan_ empties it; one made on an older version is dropped.
 _Avoid_: Unsaved itinerary, work in progress
 
+**Setup choice**:
+The mode, thinking time and distance range last chosen in free play's setup, kept on this device so setup opens on them; a view preference, never a record, that a trip's link doesn't change.
+_Avoid_: Settings, preferences, defaults
+
 **Saved game**:
 A free-play trip's or an itinerary's game kept on this device under its link, finished or not, so opening the link resumes it or reopens its result; the 100 most recently played trips and 50 itineraries are kept.
 _Avoid_: Slot, history, record
