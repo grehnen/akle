@@ -1,5 +1,7 @@
 import type { ItinerarySummary, ItinerarySummaryRow } from "../freePlay/itinerarySummary";
+import { ITINERARY_PATH } from "../freePlay/itineraryLink";
 import { itineraryShareText } from "../freePlay/shareText";
+import { FREE_PLAY_PATH } from "../freePlay/tripLink";
 import {
   hintCount,
   modeName,
@@ -15,7 +17,7 @@ import "./ItinerarySummary.css";
 /**
  * A finished itinerary's summary: its title, a row per trip (its ends, mode, outcome, hints,
  * a timed trip's timeouts, a won tie-breaker trip's time and its score), the total score with
- * the total time when it has a tie-breaker trip, then share, today's trip and free play.
+ * the total time when it has a tie-breaker trip, then share, the builder, today's trip and free play.
  */
 export function ItinerarySummaryView({
   title,
@@ -46,8 +48,11 @@ export function ItinerarySummaryView({
       )}
       <ShareButton text={itineraryShareText({ title, summary, link })} />
       <nav className="itinerary-summary-actions" aria-label="Vidare">
+        <a className="primary-link" href={ITINERARY_PATH}>
+          Bygg en resplan
+        </a>
         <a href="/">Dagens resa</a>
-        <a href="/fri">Fri resa</a>
+        <a href={FREE_PLAY_PATH}>Fri resa</a>
       </nav>
     </section>
   );
