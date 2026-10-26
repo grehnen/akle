@@ -111,8 +111,14 @@ function useSettings() {
     if (change.variant !== undefined && change.label === undefined) {
       next = { ...next, label: DEFAULT_LABEL[next.variant] };
     }
+    const url = `${window.location.pathname}?${settingsQuery(next)}`;
+    // main.tsx picks the phone frame or the app once, at load: switching it takes a reload.
+    if (change.phone !== undefined && change.phone !== settings.phone) {
+      window.location.assign(url);
+      return;
+    }
     setSettings(next);
-    window.history.replaceState(null, "", `${window.location.pathname}?${settingsQuery(next)}`);
+    window.history.replaceState(null, "", url);
   };
   return [settings, update] as const;
 }
@@ -931,17 +937,12 @@ function TripModal({
       redrawn: tab === "draw" ? redrawn : undefined,
     });
 
-  // What Spara will do to a drawn trip, said under the range while editing.
-  const editNote =
-    editing === undefined
-      ? undefined
-      : redrawn
-        ? "Ny resa slumpad. Den sparas med Spara."
-        : editing.drawn === undefined
-          ? "En ny resa slumpas när du sparar."
-          : sameRange(editing.drawn, range)
-            ? "Samma avstånd: resan behålls, bara läget ändras."
-            : "Nytt avstånd: en ny resa slumpas när du sparar.";
+  const shownCount = Math.min(count, maxCount);
+  const countPercent = maxCount <= 1 ? 0 : ((shownCount - 1) / (maxCount - 1)) * 100;
+  const buttonLabel =
+    room !== undefined && tab === "draw"
+      ? `Lägg till ${shownCount} ${shownCount === 1 ? "resa" : "resor"}`
+      : submitLabel;
 
   return (
     <Dialog className="ibp-modal" label={heading} onCancel={onCancel}>
@@ -974,19 +975,25 @@ function TripModal({
           >
             <DistanceRangeSlider range={range} largest={largest} onChange={changeRange} />
             {showCount && (
-              <div className="ibp-count">
-                <label htmlFor="ibp-count">
-                  Antal <strong>{Math.min(count, maxCount)}</strong>
-                </label>
-                <input
-                  id="ibp-count"
-                  type="range"
-                  min={1}
-                  max={maxCount}
-                  value={Math.min(count, maxCount)}
-                  onChange={(event) => setCount(Number(event.target.value))}
-                />
-                <span className="ibp-count-max">{maxCount}</span>
+              <div className="distance-range ibp-count">
+                <p className="free-play-range-label" id="ibp-count-label">
+                  Antal <strong>{shownCount}</strong>
+                  <span className="ibp-count-max"> av högst {maxCount}</span>
+                </p>
+                <div className="distance-range-track">
+                  <span
+                    className="distance-range-fill"
+                    style={{ left: 0, right: `${100 - countPercent}%` }}
+                  />
+                  <input
+                    type="range"
+                    aria-labelledby="ibp-count-label"
+                    min={1}
+                    max={maxCount}
+                    value={shownCount}
+                    onChange={(event) => setCount(Number(event.target.value))}
+                  />
+                </div>
               </div>
             )}
             {editing !== undefined ? (
@@ -1001,7 +1008,7 @@ function TripModal({
                   <span aria-hidden="true">🎲</span> Slumpa om
                 </button>
                 <p className="ibp-note" aria-live="polite">
-                  {editNote}
+                  {redrawn && "Ny resa slumpad."}
                 </p>
               </div>
             ) : (
@@ -1043,7 +1050,7 @@ function TripModal({
             Avbryt
           </button>
           <button type="submit" className="itinerary-play" disabled={!canSubmit}>
-            {submitLabel}
+            {buttonLabel}
           </button>
         </footer>
       </form>
