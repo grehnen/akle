@@ -1,4 +1,5 @@
 import type { DailyTripSource } from "../daily/loadDailyTrip";
+import { exclavePartsFile } from "../graph/exclaveParts";
 import {
   graphVersionDirectory,
   graphVersionFileNames,
@@ -28,6 +29,11 @@ export const committedDataSource: DailyTripSource = {
         ),
       ].map(async (path) => parseGraphVersionHeader(await dataFile(path).json())),
     ),
-  graphVersionFiles: async (id) =>
-    readGraphVersionFiles(graphVersionDirectory(id), (path) => dataFile(path).text()),
+  graphVersionFiles: async (id) => {
+    const files = await readGraphVersionFiles(graphVersionDirectory(id), (path) =>
+      dataFile(path).text(),
+    );
+    const exclaves = dataFile(exclavePartsFile(id));
+    return (await exclaves.exists()) ? { ...files, exclaves: await exclaves.json() } : files;
+  },
 };

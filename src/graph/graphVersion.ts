@@ -40,6 +40,7 @@ export type GraphVersionSource = {
   kommuner: readonly Kommun[];
   links: readonly NeighborLink[];
   shapes?: KommunShapes;
+  exclaveParts?: ReadonlyMap<KommunCode, ReadonlySet<number>>;
 };
 
 /** GeoJSON FeatureCollection whose features carry `properties.code`. */
@@ -63,6 +64,8 @@ export type GraphVersion = {
   /** Kommuner linked to others only by ferry: a route may start or end there, never pass through. */
   deadEnds: ReadonlySet<KommunCode>;
   shapes: KommunShapes;
+  /** The parts of each kommun's shape that are exclaves, by index (`src/graph/exclaveParts.ts`). */
+  exclaveParts: ReadonlyMap<KommunCode, ReadonlySet<number>>;
 };
 
 export function buildGraphVersion(source: GraphVersionSource): GraphVersion {
@@ -113,6 +116,7 @@ export function buildGraphVersion(source: GraphVersionSource): GraphVersion {
     ferryLinks: source.links.filter((link) => link.kind === "ferry"),
     deadEnds,
     shapes: source.shapes ?? { type: "FeatureCollection", features: [] },
+    exclaveParts: source.exclaveParts ?? new Map(),
   };
 }
 

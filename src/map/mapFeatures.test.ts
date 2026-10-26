@@ -149,6 +149,7 @@ describe("mapFeatures", () => {
           },
         ],
       },
+      exclaveParts: new Map([["A", new Set([0])]]),
     });
     expect(mapFeatures(split, trip, []).features).toEqual([
       {
@@ -160,6 +161,33 @@ describe("mapFeatures", () => {
         type: "Feature",
         properties: { code: "A", kind: "start", color: "#fecc02", connected: true, exclave: true },
         geometry: { type: "MultiPolygon", coordinates: [exclave] },
+      },
+    ]);
+  });
+
+  test("draws every part that isn't an exclave as one outlined feature, such as both sides of a lake", () => {
+    const parts = [
+      square("A", 12, 56).geometry.coordinates,
+      square("A", 14, 56).geometry.coordinates.map((ring) => ring.map(([x, y]) => [x / 2 + 7, y])),
+    ];
+    const split = buildGraphVersion({
+      ...graphSource,
+      shapes: {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: { code: "A" },
+            geometry: { type: "MultiPolygon", coordinates: parts },
+          },
+        ],
+      },
+    });
+    expect(mapFeatures(split, trip, []).features).toEqual([
+      {
+        type: "Feature",
+        properties: { code: "A", kind: "start", color: "#fecc02", connected: true },
+        geometry: { type: "MultiPolygon", coordinates: parts },
       },
     ]);
   });
