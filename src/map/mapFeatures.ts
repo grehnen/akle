@@ -132,7 +132,7 @@ function withShapes(graph: GraphVersion, drawn: readonly DrawnKommun[]): DrawnFe
   for (const kommun of drawn) {
     const geometry = shapes.get(kommun.code);
     if (geometry === undefined) continue;
-    const { main, exclaves } = splitExclaves(geometry);
+    const { main, exclaves } = splitExclaves(geometry, graph.exclaveParts.get(kommun.code));
     features.push({ type: "Feature", properties: kommun, geometry: main });
     if (exclaves !== undefined) {
       features.push({

@@ -121,6 +121,10 @@ The app picks the version by trip number, never by the clock, and fetches only t
 
 The required frozen graph versions check, run in CI against the PR's base (`HEAD` by default): every version a played trip has used is byte for byte unchanged from the base, keeps its `startsAtTrip` and isn't removed, and no new or moved version starts at a [played](#played-trips) trip, counted against the base.
 
+## Exclave parts: `exclaves/<id>.json`
+
+Which parts of each graph version's drawn shapes are **exclaves**, as `{ "<code>": [<part index>, …] }`, listing only kommuner that have any; an index counts the parts of that kommun's MultiPolygon in `shapes.geojson`. The map fills an exclave but doesn't outline it. A part is an exclave when a point well inside it lies outside the main part of the kommun's OSM boundary, so a kommun split by a shared lake that the shapes cut out, or one with islands, keeps every part outlined. `bun run graph:build` writes this file beside, not inside, the version's directory: it only changes how the map draws the shapes, so it may be added or fixed after the version is [frozen](#adding-a-graph-version). A version without the file outlines every part.
+
 ## Schedule: `schedule/`
 
 - `config.json`: `{ "epoch": "YYYY-MM-DD", "seed": "…", "cooldownDays": 30, "cooldownDaysByGraphVersion": { "<id>": <days> }, "lanCooldownDays": 3, "lanCooldownDaysByGraphVersion": { "<id>": <days> } }`. The epoch is trip #1. Each row's endpoint cooldown comes from its graph version: its entry in `cooldownDaysByGraphVersion`, else `cooldownDays`, which defaults to 30. The län cooldown works the same way: no endpoint may lie in a län (the first two digits of its kommun code) that held either endpoint of a trip within the last `lanCooldownDaysByGraphVersion` entry, else `lanCooldownDays`, which defaults to 3; a trip's start and destination may share a län. Every id in the `…ByGraphVersion` maps must be a graph version under `data/graphs/`; the schedule scripts reject the config otherwise.

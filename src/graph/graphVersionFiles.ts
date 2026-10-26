@@ -7,16 +7,19 @@ import {
   type NeighborLink,
 } from "./graphVersion";
 import { readCsv } from "../data/csv";
+import { parseExclaveParts } from "./exclaveParts";
 
 /**
  * The files of one graph version, as committed under `data/graphs/<id>/`:
- * `version.json`, `kommuner.csv` (code,name), `neighbors.csv` (a,b,link) and `shapes.geojson`.
+ * `version.json`, `kommuner.csv` (code,name), `neighbors.csv` (a,b,link) and `shapes.geojson`,
+ * with its exclave parts from beside the directory when there are any (`exclavePartsFile`).
  */
 export type GraphVersionFiles = {
   version: unknown;
   kommuner: string;
   neighbors: string;
   shapes: unknown;
+  exclaves?: unknown;
 };
 
 /** The file each part of a graph version is committed in. */
@@ -25,7 +28,7 @@ export const graphVersionFileNames = {
   kommuner: "kommuner.csv",
   neighbors: "neighbors.csv",
   shapes: "shapes.geojson",
-} as const satisfies Record<keyof GraphVersionFiles, string>;
+} as const satisfies Record<Exclude<keyof GraphVersionFiles, "exclaves">, string>;
 
 /** A graph version's directory, relative to `data/`. */
 export function graphVersionDirectory(id: string): string {
@@ -62,6 +65,7 @@ export function parseGraphVersionFiles(files: GraphVersionFiles): GraphVersion {
     kommuner: parseKommunerFile(files.kommuner),
     links: parseNeighborsFile(files.neighbors),
     shapes: files.shapes as KommunShapes,
+    exclaveParts: files.exclaves === undefined ? undefined : parseExclaveParts(files.exclaves),
   });
 }
 

@@ -1,10 +1,12 @@
 import { mkdir } from "node:fs/promises";
 import type { NeighborLink } from "../../src/graph/graphVersion";
 import { foldedNameCollisions } from "../../src/engine/kommunNames";
+import { exclavePartsFile } from "../../src/graph/exclaveParts";
 import { graphVersionDirectory, graphVersionFileNames } from "../../src/graph/graphVersionFiles";
 import { pairKey } from "../../src/graph/kommunPair";
 import buildConfig from "./build-config.json";
 import { reportBuild } from "./buildReport";
+import { exclaveParts, exclavePartsJson } from "./exclaveParts";
 import { crossesABorder, findFixedLinks, type LinkWay } from "./fixedLinks";
 import { graphVersionFileContents } from "./graphVersionWriter";
 import { lineProximity, measureLandBorders, pointOnLand, roundedPoint } from "./landBorders";
@@ -136,6 +138,7 @@ const evidence: Omit<BuildEvidence, "shapeCodes"> = {
 
 logBuildStep("Drawing shapes");
 const shapes = await drawShapes(areas, land, lakes.filter(isBigLake));
+const exclaves = await exclaveParts(areas, shapes);
 
 const review = reviewNeighborGraph(
   { ...evidence, shapeCodes: shapes.features.map((feature) => feature.properties.code) },
@@ -161,6 +164,10 @@ await mkdir(outputDirectory, { recursive: true });
 for (const [name, content] of Object.entries(files)) {
   await Bun.write(`${outputDirectory}${name}`, content);
 }
+await Bun.write(
+  `${repositoryRoot}data/${exclavePartsFile(buildConfig.id)}`,
+  exclavePartsJson(exclaves),
+);
 reportBuild({
   outputDirectory,
   kommuner: scbKommuner,
