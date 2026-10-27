@@ -94,8 +94,11 @@ export function ItineraryScreen({
   const trip = trips[stage.index];
   const label = (
     <p className="trip-number itinerary-progress">
-      {title ?? "Resplan"} · Resa {stage.index + 1} av {trips.length} · {modeName(trip.mode)} ·{" "}
-      <ScoreTooltip>Totalt {scoreText(total)}</ScoreTooltip>
+      <span className="itinerary-progress-title">{title ?? "Resplan"}</span>{" "}
+      <span className="itinerary-progress-detail">
+        Resa {stage.index + 1} av {trips.length} · {modeName(trip.mode)} ·{" "}
+        <ScoreTooltip>Totalt {scoreText(total)}</ScoreTooltip>
+      </span>
     </p>
   );
   const onCard = stage.kind === "card";
@@ -104,16 +107,13 @@ export function ItineraryScreen({
   const over = !onCard && stage.over;
   const last = stage.index === trips.length - 1;
   const tripEnd = over && (
-    <>
-      <p className="itinerary-total">Totalt {scoreText(total)}</p>
-      <button
-        type="button"
-        className="itinerary-next"
-        onClick={() => moveOn((current) => nextTrip(graph, trips, current, clock()))}
-      >
-        {last ? "Avsluta resplanen" : "Nästa resa"}
-      </button>
-    </>
+    <button
+      type="button"
+      className="itinerary-next"
+      onClick={() => moveOn((current) => nextTrip(graph, trips, current, clock()))}
+    >
+      {last ? "Visa sammanfattning →" : "Nästa resa"}
+    </button>
   );
   // A trip's card is its board's Starta gate.
   return (
