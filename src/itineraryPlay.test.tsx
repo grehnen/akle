@@ -486,9 +486,7 @@ describe("an itinerary from its link", () => {
       ["Totalt", "4 poäng"],
       ["Total tid", "0:00,0"],
     ]);
-    expect(text(container, ".itinerary-summary-totals .itinerary-summary-note")).toBe(
-      "Lägre är bättre",
-    );
+    expect(container.querySelector(".itinerary-summary-totals .itinerary-summary-note")).toBeNull();
     expect(button(container, "Nästa resa")).toBeUndefined();
     expect(button(container, "Spela igen")).toBeUndefined();
 

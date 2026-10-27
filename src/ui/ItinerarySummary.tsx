@@ -4,7 +4,7 @@ import { itineraryShareText } from "../freePlay/shareText";
 import { FREE_PLAY_PATH } from "../freePlay/tripLink";
 import { AppLink } from "./AppLink";
 import { ButtonGroup } from "./ButtonGroup";
-import { LOWER_IS_BETTER, modeName, scoreText, timeText, wonTieBreakersText } from "./messages";
+import { modeName, scoreText, timeText, wonTieBreakersText } from "./messages";
 import { ScoreLabel } from "./ScoreLabel";
 import { ScoreTooltip } from "./ScoreTooltip";
 import { ShareButton } from "./ShareButton";
@@ -14,7 +14,7 @@ import "./ItinerarySummary.css";
 /**
  * A finished itinerary's summary: its title, a row per trip (its ends, mode, outcome label as the
  * share text words it, a won tie-breaker trip's time and its score), and the list's footer of
- * totals in its score column: the total score, saying lower is better, and the total time when it
+ * totals in its score column: the total score, and the total time when it
  * has a tie-breaker trip, with the won count in a tooltip on Total tid. Then share, the primary, over
  * a Vidare group: the builder, today's trip and free play.
  */
@@ -45,7 +45,6 @@ export function ItinerarySummaryView({
           <dd className="itinerary-summary-total">
             <ScoreTooltip>{scoreText(standing.score)}</ScoreTooltip>
           </dd>
-          <dd className="itinerary-summary-note">{LOWER_IS_BETTER}</dd>
         </div>
         {hasTieBreaker && (
           <div className="itinerary-summary-totals-row">

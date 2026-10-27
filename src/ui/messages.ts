@@ -177,9 +177,6 @@ export function freePlayHeadline(outcome: Outcome): string {
   }
 }
 
-/** Said beside a free-play score, which never says on its own which way is better. */
-export const LOWER_IS_BETTER = "Lägre är bättre";
-
 /** What a free-play score means, in the score tooltip and wherever scoring is explained. */
 export const SCORE_EXPLANATION = `Lägre poäng är bättre. En perfekt resa ger −1; varje extra gissning, ledtråd och ⏱ kostar ${TIMEOUT_COST}.`;
 

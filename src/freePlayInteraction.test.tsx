@@ -1193,6 +1193,16 @@ describe("the score tooltip", () => {
 });
 
 describe("the rules", () => {
+  test("put the free-play scoring after what counts as neighbors", async () => {
+    const { container } = await mountApp("/fri");
+    await click(query(container, 'header button[aria-label="Så spelar du"]'));
+
+    const titles = [...container.querySelectorAll("dialog details > summary")].map(
+      (summary) => summary.textContent,
+    );
+    expect(titles.slice(-2)).toEqual(["Vad räknas som grannar?", "Poäng i fri resa"]);
+  });
+
   test("explain free-play scoring: the score tooltip's text, a loss's score and time as a tie-break", async () => {
     const { container } = await mountApp("/fri");
     await click(query(container, 'header button[aria-label="Så spelar du"]'));
