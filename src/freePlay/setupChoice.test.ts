@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { type KeyValueStorage, memoryStorage } from "../progress/storage";
-import { restoreSetupChoice, type SetupChoice, saveSetupChoice } from "./setupChoice";
+import {
+  chosenMode,
+  restoreSetupChoice,
+  type SetupChoice,
+  saveSetupChoice,
+  setupChoiceOfTrip,
+} from "./setupChoice";
 
 const SETUP_KEY = "akle:free-play-setup";
 const LARGEST = 10;
@@ -76,5 +82,31 @@ describe("the setup choice", () => {
     };
     expect(() => saveSetupChoice(blocked, defaults)).not.toThrow();
     expect(restoreSetupChoice(blocked, LARGEST)).toEqual(defaults);
+  });
+});
+
+describe("a setup choice and a trip's mode", () => {
+  const chosen: SetupChoice = { mode: "timed", thinkingTime: 25, range: { min: 2, max: 4 } };
+
+  test("the chosen mode is Tidspress with its betänketid, or just the mode's kind", () => {
+    expect(chosenMode(chosen)).toEqual({ kind: "timed", thinkingTime: 25 });
+    expect(chosenMode({ ...chosen, mode: "unlimited" })).toEqual({ kind: "unlimited" });
+  });
+
+  test("a trip's choice has its mode, its own betänketid and the range it was drawn from", () => {
+    const trip = { kind: "timed", thinkingTime: 45 } as const;
+    expect(setupChoiceOfTrip(trip, { min: 5, max: 6 }, chosen)).toEqual({
+      mode: "timed",
+      thinkingTime: 45,
+      range: { min: 5, max: 6 },
+    });
+  });
+
+  test("a trip without a range or a betänketid of its own takes the fallback's", () => {
+    expect(setupChoiceOfTrip({ kind: "standard" }, undefined, chosen)).toEqual({
+      mode: "standard",
+      thinkingTime: 25,
+      range: { min: 2, max: 4 },
+    });
   });
 });
