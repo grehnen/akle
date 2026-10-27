@@ -4,6 +4,7 @@ import type { BuilderDraft, DraftTrip } from "../freePlay/builderDraft";
 import {
   defaultDistanceRange,
   type DistanceRange,
+  drawTrip,
   drawTrips,
   largestDistance,
   type RandomSource,
@@ -75,14 +76,20 @@ export function ItineraryBuilder({
   const [title, setTitle] = useState(initialDraft?.title ?? "");
   // A restored draft's rows are numbered from 1, and new rows after them.
   const [trips, setTrips] = useState<readonly BuilderTrip[]>(() =>
-    (initialDraft?.trips ?? []).map((trip, index) => ({ ...trip, id: index + 1 })),
+    (initialDraft?.trips ?? []).map((trip, index) => ({
+      ...trip,
+      id: index + 1,
+    })),
   );
   const nextId = useRef((initialDraft?.trips.length ?? 0) + 1);
   const withIds = (added: readonly DraftTrip[]) =>
     added.map((trip) => ({ ...trip, id: nextId.current++ }));
   useEffect(
     () =>
-      onDraftChange?.({ title, trips: trips.map(({ trip, drawnFrom }) => ({ trip, drawnFrom })) }),
+      onDraftChange?.({
+        title,
+        trips: trips.map(({ trip, drawnFrom }) => ({ trip, drawnFrom })),
+      }),
     [title, trips, onDraftChange],
   );
   const room = ITINERARY_TRIPS.max - trips.length;
@@ -96,6 +103,8 @@ export function ItineraryBuilder({
       : undefined;
 
   const [adding, setAdding] = useState(false);
+  // The row being edited in the modal, by its place in the list.
+  const [editingIndex, setEditingIndex] = useState<number>();
   // What the add modal opens on: the mode and range last added with, kept for this visit only.
   const [lastUsed, setLastUsed] = useState<SetupChoice>(() => ({
     mode: "standard",
@@ -113,14 +122,22 @@ export function ItineraryBuilder({
   });
   const removeButton = (number: number) => `[data-remove-trip="${number}"]`;
   const handleOf = (id: number) => `[data-trip-handle="${id}"]`;
+  const editButton = (number: number) => `[data-edit-trip="${number}"]`;
 
   const { announcement, announce } = useAnnouncer();
   // The latest removal, until Ångra, its time running out, or another trip added.
-  const { removed, showRemoval, hold } = useUndoRemoval<{ entry: BuilderTrip; index: number }>();
+  const { removed, showRemoval, hold } = useUndoRemoval<{
+    entry: BuilderTrip;
+    index: number;
+  }>();
 
   const closeModal = () => {
     setAdding(false);
     focusAfterRender.current = ADD_BUTTON;
+  };
+  const closeEditModal = () => {
+    if (editingIndex !== undefined) focusAfterRender.current = editButton(editingIndex + 1);
+    setEditingIndex(undefined);
   };
   const add = (result: TripModalResult) => {
     const { choice } = result;
@@ -163,6 +180,29 @@ export function ItineraryBuilder({
       focusAfterRender.current = handleOf(id);
     },
   });
+  const save = (index: number, result: TripModalResult) => {
+    const { choice } = result;
+    const mode = chosenMode(choice);
+    const withMode = ({ start, destination }: Trip) => ({
+      start,
+      destination,
+      mode,
+    });
+    // A new pair is one other than the trip had, so a drawn trip never comes back unchanged.
+    const redrawn =
+      result.tab === "draw" ? drawTrip(pairs, choice.range, random, trips[index].trip) : undefined;
+    closeEditModal();
+    const replacement: DraftTrip | undefined =
+      result.tab === "pick"
+        ? { trip: withMode(result.trip) }
+        : redrawn && { trip: withMode(redrawn), drawnFrom: choice.range };
+    if (replacement === undefined) return;
+    setTrips((all) =>
+      all.map((entry) => (entry.id === trips[index].id ? { id: entry.id, ...replacement } : entry)),
+    );
+    showRemoval(undefined);
+    announce(`Resa ${index + 1} ändrad`);
+  };
   const duplicate = (index: number) => {
     setTrips((current) =>
       [
@@ -242,6 +282,7 @@ export function ItineraryBuilder({
               full={room === 0}
               dragOffset={dragged?.id === entry.id ? dragged.offset : undefined}
               handleProps={handleProps(entry.id)}
+              onEdit={() => setEditingIndex(index)}
               onDuplicate={() => duplicate(index)}
               onRemove={() => remove(index)}
             />
@@ -283,6 +324,18 @@ export function ItineraryBuilder({
             Namnet {title === "" ? "(inget än)" : `”${title}”`} behålls.
           </p>
         </Modal>
+      )}
+      {editingIndex !== undefined && (
+        <TripModal
+          graph={graph}
+          largest={largest}
+          heading="Ändra resa"
+          initial={settingsOf(trips[editingIndex], lastUsed)}
+          initialPair={trips[editingIndex].drawnFrom ? undefined : trips[editingIndex].trip}
+          submitLabel="Spara"
+          onCancel={closeEditModal}
+          onSubmit={(result) => save(editingIndex, result)}
+        />
       )}
       <LinkBar
         count={trips.length}
@@ -332,6 +385,15 @@ function TitleField({ title, onChange }: { title: string; onChange: (title: stri
   );
 }
 
+/** A row's settings as the modal opens on them: its mode, and the range it was drawn from. */
+function settingsOf({ trip, drawnFrom }: DraftTrip, fallback: SetupChoice): SetupChoice {
+  return {
+    mode: trip.mode.kind,
+    thinkingTime: trip.mode.kind === "timed" ? trip.mode.thinkingTime : fallback.thinkingTime,
+    range: drawnFrom ?? fallback.range,
+  };
+}
+
 const rangeText = ({ min, max }: DistanceRange) => (min === max ? `${min}` : `${min}–${max}`);
 
 /** A row of the trip list: its pair, or a drawn trip's range, over its mode, then its actions. */
@@ -342,6 +404,7 @@ function TripRow({
   full,
   dragOffset,
   handleProps,
+  onEdit,
   onDuplicate,
   onRemove,
 }: {
@@ -352,6 +415,7 @@ function TripRow({
   /** How far the pointer has pulled the row from its place, while it is being dragged. */
   dragOffset?: number;
   handleProps: ReorderHandleProps;
+  onEdit: () => void;
   onDuplicate: () => void;
   onRemove: () => void;
 }) {
@@ -397,6 +461,15 @@ function TripRow({
       <span className="itinerary-trip-actions">
         <button
           type="button"
+          aria-label={`Ändra resa ${number}`}
+          // Found by its number for focus, never by its words.
+          data-edit-trip={number}
+          onClick={onEdit}
+        >
+          <span aria-hidden="true">✎</span>
+        </button>
+        <button
+          type="button"
           aria-label={`Dubblera resa ${number}`}
           disabled={full}
           onClick={onDuplicate}
@@ -431,7 +504,11 @@ function LinkBar({
   count: number;
   link?: string;
   onPlay: (link: string) => void;
-  undo?: { number: number; onUndo: () => void; onHold: (held: boolean) => void };
+  undo?: {
+    number: number;
+    onUndo: () => void;
+    onHold: (held: boolean) => void;
+  };
 }) {
   const [overlays, setOverlays] = useState<HTMLDivElement | null>(null);
   return (
