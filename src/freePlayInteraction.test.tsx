@@ -110,7 +110,9 @@ function dailyProgress() {
 }
 
 /** Lingers and ticks shortened, so the tests wait on no real time to speak of. */
-const pacing = { finishLingerMs: 0, tickMs: 5 };
+const SHORT_PACING = { finishLingerMs: 0, tickMs: 5 };
+/** The pacing the app is mounted with; a test may hold the finish linger longer. */
+let pacing = SHORT_PACING;
 /** Lets the shortened linger and a tick or two pass. */
 const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
 
@@ -148,6 +150,7 @@ const passTime = (milliseconds: number) => {
 
 afterEach(() => {
   clockTime = OPENED_AT;
+  pacing = SHORT_PACING;
   heldMaps = undefined;
   if (!mounted) return;
   const { root, container } = mounted;
@@ -1326,12 +1329,9 @@ describe("Tidtagning", () => {
     expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
     expect(container.textContent).not.toContain(NOTICE);
     expect(clockShown(container)).toBe("0:00");
-    // Visible, sitting above the guess input, but never announced live.
+    // Visible, laid over the map so it moves nothing on the board, but never announced live.
     const clock = query(container, ".trip-clock");
-    expect(
-      clock.compareDocumentPosition(query(container, "#guess-input")) &
-        dom.window.Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(clock.closest(".map-frame")).not.toBeNull();
     expect(clock.closest("[aria-live]")).toBeNull();
     expect(clock.querySelector("[aria-live]")).toBeNull();
   });
@@ -1416,6 +1416,21 @@ describe("Tidtagning", () => {
     expect(copied).toEqual([
       `#åkle Fri resa · Tidtagning\n+0 (Perfekt) · −1 poäng · 1:23,4\n✅✅\nhttps://akle.grehn.net${link}`,
     ]);
+  });
+
+  test("a win's clock stops at the final time while the board lingers", async () => {
+    pacing = { ...SHORT_PACING, finishLingerMs: 60_000 };
+    const { container } = await mountApp(tieBreakerLink("0192", "0488"));
+    await click(startaButton(container));
+    await guess(container, "Haninge");
+    passTime(95_432);
+    await guess(container, "Salem");
+
+    expect(container.querySelector("#result-heading")).toBeNull();
+    expect(clockShown(container)).toBe("1:35");
+    passTime(30_000);
+    await settle();
+    expect(clockShown(container)).toBe("1:35");
   });
 
   test("a win's clock leaves the board, its time shown to tenths in the result strip", async () => {
