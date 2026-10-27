@@ -237,8 +237,8 @@
 }
 
 /*
- * On a phone the count may take two lines, short enough to fit beside the buttons, so the bar
- * keeps one row and its height whatever the count says.
+ * On a phone the count has a row of its own above the two buttons, which share the row, so the
+ * bar keeps its height whatever the count says.
  */
 .itinerary-count {
   flex: 1;
@@ -246,6 +246,34 @@
   margin: 0;
   color: var(--muted);
   line-height: 1.2;
+}
+
+@media (max-width: 32rem) {
+  .itinerary-count {
+    flex-basis: 100%;
+  }
+
+  .itinerary-bar .copy-link,
+  .itinerary-play {
+    flex: 1;
+  }
+
+  .itinerary-bar .copy-link-button {
+    width: 100%;
+  }
+
+  .itinerary-bar .copy-link-button,
+  .itinerary-play {
+    white-space: nowrap;
+  }
+}
+
+/* On the narrowest phones the buttons give up some padding to stay side by side. */
+@media (max-width: 24rem) {
+  .itinerary-bar .copy-link-button,
+  .itinerary-play {
+    padding-inline: 0.6rem;
+  }
 }
 
 .itinerary-count-minimum {
