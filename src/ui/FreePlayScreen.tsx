@@ -6,6 +6,7 @@ import { type DistanceRange, drawTrip, largestDistance, tripPairs } from "../fre
 import type { LinkedTrip, ModeSetting } from "../freePlay/linkPayload";
 import { freePlayRules, opensAtStarta } from "../freePlay/modeRules";
 import { restoreSetupChoice, type SetupChoice, saveSetupChoice } from "../freePlay/setupChoice";
+import { readSetupOpening, setupOpeningOn, setupOpeningState } from "../freePlay/setupOpening";
 import { FREE_PLAY_PATH, tripLinkPath } from "../freePlay/tripLink";
 import {
   drawnAtStarta,
@@ -49,6 +50,8 @@ type FreePlayScreenProps = {
   resumed?: ResumedTrip;
   /** The most recently played trip, when unfinished, which setup offers a way back to. */
   unfinished?: UnfinishedTrip;
+  /** The page's state: what setup opens on when gone back to from a trip, if it holds that. */
+  pageState?: unknown;
   onShowTripLink?: ShowTripLink;
   /** Where trips' saves are kept, the only free-play record, and setup's last choice. */
   storage: KeyValueStorage;
@@ -87,6 +90,7 @@ export function FreePlayScreen({
   linkedTrip,
   resumed,
   unfinished,
+  pageState,
   onShowTripLink = () => {},
   storage,
   sessionStorage,
@@ -94,11 +98,20 @@ export function FreePlayScreen({
 }: FreePlayScreenProps) {
   const pairs = useMemo(() => tripPairs(graph), [graph]);
   const largest = largestDistance(pairs);
-  // Setup opens on the choice last made in it on this device; a trip's link never changes it.
-  const [choice, setChoice] = useState(() => restoreSetupChoice(storage, largest));
+  // Setup opens on the choice last made in it on this device, or, gone back to from a trip, on
+  // that trip; a trip's link never changes it.
+  const [opening] = useState(() => readSetupOpening(pageState, graph, largest));
+  const [choice, setChoice] = useState(
+    () => opening?.choice ?? restoreSetupChoice(storage, largest),
+  );
+  // Setup keeps each change of its choice, but opened on a trip only once a trip is drawn or
+  // started from it.
   const changeChoice = (next: SetupChoice) => {
     setChoice(next);
-    saveSetupChoice(storage, next);
+    if (opening === undefined) saveSetupChoice(storage, next);
+  };
+  const keepOpenedChoice = () => {
+    if (opening !== undefined) saveSetupChoice(storage, choice);
   };
   const { range } = choice;
   const mode = chosenMode(choice);
@@ -167,14 +180,29 @@ export function FreePlayScreen({
         largest={largest}
         choice={choice}
         onChoiceChange={changeChoice}
-        onDraw={() => draw(mode, range)}
-        onPick={(trip) => play(trip, mode)}
+        initialPair={opening?.pair}
+        onDraw={() => {
+          keepOpenedChoice();
+          draw(mode, range);
+        }}
+        onPick={(trip) => {
+          keepOpenedChoice();
+          play(trip, mode);
+        }}
         resume={unfinished && <ResumeTrip unfinished={unfinished} />}
       />
     );
   }
   const label = <p className="trip-number">Fri resa · {modeName(played.trip.mode)}</p>;
   const { count, started } = played;
+  // Back to setup, to change the trip: setup opens on it, never giving away ends still hidden.
+  const setupOnPlayed = setupOpeningState(
+    setupOpeningOn(
+      played.trip,
+      { drawn: played.drawn, range: played.range, endsKnown: started || startedHere },
+      choice,
+    ),
+  );
   return (
     <GatedBoard
       // A new trip gets a fresh gate and board, so the last one's result state doesn't carry over.
@@ -185,7 +213,7 @@ export function FreePlayScreen({
           : {
               // Behind Starta the trip has no save yet, so leaving for setup records nothing of it.
               wayBack: (
-                <AppLink className="start-gate-back" href={FREE_PLAY_PATH}>
+                <AppLink className="start-gate-back" href={FREE_PLAY_PATH} state={setupOnPlayed}>
                   ‹ Tillbaka
                 </AppLink>
               ),
@@ -236,6 +264,7 @@ function FreePlaySetup({
   graph,
   largest,
   choice,
+  initialPair,
   onChoiceChange,
   onDraw,
   onPick,
@@ -245,6 +274,8 @@ function FreePlaySetup({
   largest: number;
   /** The choice setup opens on. */
   choice: SetupChoice;
+  /** The pair Välj själv opens filled with, on its tab. */
+  initialPair?: Trip;
   onChoiceChange: (choice: SetupChoice) => void;
   onDraw: () => void;
   onPick: (trip: Trip) => void;
@@ -259,6 +290,7 @@ function FreePlaySetup({
         graph={graph}
         largest={largest}
         initial={choice}
+        initialPair={initialPair}
         onChange={onChoiceChange}
         drawActions={
           <>

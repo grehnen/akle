@@ -59,6 +59,8 @@ export function App({
   const [rulesOpen, setRulesOpen] = useState(false);
   const [path, setPath] = useState(initialPath);
   const [search, setSearch] = useState(initialSearch);
+  // What the page opens on, kept with its history entry, such as the trip setup goes back from.
+  const [pageState, setPageState] = useState<unknown>(() => globalThis.history?.state);
   // Each visit to free play, even from free play itself, starts it afresh on the setup screen.
   const [visit, setVisit] = useState(0);
   // Whether this visit came by a link within the app, rather than loading the page or Back.
@@ -72,6 +74,7 @@ export function App({
     const onPopState = () => {
       setPath(window.location.pathname);
       setSearch(window.location.search);
+      setPageState(window.history.state);
       setVisit((count) => count + 1);
       setArrivedInApp(false);
     };
@@ -83,11 +86,12 @@ export function App({
     document.title = freePlay ? "Åkle – Fri resa" : itinerary ? "Åkle – Resplan" : "Åkle";
   }, [freePlay, itinerary]);
 
-  const navigate = useCallback((to: string) => {
-    window.history.pushState(null, "", to);
+  const navigate = useCallback((to: string, state?: unknown) => {
+    window.history.pushState(state ?? null, "", to);
     const { pathname, search: query } = window.location;
     setPath(pathname);
     setSearch(query);
+    setPageState(window.history.state);
     setVisit((count) => count + 1);
     setArrivedInApp(true);
     // Like a page load, the new page opens at its top.
@@ -173,6 +177,7 @@ export function App({
                 source={source}
                 now={openedAt}
                 linkPayload={new URLSearchParams(search).get("r") ?? undefined}
+                pageState={pageState}
                 onShowTripLink={showTripLink}
                 storage={progressStorage}
                 sessionStorage={sessionStorage}
