@@ -104,7 +104,7 @@ export function ItineraryBuilder({
   const [adding, setAdding] = useState(false);
   // The row being edited in the modal, by its place in the list.
   const [editingIndex, setEditingIndex] = useState<number>();
-  // What the add modal opens on: the mode and range last added with, kept for this visit only.
+  // What the add modal opens on: the mode and range last added or saved with, kept for this visit only.
   const [lastUsed, setLastUsed] = useState<SetupChoice>(() => ({
     mode: "standard",
     thinkingTime: DEFAULT_THINKING_TIME,
@@ -190,6 +190,7 @@ export function ItineraryBuilder({
     // A new pair is one other than the trip had, so a drawn trip never comes back unchanged.
     const redrawn =
       result.tab === "draw" ? drawTrip(pairs, choice.range, random, trips[index].trip) : undefined;
+    setLastUsed(choice);
     closeEditModal();
     const replacement: DraftTrip | undefined =
       result.tab === "pick"
