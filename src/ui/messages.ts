@@ -1,6 +1,7 @@
 import type { Feedback, GameReview, GameStatus, GuessCard, GuessResult } from "../engine/game";
 import type { HINT_COUNT } from "../engine/hints";
 import { AWAY_WEIGHT_AT_LIMIT, AWAY_WEIGHT_GIVEN_UP, TIMEOUT_COST } from "../engine/score";
+import type { DistanceRange } from "../freePlay/draw";
 import { MODE_KINDS, type ModeKind, type ModeSetting } from "../freePlay/linkPayload";
 import { gameOutcome, type Outcome } from "../progress/outcome";
 
@@ -138,6 +139,11 @@ export function modeDescription(kind: ModeKind): string {
 export function modeName(mode: ModeSetting): string {
   const name = MODE_NAMES[mode.kind];
   return mode.kind === "timed" ? `${name} ${mode.thinkingTime} s` : name;
+}
+
+/** A distance range in words: `avstånd 3–8`, or `avstånd 2` for a single distance. */
+export function distanceRangeText({ min, max }: DistanceRange): string {
+  return `avstånd ${min === max ? min : `${min}–${max}`}`;
 }
 
 /** The guesses made so far, with the board's own words for none: `inga gissningar än`, `1 gissning`, `3 gissningar`. */
