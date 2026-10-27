@@ -81,11 +81,37 @@
 
 .itinerary-trip {
   display: grid;
-  grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+  grid-template-columns: auto 1.25rem minmax(0, 1fr) auto;
   gap: 0.4rem;
   align-items: center;
   padding: 0.35rem 0;
   border-bottom: 1px solid var(--rule);
+}
+
+/* The row being dragged rides above the others, on the pointer. */
+.itinerary-trip--dragged {
+  position: relative;
+  z-index: 5;
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 2px var(--start),
+    0 0.5rem 1.5rem color-mix(in srgb, var(--night) 60%, transparent);
+}
+
+/* Dragged from, never scrolled: touch-action keeps a touch on it from panning the page. */
+.itinerary-trip-handle {
+  min-width: 2rem;
+  min-height: 2.75rem;
+  padding: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.25rem;
+  cursor: grab;
+  touch-action: none;
+}
+
+.itinerary-trip--dragged .itinerary-trip-handle {
+  cursor: grabbing;
 }
 
 .itinerary-trip-number {

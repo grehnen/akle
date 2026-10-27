@@ -397,15 +397,13 @@ describe("a full itinerary", () => {
 });
 
 describe("editing the trip list", () => {
-  test("trips can be moved, duplicated with their settings and removed", async () => {
+  test("trips can be reordered, duplicated with their settings and removed", async () => {
     const container = await mountApp("/resplan");
     await pick(container, "Nynäshamn", "Salem", { kind: "unlimited" });
     await pick(container, "Haninge", "Trosa", { kind: "standard" });
 
-    await click(labelled(container, "Flytta ner resa 1"));
+    await pressKey(handle(container, 1), "ArrowDown");
     expect(rows(container)).toEqual(["Haninge → Trosa", "Nynäshamn → Salem"]);
-    expect(labelled(container, "Flytta ner resa 2").disabled).toBe(true);
-    expect(labelled(container, "Flytta upp resa 1").disabled).toBe(true);
 
     await click(labelled(container, "Dubblera resa 2"));
     expect(rows(container)).toEqual(["Haninge → Trosa", "Nynäshamn → Salem", "Nynäshamn → Salem"]);
@@ -420,6 +418,148 @@ describe("editing the trip list", () => {
     await draw(container);
     await click(labelled(container, "Dubblera resa 1"));
     expect(rows(container)).toEqual(["Slumpad · avstånd 2", "Slumpad · avstånd 2"]);
+  });
+});
+
+const handle = (container: HTMLElement, number: number) =>
+  labelled(container, `Flytta resa ${number}`);
+
+async function pressKey(element: Element, key: string) {
+  await act(async () => {
+    element.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key, bubbles: true }));
+  });
+}
+
+const ROW_HEIGHT = 50;
+/** Gives each row the place its position in the list would, as jsdom does no layout. */
+function layOutRows(container: HTMLElement) {
+  for (const row of container.querySelectorAll<HTMLElement>(".itinerary-trip")) {
+    row.getBoundingClientRect = () => {
+      const top = [...(row.parentElement?.children ?? [])].indexOf(row) * ROW_HEIGHT;
+      return { top, bottom: top + ROW_HEIGHT, height: ROW_HEIGHT } as DOMRect;
+    };
+  }
+}
+
+/** Presses `element` at height `from` and moves, then releases, at each height of `to`. */
+async function dragTo(element: Element, from: number, ...to: number[]) {
+  const pointer = (kind: string, clientY: number) =>
+    new dom.window.MouseEvent(kind, { clientY, bubbles: true });
+  await act(async () => void element.dispatchEvent(pointer("pointerdown", from)));
+  for (const clientY of to) {
+    await act(async () => void dom.window.dispatchEvent(pointer("pointermove", clientY)));
+  }
+  await act(async () => void dom.window.dispatchEvent(pointer("pointerup", to.at(-1) ?? from)));
+}
+
+/** Three hand-picked trips, in rows 1, 2 and 3. */
+async function pickThree(container: HTMLElement) {
+  await pick(container, "Nynäshamn", "Salem");
+  await pick(container, "Haninge", "Trosa");
+  await pick(container, "Nynäshamn", "Trosa");
+  layOutRows(container);
+}
+const THREE = ["Nynäshamn → Salem", "Haninge → Trosa", "Nynäshamn → Trosa"];
+
+describe("reordering the trip list", () => {
+  test("the ↑↓ buttons are gone; the rows keep ✎ ⧉ and ✕ and get a ⠿ handle", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+    expect(container.querySelector('[aria-label^="Flytta upp"]')).toBeNull();
+    expect(container.querySelector('[aria-label^="Flytta ner"]')).toBeNull();
+    expect(handle(container, 2).textContent).toBe("⠿");
+    expect(labelled(container, "Dubblera resa 2")).toBeDefined();
+    expect(labelled(container, "Ta bort resa 2")).toBeDefined();
+  });
+
+  test("dragging a row's handle down moves the row to where it's dropped", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+    await dragTo(handle(container, 1), 25, 80, 125);
+    expect(rows(container)).toEqual([THREE[1], THREE[2], THREE[0]]);
+    expect(announced(container)).toBe("Resa flyttad till plats 3 av 3");
+  });
+
+  test("dragging a row up moves it above the rows it passes", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+    await dragTo(handle(container, 3), 125, 70, 20);
+    expect(rows(container)).toEqual([THREE[2], THREE[0], THREE[1]]);
+    expect(announced(container)).toBe("Resa flyttad till plats 1 av 3");
+  });
+
+  test("a drag that stays within its row changes and announces nothing", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+    const before = announced(container);
+    await dragTo(handle(container, 2), 75, 85, 70);
+    expect(rows(container)).toEqual(THREE);
+    expect(announced(container)).toBe(before);
+  });
+
+  test("a row can be dragged past the ends of the list", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+    await dragTo(handle(container, 2), 75, 400);
+    expect(rows(container)).toEqual([THREE[0], THREE[2], THREE[1]]);
+    await dragTo(handle(container, 3), 125, -300);
+    expect(rows(container)).toEqual([THREE[1], THREE[0], THREE[2]]);
+  });
+
+  test("the dragged row is lifted while the pointer is down, and keeps its handle focused", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+    const down = new dom.window.MouseEvent("pointerdown", { clientY: 25, bubbles: true });
+    await act(async () => void handle(container, 1).dispatchEvent(down));
+    expect(container.querySelectorAll(".itinerary-trip--dragged")).toHaveLength(1);
+    expect(focused()).toBe(handle(container, 1));
+    await act(async () =>
+      dom.window.dispatchEvent(new dom.window.MouseEvent("pointerup", { clientY: 25 })),
+    );
+    expect(container.querySelector(".itinerary-trip--dragged")).toBeNull();
+  });
+
+  test("the new order is kept in the draft and the link", async () => {
+    const storage = memoryStorage();
+    const container = await mountApp("/resplan", storage);
+    await pickThree(container);
+    await click(button(container, "Kopiera länk"));
+    const linkBefore = copied.at(-1);
+    await dragTo(handle(container, 1), 25, 125);
+    await click(button(container, "Kopiera länk"));
+    expect(copied.at(-1)).not.toBe(linkBefore);
+    unmount();
+
+    const reloaded = await mountApp("/resplan", storage);
+    expect(rows(reloaded)).toEqual([THREE[1], THREE[2], THREE[0]]);
+  });
+
+  test("the focused handle moves its row with ArrowUp and ArrowDown, and keeps focus", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+    await pressKey(handle(container, 1), "ArrowDown");
+    expect(rows(container)).toEqual([THREE[1], THREE[0], THREE[2]]);
+    expect(announced(container)).toBe("Resa flyttad till plats 2 av 3");
+    expect(focused()).toBe(handle(container, 2));
+
+    await pressKey(handle(container, 2), "ArrowDown");
+    expect(rows(container)).toEqual([THREE[1], THREE[2], THREE[0]]);
+    expect(announced(container)).toBe("Resa flyttad till plats 3 av 3");
+    expect(focused()).toBe(handle(container, 3));
+
+    await pressKey(handle(container, 3), "ArrowUp");
+    expect(rows(container)).toEqual([THREE[1], THREE[0], THREE[2]]);
+    expect(focused()).toBe(handle(container, 2));
+  });
+
+  test("the first row can't go up and the last can't go down", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+    const before = announced(container);
+    await pressKey(handle(container, 1), "ArrowUp");
+    await pressKey(handle(container, 3), "ArrowDown");
+    expect(rows(container)).toEqual(THREE);
+    expect(announced(container)).toBe(before);
   });
 });
 
@@ -638,7 +778,7 @@ async function buildDraft(container: HTMLElement) {
   const [minimum] = inModal(container, ".distance-range").querySelectorAll("input");
   await type(minimum as HTMLInputElement, "1");
   await click(submitButton(container));
-  await click(labelled(container, "Flytta ner resa 1"));
+  await pressKey(handle(container, 1), "ArrowDown");
 }
 
 async function expectDraft(container: HTMLElement) {
