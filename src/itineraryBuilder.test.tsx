@@ -143,7 +143,7 @@ describe("getting to the itinerary builder", () => {
     expect(query(container, ".itinerary-count").textContent).toBe("0 av 20 resor · minst 2");
     expect(button(container, "+ Lägg till").disabled).toBe(false);
     expect(button(container, "Kopiera länk").disabled).toBe(true);
-    expect(button(container, "Spela").disabled).toBe(true);
+    expect(button(container, "Starta resplanen").disabled).toBe(true);
   });
 });
 
@@ -867,26 +867,26 @@ describe("the itinerary's link", () => {
     expect(container.querySelector(".itinerary-copy-fallback")).toBeNull();
   });
 
-  test("Kopiera länk and Spela wait for the second trip", async () => {
+  test("Kopiera länk and Starta resplanen wait for the second trip", async () => {
     const container = await mountApp("/resplan");
     await pick(container, "Nynäshamn", "Salem");
     expect(button(container, "Kopiera länk").disabled).toBe(true);
-    expect(button(container, "Spela").disabled).toBe(true);
+    expect(button(container, "Starta resplanen").disabled).toBe(true);
     await pick(container, "Nynäshamn", "Salem");
     expect(query(container, ".itinerary-count").textContent).toBe("2 av 20 resor");
     expect(button(container, "Kopiera länk").disabled).toBe(false);
-    expect(button(container, "Spela").disabled).toBe(false);
-    // Kopiera länk sits left of Spela.
+    expect(button(container, "Starta resplanen").disabled).toBe(false);
+    // Kopiera länk sits left of Starta resplanen.
     expect(
       [...container.querySelectorAll(".itinerary-bar button")].map((action) => action.textContent),
-    ).toEqual(["Kopiera länk", "Spela"]);
+    ).toEqual(["Kopiera länk", "Starta resplanen"]);
   });
 
-  test("Spela opens the built link in place", async () => {
+  test("Starta resplanen opens the built link in place", async () => {
     const container = await mountApp("/resplan");
     await pick(container, "Nynäshamn", "Salem");
     await pick(container, "Haninge", "Trosa");
-    await click(button(container, "Spela"));
+    await click(button(container, "Starta resplanen"));
 
     expect(dom.window.location.pathname).toBe("/resplan");
     const r = new URLSearchParams(dom.window.location.search).get("r") ?? "";
@@ -976,10 +976,10 @@ describe("the builder's draft", () => {
     await expectDraft(await mountApp("/resplan", storage));
   });
 
-  test("the draft is still there after Spela and Back", async () => {
+  test("the draft is still there after Starta resplanen and Back", async () => {
     const container = await mountApp("/resplan");
     await buildDraft(container);
-    await click(button(container, "Spela"));
+    await click(button(container, "Starta resplanen"));
     expect(container.querySelector("#itinerary-heading")).toBeNull();
 
     await act(async () => {

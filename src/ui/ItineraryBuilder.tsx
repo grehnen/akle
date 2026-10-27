@@ -58,7 +58,7 @@ const EMPTY_LIST = ".itinerary-empty";
 /**
  * The itinerary builder (Bygg en resplan): a title, the ordered trip list under its "Resor"
  * header, whose "+ Lägg till" opens a modal that adds drawn or hand-picked trips, and a bar that
- * copies or plays the itinerary's link. It can only make valid itineraries: playable trips, at
+ * copies or starts the itinerary's link. It can only make valid itineraries: playable trips, at
  * most 20 of them and a title of at most 40 characters; the link waits for the second trip.
  */
 export function ItineraryBuilder({
@@ -486,7 +486,7 @@ function TripRow({
 }
 
 /**
- * The sticky bar: how many trips, and Kopiera länk and Spela once the itinerary has two. Above it
+ * The sticky bar: how many trips, and Kopiera länk and Starta resplanen once the itinerary has two. Above it
  * float, without moving it, the latest removal's Ångra, the link to copy by hand when copying
  * failed, and the copy toast.
  */
@@ -528,7 +528,7 @@ function LinkBar({
           disabled={link === undefined}
           onClick={() => link !== undefined && onPlay(link)}
         >
-          Spela
+          Starta resplanen
         </button>
       </div>
     </div>
