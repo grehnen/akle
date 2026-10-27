@@ -673,22 +673,6 @@ describe("the builder's draft", () => {
     await expectDraft(container);
   });
 
-  test("Ny resplan empties the builder, and it stays empty after a reload", async () => {
-    const storage = memoryStorage();
-    const container = await mountApp("/resplan", storage);
-    expect(button(container, "Ny resplan").disabled).toBe(true);
-    await buildDraft(container);
-    await click(button(container, "Ny resplan"));
-
-    expect(query<HTMLInputElement>(container, "#itinerary-title").value).toBe("");
-    expect(rows(container)).toEqual([]);
-    expect(button(container, "Ny resplan").disabled).toBe(true);
-    unmount();
-
-    const reloaded = await mountApp("/resplan", storage);
-    expect(query(reloaded, ".itinerary-count").textContent).toBe("0 av 20 resor · minst 2");
-  });
-
   test("a corrupt stored draft is ignored, and the builder opens empty", async () => {
     const storage = memoryStorage();
     storage.setItem("akle:itinerary-draft", '{"format":2,"versionOrdinal":1,"title":7}');
@@ -713,5 +697,107 @@ describe("the builder's draft", () => {
     const container = await mountApp("/resplan", storage);
     expect(query<HTMLInputElement>(container, "#itinerary-title").value).toBe("");
     expect(query(container, ".itinerary-count").textContent).toBe("0 av 20 resor · minst 2");
+  });
+});
+
+const menuButton = (container: HTMLElement) => labelled(container, "Fler val");
+const clearAllItem = (container: HTMLElement) =>
+  container.querySelector<HTMLButtonElement>('[role="menuitem"]');
+const confirmDialog = (container: HTMLElement) =>
+  container.querySelector<HTMLDialogElement>('dialog[aria-label="Ta bort alla resor"]');
+
+async function pressEscape(element: Element | null) {
+  await act(async () => {
+    element?.dispatchEvent(
+      new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+    );
+  });
+}
+
+describe("removing all trips from the ⋯ menu", () => {
+  test("the Resor header's ⋯ menu holds Ta bort alla resor, which stays out of sight until opened", async () => {
+    const container = await mountApp("/resplan");
+    expect(menuButton(container).getAttribute("aria-haspopup")).toBe("menu");
+    expect(menuButton(container).getAttribute("aria-expanded")).toBe("false");
+    expect(clearAllItem(container)).toBeNull();
+
+    await click(menuButton(container));
+    expect(menuButton(container).getAttribute("aria-expanded")).toBe("true");
+    expect(clearAllItem(container)?.textContent).toBe("Ta bort alla resor");
+    expect(clearAllItem(container)?.disabled).toBe(true);
+  });
+
+  test("confirming removes every trip and keeps the title, also after a reload", async () => {
+    const storage = memoryStorage();
+    const container = await mountApp("/resplan", storage);
+    await buildDraft(container);
+    await click(menuButton(container));
+    expect(clearAllItem(container)?.disabled).toBe(false);
+    await click(clearAllItem(container) as HTMLButtonElement);
+
+    expect(clearAllItem(container)).toBeNull();
+    expect(confirmDialog(container)?.open).toBe(true);
+    expect(confirmDialog(container)?.textContent).toContain("Ta bort alla 3 resor?");
+    expect(confirmDialog(container)?.textContent).toContain("Namnet ”Helgresan” behålls.");
+    expect(rows(container)).toHaveLength(3);
+
+    await click(button(container, "Ta bort alla resor"));
+    expect(confirmDialog(container)).toBeNull();
+    expect(rows(container)).toEqual([]);
+    expect(query<HTMLInputElement>(container, "#itinerary-title").value).toBe("Helgresan");
+    expect(query(container, ".itinerary-count").textContent).toBe("0 av 20 resor · minst 2");
+    expect(focused()).toBe(query(container, ".itinerary-empty"));
+    unmount();
+
+    const reloaded = await mountApp("/resplan", storage);
+    expect(query<HTMLInputElement>(reloaded, "#itinerary-title").value).toBe("Helgresan");
+    expect(rows(reloaded)).toEqual([]);
+  });
+
+  test("cancelling, or Escape, keeps every trip and the title", async () => {
+    const container = await mountApp("/resplan");
+    await buildDraft(container);
+
+    await click(menuButton(container));
+    await click(clearAllItem(container) as HTMLButtonElement);
+    await click(button(container, "Avbryt"));
+    expect(confirmDialog(container)).toBeNull();
+    expect(rows(container)).toHaveLength(3);
+    expect(focused()).toBe(menuButton(container));
+
+    await click(menuButton(container));
+    await click(clearAllItem(container) as HTMLButtonElement);
+    await pressEscape(confirmDialog(container));
+    expect(confirmDialog(container)).toBeNull();
+    expect(rows(container)).toHaveLength(3);
+    expect(query<HTMLInputElement>(container, "#itinerary-title").value).toBe("Helgresan");
+  });
+
+  test("the menu opens with focus on its item, Escape closes it back to ⋯, and so does tabbing away", async () => {
+    const container = await mountApp("/resplan");
+    await pick(container, "Nynäshamn", "Salem");
+
+    await click(menuButton(container));
+    expect(focused()).toBe(clearAllItem(container));
+    await pressEscape(clearAllItem(container));
+    expect(clearAllItem(container)).toBeNull();
+    expect(focused()).toBe(menuButton(container));
+
+    await click(menuButton(container));
+    await act(async () => {
+      query<HTMLInputElement>(container, "#itinerary-title").focus();
+    });
+    expect(clearAllItem(container)).toBeNull();
+  });
+
+  test("a click elsewhere closes the menu", async () => {
+    const container = await mountApp("/resplan");
+    await click(menuButton(container));
+    await act(async () => {
+      dom.window.document.body.dispatchEvent(
+        new dom.window.MouseEvent("pointerdown", { bubbles: true }),
+      );
+    });
+    expect(clearAllItem(container)).toBeNull();
   });
 });
