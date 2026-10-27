@@ -1079,8 +1079,22 @@ describe("giving up", () => {
     await settle();
 
     expect(query(container, "#result-heading").textContent).toBe("Gav upp");
-    // 0 guesses − distance 1 + 3·1 away.
-    expect(query(container, ".result-score").textContent).toBe("2 poäng");
+    // No guesses beyond the distance (none at all), so only 3·1 away.
+    expect(query(container, ".result-score").textContent).toBe("3 poäng");
+    expect(query(container, ".result-score-detail").textContent).toBe("Gav upp (1 ifrån)");
+  });
+
+  test("giving up with fewer guesses than the distance adds nothing for guesses, only 3 per kommun away", async () => {
+    // Nynäshamn to Trosa is a distance of 3; Salem leaves Haninge 1 away after one guess.
+    const { container } = await mountApp(
+      tripLinkPath(0, { start: "0192", destination: "0488", mode: { kind: "standard" } }),
+    );
+    await guess(container, "Salem");
+    await click(giveUpButton(container));
+    await click(confirmButton(container));
+    await settle();
+
+    expect(query(container, ".result-score").textContent).toBe("3 poäng");
     expect(query(container, ".result-score-detail").textContent).toBe("Gav upp (1 ifrån)");
   });
 
@@ -1138,7 +1152,7 @@ describe("the score tooltip", () => {
   }
   const resultScore = (container: HTMLElement) =>
     [...container.querySelectorAll<HTMLButtonElement>(".result-score button")].find(
-      (button) => button.textContent === "2 poäng",
+      (button) => button.textContent === "3 poäng",
     ) as HTMLButtonElement;
 
   test("focusing the result's score shows what the score means, and Escape hides it", async () => {
