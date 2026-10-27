@@ -1,6 +1,6 @@
 import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
 import { defaultDistanceRange, type DistanceRange } from "./draw";
-import { isModeKind, isThinkingTime, type ModeKind } from "./linkPayload";
+import { isModeKind, isThinkingTime, type ModeKind, type ModeSetting } from "./linkPayload";
 import { DEFAULT_THINKING_TIME } from "./modeRules";
 import { hasFormat, isDistanceRange, isRecord } from "./storedGame";
 
@@ -14,6 +14,27 @@ const SETUP_FORMAT = 1;
  * (kept while another mode is chosen) and the distance range a draw is made from.
  */
 export type SetupChoice = { mode: ModeKind; thinkingTime: number; range: DistanceRange };
+
+/** A setup choice's mode as a trip takes it: Tidspress with its betänketid. */
+export function chosenMode({ mode, thinkingTime }: SetupChoice): ModeSetting {
+  return mode === "timed" ? { kind: "timed", thinkingTime } : { kind: mode };
+}
+
+/**
+ * The setup choice that opens on a trip: its mode and the `range` it was drawn from, with
+ * `fallback`'s betänketid (unless the trip is timed) and range for what the trip doesn't have.
+ */
+export function setupChoiceOfTrip(
+  mode: ModeSetting,
+  range: DistanceRange | undefined,
+  fallback: SetupChoice,
+): SetupChoice {
+  return {
+    mode: mode.kind,
+    thinkingTime: mode.kind === "timed" ? mode.thinkingTime : fallback.thinkingTime,
+    range: range ?? fallback.range,
+  };
+}
 
 /** Keeps the setup choice on this device, a view preference beside, never in, any record. */
 export function saveSetupChoice(storage: KeyValueStorage, choice: SetupChoice): void {

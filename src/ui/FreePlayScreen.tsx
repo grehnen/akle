@@ -5,7 +5,12 @@ import { stampThinkingTime, startTime, stopTimeAtWin } from "../engine/tripTime"
 import { type DistanceRange, drawTrip, largestDistance, tripPairs } from "../freePlay/draw";
 import type { LinkedTrip, ModeSetting } from "../freePlay/linkPayload";
 import { freePlayRules, opensAtStarta } from "../freePlay/modeRules";
-import { restoreSetupChoice, type SetupChoice, saveSetupChoice } from "../freePlay/setupChoice";
+import {
+  chosenMode,
+  restoreSetupChoice,
+  type SetupChoice,
+  saveSetupChoice,
+} from "../freePlay/setupChoice";
 import { readSetupOpening, setupOpeningOn, setupOpeningState } from "../freePlay/setupOpening";
 import { FREE_PLAY_PATH, tripLinkPath } from "../freePlay/tripLink";
 import {
@@ -21,7 +26,7 @@ import { GatedBoard } from "./GatedBoard";
 import { distanceRangeText, guessesSoFar, modeName } from "./messages";
 import { useNavigation } from "./navigation";
 import { ResumeLink } from "./ResumeLink";
-import { chosenMode, TripSetup } from "./TripSetup";
+import { TripSetup } from "./TripSetup";
 import "./FreePlayScreen.css";
 
 /**
