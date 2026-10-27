@@ -12,7 +12,11 @@ const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>', {
   url: "https://akle.example/",
 });
 // The satellite map asks for the touch-screen media query; jsdom has no matchMedia.
-const matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+const matchMedia = () => ({
+  matches: false,
+  addEventListener() {},
+  removeEventListener() {},
+});
 Object.assign(dom.window, { matchMedia });
 // jsdom has no modal dialogs: opening one only marks it open, and closing it fires close.
 Object.assign(dom.window.HTMLDialogElement.prototype, {
@@ -246,7 +250,10 @@ describe("the add modal", () => {
     await openAddModal(container);
     await act(async () => {
       addModal(container)?.dispatchEvent(
-        new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+        new dom.window.KeyboardEvent("keydown", {
+          key: "Escape",
+          bubbles: true,
+        }),
       );
     });
     expect(addModal(container)).toBeNull();
@@ -563,13 +570,159 @@ describe("reordering the trip list", () => {
   });
 });
 
+/** The edit modal, while it's open. */
+const editModal = (container: HTMLElement) =>
+  container.querySelector<HTMLDialogElement>('dialog[aria-label="Ändra resa"]');
+const inEditModal = <E extends Element = HTMLElement>(container: HTMLElement, selector: string) =>
+  editModal(container)?.querySelector(selector) as E;
+const editModalButton = (container: HTMLElement, text: string) =>
+  [...(editModal(container)?.querySelectorAll("button") ?? [])].find(
+    (element) => element.textContent?.trim() === text,
+  ) as HTMLButtonElement;
+const editModalTab = (container: HTMLElement, name: string) =>
+  [...(editModal(container)?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [])].find(
+    (tab) => tab.textContent === name,
+  ) as HTMLButtonElement;
+
+/** Adds one drawn trip from the distance range `min`–`max`, in Tidspress with 17 s. */
+async function drawTimedInRange(container: HTMLElement, min: number, max: number) {
+  await openAddModal(container);
+  await chooseMode(container, "timed", 17);
+  const [minimum, maximum] = inModal(container, ".distance-range").querySelectorAll("input");
+  await type(minimum as HTMLInputElement, String(min));
+  await type(maximum as HTMLInputElement, String(max));
+  await click(submitButton(container));
+}
+
+/** The itinerary's trips as its copied link carries them: each pair as "start-destination". */
+async function linkedPairs(container: HTMLElement) {
+  copied.length = 0;
+  await click(button(container, "Kopiera länk"));
+  const decoded = decodeLinkPayload(new URL(copied[0]).searchParams.get("r") ?? "");
+  if (!decoded.ok) throw new Error("the copied link didn't decode");
+  return decoded.payload.trips.map(({ start, destination }) => `${start}-${destination}`);
+}
+
+describe("editing a trip", () => {
+  test("✎ on a drawn row opens the modal on its mode and range, with no Antal and no Slumpa om", async () => {
+    const container = await mountApp("/resplan");
+    await drawTimedInRange(container, 1, 2);
+    await click(labelled(container, "Ändra resa 1"));
+
+    expect(editModal(container)?.open).toBe(true);
+    expect(inEditModal(container, "h2").textContent).toBe("Ändra resa");
+    expect(inEditModal<HTMLInputElement>(container, 'input[value="timed"]').checked).toBe(true);
+    expect(inEditModal(container, ".free-play-thinking-time output").textContent).toBe("17 s");
+    expect(editModalTab(container, "Slumpa").getAttribute("aria-selected")).toBe("true");
+    expect(inEditModal(container, ".free-play-range-label").textContent).toBe("Avstånd 1–2");
+    expect(editModal(container)?.textContent).not.toContain("Antal");
+    expect(editModal(container)?.textContent).not.toContain("Slumpa om");
+    expect(editModalButton(container, "Spara")).toBeDefined();
+  });
+
+  test("Spara on Slumpa draws a new pair, keeping the mode and range, and the row still shows only the range", async () => {
+    const container = await mountApp("/resplan");
+    // Distance 1 has only two pairs, so a new pair is always the other one.
+    await drawTimedInRange(container, 1, 1);
+    await click(labelled(container, "Dubblera resa 1"));
+    const [first, second] = await linkedPairs(container);
+    expect(second).toBe(first);
+
+    await click(labelled(container, "Ändra resa 2"));
+    await click(editModalButton(container, "Spara"));
+
+    expect(editModal(container)).toBeNull();
+    expect(rows(container)).toEqual(["Slumpad · avstånd 1", "Slumpad · avstånd 1"]);
+    expect(rowModes(container)).toEqual(["Tidspress 17 s", "Tidspress 17 s"]);
+    expect(container.querySelector(".itinerary-trips")?.textContent).not.toContain("Nynäshamn");
+    expect(focused()).toBe(labelled(container, "Ändra resa 2"));
+    const [unchanged, redrawn] = await linkedPairs(container);
+    expect(unchanged).toBe(first);
+    expect(redrawn).not.toBe(first);
+  });
+
+  test("✎ on a picked row opens on Välj själv with its pair, and Spara saves a changed pair", async () => {
+    const container = await mountApp("/resplan");
+    await pick(container, "Nynäshamn", "Salem", { kind: "unlimited" });
+    await click(labelled(container, "Ändra resa 1"));
+
+    expect(editModalTab(container, "Välj själv").getAttribute("aria-selected")).toBe("true");
+    expect(inEditModal<HTMLInputElement>(container, 'input[value="unlimited"]').checked).toBe(true);
+    expect(inEditModal<HTMLInputElement>(container, "input[id$='-start']").value).toBe("Nynäshamn");
+    expect(inEditModal<HTMLInputElement>(container, "input[id$='-destination']").value).toBe(
+      "Salem",
+    );
+    expect(editModalButton(container, "Spara").disabled).toBe(false);
+
+    await type(inEditModal(container, "input[id$='-destination']"), "Trosa");
+    await click(inEditModal(container, 'input[value="tie-breaker"]'));
+    await click(editModalButton(container, "Spara"));
+    expect(rows(container)).toEqual(["Nynäshamn → Trosa"]);
+    expect(rowModes(container)).toEqual(["Tidtagning"]);
+  });
+
+  test("Spara on Välj själv turns a drawn trip into the picked pair", async () => {
+    const container = await mountApp("/resplan");
+    await draw(container);
+    await click(labelled(container, "Ändra resa 1"));
+    await click(editModalTab(container, "Välj själv"));
+    expect(editModalButton(container, "Spara").disabled).toBe(true);
+    await type(inEditModal(container, "input[id$='-start']"), "Haninge");
+    await type(inEditModal(container, "input[id$='-destination']"), "Trosa");
+    await click(editModalButton(container, "Spara"));
+    expect(rows(container)).toEqual(["Haninge → Trosa"]);
+  });
+
+  test("Avbryt and Escape leave the trip as it was", async () => {
+    const container = await mountApp("/resplan");
+    await pick(container, "Nynäshamn", "Salem");
+    await drawTimedInRange(container, 1, 2);
+    const before = await linkedPairs(container);
+    await click(labelled(container, "Ändra resa 2"));
+    await click(editModalTab(container, "Välj själv"));
+    await click(inEditModal(container, 'input[value="unlimited"]'));
+    await click(editModalButton(container, "Avbryt"));
+
+    expect(editModal(container)).toBeNull();
+    expect(rows(container)).toEqual(["Nynäshamn → Salem", "Slumpad · avstånd 1–2"]);
+    expect(rowModes(container)).toEqual(["Standard", "Tidspress 17 s"]);
+    expect(await linkedPairs(container)).toEqual(before);
+    expect(focused()).toBe(labelled(container, "Ändra resa 2"));
+
+    await click(labelled(container, "Ändra resa 1"));
+    await act(async () => {
+      editModal(container)?.dispatchEvent(
+        new dom.window.KeyboardEvent("keydown", {
+          key: "Escape",
+          bubbles: true,
+        }),
+      );
+    });
+    expect(editModal(container)).toBeNull();
+    expect(rows(container)).toEqual(["Nynäshamn → Salem", "Slumpad · avstånd 1–2"]);
+  });
+
+  test("editing leaves the mode and range the add modal opens on alone", async () => {
+    const container = await mountApp("/resplan");
+    await drawTimedInRange(container, 1, 2);
+    await click(labelled(container, "Ändra resa 1"));
+    await click(inEditModal(container, 'input[value="unlimited"]'));
+    await click(editModalButton(container, "Spara"));
+    await openAddModal(container);
+    expect(modeRadio(container, "timed").checked).toBe(true);
+  });
+});
+
 const undoToast = (container: HTMLElement) => container.querySelector(".itinerary-undo");
 
 describe("removing a trip", () => {
   test("shows Ångra, which puts the trip back in place with its mode", async () => {
     const container = await mountApp("/resplan");
     await draw(container, 2);
-    await pick(container, "Nynäshamn", "Salem", { kind: "timed", thinkingTime: 23 });
+    await pick(container, "Nynäshamn", "Salem", {
+      kind: "timed",
+      thinkingTime: 23,
+    });
     await draw(container, 2);
 
     await click(labelled(container, "Ta bort resa 3"));
@@ -615,7 +768,10 @@ describe("the itinerary's link", () => {
     const container = await mountApp("/resplan");
     await type(query(container, "#itinerary-title"), "Helgresan");
     await pick(container, "Nynäshamn", "Salem", { kind: "tie-breaker" });
-    await pick(container, "Trosa", "Haninge", { kind: "timed", thinkingTime: 17 });
+    await pick(container, "Trosa", "Haninge", {
+      kind: "timed",
+      thinkingTime: 17,
+    });
     await click(labelled(container, "Dubblera resa 1"));
     expect(query(container, ".itinerary-count").textContent).toBe("3 av 20 resor");
 
@@ -633,7 +789,11 @@ describe("the itinerary's link", () => {
         trips: [
           { start: "0192", destination: "0128", mode: { kind: "tie-breaker" } },
           { start: "0192", destination: "0128", mode: { kind: "tie-breaker" } },
-          { start: "0488", destination: "0136", mode: { kind: "timed", thinkingTime: 17 } },
+          {
+            start: "0488",
+            destination: "0136",
+            mode: { kind: "timed", thinkingTime: 17 },
+          },
         ],
       },
     });
@@ -772,7 +932,10 @@ function unmount() {
 async function buildDraft(container: HTMLElement) {
   await type(query(container, "#itinerary-title"), "Helgresan");
   await pick(container, "Nynäshamn", "Salem");
-  await pick(container, "Haninge", "Trosa", { kind: "timed", thinkingTime: 23 });
+  await pick(container, "Haninge", "Trosa", {
+    kind: "timed",
+    thinkingTime: 23,
+  });
   await openAddModal(container);
   await chooseMode(container, "tie-breaker");
   const [minimum] = inModal(container, ".distance-range").querySelectorAll("input");
@@ -830,7 +993,14 @@ describe("the builder's draft", () => {
         versionOrdinal: 1,
         title: "Helgresan",
         trips: [
-          { trip: { start: "0192", destination: "0128", mode: { kind: "standard" } }, drawn: true },
+          {
+            trip: {
+              start: "0192",
+              destination: "0128",
+              mode: { kind: "standard" },
+            },
+            drawn: true,
+          },
         ],
       }),
     );
