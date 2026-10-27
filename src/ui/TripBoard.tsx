@@ -34,6 +34,9 @@ type TripBoardProps<T extends Trip> = {
   resultHeadline?: string;
   /** Added beside the outcome in the result view, such as the countdown and sharing. */
   resultActions?: ReactNode;
+  /** A score for the result view's header to lay out in columns, with the detail beside it. */
+  resultScore?: ReactNode;
+  resultScoreDetail?: ReactNode;
   /** Added to the collapsed result strip, such as sharing. */
   stripActions?: ReactNode;
   /** Adds the Statistik tab to the result view. */
@@ -83,6 +86,8 @@ export function TripBoard<T extends Trip>({
   label,
   resultHeadline,
   resultActions,
+  resultScore,
+  resultScoreDetail,
   stripActions,
   stats,
   resultClosed: initiallyClosed = false,
@@ -165,6 +170,8 @@ export function TripBoard<T extends Trip>({
           review={review}
           headline={resultHeadline}
           actions={resultActions}
+          score={resultScore}
+          scoreDetail={resultScoreDetail}
           stats={stats}
           sessionStorage={sessionStorage}
           onClose={() => closeResult(true)}

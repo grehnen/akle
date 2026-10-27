@@ -181,6 +181,122 @@
   margin-left: auto;
 }
 
+/* The emoji line and the score's detail share a row only where it's laid out in columns. */
+.result-line {
+  display: contents;
+}
+
+/*
+ * With a score, in two columns: the outcome with the emoji line beside it and the score under
+ * them, then, divided by a rule, the actions stacked at equal width. The close button sits between.
+ */
+.result-header--columns {
+  grid-template-columns: auto auto 1fr auto 15rem;
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas:
+    "outcome emoji  emoji  close actions"
+    "points  detail detail close actions"
+    ".       .      .      close actions";
+  align-items: baseline;
+  gap: 0 1rem;
+}
+
+.result-header--columns .result-outcome {
+  grid-area: outcome;
+}
+
+.result-header--columns .result-emoji {
+  grid-area: emoji;
+}
+
+.result-header--columns .result-points {
+  grid-area: points;
+}
+
+.result-header--columns .result-score-detail {
+  grid-area: detail;
+}
+
+.result-header--columns .result-points,
+.result-header--columns .result-score-detail {
+  margin-top: 0.5rem;
+}
+
+.result-header--columns .result-close {
+  grid-area: close;
+  align-self: start;
+  margin: 0 -0.6rem 0 0;
+}
+
+.result-header--columns .result-actions {
+  grid-area: actions;
+  align-self: start;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--rule);
+}
+
+.result-header--columns .result-actions .share {
+  margin-left: 0;
+  align-items: stretch;
+}
+
+/* On a phone the actions are a two-column grid under the score, the wider ones across it. */
+@media (max-width: 38rem) {
+  .result-header--columns {
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: none;
+    grid-template-areas:
+      "outcome points  close"
+      "line    line    line"
+      "actions actions actions";
+    column-gap: 0.75rem;
+  }
+
+  .result-header--columns .result-points {
+    margin-top: 0;
+  }
+
+  .result-header--columns .result-line {
+    grid-area: line;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem 0.75rem;
+    margin-top: 0.35rem;
+  }
+
+  .result-header--columns .result-score-detail {
+    margin-top: 0;
+  }
+
+  .result-header--columns .result-close {
+    align-self: center;
+  }
+
+  .result-header--columns .result-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 0.75rem;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  /* The setup link first, then the draw that follows from it; sharing and the way on take a row. */
+  .result-header--columns .result-actions .free-play-setup-link {
+    order: -1;
+    padding-inline: 0.4rem;
+  }
+
+  .result-header--columns .result-actions .share,
+  .result-header--columns .result-actions .itinerary-next {
+    grid-column: 1 / -1;
+  }
+}
+
 .result-tabs {
   width: 100%;
   display: flex;

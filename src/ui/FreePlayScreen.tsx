@@ -18,7 +18,7 @@ import type { GraphVersion } from "../graph/graphVersion";
 import type { KeyValueStorage } from "../progress/storage";
 import { AppLink } from "./AppLink";
 import { GatedBoard } from "./GatedBoard";
-import { guessesSoFar, modeName } from "./messages";
+import { distanceRangeText, guessesSoFar, modeName } from "./messages";
 import { useNavigation } from "./navigation";
 import { ResumeLink } from "./ResumeLink";
 import { chosenMode, TripSetup } from "./TripSetup";
@@ -203,6 +203,8 @@ export function FreePlayScreen({
       choice,
     ),
   );
+  // Slumpa ny resa draws in the played mode, from the range the trip was drawn from, else setup's.
+  const redrawRange = played.range ?? range;
   return (
     <GatedBoard
       // A new trip gets a fresh gate and board, so the last one's result state doesn't carry over.
@@ -236,27 +238,23 @@ export function FreePlayScreen({
       }}
       sessionStorage={sessionStorage}
       resultActions={
-        <div className="free-play-next">
-          <SetupLink />
+        <>
           <button
             type="button"
             className="free-play-redraw"
-            onClick={() => draw(played.trip.mode, played.range ?? range, played.game.trip)}
+            onClick={() => draw(played.trip.mode, redrawRange, played.game.trip)}
           >
-            Slumpa ny resa
+            <span>Slumpa ny resa</span>{" "}
+            <span className="free-play-redraw-draws">
+              {modeName(played.trip.mode)} · {distanceRangeText(redrawRange)}
+            </span>
           </button>
-        </div>
+          <AppLink className="free-play-setup-link" href={FREE_PLAY_PATH} state={setupOnPlayed}>
+            Ändra inställningar
+          </AppLink>
+        </>
       }
     />
-  );
-}
-
-/** The way back to setup, from a trip's result or its Starta gate. */
-function SetupLink() {
-  return (
-    <AppLink className="free-play-setup-link" href={FREE_PLAY_PATH}>
-      Välj läge och resa
-    </AppLink>
   );
 }
 
