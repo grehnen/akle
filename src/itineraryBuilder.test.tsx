@@ -431,7 +431,7 @@ describe("the itinerary's link", () => {
 
     await choose(select, "timed");
     expect(description().textContent).toBe(
-      "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng, även före första gissningen.",
+      "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng.",
     );
     const label = query<HTMLInputElement>(container, "#itinerary-new-thinking-time").labels?.[0];
     expect(label?.textContent).toBe("Betänketid");
