@@ -21,6 +21,9 @@ import { resultOutcome } from "./messages";
 import { StatsPanel } from "./StatsPanel";
 import "./ResultView.css";
 
+/** A finished trip's score as the result lays it out, and the detail that goes with it. */
+export type ResultScore = { score: ReactNode; detail: ReactNode };
+
 type ResultViewProps = {
   graph: GraphVersion;
   game: Game;
@@ -33,8 +36,7 @@ type ResultViewProps = {
    * A score with its detail, which lay the header out in two columns: the outcome, the emoji line
    * and the score on one side, the actions on the other. On a phone the actions are a button grid.
    */
-  score?: ReactNode;
-  scoreDetail?: ReactNode;
+  score?: ResultScore;
   /** Adds the Statistik tab. */
   stats?: Stats;
   /** Where the chosen tab is kept for the rest of the browser session. */
@@ -55,7 +57,6 @@ export function ResultView({
   headline,
   actions,
   score,
-  scoreDetail,
   stats,
   sessionStorage,
   onClose,
@@ -85,7 +86,7 @@ export function ResultView({
         <h2 id="result-heading" ref={heading} tabIndex={-1} className="result-outcome">
           {outcome}
         </h2>
-        {score}
+        {score?.score}
         {onClose && (
           <button
             type="button"
@@ -101,7 +102,7 @@ export function ResultView({
           <p className="result-emoji" aria-label={`Gissningar: ${emojiLine(review.cards)}`}>
             {emojiLine(review.cards)}
           </p>
-          {scoreDetail}
+          {score?.detail}
         </div>
 
         {actions && <div className="result-actions">{actions}</div>}
