@@ -510,6 +510,48 @@ describe("an itinerary from its link", () => {
     expect(text(container, "#itinerary-heading")).toBe("Bygg en resplan");
   });
 
+  test("the label's total and the summary's scores explain the score when focused", async () => {
+    const scoreExplanation =
+      "Lägre poäng är bättre. En perfekt resa ger −1; varje extra gissning, ledtråd och ⏱ kostar 1.";
+    /** What focusing the score `trigger` shows, then hides on Escape. */
+    async function explanationOn(trigger: HTMLButtonElement | undefined) {
+      if (trigger === undefined) return undefined;
+      await act(async () => trigger.focus());
+      const shown = container.querySelector('[role="tooltip"]');
+      const describes = trigger.getAttribute("aria-describedby") === shown?.id;
+      await act(async () => {
+        trigger.dispatchEvent(
+          new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+        );
+      });
+      expect(container.querySelector('[role="tooltip"]')).toBeNull();
+      return describes ? shown?.textContent : undefined;
+    }
+    const container = await mountApp(itineraryLinkPath(0, "", [nynashamnSalem, haningeTrosa]));
+    await click(button(container, "Starta resplanen"));
+
+    expect(await explanationOn(button(container, "Totalt 0 poäng"))).toBe(scoreExplanation);
+    await guess(container, "Haninge");
+    await settle();
+    await click(button(container, "Nästa resa"));
+    await click(button(container, "Starta"));
+    await guess(container, "Salem");
+    await settle();
+    await click(button(container, "Avsluta resplanen"));
+
+    const summaryScores = [
+      ...container.querySelectorAll<HTMLButtonElement>(".itinerary-summary button"),
+    ].filter((trigger) => trigger.textContent?.includes("poäng"));
+    expect(summaryScores.map((trigger) => trigger.textContent)).toEqual([
+      "−1 poäng",
+      "−1 poäng",
+      "Totalt −2 poäng",
+    ]);
+    for (const trigger of summaryScores) {
+      expect(await explanationOn(trigger)).toBe(scoreExplanation);
+    }
+  });
+
   test("offers no retry: a finished trip's result has no way to play it again", async () => {
     const container = await mountApp(fridayLink);
     await click(button(container, "Starta resplanen"));

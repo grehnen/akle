@@ -5,6 +5,7 @@ import { FREE_PLAY_PATH } from "../freePlay/tripLink";
 import { AppLink } from "./AppLink";
 import { LOWER_IS_BETTER, modeName, scoreText, timeText, totalTimeText } from "./messages";
 import { ScoreLabel } from "./ScoreLabel";
+import { ScoreTooltip } from "./ScoreTooltip";
 import { ShareButton } from "./ShareButton";
 import "./ItinerarySummary.css";
 
@@ -35,7 +36,9 @@ export function ItinerarySummaryView({
           <SummaryRow key={index} row={row} />
         ))}
       </ol>
-      <p className="itinerary-summary-total">Totalt {scoreText(standing.score)}</p>
+      <p className="itinerary-summary-total">
+        <ScoreTooltip>Totalt {scoreText(standing.score)}</ScoreTooltip>
+      </p>
       <p className="itinerary-summary-note">{LOWER_IS_BETTER}</p>
       {hasTieBreaker && (
         <p className="itinerary-summary-total-time">
@@ -69,7 +72,9 @@ function SummaryRow({ row }: { row: ItinerarySummaryRow }) {
           <span className="itinerary-summary-time">{timeText(row.time)}</span>
         )}
       </p>
-      <p className="itinerary-summary-score">{scoreText(row.score)}</p>
+      <p className="itinerary-summary-score">
+        <ScoreTooltip>{scoreText(row.score)}</ScoreTooltip>
+      </p>
     </li>
   );
 }

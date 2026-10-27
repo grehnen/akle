@@ -19,6 +19,7 @@ import type { KeyValueStorage } from "../progress/storage";
 import { GatedBoard } from "./GatedBoard";
 import { ItinerarySummaryView } from "./ItinerarySummary";
 import { modeName, scoreText } from "./messages";
+import { ScoreTooltip } from "./ScoreTooltip";
 import { useNavigation } from "./navigation";
 import "./ItineraryScreen.css";
 
@@ -90,8 +91,8 @@ export function ItineraryScreen({
   const trip = trips[stage.index];
   const label = (
     <p className="trip-number itinerary-progress">
-      {title ?? "Resplan"} · Resa {stage.index + 1} av {trips.length} · {modeName(trip.mode)} ·
-      Totalt {scoreText(total)}
+      {title ?? "Resplan"} · Resa {stage.index + 1} av {trips.length} · {modeName(trip.mode)} ·{" "}
+      <ScoreTooltip>Totalt {scoreText(total)}</ScoreTooltip>
     </p>
   );
   const onCard = stage.kind === "card";
