@@ -37,6 +37,8 @@ export function TripSetup({
   drawActions,
   pickLabel,
   onPick,
+  onTabChange,
+  onPickedChange,
 }: {
   graph: GraphVersion;
   /** The largest distance in the version, the distance range's top. */
@@ -48,9 +50,12 @@ export function TripSetup({
   shortDescriptions?: boolean;
   /** What follows the distance range on the Slumpa tab, such as its button. */
   drawActions?: ReactNode;
-  /** The Välj själv tab's button. */
-  pickLabel: string;
-  onPick: (trip: Trip) => void;
+  /** The Välj själv tab's button; without one, the caller adds the picked trip its own way. */
+  pickLabel?: string;
+  onPick?: (trip: Trip) => void;
+  onTabChange?: (tab: TripChoiceTab) => void;
+  /** Told Välj själv's trip whenever it changes: undefined until it can be played. */
+  onPickedChange?: (trip: Trip | undefined) => void;
 }) {
   const idPrefix = `setup-${useId().replace(/[^\w-]/g, "")}`;
   const [choice, setChoice] = useState(initial);
@@ -84,7 +89,14 @@ export function TripSetup({
           />
         </div>
       )}
-      <TripChoiceTabs idPrefix={idPrefix} selected={tab} onSelect={setTab} />
+      <TripChoiceTabs
+        idPrefix={idPrefix}
+        selected={tab}
+        onSelect={(selected) => {
+          setTab(selected);
+          onTabChange?.(selected);
+        }}
+      />
       <div
         id={tripChoicePanelId(idPrefix, "draw")}
         role="tabpanel"
@@ -106,6 +118,7 @@ export function TripSetup({
         submitLabel={pickLabel}
         initial={initialPair}
         onPick={onPick}
+        onPickedChange={onPickedChange}
       />
     </>
   );
