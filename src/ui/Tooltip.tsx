@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { useCloseOnOutsidePress } from "./useCloseOnOutsidePress";
 import "./Tooltip.css";
 
 /** The least room, in pixels, kept between the bubble and the screen's edge. */
@@ -14,20 +15,14 @@ export function Tooltip({ text, children }: { text: string; children: ReactNode 
   const tooltipId = useId();
   const wrapper = useRef<HTMLSpanElement>(null);
 
+  useCloseOnOutsidePress(wrapper, open, () => setOpen(false));
   useEffect(() => {
     if (!open) return;
-    const closeOnTapElsewhere = (event: Event) => {
-      if (!wrapper.current?.contains(event.target as Node)) setOpen(false);
-    };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
-    document.addEventListener("pointerdown", closeOnTapElsewhere);
     document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("pointerdown", closeOnTapElsewhere);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
+    return () => document.removeEventListener("keydown", closeOnEscape);
   }, [open]);
 
   return (
