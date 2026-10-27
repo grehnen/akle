@@ -35,5 +35,5 @@
   line-height: 1.4;
   text-align: left;
   white-space: normal;
-  transform: translateX(-50%);
+  transform: translateX(calc(-50% + var(--score-tooltip-shift, 0px)));
 }
