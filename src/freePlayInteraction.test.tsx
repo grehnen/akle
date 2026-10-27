@@ -1174,15 +1174,45 @@ describe("the score tooltip", () => {
     expect(tooltip(container)).toBeNull();
   });
 
-  test("tapping the score shows it, and a tap elsewhere hides it", async () => {
+  /** A finger's tap: it goes down, focuses the button, then clicks. */
+  async function tap(button: HTMLButtonElement) {
+    await act(async () => {
+      button.dispatchEvent(
+        new dom.window.PointerEvent("pointerdown", { bubbles: true, pointerType: "touch" }),
+      );
+      button.focus();
+      button.click();
+    });
+  }
+
+  test("tapping the score shows it, and tapping it again hides it", async () => {
     const { container } = await mountApp("/fri");
     await giveUpAtOnce(container);
 
-    await click(resultScore(container));
+    await tap(resultScore(container));
     expect(tooltip(container)?.textContent).toBe(SCORE_EXPLANATION);
-    await click(resultScore(container));
+    await tap(resultScore(container));
+    expect(tooltip(container)).toBeNull();
+    await tap(resultScore(container));
     expect(tooltip(container)?.textContent).toBe(SCORE_EXPLANATION);
+  });
 
+  test("clicking the focused score toggles it, as Enter does", async () => {
+    const { container } = await mountApp("/fri");
+    await giveUpAtOnce(container);
+
+    await act(async () => resultScore(container).focus());
+    await click(resultScore(container));
+    expect(tooltip(container)).toBeNull();
+    await click(resultScore(container));
+    expect(tooltip(container)?.textContent).toBe(SCORE_EXPLANATION);
+  });
+
+  test("a tap elsewhere hides the score's tooltip", async () => {
+    const { container } = await mountApp("/fri");
+    await giveUpAtOnce(container);
+
+    await tap(resultScore(container));
     await act(async () => {
       query(container, "#result-heading").dispatchEvent(
         new dom.window.MouseEvent("pointerdown", { bubbles: true }),
