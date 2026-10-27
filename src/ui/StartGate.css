@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1.25rem;
   text-align: center;
 }
 
@@ -13,18 +13,74 @@
   margin: 0;
 }
 
-.start-gate-note {
-  color: var(--muted);
+/* Three columns, the outer two equal, so the heading stays centred with or without the way back. */
+.start-gate-header {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  column-gap: 0.5rem;
 }
 
-.start-gate-mode {
+.start-gate-header h2 {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.start-gate-back {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  margin-left: -0.25rem;
+  padding: 0 0.25rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.start-gate-back:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+/* The trip's label, a subtitle under the heading. */
+.start-gate-header .trip-number {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  order: 0;
+  margin: 0.25rem 0 0;
+}
+
+.start-gate-rules {
+  width: 100%;
   max-width: 26rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--rule);
+  color: var(--muted);
   font-size: 0.95rem;
 }
 
+.start-gate-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* One width loading or ready, so the button never resizes when the map is done. */
 .start-gate-button {
   min-height: 4rem;
-  min-width: 12rem;
+  width: 15rem;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
   background: var(--start);
   color: var(--night);
   font-size: 1.25rem;
@@ -34,21 +90,21 @@
 .start-gate-button[aria-disabled="true"] {
   opacity: 0.55;
   cursor: progress;
+  font-size: 1.05rem;
 }
 
-/* One line, loading or ready, so nothing on the gate moves when the map is done. */
-.start-gate-status {
-  min-height: 1.5em;
+.start-gate-notes {
+  max-width: 24rem;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  flex-direction: column;
   color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .start-gate-spinner {
   width: 1em;
   height: 1em;
+  flex: none;
   border: 2px solid currentcolor;
   border-right-color: transparent;
   border-radius: 50%;

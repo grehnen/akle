@@ -1919,15 +1919,16 @@ describe("the board behind Starta", () => {
     return { storage: recording, written };
   }
 
-  test("Starta waits, busy and saying so, until the map is drawn, then says once it's ready", async () => {
+  test("Starta waits, busy and saying so inside itself, until the map is drawn, then announces it's ready", async () => {
     const drawMaps = holdMaps();
     const { container } = await mountApp(tieBreakerLink);
     const loadingLayout = gateLayout(container);
 
     expect(gate(container).getAttribute("aria-busy")).toBe("true");
     expect(starta(container).getAttribute("aria-disabled")).toBe("true");
-    expect(query(container, ".start-gate-status").textContent).toBe("Laddar kartan…");
-    expect(query(container, ".start-gate-spinner")).not.toBeNull();
+    expect(starta(container).textContent).toBe("Laddar kartan…");
+    expect(starta(container).querySelector(".start-gate-spinner")).not.toBeNull();
+    expect(query(container, ".start-gate-status").textContent).toBe("");
     expect(dom.window.document.activeElement).toBe(starta(container));
     // Pressed too soon, Starta does nothing.
     await click(starta(container));
@@ -1936,9 +1937,12 @@ describe("the board behind Starta", () => {
     await drawMaps();
     expect(gate(container).hasAttribute("aria-busy")).toBe(false);
     expect(starta(container).hasAttribute("aria-disabled")).toBe(false);
+    expect(starta(container).textContent).toBe("Starta");
     const status = query(container, ".start-gate-status");
     expect(status.textContent).toBe("Kartan är klar");
     expect(status.getAttribute("aria-live")).toBe("polite");
+    // Announced only: nothing on screen says it.
+    expect(status.classList.contains("visually-hidden")).toBe(true);
     expect(gateLayout(container)).toEqual(loadingLayout);
     expect(dom.window.document.activeElement).toBe(starta(container));
 
@@ -1954,13 +1958,18 @@ describe("the board behind Starta", () => {
     const tidspress =
       "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng.";
 
+    expect(query(container, ".start-gate h2").textContent).toBe("Redo att resa?");
     expect(query(container, ".start-gate .trip-number").textContent).toBe(
       "Fri resa · Tidspress 10 s",
     );
-    expect(query(container, ".start-gate-mode").textContent).toBe(tidspress);
+    expect(query(container, ".start-gate-rules").textContent).toBe(tidspress);
     const back = query<HTMLAnchorElement>(container, ".start-gate a");
-    expect(back.textContent).toBe("Välj läge och resa");
+    expect(back.textContent).toBe("‹ Tillbaka");
     expect(back.getAttribute("href")).toBe("/fri");
+    // Each note on its own line, under Starta.
+    expect(
+      [...container.querySelectorAll(".start-gate-notes > *")].map((line) => line.textContent),
+    ).toEqual(["Start och mål visas när du startar.", "Tiden går även om du lämnar sidan."]);
     await drawMaps();
     expect(written).toEqual([]);
 
