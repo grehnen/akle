@@ -29,7 +29,7 @@ export function ItinerarySummaryView({
   return (
     <section className="itinerary-summary" aria-labelledby="itinerary-summary-heading">
       <h2 id="itinerary-summary-heading">{title ?? "Resplan"}</h2>
-      <p className="itinerary-summary-count">Klar · {rows.length} resor</p>
+      <p className="itinerary-summary-subtitle">Sammanfattning</p>
       <ol className="itinerary-summary-trips" aria-label="Resorna">
         {rows.map((row, index) => (
           // oxlint-disable-next-line react/no-array-index-key -- the order is fixed: a trip is its place.
