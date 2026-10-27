@@ -175,6 +175,9 @@ async function mountApp(path: string, storage: KeyValueStorage = memoryStorage()
 
 const query = <E extends Element = HTMLElement>(container: HTMLElement, selector: string) =>
   container.querySelector(selector) as E;
+
+/** A resume banner's lines, each its own element: what it is, how far it got, and the way back. */
+const resumeLines = (banner: Element) => Array.from(banner.children, (line) => line.textContent);
 /** What an element shows on screen, without its words for screen readers only. */
 function seenText(element: Element): string {
   const shown = element.cloneNode(true) as Element;
@@ -725,7 +728,7 @@ describe("a trip going on the board", () => {
     expect(scrolls).toEqual([[0, 0]]);
   });
 
-  test("a reload onto a trip leaves focus and scroll alone, but Fortsätt resplanen focuses it", async () => {
+  test("a reload onto a trip leaves focus and scroll alone, but the banner's Fortsätt focuses it", async () => {
     const storage = memoryStorage();
     let container = await mountApp(untimedLink, storage);
     await click(button(container, "Starta resplanen"));
@@ -758,8 +761,17 @@ describe("the builder's banner", () => {
     await click(button(container, "Nästa resa"));
 
     container = await reopen("/resplan", storage);
-    expect(banner(container).textContent).toBe("Fortsätt resplanen: Fredagsresan, resa 2 av 3");
+    expect(banner(container).textContent).toBe(
+      "Oavslutad resplan Fredagsresan · resa 2 av 3 Fortsätt",
+    );
     expect(banner(container).getAttribute("href")).toBe(fridayLink);
+    expect(resumeLines(banner(container))).toEqual([
+      "Oavslutad resplan",
+      "Fredagsresan · resa 2 av 3",
+      "Fortsätt",
+    ]);
+    // Above the heading, so it's the first thing in the builder and in its tab order.
+    expect(query(container, ".itinerary-builder").firstElementChild).toBe(banner(container));
     await click(banner(container));
     expect(dom.window.location.pathname + dom.window.location.search).toBe(fridayLink);
     expect(text(container, ".start-gate .trip-number")).toBe(
@@ -776,7 +788,9 @@ describe("the builder's banner", () => {
     expect(button(container, "Nästa resa")).toBeDefined();
 
     container = await reopen("/resplan", storage);
-    expect(banner(container).textContent).toBe("Fortsätt resplanen: Fredagsresan, resa 2 av 3");
+    expect(banner(container).textContent).toBe(
+      "Oavslutad resplan Fredagsresan · resa 2 av 3 Fortsätt",
+    );
   });
 
   test("names an untitled itinerary by its trip alone", async () => {
@@ -785,7 +799,7 @@ describe("the builder's banner", () => {
     let container = await mountApp(link, storage);
     await click(button(container, "Starta resplanen"));
     container = await reopen("/resplan", storage);
-    expect(banner(container).textContent).toBe("Fortsätt resplanen: resa 1 av 2");
+    expect(banner(container).textContent).toBe("Oavslutad resplan resa 1 av 2 Fortsätt");
   });
 
   test("is not there without an unfinished itinerary", async () => {
@@ -828,7 +842,9 @@ describe("the builder's banner", () => {
     // Opening the unfinished one makes it the most recently played again.
     container = await reopen(fridayLink, storage);
     container = await reopen("/resplan", storage);
-    expect(banner(container).textContent).toBe("Fortsätt resplanen: Fredagsresan, resa 1 av 3");
+    expect(banner(container).textContent).toBe(
+      "Oavslutad resplan Fredagsresan · resa 1 av 3 Fortsätt",
+    );
   });
 });
 
