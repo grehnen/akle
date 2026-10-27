@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { LOSS_SCORE_EXPLANATION, SCORE_EXPLANATION, TIME_TIE_BREAK_EXPLANATION } from "./messages";
 import { Modal } from "./Modal";
 import "./RulesDialog.css";
 
@@ -50,6 +51,11 @@ export function RulesDialog({ onClose }: RulesDialogProps) {
             konturerna av alla kommuner och sedan deras initialer. Ledtrådar kostar inga gissningar,
             men ett spel med ledtrådar kan inte bli Perfekt.
           </p>
+        </RulesSection>
+        <RulesSection title="Poäng i fri resa">
+          <p>{SCORE_EXPLANATION}</p>
+          <p>{LOSS_SCORE_EXPLANATION}</p>
+          <p>{TIME_TIE_BREAK_EXPLANATION}</p>
         </RulesSection>
         <RulesSection title="Vad räknas som grannar?">
           <p>Två kommuner är grannar när du kan ta dig från den ena till den andra:</p>
