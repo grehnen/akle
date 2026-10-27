@@ -5,7 +5,7 @@
     "correctness": "error",
     "suspicious": "warn"
   },
-  "ignorePatterns": ["dist/", ".agents/", ".cloudflare/"],
+  "ignorePatterns": ["dist/", ".agents/", ".cloudflare/", ".claude/worktrees/"],
   "rules": {
     "react/react-in-jsx-scope": "off",
     "import/no-unassigned-import": [
