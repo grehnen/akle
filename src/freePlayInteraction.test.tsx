@@ -988,11 +988,15 @@ describe("giving up", () => {
     await settle();
   }
 
-  test("Ge upp sits with the hints, enabled from the start", async () => {
+  test("Ge upp sits on its own row after the Ledtrådar section, enabled from the start", async () => {
     const { container } = await mountApp("/fri");
     await pick(container, "Nynäshamn", "Salem");
     expect(giveUpButton(container).textContent).toBe("Ge upp");
-    expect(giveUpButton(container).closest(".hint-section")).not.toBeNull();
+    expect(giveUpButton(container).closest(".hint-section")).toBeNull();
+    expect(
+      query(container, ".hint-section").compareDocumentPosition(giveUpButton(container)) &
+        dom.window.Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(giveUpButton(container).disabled).toBe(false);
   });
 
