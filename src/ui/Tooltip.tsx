@@ -59,9 +59,13 @@ export function Tooltip({ text, children }: { text: string; children: ReactNode 
   );
 }
 
-/** Shifts a bubble shown by text near the screen's edge back inside, by what would stick out. */
+/**
+ * Shifts a bubble shown by text near the screen's edge back inside, by what would stick out. It
+ * measures the bubble unshifted, so calling it again (as React's strict mode does) keeps the shift.
+ */
 function keepInsideScreen(bubble: HTMLElement | null) {
   if (bubble === null) return;
+  bubble.style.removeProperty("--tooltip-shift");
   const { left, right } = bubble.getBoundingClientRect();
   const room = document.documentElement.clientWidth;
   const shift = left < EDGE_GAP ? EDGE_GAP - left : Math.min(0, room - EDGE_GAP - right);
