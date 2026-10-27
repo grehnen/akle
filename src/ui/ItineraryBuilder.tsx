@@ -10,25 +10,19 @@ import {
   type RandomSource,
   tripPairs,
 } from "../freePlay/draw";
-import {
-  editTitle,
-  ITINERARY_TRIPS,
-  itineraryLinkPath,
-  MAX_ITINERARY_TITLE,
-  titleLength,
-} from "../freePlay/itineraryLink";
+import { ITINERARY_TRIPS, itineraryLinkPath } from "../freePlay/itineraryLink";
 import { DEFAULT_THINKING_TIME } from "../freePlay/modeRules";
 import { chosenMode, setupChoiceOfTrip, type SetupChoice } from "../freePlay/setupChoice";
-import { type GraphVersion, kommunName } from "../graph/graphVersion";
-import { SITE_URL } from "../siteUrl";
-import { CopyLinkButton } from "./CopyLinkButton";
-import { distanceRangeText, modeName } from "./messages";
-import { Modal } from "./Modal";
+import type { GraphVersion } from "../graph/graphVersion";
+import { LinkBar } from "./ItineraryLinkBar";
+import { TitleField } from "./ItineraryTitleField";
+import { type BuilderTrip, TripRow } from "./ItineraryTripRow";
 import { OverflowMenu } from "./OverflowMenu";
+import { RemoveAllModal } from "./RemoveAllModal";
 import { TripModal, type TripModalResult } from "./TripModal";
-import { UndoToast, useUndoRemoval } from "./UndoToast";
+import { useUndoRemoval } from "./UndoToast";
 import { useAnnouncer } from "./useAnnouncer";
-import { type ReorderHandleProps, useReorderableList } from "./useReorderableList";
+import { useReorderableList } from "./useReorderableList";
 import "./ItineraryBuilder.css";
 
 type ItineraryBuilderProps = {
@@ -46,9 +40,6 @@ type ItineraryBuilderProps = {
   /** Told the draft whenever it changes, from the start. */
   onDraftChange?: (draft: BuilderDraft) => void;
 };
-
-/** A trip in the itinerary being built, with a key for its row and the range it was drawn from. */
-type BuilderTrip = DraftTrip & { id: number };
 
 const ADD_BUTTON = ".itinerary-add-trips";
 const COUNT = ".itinerary-count";
@@ -291,28 +282,12 @@ export function ItineraryBuilder({
         />
       )}
       {confirmingRemoveAll && (
-        <Modal
-          label="Ta bort alla resor"
-          className="remove-all-modal"
-          onClose={cancelRemoveAll}
-          footer={
-            <>
-              <button type="button" className="remove-all-cancel" onClick={cancelRemoveAll}>
-                Avbryt
-              </button>
-              <button type="button" className="remove-all-confirm" onClick={removeAll}>
-                Ta bort alla resor
-              </button>
-            </>
-          }
-        >
-          <h2 className="remove-all-heading">
-            Ta bort {trips.length === 1 ? "resan" : `alla ${trips.length} resor`}?
-          </h2>
-          <p className="remove-all-text">
-            Namnet {title === "" ? "(inget än)" : `”${title}”`} behålls.
-          </p>
-        </Modal>
+        <RemoveAllModal
+          tripCount={trips.length}
+          title={title}
+          onCancel={cancelRemoveAll}
+          onConfirm={removeAll}
+        />
       )}
       {editingIndex !== undefined && (
         <TripModal
@@ -349,181 +324,8 @@ export function ItineraryBuilder({
   );
 }
 
-function TitleField({ title, onChange }: { title: string; onChange: (title: string) => void }) {
-  return (
-    <div className="itinerary-title">
-      <label htmlFor="itinerary-title">Namn (valfritt)</label>
-      {/* Capped on change rather than by maxLength, which counts an emoji as two. */}
-      <input
-        id="itinerary-title"
-        value={title}
-        autoComplete="off"
-        aria-describedby="itinerary-title-count"
-        onChange={(event) => {
-          const field = event.target;
-          const edited = editTitle(title, field.value, field.selectionStart ?? undefined);
-          // Set here, so React finds the value already right and leaves the caret alone.
-          if (edited.title !== field.value) {
-            field.value = edited.title;
-            field.setSelectionRange(edited.caret, edited.caret);
-          }
-          onChange(edited.title);
-        }}
-      />
-      <span id="itinerary-title-count" className="itinerary-title-count">
-        {titleLength(title)}/{MAX_ITINERARY_TITLE}
-        <span className="visually-hidden"> tecken</span>
-      </span>
-    </div>
-  );
-}
-
 const inChosenMode = ({ start, destination }: Trip, choice: SetupChoice): LinkedTrip => ({
   start,
   destination,
   mode: chosenMode(choice),
 });
-
-/** A row of the trip list: its pair, or a drawn trip's range, over its mode, then its actions. */
-function TripRow({
-  graph,
-  entry,
-  number,
-  full,
-  dragOffset,
-  handleProps,
-  onEdit,
-  onDuplicate,
-  onRemove,
-}: {
-  graph: GraphVersion;
-  entry: BuilderTrip;
-  number: number;
-  full: boolean;
-  /** How far the pointer has pulled the row from its place, while it is being dragged. */
-  dragOffset?: number;
-  handleProps: ReorderHandleProps;
-  onEdit: () => void;
-  onDuplicate: () => void;
-  onRemove: () => void;
-}) {
-  const { trip, drawnFrom } = entry;
-  const start = kommunName(graph, trip.start);
-  const destination = kommunName(graph, trip.destination);
-  return (
-    <li
-      className={
-        dragOffset === undefined ? "itinerary-trip" : "itinerary-trip itinerary-trip--dragged"
-      }
-      style={dragOffset === undefined ? undefined : { transform: `translateY(${dragOffset}px)` }}
-    >
-      <button
-        type="button"
-        className="itinerary-trip-handle"
-        data-trip-handle={entry.id}
-        aria-label={`Flytta resa ${number}`}
-        {...handleProps}
-      >
-        <span aria-hidden="true">⠿</span>
-      </button>
-      <span className="itinerary-trip-number" aria-hidden="true">
-        {number}
-      </span>
-      <span className="itinerary-trip-what">
-        {/* A drawn trip's pair stays a surprise, even to its builder. */}
-        <span className="itinerary-trip-pair">
-          {drawnFrom ? (
-            <>
-              Slumpad · <span className="itinerary-trip-range">{distanceRangeText(drawnFrom)}</span>
-            </>
-          ) : (
-            <>
-              <span className="itinerary-start">{start}</span>
-              {" → "}
-              <span className="itinerary-destination">{destination}</span>
-            </>
-          )}
-        </span>
-        <span className="itinerary-trip-mode">{modeName(trip.mode)}</span>
-      </span>
-      <span className="itinerary-trip-actions">
-        <button
-          type="button"
-          aria-label={`Ändra resa ${number}`}
-          // Found by its number for focus, never by its words.
-          data-edit-trip={number}
-          onClick={onEdit}
-        >
-          <span aria-hidden="true">✎</span>
-        </button>
-        <button
-          type="button"
-          aria-label={`Dubblera resa ${number}`}
-          disabled={full}
-          onClick={onDuplicate}
-        >
-          <span aria-hidden="true">⧉</span>
-        </button>
-        <button
-          type="button"
-          aria-label={`Ta bort resa ${number}`}
-          // Found by its number for focus, never by its words.
-          data-remove-trip={number}
-          onClick={onRemove}
-        >
-          <span aria-hidden="true">✕</span>
-        </button>
-      </span>
-    </li>
-  );
-}
-
-/**
- * The sticky bar: how many trips, and Kopiera länk and Starta resplanen once the itinerary has two. Above it
- * float, without moving it, the latest removal's Ångra, the link to copy by hand when copying
- * failed, and the copy toast.
- */
-function LinkBar({
-  count,
-  link,
-  onPlay,
-  undo,
-}: {
-  count: number;
-  link?: string;
-  onPlay: (link: string) => void;
-  undo?: {
-    number: number;
-    onUndo: () => void;
-    onHold: (held: boolean) => void;
-  };
-}) {
-  const [overlays, setOverlays] = useState<HTMLDivElement | null>(null);
-  return (
-    <div className="itinerary-bar">
-      <div className="itinerary-bar-content">
-        <div className="itinerary-bar-overlays" ref={setOverlays}>
-          {undo && <UndoToast {...undo} />}
-        </div>
-        <p className="itinerary-count" tabIndex={-1}>
-          {count} av {ITINERARY_TRIPS.max} resor
-          {count < ITINERARY_TRIPS.min && (
-            <span className="itinerary-count-minimum"> · minst {ITINERARY_TRIPS.min}</span>
-          )}
-        </p>
-        <CopyLinkButton
-          url={link === undefined ? undefined : `${SITE_URL}${link}`}
-          fallbackTarget={overlays}
-        />
-        <button
-          type="button"
-          className="itinerary-play"
-          disabled={link === undefined}
-          onClick={() => link !== undefined && onPlay(link)}
-        >
-          Starta resplanen
-        </button>
-      </div>
-    </div>
-  );
-}
