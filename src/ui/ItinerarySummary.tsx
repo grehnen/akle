@@ -3,17 +3,19 @@ import { ITINERARY_PATH } from "../freePlay/itineraryLink";
 import { itineraryShareText } from "../freePlay/shareText";
 import { FREE_PLAY_PATH } from "../freePlay/tripLink";
 import { AppLink } from "./AppLink";
-import { LOWER_IS_BETTER, modeName, scoreText, timeText, totalTimeText } from "./messages";
+import { LOWER_IS_BETTER, modeName, scoreText, timeText, wonTieBreakersText } from "./messages";
 import { ScoreLabel } from "./ScoreLabel";
 import { ScoreTooltip } from "./ScoreTooltip";
 import { ShareButton } from "./ShareButton";
+import { Tooltip } from "./Tooltip";
 import "./ItinerarySummary.css";
 
 /**
  * A finished itinerary's summary: its title, a row per trip (its ends, mode, outcome label as the
- * share text words it, a won tie-breaker trip's time and its score), the total score, saying lower
- * is better, with the total time when it has a tie-breaker trip, then share, the builder, today's
- * trip and free play.
+ * share text words it, a won tie-breaker trip's time and its score), and the list's footer of
+ * totals in its score column: the total score, saying lower is better, and the total time when it
+ * has a tie-breaker trip, with the won count in a tooltip on Total tid. Then share, the builder,
+ * today's trip and free play.
  */
 export function ItinerarySummaryView({
   title,
@@ -36,15 +38,23 @@ export function ItinerarySummaryView({
           <SummaryRow key={index} row={row} />
         ))}
       </ol>
-      <p className="itinerary-summary-total">
-        <ScoreTooltip>Totalt {scoreText(standing.score)}</ScoreTooltip>
-      </p>
-      <p className="itinerary-summary-note">{LOWER_IS_BETTER}</p>
-      {hasTieBreaker && (
-        <p className="itinerary-summary-total-time">
-          Total tid {totalTimeText(standing.totalTime, standing.wonTieBreakers)}
-        </p>
-      )}
+      <dl className="itinerary-summary-totals">
+        <div className="itinerary-summary-totals-row">
+          <dt>Totalt</dt>
+          <dd className="itinerary-summary-total">
+            <ScoreTooltip>{scoreText(standing.score)}</ScoreTooltip>
+          </dd>
+          <dd className="itinerary-summary-note">{LOWER_IS_BETTER}</dd>
+        </div>
+        {hasTieBreaker && (
+          <div className="itinerary-summary-totals-row">
+            <dt>
+              <Tooltip text={wonTieBreakersText(standing.wonTieBreakers)}>Total tid</Tooltip>
+            </dt>
+            <dd className="itinerary-summary-total-time">{timeText(standing.totalTime)}</dd>
+          </div>
+        )}
+      </dl>
       <ShareButton text={itineraryShareText({ title, summary, link })} />
       <nav className="itinerary-summary-actions" aria-label="Vidare">
         <AppLink className="primary-link" href={ITINERARY_PATH}>
