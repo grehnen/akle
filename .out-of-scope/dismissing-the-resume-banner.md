@@ -1,6 +1,6 @@
-# Dismissing the "Fortsätt resplanen" banner
+# Dismissing the "Oavslutad resplan" banner
 
-The builder's "Fortsätt resplanen: <title>, resa N av M" banner can't be dismissed or hidden by the player.
+The builder's "Oavslutad resplan" banner, with "<title> · resa N av M" and "Fortsätt ›" beside it, can't be dismissed or hidden by the player.
 
 ## Why this is out of scope
 
