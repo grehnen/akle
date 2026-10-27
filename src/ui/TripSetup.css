@@ -1,0 +1,7 @@
+/* Tidspress's betänketid, a full-width row of its own under the mode cards. */
+.trip-setup-thinking-time {
+  padding: 0.5rem 0.9rem;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
