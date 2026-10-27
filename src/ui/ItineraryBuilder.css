@@ -294,7 +294,7 @@
   bottom: calc(100% + 0.75rem + 0.4rem);
 }
 
-.itinerary-bar-overlays .itinerary-copy-fallback {
+.itinerary-bar-overlays .copy-link-fallback {
   align-self: stretch;
 }
 

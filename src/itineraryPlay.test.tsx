@@ -370,11 +370,11 @@ describe("an itinerary from its link", () => {
       });
     }
 
-    const field = query<HTMLInputElement>(container, ".itinerary-copy-fallback input");
+    const field = query<HTMLInputElement>(container, ".copy-link-fallback input");
     expect(field.value).toBe(`https://akle.grehn.net${fridayLink}`);
     expect(dom.window.document.activeElement).toBe(field);
-    await click(query(container, '.itinerary-copy-fallback button[aria-label="Stäng"]'));
-    expect(container.querySelector(".itinerary-copy-fallback")).toBeNull();
+    await click(query(container, '.copy-link-fallback button[aria-label="Stäng"]'));
+    expect(container.querySelector(".copy-link-fallback")).toBeNull();
   });
 
   test("plays through each trip, a card only before one on the clock, to a total score", async () => {
