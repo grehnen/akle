@@ -310,7 +310,7 @@ describe("an itinerary from its link", () => {
       ]),
     ).toEqual([
       ["1", "Standard", "? → ?"],
-      ["2", "Tidspress 10 s", "? → ?"],
+      ["2", "Tidspress · 10 s", "? → ?"],
       ["3", "Tidtagning", "? → ?"],
       ["4", "Tidtagning", "? → ?"],
     ]);
@@ -412,7 +412,7 @@ describe("an itinerary from its link", () => {
     // Trip 2: Tidspress, on its card until Starta, its thinking time running from then.
     expect(labelLines(container, ".start-gate .trip-number")).toEqual([
       "Fredagsresan",
-      "Resa 2 av 3 · Tidspress 10 s · Totalt −1 poäng",
+      "Resa 2 av 3 · Tidspress · 10 s · Totalt −1 poäng",
     ]);
     expect(container.textContent).not.toContain("Trosa");
     expect(container.textContent).toContain("Tiden går även om du lämnar sidan.");
@@ -468,7 +468,7 @@ describe("an itinerary from its link", () => {
       },
       {
         pair: "Haninge → Trosa",
-        mode: "Tidspress 10 s",
+        mode: "Tidspress · 10 s",
         outcome: "+0 (2 ⏱)",
         time: undefined,
         score: "2 poäng",
@@ -498,7 +498,7 @@ describe("an itinerary from its link", () => {
         "#åkle Resplan · Fredagsresan · 3 resor",
         "Totalt 4 poäng · 0:00,0 (0 vunna)",
         "1. Standard · +0 (Perfekt) · −1 poäng",
-        "2. Tidspress 10 s · +0 (2 ⏱) · 2 poäng",
+        "2. Tidspress · 10 s · +0 (2 ⏱) · 2 poäng",
         "3. Tidtagning · Gav upp (1 ifrån) · 3 poäng",
         `https://akle.grehn.net${fridayLink}`,
       ].join("\n"),
@@ -717,7 +717,7 @@ describe("resuming an itinerary", () => {
     container = await reopen(fridayLink, storage);
     expect(labelLines(container, ".trip-number")).toEqual([
       "Fredagsresan",
-      "Resa 2 av 3 · Tidspress 10 s · Totalt −1 poäng",
+      "Resa 2 av 3 · Tidspress · 10 s · Totalt −1 poäng",
     ]);
     expect(text(container, "#trip-heading")).toContain("Haninge");
     expect(guessNames(container)).toEqual(["1. Nynäshamn 🟧"]);
@@ -739,7 +739,7 @@ describe("resuming an itinerary", () => {
     container = await reopen(fridayLink, storage);
     expect(labelLines(container, ".start-gate .trip-number")).toEqual([
       "Fredagsresan",
-      "Resa 2 av 3 · Tidspress 10 s · Totalt −1 poäng",
+      "Resa 2 av 3 · Tidspress · 10 s · Totalt −1 poäng",
     ]);
     expect(button(container, "Starta resplanen")).toBeUndefined();
   });
@@ -786,7 +786,7 @@ describe("resuming an itinerary", () => {
     container = await reopen(other, storage);
     expect(labelLines(container, ".start-gate .trip-number")).toEqual([
       "Lördag",
-      "Resa 1 av 2 · Tidspress 10 s · Totalt 0 poäng",
+      "Resa 1 av 2 · Tidspress · 10 s · Totalt 0 poäng",
     ]);
   });
 
@@ -925,7 +925,7 @@ describe("the builder's banner", () => {
     expect(dom.window.location.pathname + dom.window.location.search).toBe(fridayLink);
     expect(labelLines(container, ".start-gate .trip-number")).toEqual([
       "Fredagsresan",
-      "Resa 2 av 3 · Tidspress 10 s · Totalt −1 poäng",
+      "Resa 2 av 3 · Tidspress · 10 s · Totalt −1 poäng",
     ]);
   });
 
