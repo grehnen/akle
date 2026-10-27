@@ -9,11 +9,11 @@ export function CopyFallback({ url, onClose }: { url: string; onClose: () => voi
     field.current?.select();
   }, []);
   return (
-    <div className="itinerary-copy-fallback">
-      <label htmlFor="itinerary-copy-fallback">Kunde inte kopiera. Kopiera länken själv:</label>
+    <div className="copy-link-fallback">
+      <label htmlFor="copy-link-fallback">Kunde inte kopiera. Kopiera länken själv:</label>
       <input
         ref={field}
-        id="itinerary-copy-fallback"
+        id="copy-link-fallback"
         readOnly
         value={url}
         onFocus={(event) => event.target.select()}
