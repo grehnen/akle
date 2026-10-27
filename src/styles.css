@@ -499,18 +499,25 @@ input::placeholder {
   font-weight: 700;
 }
 
-/* Ge upp sits under the hints, quieter than them: text only, at the section's left edge. */
+/*
+ * Ge upp has its own row under the hints, at their left edge: a neutral outlined button, edged in
+ * the rule colour rather than a hint's white, so it is never taken for a hint.
+ */
+.give-up-row {
+  width: 100%;
+  display: flex;
+}
+
 .give-up-button {
-  align-self: flex-start;
-  padding-inline: 0.75rem;
+  padding-inline: 1.25rem;
   background: transparent;
+  box-shadow: inset 0 0 0 1px var(--rule);
   color: var(--muted);
   font-weight: 400;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
 }
 
 .give-up-button:hover {
+  box-shadow: inset 0 0 0 1px var(--muted);
   color: var(--text);
 }
 
