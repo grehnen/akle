@@ -1,9 +1,9 @@
 import type { GameReview } from "./game";
 
 /** How much each kommun still away weighs in a loss at the guess limit. */
-const AWAY_WEIGHT_AT_LIMIT = 2;
+export const AWAY_WEIGHT_AT_LIMIT = 2;
 /** How much each kommun still away weighs in a give-up, more than at the guess limit. */
-const AWAY_WEIGHT_GIVEN_UP = 3;
+export const AWAY_WEIGHT_GIVEN_UP = 3;
 /** What each timeout adds to a score; each hint adds one too. */
 export const TIMEOUT_COST = 1;
 

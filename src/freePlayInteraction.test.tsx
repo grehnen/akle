@@ -1149,6 +1149,24 @@ describe("the score tooltip", () => {
   });
 });
 
+describe("the rules", () => {
+  test("explain free-play scoring: the score tooltip's text, a loss's score and time as a tie-break", async () => {
+    const { container } = await mountApp("/fri");
+    await click(query(container, 'header button[aria-label="Så spelar du"]'));
+
+    const section = [...container.querySelectorAll("dialog details")].find(
+      (details) => details.querySelector("summary")?.textContent === "Poäng i fri resa",
+    );
+    expect(
+      [...(section?.querySelectorAll(".rules-section-body p") ?? [])].map((p) => p.textContent),
+    ).toEqual([
+      "Lägre poäng är bättre. En perfekt resa ger −1; varje extra gissning, ledtråd och ⏱ kostar 1.",
+      "Kommer du inte fram räknas varje gissning utöver avståndet, plus 2 poäng för varje kommun du är ifrån målet, eller 3 om du gav upp. Ledtrådar och ⏱ kostar som vanligt.",
+      "Tiden räknas aldrig in i poängen. Den skiljer bara lika poäng åt: i en resplan vinner först den som vunnit flest resor i Tidtagning, sedan den med lägst total tid.",
+    ]);
+  });
+});
+
 describe("Läge", () => {
   const modeRadios = (container: HTMLElement) => [
     ...container.querySelectorAll<HTMLInputElement>('.free-play-modes input[type="radio"]'),
