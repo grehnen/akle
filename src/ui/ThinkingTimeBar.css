@@ -14,19 +14,29 @@
   overflow: hidden;
 }
 
-/* Scaled from the left by the share of the thinking time left; smooth between ticks. */
+/* Runs from full to empty once per thinking time; its length and start are set on the element. */
 .thinking-time-fill {
   height: 100%;
   background: var(--start);
   transform-origin: left;
-  transform: scaleX(var(--thinking-time-left));
-  transition: transform 250ms linear;
+  animation-name: thinking-time;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes thinking-time {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
 }
 
 /* Under reduced motion the bar moves only in whole-second steps, with no gliding between. */
 @media (prefers-reduced-motion: reduce) {
   .thinking-time-fill {
-    transform: scaleX(var(--thinking-time-left-step));
+    animation-timing-function: steps(var(--thinking-time-seconds), end);
   }
 }
 
