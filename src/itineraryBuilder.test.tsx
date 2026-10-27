@@ -831,17 +831,17 @@ describe("the itinerary's link", () => {
       });
     }
 
-    const field = query<HTMLInputElement>(container, ".itinerary-copy-fallback input");
+    const field = query<HTMLInputElement>(container, ".copy-link-fallback input");
     expect(field.readOnly).toBe(true);
     expect(new URL(field.value).origin).toBe("https://akle.grehn.net");
     expect(focused()).toBe(field);
     expect([field.selectionStart, field.selectionEnd]).toEqual([0, field.value.length]);
-    expect(query(container, ".itinerary-copy-fallback label").textContent).toBe(
+    expect(query(container, ".copy-link-fallback label").textContent).toBe(
       "Kunde inte kopiera. Kopiera länken själv:",
     );
 
     await click(button(container, "Kopiera länk"));
-    expect(container.querySelector(".itinerary-copy-fallback")).toBeNull();
+    expect(container.querySelector(".copy-link-fallback")).toBeNull();
     expect(query(container, ".copy-link-toast").textContent).toBe("Kopierat!");
   });
 
@@ -862,9 +862,9 @@ describe("the itinerary's link", () => {
         value: clipboard,
       });
     }
-    expect(container.querySelector(".itinerary-copy-fallback")).not.toBeNull();
+    expect(container.querySelector(".copy-link-fallback")).not.toBeNull();
     await type(query(container, "#itinerary-title"), "Helgresan");
-    expect(container.querySelector(".itinerary-copy-fallback")).toBeNull();
+    expect(container.querySelector(".copy-link-fallback")).toBeNull();
   });
 
   test("Kopiera länk and Starta resplanen wait for the second trip", async () => {

@@ -41,7 +41,7 @@ export function CopyLinkButton({
       </p>
       <button
         type="button"
-        className="itinerary-copy"
+        className="copy-link-button"
         disabled={url === undefined}
         onClick={() => url !== undefined && void copyLink(url)}
       >
