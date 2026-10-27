@@ -104,7 +104,7 @@ export const MODE_NAMES: Record<ModeKind, string> = {
 const MODE_DESCRIPTIONS: Record<ModeKind, string> = {
   standard: "Som dagens resa: gissningarna räcker till avståndet och lite till.",
   unlimited: "Gissa hur många gånger du vill. Ge upp när du vill.",
-  timed: `Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar ${pointsInWords(TIMEOUT_COST)}, även före första gissningen.`,
+  timed: `Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar ${pointsInWords(TIMEOUT_COST)}.`,
   "tie-breaker": "Tiden tas. Vid lika poäng vinner den snabbaste.",
 };
 
