@@ -398,7 +398,7 @@ describe("an itinerary from its link", () => {
     // Trip end: the result with the shortest route, the trip's score and the running total.
     expect(text(container, "#result-heading")).toBe("Perfekt!");
     expect(container.textContent).toContain("Kortaste rutt");
-    expect(text(container, ".result-points")).toBe("−1 poäng");
+    expect(text(container, ".result-score")).toBe("−1 poäng");
     expect(text(container, ".result-score-detail")).toBe("+0 (Perfekt)");
     expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt −1 poäng");
     expect(labelLines(container, ".trip-number")).toEqual([
@@ -427,7 +427,7 @@ describe("an itinerary from its link", () => {
     clockTime += 25_000;
     await guess(container, "Salem");
     await settle();
-    expect(text(container, ".result-points")).toBe("2 poäng");
+    expect(text(container, ".result-score")).toBe("2 poäng");
     expect(seenText(query(container, ".result-score-detail"))).toBe("+0 (2 ⏱)");
     expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt 1 poäng");
     await click(button(container, "Nästa resa"));
@@ -448,7 +448,7 @@ describe("an itinerary from its link", () => {
     await click(query(container, "dialog.give-up-dialog .give-up-confirm"));
     await settle();
     expect(text(container, "#result-heading")).toBe("Gav upp");
-    expect(text(container, ".result-points")).toBe("3 poäng");
+    expect(text(container, ".result-score")).toBe("3 poäng");
     expect(text(container, ".result-score-detail")).toBe("Gav upp (1 ifrån)");
     expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt 4 poäng");
     expect(container.querySelector(".share-button")).toBeNull();
@@ -515,7 +515,7 @@ describe("an itinerary from its link", () => {
     await click(query(container, "dialog.give-up-dialog .give-up-confirm"));
     await settle();
     expect(text(container, "#result-heading")).toBe("Gav upp");
-    expect(text(container, ".result-points")).toBe("2 poäng");
+    expect(text(container, ".result-score")).toBe("2 poäng");
     expect(text(container, ".result-score-detail")).toBe("Gav upp (1 ifrån)");
     expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt 2 poäng");
     expect(button(container, "Nästa resa")).toBeDefined();
@@ -724,7 +724,7 @@ describe("resuming an itinerary", () => {
     await guess(container, "Salem");
     await settle();
     // The first trip's −1 is still in the total: +1 for the wrong guess.
-    expect(text(container, ".result-points")).toBe("1 poäng");
+    expect(text(container, ".result-score")).toBe("1 poäng");
     expect(text(container, ".result-score-detail")).toBe("+1");
     expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt 0 poäng");
   });
@@ -850,7 +850,7 @@ describe("resuming an itinerary", () => {
     clockTime += 900_000;
     await guess(container, "Salem");
     await settle();
-    expect(text(container, ".result-points")).toBe("90 poäng");
+    expect(text(container, ".result-score")).toBe("90 poäng");
     expect(seenText(query(container, ".result-score-detail"))).toBe("+0 (90 ⏱)");
   });
 });

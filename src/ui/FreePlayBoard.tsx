@@ -11,6 +11,7 @@ import { emojiLine } from "../progress/history";
 import { gameOutcome } from "../progress/outcome";
 import type { KeyValueStorage } from "../progress/storage";
 import { freePlayHeadline, scoreText, timeText } from "./messages";
+import type { ResultScore } from "./ResultView";
 import { ScoreLabel } from "./ScoreLabel";
 import { ScoreTooltip } from "./ScoreTooltip";
 import { ShareButton } from "./ShareButton";
@@ -78,23 +79,27 @@ export function FreePlayBoard({
           link,
         })
       : undefined;
-  const scoreFinished = score !== undefined && outcome !== undefined;
-  const points = scoreFinished && (
-    <p className="result-points">
-      <ScoreTooltip>{scoreText(score)}</ScoreTooltip>
-    </p>
-  );
-  const pointsDetail = scoreFinished && (
-    <p className="result-score-detail">
-      <ScoreLabel outcome={outcome} />
-      {game.rules.keepsTime && time !== undefined && (
-        <>
-          {" · "}
-          <span className="result-time">Tid {timeText(time)}</span>
-        </>
-      )}
-    </p>
-  );
+  const finishedScore: ResultScore | undefined =
+    score !== undefined && outcome !== undefined
+      ? {
+          score: (
+            <p className="result-score">
+              <ScoreTooltip>{scoreText(score)}</ScoreTooltip>
+            </p>
+          ),
+          detail: (
+            <p className="result-score-detail">
+              <ScoreLabel outcome={outcome} />
+              {game.rules.keepsTime && time !== undefined && (
+                <>
+                  {" · "}
+                  <span className="result-time">Tid {timeText(time)}</span>
+                </>
+              )}
+            </p>
+          ),
+        }
+      : undefined;
   const shareButton = share !== undefined && <ShareButton text={share} />;
   return (
     <TripBoard
@@ -110,8 +115,7 @@ export function FreePlayBoard({
       openedByPlayer={openedByPlayer}
       concealed={concealed}
       onMapReady={onMapReady}
-      resultScore={points}
-      resultScoreDetail={pointsDetail}
+      resultScore={finishedScore}
       resultActions={
         <>
           {resultActions}
@@ -120,8 +124,8 @@ export function FreePlayBoard({
       }
       stripActions={
         <>
-          {points}
-          {pointsDetail}
+          {finishedScore?.score}
+          {finishedScore?.detail}
           {shareButton}
           {stripActions}
         </>

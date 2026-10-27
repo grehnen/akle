@@ -195,7 +195,7 @@
   grid-template-rows: auto auto 1fr;
   grid-template-areas:
     "outcome emoji  emoji  close actions"
-    "points  detail detail close actions"
+    "score   detail detail close actions"
     ".       .      .      close actions";
   align-items: baseline;
   gap: 0 1rem;
@@ -209,15 +209,15 @@
   grid-area: emoji;
 }
 
-.result-header--columns .result-points {
-  grid-area: points;
+.result-header--columns .result-score {
+  grid-area: score;
 }
 
 .result-header--columns .result-score-detail {
   grid-area: detail;
 }
 
-.result-header--columns .result-points,
+.result-header--columns .result-score,
 .result-header--columns .result-score-detail {
   margin-top: 0.5rem;
 }
@@ -250,13 +250,13 @@
     grid-template-columns: auto 1fr auto;
     grid-template-rows: none;
     grid-template-areas:
-      "outcome points  close"
+      "outcome score   close"
       "line    line    line"
       "actions actions actions";
     column-gap: 0.75rem;
   }
 
-  .result-header--columns .result-points {
+  .result-header--columns .result-score {
     margin-top: 0;
   }
 
