@@ -276,6 +276,15 @@ a {
   width: 100%;
 }
 
+/* Over the map's top-left corner, clear of the zoom buttons at its top-right. */
+.map-corner {
+  position: absolute;
+  z-index: 3;
+  top: 0.6rem;
+  left: 0.6rem;
+  pointer-events: none;
+}
+
 .satellite-map {
   position: relative;
   width: 100%;

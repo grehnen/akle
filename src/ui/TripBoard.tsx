@@ -43,8 +43,13 @@ type TripBoardProps<T extends Trip> = {
   onResultClosedChange?: (closed: boolean) => void;
   /** Links put in the footer before the data credits, such as Rapportera fel. */
   footerLinks?: ReactNode;
-  /** Shown above the guess input while the trip is played, such as its running clock. */
+  /** Shown above the guess input while the trip is played, such as its thinking-time bar. */
   clock?: ReactNode;
+  /**
+   * Laid over the map's top-left corner while the trip is played and through the pause after it
+   * ends, such as a timed trip's running clock; it moves nothing on the board.
+   */
+  mapCorner?: ReactNode;
   /**
    * The board opens by the player's own action, as after Slumpa resa or `Starta`, not on
    * arriving at the page: it takes the window to the top and focus to the guess input.
@@ -84,6 +89,7 @@ export function TripBoard<T extends Trip>({
   onResultClosedChange,
   footerLinks,
   clock,
+  mapCorner,
   openedByPlayer: initiallyOpenedByPlayer = false,
   timeouts,
   concealed = false,
@@ -194,9 +200,10 @@ export function TripBoard<T extends Trip>({
             <p role="alert" className="toast">
               {toast}
             </p>
+            {!concealed && !settled && mapCorner && <div className="map-corner">{mapCorner}</div>}
           </div>
 
-          {/* A trip over shows its time, if any, in the result alone. */}
+          {/* A trip over drops its thinking-time bar. */}
           {!concealed && !finished && clock}
 
           {!concealed && (
