@@ -1,4 +1,4 @@
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import type { Game } from "../engine/game";
 import { thinkingTimeLeft, timeoutRuns } from "../engine/thinkingTime";
 import { timeoutsText, warningAnnouncement } from "./messages";
@@ -34,14 +34,19 @@ export function ThinkingTimeBar({ game, now }: { game: Game; now: number }) {
     announce(warningAnnouncement(warningSeconds), thinkingTimeNumber);
   }
 
-  const fill = {
-    "--thinking-time-left": left / (thinkingSeconds * 1000),
-    "--thinking-time-left-step": secondsLeft / thinkingSeconds,
-  } as CSSProperties;
+  const timesShown = useTimesShown();
+  const thinkingMs = thinkingSeconds * 1000;
   return (
     <div className={warning ? "thinking-time thinking-time--warning" : "thinking-time"}>
       <div className="thinking-time-bar" aria-hidden="true">
-        <div className="thinking-time-fill" style={fill} />
+        {/* Each thinking time gets a fresh fill, so it starts full instead of animating back up.
+            So does each return to the tab: a hidden tab draws nothing, and a fill mounted there
+            would only start running once shown, behind the time. */}
+        <ThinkingTimeFill
+          key={`${thinkingTimeNumber}-${timesShown}`}
+          thinkingMs={thinkingMs}
+          elapsedMs={thinkingMs - left}
+        />
       </div>
       <p className="thinking-time-seconds">
         <span className="visually-hidden">Betänketid kvar: </span>
@@ -56,4 +61,34 @@ export function ThinkingTimeBar({ game, now }: { game: Game; now: number }) {
       </p>
     </div>
   );
+}
+
+/**
+ * One thinking time's fill: a single CSS animation from full to empty, set back by the time
+ * already gone. The delay is taken once, as the fill mounts: changing it later would shift the
+ * running animation, so the ticks never touch it.
+ */
+function ThinkingTimeFill({ thinkingMs, elapsedMs }: { thinkingMs: number; elapsedMs: number }) {
+  const [style] = useState(
+    () =>
+      ({
+        animationDuration: `${thinkingMs}ms`,
+        animationDelay: `-${elapsedMs}ms`,
+        "--thinking-time-seconds": thinkingMs / 1000,
+      }) as CSSProperties,
+  );
+  return <div className="thinking-time-fill" style={style} />;
+}
+
+/** How many times the page has come back into view since this mounted. */
+function useTimesShown(): number {
+  const [timesShown, setTimesShown] = useState(0);
+  useEffect(() => {
+    const countShown = () => {
+      if (document.visibilityState === "visible") setTimesShown((count) => count + 1);
+    };
+    document.addEventListener("visibilitychange", countShown);
+    return () => document.removeEventListener("visibilitychange", countShown);
+  }, []);
+  return timesShown;
 }

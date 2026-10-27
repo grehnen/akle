@@ -1645,12 +1645,69 @@ describe("Tidspress", () => {
     expect(announced(container)).toBe("3 sekunder kvar");
   });
 
-  test("the bar moves smoothly, or in whole-second steps under reduced motion", async () => {
+  const barFill = (container: HTMLElement) => query(container, ".thinking-time-fill");
+
+  test("the bar runs down as one animation over the thinking time, untouched by the ticks", async () => {
     const { container } = await startedTimedTrip();
+    const fill = barFill(container);
+    expect(fill.style.animationDuration).toBe("10000ms");
+    expect(fill.style.animationDelay).toBe("0ms");
+
     await awhile(7_400);
-    const fill = query(container, ".thinking-time-fill");
-    expect(fill.style.getPropertyValue("--thinking-time-left")).toBe("0.26");
-    expect(fill.style.getPropertyValue("--thinking-time-left-step")).toBe("0.3");
+    expect(barFill(container)).toBe(fill);
+    expect(fill.style.animationDuration).toBe("10000ms");
+    expect(fill.style.animationDelay).toBe("0ms");
+  });
+
+  test("after a timeout the bar is replaced and starts from full, set to the time already gone", async () => {
+    const { container } = await startedTimedTrip();
+    const firstFill = barFill(container);
+    await awhile(10_300);
+
+    const fill = barFill(container);
+    expect(fill).not.toBe(firstFill);
+    expect(fill.style.animationDuration).toBe("10000ms");
+    expect(fill.style.animationDelay).toBe("-300ms");
+  });
+
+  test("after a guess the bar is replaced and starts from full", async () => {
+    const { container } = await startedTimedTrip();
+    await awhile(4_000);
+    const firstFill = barFill(container);
+    await guess(container, "Haninge");
+
+    const fill = barFill(container);
+    expect(fill).not.toBe(firstFill);
+    expect(fill.style.animationDuration).toBe("10000ms");
+    expect(fill.style.animationDelay).toBe("0ms");
+  });
+
+  test("on a reload the bar picks up where the thinking time is", async () => {
+    const storage = memoryStorage();
+    await startedTimedTrip(storage);
+    passTime(2_500);
+    const reloaded = await reopen(timedLink("0192", "0488"), storage);
+    expect(barFill(reloaded.container).style.animationDelay).toBe("-2500ms");
+  });
+
+  test("coming back to the tab, the bar is replaced and set to the time gone while away", async () => {
+    const { container } = await startedTimedTrip();
+    const firstFill = barFill(container);
+    // A hidden tab draws nothing, so a bar can't be trusted to have kept running while away.
+    Object.defineProperty(dom.window.document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
+    try {
+      await awhile(4_200);
+    } finally {
+      delete (dom.window.document as { visibilityState?: unknown }).visibilityState;
+    }
+
+    const fill = barFill(container);
+    expect(fill).not.toBe(firstFill);
+    expect(fill.style.animationDuration).toBe("10000ms");
+    expect(fill.style.animationDelay).toBe("-4200ms");
   });
 
   test("a timeout uses no guess, shows as ⏱ and restarts the thinking time", async () => {
