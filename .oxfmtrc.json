@@ -2,6 +2,7 @@
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "ignorePatterns": [
     ".agents/",
+    ".claude/worktrees/",
     "skills-lock.json",
     "bun.lock",
     "data/graphs/*/shapes.geojson",
