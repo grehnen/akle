@@ -7,13 +7,16 @@ const EDGE_GAP = 8;
 
 /**
  * Text that explains itself: hovering, focusing or tapping it shows `text` beside it, as its
- * description to screen readers too. A tap elsewhere, Escape, or the pointer or focus leaving it
- * hides it again.
+ * description to screen readers too. Tapping it again, a tap elsewhere, Escape, or the pointer or
+ * focus leaving it hides it.
  */
 export function Tooltip({ text, children }: { text: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const tooltipId = useId();
   const wrapper = useRef<HTMLSpanElement>(null);
+  // Whether it showed when a press began: a tap's focus opens it before its click, which must not
+  // read that as already showing. Without a press (the keyboard), the click goes by how it is now.
+  const shownAtPress = useRef<boolean | null>(null);
 
   useCloseOnOutsidePress(wrapper, open, () => setOpen(false));
   useEffect(() => {
@@ -33,7 +36,13 @@ export function Tooltip({ text, children }: { text: string; children: ReactNode 
         aria-describedby={open ? tooltipId : undefined}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
-        onClick={() => setOpen(true)}
+        onPointerDown={() => {
+          shownAtPress.current = open;
+        }}
+        onClick={() => {
+          setOpen(!(shownAtPress.current ?? open));
+          shownAtPress.current = null;
+        }}
         onPointerEnter={(event) => {
           if (event.pointerType === "mouse") setOpen(true);
         }}
