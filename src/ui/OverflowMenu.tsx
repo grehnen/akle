@@ -1,4 +1,5 @@
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useRef, useState } from "react";
+import { useCloseOnOutsidePress } from "./useCloseOnOutsidePress";
 import "./OverflowMenu.css";
 
 type OverflowMenuProps = {
@@ -19,14 +20,7 @@ export function OverflowMenu({ label, itemLabel, itemDisabled, onSelect }: Overf
   const root = useRef<HTMLDivElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const closeOnOutsidePress = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
-    };
-    window.addEventListener("pointerdown", closeOnOutsidePress);
-    return () => window.removeEventListener("pointerdown", closeOnOutsidePress);
-  }, [open]);
+  useCloseOnOutsidePress(root, open, () => setOpen(false));
 
   const closeOnEscape = (event: KeyboardEvent) => {
     if (event.key !== "Escape") return;
