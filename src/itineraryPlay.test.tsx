@@ -515,9 +515,9 @@ describe("an itinerary from its link", () => {
     await click(query(container, "dialog.give-up-dialog .give-up-confirm"));
     await settle();
     expect(text(container, "#result-heading")).toBe("Gav upp");
-    expect(text(container, ".result-score")).toBe("2 poäng");
+    expect(text(container, ".result-score")).toBe("3 poäng");
     expect(text(container, ".result-score-detail")).toBe("Gav upp (1 ifrån)");
-    expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt 2 poäng");
+    expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt 3 poäng");
     expect(button(container, "Nästa resa")).toBeDefined();
   });
 
