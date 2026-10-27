@@ -108,13 +108,26 @@ const MODE_DESCRIPTIONS: Record<ModeKind, string> = {
   "tie-breaker": "Tiden tas. Vid lika poäng vinner den snabbaste.",
 };
 
+/** How each mode plays in a few words, for a mode card where room is tight. */
+const MODE_SHORT_DESCRIPTIONS: Record<ModeKind, string> = {
+  standard: "Som dagens resa.",
+  unlimited: "Gissa hur många gånger du vill.",
+  timed: "Gissa inom betänketiden.",
+  "tie-breaker": "Snabbast vinner vid lika poäng.",
+};
+
 /** Every mode in the order the player is offered them, with its name and how it plays. */
-export const MODES: readonly { kind: ModeKind; name: string; description: string }[] =
-  MODE_KINDS.map((kind) => ({
-    kind,
-    name: MODE_NAMES[kind],
-    description: MODE_DESCRIPTIONS[kind],
-  }));
+export const MODES: readonly {
+  kind: ModeKind;
+  name: string;
+  description: string;
+  shortDescription: string;
+}[] = MODE_KINDS.map((kind) => ({
+  kind,
+  name: MODE_NAMES[kind],
+  description: MODE_DESCRIPTIONS[kind],
+  shortDescription: MODE_SHORT_DESCRIPTIONS[kind],
+}));
 
 /** How a mode plays. */
 export function modeDescription(kind: ModeKind): string {
