@@ -27,7 +27,7 @@ import type { ModeSetting } from "../freePlay/linkPayload";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { shortestRouteLength } from "../graph/routes";
 import { SITE_URL } from "../siteUrl";
-import { CopyFallback } from "./CopyFallback";
+import { CopyLinkButton } from "./CopyLinkButton";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
 import { modeDescription } from "./messages";
 import { ModeSelect } from "./ModeSelect";
@@ -40,7 +40,6 @@ import {
 } from "./TripChoice";
 import { UndoToast, useUndoRemoval } from "./UndoToast";
 import { useAnnouncer } from "./useAnnouncer";
-import { useCopyToast } from "./useCopyToast";
 import { useKeepOnScreen } from "./useKeepOnScreen";
 import "./ItineraryBuilder.css";
 
@@ -526,31 +525,12 @@ function LinkBar({
   onPlay: (link: string) => void;
   undo?: { number: number; onUndo: () => void; onHold: (held: boolean) => void };
 }) {
-  const { toast, copy } = useCopyToast();
-  // The link that failed to copy, shown until a copy works or the itinerary is edited.
-  const [uncopied, setUncopied] = useState<string>();
-  const [previousLink, setPreviousLink] = useState(link);
-  if (link !== previousLink) {
-    setPreviousLink(link);
-    setUncopied(undefined);
-  }
-  const copyLink = async (url: string) => setUncopied((await copy(url)) ? undefined : url);
-
+  const [overlays, setOverlays] = useState<HTMLDivElement | null>(null);
   return (
     <div className="itinerary-bar">
       <div className="itinerary-bar-content">
-        <div className="itinerary-bar-overlays">
+        <div className="itinerary-bar-overlays" ref={setOverlays}>
           {undo && <UndoToast {...undo} />}
-          {uncopied !== undefined && (
-            <CopyFallback key={uncopied} url={uncopied} onClose={() => setUncopied(undefined)} />
-          )}
-          <p
-            role="status"
-            aria-live="polite"
-            className={uncopied === undefined ? "itinerary-toast" : "visually-hidden"}
-          >
-            {toast}
-          </p>
         </div>
         <p className="itinerary-count" tabIndex={-1}>
           {count} av {ITINERARY_TRIPS.max} resor
@@ -558,14 +538,10 @@ function LinkBar({
             <span className="itinerary-count-minimum"> · minst {ITINERARY_TRIPS.min}</span>
           )}
         </p>
-        <button
-          type="button"
-          className="itinerary-copy"
-          disabled={link === undefined}
-          onClick={() => link !== undefined && void copyLink(`${SITE_URL}${link}`)}
-        >
-          Kopiera länk
-        </button>
+        <CopyLinkButton
+          url={link === undefined ? undefined : `${SITE_URL}${link}`}
+          fallbackTarget={overlays}
+        />
         <button
           type="button"
           className="itinerary-play"

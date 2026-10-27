@@ -306,23 +306,12 @@
   white-space: nowrap;
 }
 
-.itinerary-copy,
-.itinerary-play {
-  font-weight: 700;
-}
-
-.itinerary-copy {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: inset 0 0 0 1px var(--rule);
-}
-
 .itinerary-play {
   background: var(--start);
   color: var(--night);
+  font-weight: 700;
 }
 
-.itinerary-copy:disabled,
 .itinerary-play:disabled {
   background: var(--surface);
   color: var(--muted);
@@ -349,23 +338,22 @@
   pointer-events: auto;
 }
 
-.itinerary-toast {
-  margin: 0;
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  background: var(--text);
-  color: var(--night);
-  font-size: 0.85rem;
-  font-weight: 700;
-  white-space: nowrap;
+/* The copy toast floats at the bar's right, where the overlays end. */
+.itinerary-bar .copy-link {
+  position: static;
 }
 
-.itinerary-toast:empty {
-  display: none;
+.itinerary-bar .copy-link-toast {
+  right: 0;
+  bottom: calc(100% + 0.75rem + 0.4rem);
 }
 
-.itinerary-undo,
-.itinerary-copy-fallback {
+.itinerary-bar-overlays .itinerary-copy-fallback {
+  align-self: stretch;
+}
+
+.itinerary-undo {
+  align-self: flex-start;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -377,43 +365,7 @@
   box-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--night) 60%, transparent);
 }
 
-.itinerary-undo {
-  align-self: flex-start;
-}
-
 .itinerary-undo button {
   background: var(--night);
   color: var(--text);
-}
-
-.itinerary-copy-fallback {
-  align-self: stretch;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.5rem;
-  padding: 0.5rem 0.25rem 0.5rem 0.75rem;
-}
-
-.itinerary-copy-fallback label {
-  flex: 1 1 100%;
-  font-size: 0.85rem;
-}
-
-.itinerary-copy-fallback input {
-  flex: 1;
-  min-width: 0;
-  min-height: 2.75rem;
-  padding: 0 0.5rem;
-  border: 1px solid var(--rule);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
-  font-weight: 400;
-}
-
-.itinerary-copy-fallback button {
-  min-width: 2.75rem;
-  padding: 0;
-  background: transparent;
-  color: var(--night);
 }
