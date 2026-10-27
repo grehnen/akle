@@ -15,6 +15,8 @@ type FreePlayViewProps = {
   now: Date;
   /** A trip link's payload, the page's `r`; without one free play opens on its setup screen. */
   linkPayload?: string;
+  /** The page's state, which may hold what setup opens on, as when going back to it from a trip. */
+  pageState?: unknown;
   /** Shows a trip's link in the address bar while it is played. */
   onShowTripLink?: ShowTripLink;
   /** Where trips' saves are kept; localStorage by default. */
@@ -39,6 +41,7 @@ export function FreePlayView({
   source,
   now,
   linkPayload,
+  pageState,
   onShowTripLink = () => {},
   storage,
   sessionStorage,
@@ -76,6 +79,7 @@ export function FreePlayView({
       linkedTrip={loaded.kind === "trip" ? loaded.trip : undefined}
       resumed={loaded.kind === "trip" ? loaded.resumed : undefined}
       unfinished={loaded.kind === "setup" ? loaded.unfinished : undefined}
+      pageState={loaded.kind === "setup" ? pageState : undefined}
       onShowTripLink={onShowTripLink}
       storage={savesStorage}
       sessionStorage={sessionStorage ?? fallbackSessionStorage}

@@ -2108,3 +2108,104 @@ describe("the board behind Starta", () => {
     await settle();
   });
 });
+
+describe("‹ Tillbaka from the Starta gate", () => {
+  const SETUP_KEY = "akle:free-play-setup";
+  const tillbaka = (container: HTMLElement) => query(container, ".start-gate a");
+  const chosenMode = (container: HTMLElement) =>
+    query<HTMLInputElement>(container, ".free-play-modes input:checked").value;
+  const rangeValues = (container: HTMLElement) => {
+    const { min, max } = distanceThumbs(container);
+    return [min.value, max.value];
+  };
+  const selectedTab = (container: HTMLElement) =>
+    query(container, '[role="tab"][aria-selected="true"]').textContent;
+
+  test("opens setup on a drawn trip's mode and range, on Slumpa", async () => {
+    const storage = memoryStorage();
+    const session = memoryStorage();
+    const { container } = await mountApp("/fri", storage, session);
+    await click(modeChoice(container, "tie-breaker"));
+    await type(distanceThumbs(container).min, "1");
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+    const gateLink = address();
+    // Setup's choice moves on meanwhile, as in another tab.
+    const elsewhere = await reopen("/fri", storage, session);
+    await click(modeChoice(elsewhere.container, "standard"));
+    await type(distanceThumbs(elsewhere.container).min, "2");
+    const kept = storage.getItem(SETUP_KEY);
+
+    const gate = await reopen(gateLink, storage, session);
+    await click(tillbaka(gate.container));
+    expect(dom.window.location.pathname).toBe("/fri");
+    expect(chosenMode(gate.container)).toBe("tie-breaker");
+    expect(rangeValues(gate.container)).toEqual(["1", "2"]);
+    expect(selectedTab(gate.container)).toBe("Slumpa");
+    expect(storage.getItem(SETUP_KEY)).toBe(kept);
+  });
+
+  test("opens setup on a picked trip's mode, with Välj själv filled with its pair", async () => {
+    const { container } = await mountApp("/fri");
+    await click(modeChoice(container, "timed"));
+    await type(thinkingTimeSlider(container) as HTMLInputElement, "12");
+    await click(tabNamed(container, "Välj själv"));
+    await pick(container, "Nynäshamn", "Trosa");
+    expect(container.querySelector(".start-gate")).not.toBeNull();
+
+    await click(tillbaka(container));
+    expect(chosenMode(container)).toBe("timed");
+    expect((thinkingTimeSlider(container) as HTMLInputElement).value).toBe("12");
+    expect(selectedTab(container)).toBe("Välj själv");
+    expect(startField(container).value).toBe("Nynäshamn");
+    expect(destinationField(container).value).toBe("Trosa");
+
+    await click(resButton(container));
+    expect(container.querySelector(".start-gate")).not.toBeNull();
+  });
+
+  test("leaves the kept setup choice as it was until a draw, then keeps the one drawn with", async () => {
+    const storage = memoryStorage();
+    const setup = await mountApp("/fri", storage);
+    await click(modeChoice(setup.container, "unlimited"));
+    const kept = storage.getItem(SETUP_KEY);
+    const link = tripLinkPath(0, {
+      start: "0192",
+      destination: "0488",
+      mode: { kind: "tie-breaker" },
+    });
+
+    const { container } = await reopen(link, storage);
+    await click(tillbaka(container));
+    expect(chosenMode(container)).toBe("tie-breaker");
+    // Someone else's trip: its ends stay hidden.
+    expect(selectedTab(container)).toBe("Slumpa");
+    expect(startField(container).value).toBe("");
+    await type(distanceThumbs(container).min, "1");
+    await type(distanceThumbs(container).max, "2");
+    expect(storage.getItem(SETUP_KEY)).toBe(kept);
+
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+    const reloaded = await reopen("/fri", storage);
+    expect(chosenMode(reloaded.container)).toBe("tie-breaker");
+    expect(rangeValues(reloaded.container)).toEqual(["1", "2"]);
+  });
+
+  test("keeps the setup choice it opened on once a trip is started from Välj själv", async () => {
+    const storage = memoryStorage();
+    const setup = await mountApp("/fri", storage);
+    await click(modeChoice(setup.container, "unlimited"));
+    const link = tripLinkPath(0, {
+      start: "0192",
+      destination: "0488",
+      mode: { kind: "timed", thinkingTime: 20 },
+    });
+
+    const { container } = await reopen(link, storage);
+    await click(tillbaka(container));
+    await click(tabNamed(container, "Välj själv"));
+    await pick(container, "Trosa", "Nynäshamn");
+    const reloaded = await reopen("/fri", storage);
+    expect(chosenMode(reloaded.container)).toBe("timed");
+    expect((thinkingTimeSlider(reloaded.container) as HTMLInputElement).value).toBe("20");
+  });
+});
