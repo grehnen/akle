@@ -1,8 +1,16 @@
 import { type KeyValueStorage, readJson, removeKey, writeJson } from "../progress/storage";
 import type { PinnedVersion } from "./currentVersion";
+import type { DistanceRange } from "./draw";
 import { ITINERARY_TRIPS, MAX_ITINERARY_TITLE, titleLength } from "./itineraryLink";
 import type { LinkedTrip } from "./linkPayload";
-import { hasFormat, isRecord, readTrip, storeTrip } from "./storedGame";
+import {
+  hasFormat,
+  isDistanceRange,
+  isRecord,
+  readTrip,
+  storeRange,
+  storeTrip,
+} from "./storedGame";
 import { tripProblem } from "./tripLink";
 
 const DRAFT_KEY = "akle:itinerary-draft";
@@ -11,10 +19,13 @@ const DRAFT_KEY = "akle:itinerary-draft";
  * The stored shape's format. A draft of any other format is ignored, as if none were stored, so
  * a change to the shape that older code can't read bumps it; adding an optional field doesn't.
  */
-const DRAFT_FORMAT = 1;
+const DRAFT_FORMAT = 2;
 
-/** A trip in the draft, and whether it was drawn, so its pair stays hidden until Visa. */
-export type DraftTrip = { trip: LinkedTrip; drawn: boolean };
+/**
+ * A trip in the draft, and for a drawn trip the distance range it was drawn from, which its row
+ * shows instead of its pair.
+ */
+export type DraftTrip = { trip: LinkedTrip; drawnFrom?: DistanceRange };
 
 /** The itinerary being built: its title as typed and its trips in order. */
 export type BuilderDraft = { title: string; trips: readonly DraftTrip[] };
@@ -40,7 +51,10 @@ export function saveBuilderDraft(
     format: DRAFT_FORMAT,
     versionOrdinal,
     title,
-    trips: trips.map(({ trip, drawn }) => ({ trip: storeTrip(trip), drawn })),
+    trips: trips.map(({ trip, drawnFrom }) => ({
+      trip: storeTrip(trip),
+      ...(drawnFrom && { drawnFrom: storeRange(drawnFrom) }),
+    })),
   };
   writeJson(storage, DRAFT_KEY, stored);
 }
@@ -70,8 +84,10 @@ export function restoreBuilderDraft(
 }
 
 function readDraftTrip(version: PinnedVersion, stored: unknown): DraftTrip | undefined {
-  if (!isRecord(stored) || typeof stored.drawn !== "boolean") return undefined;
+  if (!isRecord(stored)) return undefined;
+  const { drawnFrom } = stored;
+  if (drawnFrom !== undefined && !isDistanceRange(drawnFrom)) return undefined;
   const trip = readTrip(stored.trip);
   if (trip === undefined || tripProblem(version, trip) !== undefined) return undefined;
-  return { trip, drawn: stored.drawn };
+  return drawnFrom === undefined ? { trip } : { trip, drawnFrom: storeRange(drawnFrom) };
 }

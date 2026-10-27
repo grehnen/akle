@@ -77,25 +77,25 @@ export function TripChoiceTabs({
 /**
  * The Välj själv panel: Start and Mål, each tagging the other end `samma` and its neighbors
  * `granne`, the distance once both are set, and a button that takes the trip only when it can
- * be played. `clearOnPick` empties the fields after, for picking one trip after another.
- * `initial` fills the fields with a pair to begin with.
+ * be played. Without `submitLabel` there is no button, and `onPickedChange` hands the trip to the
+ * caller instead. `initial` fills the fields with a pair to begin with.
  */
 export function PickTripForm({
   graph,
   idPrefix,
   hidden,
   submitLabel,
-  clearOnPick = false,
   initial,
   onPick,
+  onPickedChange,
 }: {
   graph: GraphVersion;
   idPrefix: string;
   hidden: boolean;
-  submitLabel: string;
-  clearOnPick?: boolean;
+  submitLabel?: string;
   initial?: Trip;
-  onPick: (trip: Trip) => void;
+  onPick?: (trip: Trip) => void;
+  onPickedChange?: (trip: Trip | undefined) => void;
 }) {
   const nameOf = (code?: KommunCode) => (code && graph.kommuner.get(code)?.name) ?? "";
   const [startText, setStartText] = useState(() => nameOf(initial?.start));
@@ -111,6 +111,13 @@ export function PickTripForm({
         : graph.neighbors.get(start)?.has(destination)
           ? "Start och mål är grannar. Välj en kommun längre bort."
           : undefined;
+  const changeEnds = (nextStartText: string, nextDestinationText: string) => {
+    setStartText(nextStartText);
+    setDestinationText(nextDestinationText);
+    const nextStart = resolveEndpoint(graph, nextStartText);
+    const nextDestination = resolveEndpoint(graph, nextDestinationText);
+    onPickedChange?.(pickedTrip(graph, nextStart, nextDestination)?.trip);
+  };
 
   return (
     <form
@@ -121,12 +128,7 @@ export function PickTripForm({
       hidden={hidden}
       onSubmit={(event) => {
         event.preventDefault();
-        if (picked === undefined) return;
-        onPick(picked.trip);
-        if (clearOnPick) {
-          setStartText("");
-          setDestinationText("");
-        }
+        if (picked !== undefined) onPick?.(picked.trip);
       }}
     >
       <EndpointField
@@ -135,7 +137,7 @@ export function PickTripForm({
         end="start"
         text={startText}
         suggestions={endpointSuggestions(graph, startText, destination)}
-        onTextChange={setStartText}
+        onTextChange={(text) => changeEnds(text, destinationText)}
       />
       <EndpointField
         id={`${idPrefix}-destination`}
@@ -143,14 +145,16 @@ export function PickTripForm({
         end="destination"
         text={destinationText}
         suggestions={endpointSuggestions(graph, destinationText, start)}
-        onTextChange={setDestinationText}
+        onTextChange={(text) => changeEnds(startText, text)}
       />
       <p className="free-play-distance" aria-live="polite">
         {picked !== undefined ? `Avstånd ${picked.distance}` : problem}
       </p>
-      <button type="submit" className="free-play-go" disabled={picked === undefined}>
-        {submitLabel}
-      </button>
+      {submitLabel !== undefined && (
+        <button type="submit" className="free-play-go" disabled={picked === undefined}>
+          {submitLabel}
+        </button>
+      )}
     </form>
   );
 }

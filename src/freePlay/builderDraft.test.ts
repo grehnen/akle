@@ -30,12 +30,12 @@ const DRAFT_KEY = "akle:itinerary-draft";
 const draft: BuilderDraft = {
   title: "Helgresan",
   trips: [
+    { trip: { start: "0488", destination: "0136", mode: { kind: "timed", thinkingTime: 17 } } },
     {
-      trip: { start: "0488", destination: "0136", mode: { kind: "timed", thinkingTime: 17 } },
-      drawn: false,
+      trip: { start: "0192", destination: "0128", mode: { kind: "tie-breaker" } },
+      drawnFrom: { min: 1, max: 2 },
     },
-    { trip: { start: "0192", destination: "0128", mode: { kind: "tie-breaker" } }, drawn: true },
-    { trip: { start: "0192", destination: "0488", mode: { kind: "unlimited" } }, drawn: false },
+    { trip: { start: "0192", destination: "0488", mode: { kind: "unlimited" } } },
   ],
 };
 
@@ -46,7 +46,7 @@ const stored = (value: unknown) => {
 };
 
 describe("the builder's draft", () => {
-  test("keeps the title and the trips in order, with their modes, betänketider and draws", () => {
+  test("keeps the title and the trips in order, with their modes, betänketider and drawn ranges", () => {
     const storage = memoryStorage();
     saveBuilderDraft(storage, version.ordinal, draft);
     expect(restoreBuilderDraft(storage, version)).toEqual(draft);
@@ -81,16 +81,19 @@ describe("the builder's draft", () => {
     expect(restoreBuilderDraft(storage, version)).toBeUndefined();
   });
 
-  const valid = { format: 1, versionOrdinal: 2, title: "Helgresan", trips: draft.trips };
+  const valid = { format: 2, versionOrdinal: 2, title: "Helgresan", trips: draft.trips };
   test.each([
     ["not JSON", "{"],
     ["not a record", [1, 2]],
-    ["another format", { ...valid, format: 2 }],
+    ["another format", { ...valid, format: 1 }],
     ["a title that isn't text", { ...valid, title: 3 }],
     ["a title over 40 characters", { ...valid, title: "x".repeat(41) }],
     ["trips that aren't a list", { ...valid, trips: {} }],
     ["over 20 trips", { ...valid, trips: Array.from({ length: 21 }, () => draft.trips[0]) }],
-    ["a trip without a draw flag", { ...valid, trips: [{ trip: draft.trips[0].trip }] }],
+    [
+      "a drawn trip's range that isn't one",
+      { ...valid, trips: [{ ...draft.trips[1], drawnFrom: { min: 2, max: 1 } }] },
+    ],
     [
       "a betänketid out of range",
       {
