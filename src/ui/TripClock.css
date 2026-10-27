@@ -1,8 +1,12 @@
-/* Tabular figures, so the clock doesn't jitter as its digits change. */
+/* A pill over the map, its tabular figures keeping it from jittering as its digits change. */
 .trip-clock {
   margin: 0;
-  font-size: 1.25rem;
+  padding: 0.2rem 0.75rem;
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--night) 85%, transparent);
+  box-shadow: 0 0 0 1px var(--rule);
+  color: var(--text);
+  font-size: 1.1rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  text-align: center;
 }

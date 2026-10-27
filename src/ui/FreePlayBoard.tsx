@@ -98,13 +98,8 @@ export function FreePlayBoard({
       sessionStorage={sessionStorage}
       label={label}
       resultHeadline={outcome && freePlayHeadline(outcome)}
-      clock={
-        game.rules.keepsTime ? (
-          <TripClock game={game} clock={clock} />
-        ) : (
-          thinking && <ThinkingTimeBar game={game} now={now} />
-        )
-      }
+      clock={thinking && <ThinkingTimeBar game={game} now={now} />}
+      mapCorner={game.rules.keepsTime && <TripClock game={game} clock={clock} />}
       timeouts={timed ? timeoutRuns(game, now) : undefined}
       openedByPlayer={openedByPlayer}
       concealed={concealed}
