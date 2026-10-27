@@ -440,6 +440,7 @@ describe("an itinerary from its link", () => {
 
     // The summary: the title, then a row per trip with all it has.
     expect(text(container, "#itinerary-summary-heading")).toBe("Fredagsresan");
+    expect(text(container, ".itinerary-summary-subtitle")).toBe("Sammanfattning");
     expect(summaryRows(container)).toEqual([
       {
         pair: "Nynäshamn → Salem",
