@@ -49,7 +49,7 @@ type TripBoardProps<T extends Trip> = {
   clock?: ReactNode;
   /**
    * Laid over the map's top-left corner while the trip is played and through the pause after it
-   * ends, such as a timed trip's running clock; it moves nothing on the board.
+   * ends, such as a tie-breaker trip's running time; it moves nothing on the board.
    */
   mapCorner?: ReactNode;
   /**
