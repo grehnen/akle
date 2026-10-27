@@ -3,6 +3,7 @@ import type { Trip } from "../engine/game";
 import type { SetupChoice } from "../freePlay/setupChoice";
 import type { GraphVersion } from "../graph/graphVersion";
 import { Modal } from "./Modal";
+import { SliderTrack } from "./SliderTrack";
 import type { TripChoiceTab } from "./TripChoice";
 import { TripSetup } from "./TripSetup";
 import "./TripModal.css";
@@ -120,8 +121,7 @@ function CountSlider({
         Antal <strong>{count}</strong>
         <span className="trip-modal-count-max"> av högst {max}</span>
       </label>
-      <div className="distance-range-track">
-        <span className="distance-range-fill" style={{ left: 0, right: `${100 - percent}%` }} />
+      <SliderTrack startPercent={0} endPercent={percent}>
         <input
           id={id}
           type="range"
@@ -130,7 +130,7 @@ function CountSlider({
           value={count}
           onChange={(event) => onChange(Number(event.target.value))}
         />
-      </div>
+      </SliderTrack>
     </div>
   );
 }
