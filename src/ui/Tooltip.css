@@ -1,10 +1,10 @@
-.score-tooltip {
+.tooltip {
   position: relative;
   display: inline-block;
 }
 
 /* The score reads as text, its dotted underline saying it explains itself. */
-.score-tooltip-trigger {
+.tooltip-trigger {
   min-height: 0;
   padding: 0;
   border-radius: 2px;
@@ -18,7 +18,7 @@
   cursor: help;
 }
 
-.score-tooltip-bubble {
+.tooltip-bubble {
   position: absolute;
   z-index: 10;
   top: calc(100% + 0.4rem);
@@ -35,5 +35,5 @@
   line-height: 1.4;
   text-align: left;
   white-space: normal;
-  transform: translateX(calc(-50% + var(--score-tooltip-shift, 0px)));
+  transform: translateX(calc(-50% + var(--tooltip-shift, 0px)));
 }
