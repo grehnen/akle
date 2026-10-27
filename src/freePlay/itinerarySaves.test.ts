@@ -79,7 +79,7 @@ const onCard = nextTrip(graph, trips, guess(begun, 1000, "Haninge"), 1500);
 const secondTripPlaying = guess(startTrip(trips, onCard, 2000), 5000, "Nynäshamn");
 /** On to the tie-breaker third trip's card, the second won at 7 s. */
 const onThirdCard = nextTrip(graph, trips, guess(secondTripPlaying, 7000, "Salem"), 7500);
-/** The third trip won after starting at 8 s, then `Avsluta resplanen`. */
+/** The third trip won after starting at 8 s, then `Visa sammanfattning →`. */
 const finished = nextTrip(
   graph,
   trips,
@@ -250,7 +250,7 @@ describe("the unfinished itinerary", () => {
     expect(unfinishedItinerary(save(memoryStorage(), firstTripWon), version)?.tripNumber).toBe(2);
   });
 
-  test("at the last trip's result, before Avsluta resplanen, still names the last trip", () => {
+  test("at the last trip's result, before Visa sammanfattning →, still names the last trip", () => {
     const lastTripWon = guess(startTrip(trips, onThirdCard, 8000), 9000, "Salem");
     expect(unfinishedItinerary(save(memoryStorage(), lastTripWon), version)?.tripNumber).toBe(3);
   });
