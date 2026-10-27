@@ -225,8 +225,10 @@ describe("automated accessibility check", () => {
 
   test("the itinerary builder with its resume banner has no serious violations", async () => {
     const banner = (
-      <a className="itinerary-resume" href="/resplan?namn=Fredag&r=x">
-        Fortsätt resplanen: Fredag, resa 3 av 8
+      <a className="resume-link itinerary-resume" href="/resplan?namn=Fredag&r=x">
+        <strong className="resume-what">Oavslutad resplan</strong>{" "}
+        <span className="resume-progress">Fredag · resa 3 av 8</span>{" "}
+        <span className="resume-go">Fortsätt</span>
       </a>
     );
     const builder = (

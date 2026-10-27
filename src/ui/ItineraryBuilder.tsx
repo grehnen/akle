@@ -184,9 +184,9 @@ export function ItineraryBuilder({
 
   return (
     <section ref={section} className="itinerary-builder" aria-labelledby="itinerary-heading">
+      {banner}
       <p className="trip-number">Resplan</p>
       <h2 id="itinerary-heading">Bygg en resplan</h2>
-      {banner}
       <TitleField title={title} onChange={setTitle} />
       <button
         type="button"
