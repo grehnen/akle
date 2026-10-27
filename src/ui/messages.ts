@@ -135,10 +135,10 @@ export function modeDescription(kind: ModeKind): string {
   return MODE_DESCRIPTIONS[kind];
 }
 
-/** A mode as the UI names it, with a timed trip's thinking time: `Standard`, `Tidspress 10 s`. */
+/** A mode as the UI names it, with a timed trip's thinking time: `Standard`, `Tidspress · 10 s`. */
 export function modeName(mode: ModeSetting): string {
   const name = MODE_NAMES[mode.kind];
-  return mode.kind === "timed" ? `${name} ${mode.thinkingTime} s` : name;
+  return mode.kind === "timed" ? `${name} · ${mode.thinkingTime} s` : name;
 }
 
 /** A distance range in words: `avstånd 3–8`, or `avstånd 2` for a single distance. */

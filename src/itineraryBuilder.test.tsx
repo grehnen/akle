@@ -633,7 +633,7 @@ describe("editing a trip", () => {
 
     expect(editModal(container)).toBeNull();
     expect(rows(container)).toEqual(["Slumpad · avstånd 1", "Slumpad · avstånd 1"]);
-    expect(rowModes(container)).toEqual(["Tidspress 17 s", "Tidspress 17 s"]);
+    expect(rowModes(container)).toEqual(["Tidspress · 17 s", "Tidspress · 17 s"]);
     expect(container.querySelector(".itinerary-trips")?.textContent).not.toContain("Nynäshamn");
     expect(focused()).toBe(labelled(container, "Ändra resa 2"));
     const [unchanged, redrawn] = await linkedPairs(container);
@@ -685,7 +685,7 @@ describe("editing a trip", () => {
 
     expect(editModal(container)).toBeNull();
     expect(rows(container)).toEqual(["Nynäshamn → Salem", "Slumpad · avstånd 1–2"]);
-    expect(rowModes(container)).toEqual(["Standard", "Tidspress 17 s"]);
+    expect(rowModes(container)).toEqual(["Standard", "Tidspress · 17 s"]);
     expect(await linkedPairs(container)).toEqual(before);
     expect(focused()).toBe(labelled(container, "Ändra resa 2"));
 
@@ -747,7 +747,7 @@ describe("removing a trip", () => {
     await click(button(container, "Ångra"));
     expect(rows(container)).toHaveLength(5);
     expect(rows(container)[2]).toBe("Nynäshamn → Salem");
-    expect(rowModes(container)[2]).toBe("Tidspress 23 s");
+    expect(rowModes(container)[2]).toBe("Tidspress · 23 s");
     expect(undoToast(container)).toBeNull();
     expect(focused()).toBe(labelled(container, "Ta bort resa 3"));
   });
@@ -964,7 +964,7 @@ async function expectDraft(container: HTMLElement) {
     "Nynäshamn → Salem",
     "Slumpad · avstånd 1–2",
   ]);
-  expect(rowModes(container)).toEqual(["Tidspress 23 s", "Standard", "Tidtagning"]);
+  expect(rowModes(container)).toEqual(["Tidspress · 23 s", "Standard", "Tidtagning"]);
 }
 
 describe("the builder's draft", () => {
