@@ -1112,7 +1112,7 @@ describe("Läge", () => {
       {
         name: "Tidspress",
         description:
-          "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng, även före första gissningen.",
+          "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng.",
         checked: false,
         disabled: false,
       },
@@ -1860,7 +1860,7 @@ describe("the board behind Starta", () => {
     const drawMaps = holdMaps();
     const { container } = await mountApp(timedLink, storage);
     const tidspress =
-      "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng, även före första gissningen.";
+      "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng.";
 
     expect(query(container, ".start-gate .trip-number").textContent).toBe(
       "Fri resa · Tidspress 10 s",
