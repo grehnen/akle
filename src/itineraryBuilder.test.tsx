@@ -18,6 +18,27 @@ const matchMedia = () => ({
   removeEventListener() {},
 });
 Object.assign(dom.window, { matchMedia });
+// jsdom neither scrolls nor lays out a page nor paints frames: the page scrolls by what is asked of
+// it, and a frame runs only when a test says so.
+const page = {
+  scrollY: 0,
+  innerHeight: 768,
+  frames: new Map<number, (time: number) => void>(),
+  nextFrame: 1,
+  time: 0,
+};
+Object.defineProperties(dom.window, {
+  scrollY: { get: () => page.scrollY, configurable: true },
+  innerHeight: { get: () => page.innerHeight, configurable: true },
+});
+Object.assign(dom.window, {
+  scrollBy: ({ top }: { top: number }) => void (page.scrollY += top),
+  requestAnimationFrame: (callback: (time: number) => void) => {
+    page.frames.set(page.nextFrame, callback);
+    return page.nextFrame++;
+  },
+  cancelAnimationFrame: (frame: number) => void page.frames.delete(frame),
+});
 // jsdom has no modal dialogs: opening one only marks it open, and closing it fires close.
 Object.assign(dom.window.HTMLDialogElement.prototype, {
   showModal(this: HTMLDialogElement) {
@@ -91,6 +112,9 @@ afterEach(() => {
   container.remove();
   mounted = undefined;
   copied.length = 0;
+  page.scrollY = 0;
+  page.frames.clear();
+  page.innerHeight = 768;
   dom.window.history.replaceState(null, "", "/");
 });
 
@@ -535,6 +559,80 @@ describe("reordering the trip list", () => {
       dom.window.dispatchEvent(new dom.window.MouseEvent("pointerup", { clientY: 25 })),
     );
     expect(container.querySelector(".itinerary-trip--dragged")).toBeNull();
+  });
+
+  /** Runs the frames asked for, each of which may ask for the next. */
+  async function paintFrames(count: number) {
+    for (let painted = 0; painted < count; painted += 1) {
+      const [frame, callback] = [...page.frames][0] ?? [];
+      if (frame === undefined) return;
+      page.frames.delete(frame);
+      page.time += 16;
+      await act(async () => callback?.(page.time));
+    }
+  }
+  const pointer = (kind: string, clientY: number) =>
+    new dom.window.MouseEvent(kind, { clientY, bubbles: true });
+  /** How many pixels the dragged row is pulled from its place. */
+  const dragOffset = (container: HTMLElement) =>
+    Number.parseFloat(
+      container.querySelector<HTMLElement>(".itinerary-trip--dragged")?.style.transform.slice(11) ??
+        "",
+    );
+
+  test("the page scrolls down a step a frame while a row is dragged near the bottom of the screen", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+    page.innerHeight = 150;
+    await act(async () => void handle(container, 1).dispatchEvent(pointer("pointerdown", 25)));
+    await act(async () => void dom.window.dispatchEvent(pointer("pointermove", 125)));
+    expect(dragOffset(container)).toBe(0);
+
+    await paintFrames(1);
+    const step = page.scrollY;
+    expect(step).toBeGreaterThan(0);
+    // The row stays under the pointer as the page moves.
+    expect(dragOffset(container)).toBeCloseTo(step);
+    await paintFrames(2);
+    expect(page.scrollY).toBeCloseTo(3 * step);
+  });
+
+  test("the page scrolls up while a row is dragged near the top of the screen", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+    page.scrollY = 500;
+    await act(async () => void handle(container, 2).dispatchEvent(pointer("pointerdown", 75)));
+    await act(async () => void dom.window.dispatchEvent(pointer("pointermove", 5)));
+    await paintFrames(1);
+    expect(page.scrollY).toBeLessThan(500);
+  });
+
+  test("the nearer the edge the pointer is, the faster the page scrolls", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+    await act(async () => void handle(container, 1).dispatchEvent(pointer("pointerdown", 25)));
+    await act(async () => void dom.window.dispatchEvent(pointer("pointermove", 740)));
+    await paintFrames(1);
+    const slow = page.scrollY;
+    page.scrollY = 0;
+    await act(async () => void dom.window.dispatchEvent(pointer("pointermove", 767)));
+    await paintFrames(1);
+    expect(page.scrollY).toBeGreaterThan(slow);
+  });
+
+  test("the page doesn't scroll away from the edges, or after the row is dropped", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+    await act(async () => void handle(container, 1).dispatchEvent(pointer("pointerdown", 25)));
+    await act(async () => void dom.window.dispatchEvent(pointer("pointermove", 300)));
+    await paintFrames(3);
+    expect(page.scrollY).toBe(0);
+
+    await act(async () => void dom.window.dispatchEvent(pointer("pointermove", 760)));
+    await act(async () => void dom.window.dispatchEvent(pointer("pointerup", 760)));
+    await paintFrames(3);
+    expect(page.scrollY).toBe(0);
+    expect(page.frames.size).toBe(0);
   });
 
   test("the new order is kept in the draft and the link", async () => {
