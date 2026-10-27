@@ -159,7 +159,7 @@ async function loadBuilder(
   };
 }
 
-/** The builder's way back to the unfinished itinerary, opened in place like `Spela`. */
+/** The builder's way back to the unfinished itinerary, opened in place like `Starta resplanen`. */
 function ResumeBanner({
   unfinished: { title, tripNumber, tripCount, link },
 }: {
