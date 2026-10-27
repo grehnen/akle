@@ -88,15 +88,16 @@ export function TripModal({
       <TripSetup
         graph={graph}
         largest={largest}
-        initial={initial}
-        initialPair={initialPair}
+        choice={choice}
         onChange={setChoice}
+        tab={tab}
+        onTabChange={setTab}
+        initialPair={initialPair}
         shortDescriptions
         drawActions={
           adding &&
           maxCount > 1 && <CountSlider count={drawCount} max={maxCount} onChange={setCount} />
         }
-        onTabChange={setTab}
         onPickedChange={setPicked}
       />
     </Modal>

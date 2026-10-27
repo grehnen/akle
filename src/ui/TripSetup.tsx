@@ -1,4 +1,4 @@
-import { type ReactNode, useId, useState } from "react";
+import { type ReactNode, useId } from "react";
 import type { Trip } from "../engine/game";
 import type { DistanceRange } from "../freePlay/draw";
 import type { ModeSetting } from "../freePlay/linkPayload";
@@ -17,30 +17,34 @@ import "./TripSetup.css";
 
 /**
  * How a trip is set up, wherever one is: the Läge cards, Tidspress's betänketid in its own row
- * under them, and the Slumpa / Välj själv tabs, Slumpa with its distance range. It opens on
- * `initial` and reports each change through `onChange`; keeping the choice is the caller's. With
- * `initialPair`, it opens on Välj själv, filled with that pair. Its names and ids are its own, so
- * two can be on the page at once.
+ * under them, and the Slumpa / Välj själv tabs, Slumpa with its distance range. It shows the
+ * `choice` and the selected `tab` and reports each change; keeping both is the caller's. Välj
+ * själv opens filled with `initialPair`. Its names and ids are its own, so two can be on the page
+ * at once.
  */
 export function TripSetup({
   graph,
   largest,
-  initial,
-  initialPair,
+  choice,
   onChange,
+  tab,
+  onTabChange,
+  initialPair,
   shortDescriptions = false,
   drawActions,
   pickLabel,
   onPick,
-  onTabChange,
   onPickedChange,
 }: {
   graph: GraphVersion;
   /** The largest distance in the version, the distance range's top. */
   largest: number;
-  initial: SetupChoice;
-  initialPair?: Trip;
+  choice: SetupChoice;
   onChange: (choice: SetupChoice) => void;
+  tab: TripChoiceTab;
+  onTabChange: (tab: TripChoiceTab) => void;
+  /** The pair Välj själv opens filled with. */
+  initialPair?: Trip;
   /** Each mode's short text instead of its full description, where room is tight. */
   shortDescriptions?: boolean;
   /** What follows the distance range on the Slumpa tab, such as its button. */
@@ -48,18 +52,11 @@ export function TripSetup({
   /** The Välj själv tab's button; without one, the caller adds the picked trip its own way. */
   pickLabel?: string;
   onPick?: (trip: Trip) => void;
-  onTabChange?: (tab: TripChoiceTab) => void;
   /** Told Välj själv's trip whenever it changes: undefined until it can be played. */
   onPickedChange?: (trip: Trip | undefined) => void;
 }) {
   const idPrefix = `setup-${useId().replace(/[^\w-]/g, "")}`;
-  const [choice, setChoice] = useState(initial);
-  const [tab, setTab] = useState<TripChoiceTab>(initialPair ? "pick" : "draw");
-  const change = (changes: Partial<SetupChoice>) => {
-    const next = { ...choice, ...changes };
-    setChoice(next);
-    onChange(next);
-  };
+  const change = (changes: Partial<SetupChoice>) => onChange({ ...choice, ...changes });
   const changeMode = (next: ModeSetting) =>
     change(
       next.kind === "timed"
@@ -84,14 +81,7 @@ export function TripSetup({
           />
         </div>
       )}
-      <TripChoiceTabs
-        idPrefix={idPrefix}
-        selected={tab}
-        onSelect={(selected) => {
-          setTab(selected);
-          onTabChange?.(selected);
-        }}
-      />
+      <TripChoiceTabs idPrefix={idPrefix} selected={tab} onSelect={onTabChange} />
       <div
         id={tripChoicePanelId(idPrefix, "draw")}
         role="tabpanel"
