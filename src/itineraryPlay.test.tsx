@@ -225,6 +225,14 @@ const summaryRows = (container: HTMLElement) =>
     };
   });
 
+/** The footer right under the summary's trips: each total's name and value. */
+const summaryTotals = (container: HTMLElement) =>
+  [
+    ...query(container, ".itinerary-summary-trips + .itinerary-summary-totals").querySelectorAll(
+      "dt",
+    ),
+  ].map((term) => [seenText(term), term.nextElementSibling && seenText(term.nextElementSibling)]);
+
 /** A finished trip keeps the board up for a moment before the result view opens. */
 
 const trip = (start: string, destination: string, mode: LinkedTrip["mode"]): LinkedTrip => ({
@@ -464,10 +472,14 @@ describe("an itinerary from its link", () => {
         score: "3 poäng",
       },
     ]);
-    expect(text(container, ".itinerary-summary-total")).toBe("Totalt 4 poäng");
-    expect(text(container, ".itinerary-summary-note")).toBe("Lägre är bättre");
-    // A tie-breaker trip, lost: the total time is there, with nothing won.
-    expect(text(container, ".itinerary-summary-total-time")).toBe("Total tid 0:00,0 (0 vunna)");
+    // A tie-breaker trip, lost: the total time is there.
+    expect(summaryTotals(container)).toEqual([
+      ["Totalt", "4 poäng"],
+      ["Total tid", "0:00,0"],
+    ]);
+    expect(text(container, ".itinerary-summary-totals .itinerary-summary-note")).toBe(
+      "Lägre är bättre",
+    );
     expect(button(container, "Nästa resa")).toBeUndefined();
     expect(button(container, "Spela igen")).toBeUndefined();
 
@@ -532,8 +544,17 @@ describe("an itinerary from its link", () => {
       { outcome: "+0 (Perfekt)", time: "0:12,3", score: "−1 poäng" },
       { outcome: "+0 (1 ledtråd)", time: undefined, score: "1 poäng" },
     ]);
-    expect(text(container, ".itinerary-summary-total")).toBe("Totalt 0 poäng");
-    expect(text(container, ".itinerary-summary-total-time")).toBe("Total tid 0:12,3 (1 vunnen)");
+    expect(summaryTotals(container)).toEqual([
+      ["Totalt", "0 poäng"],
+      ["Total tid", "0:12,3"],
+    ]);
+    // The won count is behind Total tid, shown on focus.
+    const totalTime = button(container, "Total tid");
+    await act(async () => totalTime?.focus());
+    const wonCount = query(container, '[role="tooltip"]');
+    expect(totalTime?.getAttribute("aria-describedby")).toBe(wonCount.id);
+    expect(wonCount.textContent).toBe("1 vunnen i Tidtagning");
+    await act(async () => totalTime?.blur());
 
     await click(query(container, ".itinerary-summary .share-button"));
     expect(copied).toEqual([
@@ -558,8 +579,7 @@ describe("an itinerary from its link", () => {
     await settle();
     await click(button(container, "Avsluta resplanen"));
 
-    expect(text(container, ".itinerary-summary-total")).toBe("Totalt −2 poäng");
-    expect(container.querySelector(".itinerary-summary-total-time")).toBeNull();
+    expect(summaryTotals(container)).toEqual([["Totalt", "−2 poäng"]]);
     expect(
       [...container.querySelectorAll(".itinerary-summary-actions a")].map((a) => [
         a.textContent,
@@ -615,7 +635,7 @@ describe("an itinerary from its link", () => {
     expect(summaryScores.map((trigger) => trigger.textContent)).toEqual([
       "−1 poäng",
       "−1 poäng",
-      "Totalt −2 poäng",
+      "−2 poäng",
     ]);
     for (const trigger of summaryScores) {
       expect(await explanationOn(trigger)).toBe(scoreExplanation);
@@ -724,7 +744,7 @@ describe("resuming an itinerary", () => {
 
     container = await reopen(link, storage);
     expect(text(container, "#itinerary-summary-heading")).toBe("Kort");
-    expect(text(container, ".itinerary-summary-total")).toBe("Totalt −2 poäng");
+    expect(summaryTotals(container)).toEqual([["Totalt", "−2 poäng"]]);
     expect(button(container, "Starta resplanen")).toBeUndefined();
     expect(button(container, "Starta")).toBeUndefined();
     await click(query(container, ".itinerary-summary .share-button"));

@@ -77,14 +77,48 @@
   white-space: nowrap;
 }
 
-.itinerary-summary-total {
-  font-size: 1.5rem;
+/* The list's footer, under a heavier rule, its values in the trips' score column. */
+.itinerary-summary-totals {
+  width: 100%;
+  margin: -0.75rem 0 0;
+  border-top: 2px solid var(--muted);
+  text-align: left;
+}
+
+.itinerary-summary-trip:last-child {
+  border-bottom: 0;
+}
+
+.itinerary-summary-totals-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 0.75rem;
+  padding: 0.6rem 0 0;
+}
+
+.itinerary-summary-totals dt {
   font-weight: 700;
 }
 
-/* Tucked under the total it explains. */
-.itinerary-summary .itinerary-summary-note {
-  margin-top: -0.6rem;
+.itinerary-summary-totals dd {
+  margin: 0;
+}
+
+.itinerary-summary-total,
+.itinerary-summary-total-time {
+  grid-column: 2;
+  grid-row: 1;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.itinerary-summary-totals-row:first-child > * {
+  font-size: 1.25rem;
+}
+
+.itinerary-summary-totals .itinerary-summary-note {
+  grid-column: 1;
   color: var(--muted);
   font-size: 0.875rem;
 }
