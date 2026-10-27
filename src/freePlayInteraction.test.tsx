@@ -2227,7 +2227,7 @@ describe("‹ Tillbaka from the Starta gate", () => {
 
 describe("Ändra inställningar from a trip's result", () => {
   const SETUP_KEY = "akle:free-play-setup";
-  const changeSettings = (container: HTMLElement) =>
+  const changeSetup = (container: HTMLElement) =>
     [...container.querySelectorAll(".result-view a")].find(
       (link) => link.textContent === "Ändra inställningar",
     ) as HTMLElement;
@@ -2256,7 +2256,7 @@ describe("Ändra inställningar from a trip's result", () => {
     await winDistanceOneTrip(container);
     const kept = keepOtherChoice(storage);
 
-    await click(changeSettings(container));
+    await click(changeSetup(container));
     expect(dom.window.location.pathname).toBe("/fri");
     expect(chosenMode(container)).toBe("unlimited");
     expect(rangeValues(container)).toEqual(["1", "1"]);
@@ -2271,7 +2271,7 @@ describe("Ändra inställningar from a trip's result", () => {
     await pick(container, "Nynäshamn", "Salem");
     await winDistanceOneTrip(container);
 
-    await click(changeSettings(container));
+    await click(changeSetup(container));
     expect(chosenMode(container)).toBe("unlimited");
     expect(selectedTab(container)).toBe("Välj själv");
     expect(startField(container).value).toBe("Nynäshamn");
@@ -2288,7 +2288,7 @@ describe("Ändra inställningar from a trip's result", () => {
     await winDistanceOneTrip(container);
     const kept = keepOtherChoice(storage);
 
-    await click(changeSettings(container));
+    await click(changeSetup(container));
     await click(modeChoice(container, "tie-breaker"));
     expect(storage.getItem(SETUP_KEY)).toBe(kept);
     await click(buttonNamed(container, "Slumpa resa") as HTMLElement);

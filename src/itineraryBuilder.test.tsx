@@ -404,7 +404,7 @@ describe("a full itinerary", () => {
 });
 
 describe("editing the trip list", () => {
-  test("trips can be reordered, duplicated with their settings and removed", async () => {
+  test("trips can be reordered, duplicated with their mode and range and removed", async () => {
     const container = await mountApp("/resplan");
     await pick(container, "Nynäshamn", "Salem", { kind: "unlimited" });
     await pick(container, "Haninge", "Trosa", { kind: "standard" });
