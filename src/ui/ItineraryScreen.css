@@ -1,9 +1,11 @@
+/*
+ * The intro: on a phone one column, its trips before its actions; on a wider screen the title,
+ * rules and actions on the left, kept in sight, beside the trips as a route.
+ */
 .itinerary-intro {
   width: 100%;
-  max-width: 30rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 0.75rem;
   text-align: center;
 }
@@ -14,17 +16,63 @@
   overflow-wrap: anywhere;
 }
 
-.itinerary-intro-count,
-.itinerary-intro-note {
+.itinerary-intro h2 {
+  font-size: 2rem;
+  line-height: 1.15;
+}
+
+.itinerary-intro-side {
+  display: contents;
+}
+
+.itinerary-intro-eyebrow {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.itinerary-intro-note,
+.itinerary-intro-score {
   color: var(--muted);
   /* Never ends on a lone word. */
   text-wrap: pretty;
 }
 
-.itinerary-intro-trips {
-  margin: 0;
-  padding-left: 2rem;
-  text-align: left;
+.itinerary-intro-actions {
+  order: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.itinerary-intro-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0.75rem;
+  /* Room for the copy toast floating above Kopiera länk. */
+  margin-top: 1.5rem;
+}
+
+.itinerary-intro-buttons .itinerary-copy {
+  flex: 1;
+  min-height: 3.5rem;
+  padding-inline: 1.25rem;
+  font-size: 1.125rem;
+}
+
+.itinerary-intro-fallback {
+  width: 100%;
+  max-width: 30rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.itinerary-intro-fallback:empty {
+  display: none;
 }
 
 .itinerary-begin {
@@ -34,6 +82,130 @@
   color: var(--night);
   font-size: 1.125rem;
   font-weight: 700;
+}
+
+.itinerary-intro-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-block: 0.75rem;
+  text-align: left;
+}
+
+.itinerary-route {
+  --stop-size: 2rem;
+
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The road between the stops. */
+.itinerary-route::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--stop-size) / 2);
+  bottom: calc(var(--stop-size) / 2);
+  left: calc(var(--stop-size) / 2 - 2px);
+  width: 4px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(var(--rule) 0 10px, transparent 10px 16px);
+}
+
+.itinerary-stop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 3rem;
+  font-size: 1.125rem;
+}
+
+/* Neutral for every mode for now; a colour per mode would tie the stops to the legend. */
+.itinerary-stop-number {
+  flex: none;
+  width: var(--stop-size);
+  height: var(--stop-size);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--night);
+  font-size: 0.95rem;
+  font-weight: 700;
+  box-shadow: 0 0 0 4px var(--night);
+}
+
+.itinerary-stop-mode {
+  flex: 1;
+}
+
+.itinerary-stop-ends {
+  color: var(--muted);
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+}
+
+.itinerary-legend {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.itinerary-legend dt {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+
+.itinerary-legend dd {
+  margin: 0.1rem 0 0 1.25rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  text-wrap: pretty;
+}
+
+.itinerary-legend-marker {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--text);
+}
+
+@media (min-width: 46rem) {
+  .itinerary-intro {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 3rem;
+    margin-top: 1.5rem;
+    text-align: left;
+  }
+
+  .itinerary-intro-side {
+    position: sticky;
+    top: 1.5rem;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .itinerary-intro-actions {
+    align-items: flex-start;
+  }
+
+  .itinerary-intro-buttons {
+    justify-content: flex-start;
+  }
+
+  .itinerary-intro-main {
+    margin-block: 0;
+  }
 }
 
 .itinerary-total {
