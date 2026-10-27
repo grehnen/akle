@@ -236,28 +236,3 @@
 .free-play-error p {
   margin: 0;
 }
-
-.free-play-error-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.75rem;
-}
-
-/* Links that look like the app's buttons. */
-.free-play-error-actions a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.75rem;
-  padding: 0.55rem 1rem;
-  border-radius: 8px;
-  background: var(--text);
-  color: var(--night);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-/* The way on, in the yellow of the app's main actions. */
-.free-play-error-actions .primary-link {
-  background: var(--start);
-}
