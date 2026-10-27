@@ -65,9 +65,9 @@ type TripBoardProps<T extends Trip> = {
 };
 
 /**
- * Plays one trip: the heading, the map, the guess input, the past guesses, the hints (with Ge upp
- * when the rules allow giving up) and, once
- * the game ends, the result view with Min rutt and Kortaste rutt. Whatever only one kind of trip
+ * Plays one trip: the heading, the map, the guess input, the past guesses, the hints, Ge upp
+ * when the rules allow giving up and, once the game ends, the result view with Min rutt and
+ * Kortaste rutt. Whatever only one kind of trip
  * needs, such as saving, history or a trip number, the screen around it passes in.
  */
 export function TripBoard<T extends Trip>({
@@ -262,19 +262,21 @@ export function TripBoard<T extends Trip>({
               hintsUsed={review.hintsUsed}
               onTakeHint={() => update((current) => takeSessionHint(graph, current))}
               focusAfterLastHint={guessInput}
-            >
-              {game.rules.giveUp && (
-                <GiveUp
-                  onGiveUp={() =>
-                    update((current) => ({
-                      ...current,
-                      game: giveUp(graph, current.game),
-                      announcement: "Du gav upp.",
-                    }))
-                  }
-                />
-              )}
-            </HintSection>
+            />
+          )}
+
+          {!finished && game.rules.giveUp && (
+            <div className="give-up-row">
+              <GiveUp
+                onGiveUp={() =>
+                  update((current) => ({
+                    ...current,
+                    game: giveUp(graph, current.game),
+                    announcement: "Du gav upp.",
+                  }))
+                }
+              />
+            </div>
           )}
         </>
       )}
