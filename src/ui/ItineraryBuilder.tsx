@@ -152,7 +152,7 @@ export function ItineraryBuilder({
     if (added.length >= room) focusAfterRender.current = COUNT;
   };
   const list = useRef<HTMLOListElement>(null);
-  const { dragged, handleProps } = useReorderableList(list, {
+  const { dragged, lifted, handleProps } = useReorderableList(list, {
     ids: trips.map(({ id }) => id),
     onMove: (from, to) =>
       setTrips((current) => {
@@ -164,6 +164,15 @@ export function ItineraryBuilder({
       announce(`Resa flyttad till plats ${position + 1} av ${trips.length}`);
       focusAfterRender.current = handleOf(id);
     },
+    onAnnounce: ({ kind, position, count }) =>
+      announce(
+        {
+          lifted: `Resa ${position} lyft. Pil upp och ner flyttar, mellanslag släpper, Esc avbryter.`,
+          moved: `Plats ${position} av ${count}`,
+          dropped: `Resa släppt på plats ${position} av ${count}`,
+          cancelled: `Flytten avbruten. Resa ${position} är kvar på plats ${position} av ${count}`,
+        }[kind],
+      ),
   });
   const save = (index: number, result: TripModalResult) => {
     const { choice } = result;
@@ -261,6 +270,7 @@ export function ItineraryBuilder({
               number={index + 1}
               full={room === 0}
               dragOffset={dragged?.id === entry.id ? dragged.offset : undefined}
+              lifted={lifted === entry.id}
               handleProps={handleProps(entry.id)}
               onEdit={() => setEditingIndex(index)}
               onDuplicate={() => duplicate(index)}
