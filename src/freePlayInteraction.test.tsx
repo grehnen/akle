@@ -606,7 +606,9 @@ describe("trip links", () => {
     expect(query(container, "#free-play-error-heading").textContent).toBe("Länken fungerar inte");
     expect(container.querySelector("#trip-heading")).toBeNull();
     expect(container.querySelector("#free-play-heading")).toBeNull();
-    const links = [...container.querySelectorAll(".free-play-error a")].map((anchor) => [
+    const actions = query(container, '.free-play-error nav[aria-label="Vidare"]');
+    expect(actions.classList.contains("button-group")).toBe(true);
+    const links = [...actions.children].map((anchor) => [
       anchor.textContent,
       anchor.getAttribute("href"),
     ]);
@@ -614,7 +616,7 @@ describe("trip links", () => {
       ["Fri resa", "/fri"],
       ["Dagens resa", "/"],
     ]);
-    expect(query(container, ".free-play-error a.primary-link").getAttribute("href")).toBe("/fri");
+    expect(actions.firstElementChild?.classList.contains("primary-link")).toBe(true);
   });
 
   test("an invalid link names its trip when it can", async () => {
