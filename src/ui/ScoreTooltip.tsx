@@ -2,6 +2,9 @@ import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { SCORE_EXPLANATION } from "./messages";
 import "./ScoreTooltip.css";
 
+/** The least room, in pixels, kept between the bubble and the screen's edge. */
+const EDGE_GAP = 8;
+
 /**
  * A score that explains itself: hovering, focusing or tapping it shows {@link SCORE_EXPLANATION}
  * beside it, as its description to screen readers too. A tap elsewhere, Escape, or the pointer or
@@ -49,10 +52,19 @@ export function ScoreTooltip({ children }: { children: ReactNode }) {
         {children}
       </button>
       {open && (
-        <span role="tooltip" id={tooltipId} className="score-tooltip-bubble">
+        <span ref={keepInsideScreen} role="tooltip" id={tooltipId} className="score-tooltip-bubble">
           {SCORE_EXPLANATION}
         </span>
       )}
     </span>
   );
+}
+
+/** Shifts a bubble shown by a score near the screen's edge back inside, by what would stick out. */
+function keepInsideScreen(bubble: HTMLElement | null) {
+  if (bubble === null) return;
+  const { left, right } = bubble.getBoundingClientRect();
+  const room = document.documentElement.clientWidth;
+  const shift = left < EDGE_GAP ? EDGE_GAP - left : Math.min(0, room - EDGE_GAP - right);
+  bubble.style.setProperty("--score-tooltip-shift", `${shift}px`);
 }
