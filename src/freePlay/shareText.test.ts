@@ -114,7 +114,7 @@ describe("a free-play trip's share text", () => {
         link,
       }),
     ).toBe(
-      "#åkle Fri resa · Tidspress 10 s\n+2 (1 ledtråd, 2 ⏱) · 5 poäng\n🟩🟧✅✅\nhttps://akle.grehn.net" +
+      "#åkle Fri resa · Tidspress · 10 s\n+2 (1 ledtråd, 2 ⏱) · 5 poäng\n🟩🟧✅✅\nhttps://akle.grehn.net" +
         link,
     );
     const label = (outcome: Parameters<typeof freePlayShareText>[0]["outcome"]) =>
@@ -138,7 +138,7 @@ describe("a free-play trip's share text", () => {
         link,
       }).split("\n")[0];
     expect(header({ kind: "unlimited" })).toBe("#åkle Fri resa · Obegränsad");
-    expect(header({ kind: "timed", thinkingTime: 10 })).toBe("#åkle Fri resa · Tidspress 10 s");
+    expect(header({ kind: "timed", thinkingTime: 10 })).toBe("#åkle Fri resa · Tidspress · 10 s");
     expect(header({ kind: "tie-breaker" })).toBe("#åkle Fri resa · Tidtagning");
   });
 
@@ -211,7 +211,7 @@ describe("an itinerary's share text", () => {
         "#åkle Resplan · Norrlandsturen · 5 resor",
         "Totalt 10 poäng · 4:12,3 (2 vunna)",
         "1. Standard · +1 · 1 poäng",
-        "2. Tidspress 10 s · Gav upp (2 ifrån) · 8 poäng",
+        "2. Tidspress · 10 s · Gav upp (2 ifrån) · 8 poäng",
         "3. Tidtagning · +0 (1 ledtråd) · 1 poäng · 2:03,4",
         "4. Tidtagning · +0 (Perfekt) · −1 poäng · 2:08,9",
         "5. Tidtagning · Slut på gissningar (1 ifrån, 1 ledtråd) · 1 poäng",
