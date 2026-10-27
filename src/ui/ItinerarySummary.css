@@ -123,32 +123,18 @@
   font-size: 0.875rem;
 }
 
-/* Room above Dela resultat for its toast, so the toast doesn't cover the total. */
+/*
+ * Dela resultat as wide as the Vidare group under it, with room above for its toast, so the toast
+ * doesn't cover the totals.
+ */
 .itinerary-summary .share {
+  align-items: stretch;
+  width: 100%;
+  max-width: 20rem;
   margin-top: 1.4rem;
 }
 
-.itinerary-summary-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.75rem;
-}
-
-/* Links that look like the app's buttons. */
-.itinerary-summary-actions a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.75rem;
-  padding: 0.55rem 1rem;
-  border-radius: 8px;
-  background: var(--text);
-  color: var(--night);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-/* The way on, in the yellow of the app's main actions. */
-.itinerary-summary-actions .primary-link {
-  background: var(--start);
+/* Set apart from Dela resultat, the one main action. */
+.itinerary-summary .button-group {
+  margin-top: 0.5rem;
 }
