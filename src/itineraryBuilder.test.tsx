@@ -702,12 +702,25 @@ describe("editing a trip", () => {
     expect(rows(container)).toEqual(["Nynäshamn → Salem", "Slumpad · avstånd 1–2"]);
   });
 
-  test("editing leaves the mode and range the add modal opens on alone", async () => {
+  test("a saved edit is the mode and range last used, which the add modal opens on", async () => {
     const container = await mountApp("/resplan");
     await drawTimedInRange(container, 1, 2);
     await click(labelled(container, "Ändra resa 1"));
     await click(inEditModal(container, 'input[value="unlimited"]'));
+    const [minimum] = inEditModal(container, ".distance-range").querySelectorAll("input");
+    await type(minimum as HTMLInputElement, "2");
     await click(editModalButton(container, "Spara"));
+    await openAddModal(container);
+    expect(modeRadio(container, "unlimited").checked).toBe(true);
+    expect(inModal(container, ".free-play-range-label").textContent).toBe("Avstånd 2");
+  });
+
+  test("Avbryt on an edit leaves the mode and range the add modal opens on alone", async () => {
+    const container = await mountApp("/resplan");
+    await drawTimedInRange(container, 1, 2);
+    await click(labelled(container, "Ändra resa 1"));
+    await click(inEditModal(container, 'input[value="unlimited"]'));
+    await click(editModalButton(container, "Avbryt"));
     await openAddModal(container);
     expect(modeRadio(container, "timed").checked).toBe(true);
   });
