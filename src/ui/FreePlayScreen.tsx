@@ -16,19 +16,11 @@ import {
 import type { GraphVersion } from "../graph/graphVersion";
 import type { KeyValueStorage } from "../progress/storage";
 import { AppLink } from "./AppLink";
-import { DistanceRangeSlider } from "./DistanceRangeSlider";
 import { GatedBoard } from "./GatedBoard";
-import { ModeCards } from "./ModeCards";
 import { guessesSoFar, modeName } from "./messages";
 import { useNavigation } from "./navigation";
 import { ResumeLink } from "./ResumeLink";
-import {
-  PickTripForm,
-  type TripChoiceTab,
-  TripChoiceTabs,
-  tripChoicePanelId,
-  tripChoiceTabId,
-} from "./TripChoice";
+import { chosenMode, TripSetup } from "./TripSetup";
 import "./FreePlayScreen.css";
 
 /**
@@ -104,22 +96,12 @@ export function FreePlayScreen({
   const largest = largestDistance(pairs);
   // Setup opens on the choice last made in it on this device; a trip's link never changes it.
   const [choice, setChoice] = useState(() => restoreSetupChoice(storage, largest));
-  const changeChoice = (changes: Partial<SetupChoice>) => {
-    const next = { ...choice, ...changes };
+  const changeChoice = (next: SetupChoice) => {
     setChoice(next);
     saveSetupChoice(storage, next);
   };
-  // The betänketid is kept apart from the mode, so choosing another mode and Tidspress again
-  // keeps it.
-  const { range, thinkingTime } = choice;
-  const mode: ModeSetting =
-    choice.mode === "timed" ? { kind: "timed", thinkingTime } : { kind: choice.mode };
-  const changeMode = (next: ModeSetting) =>
-    changeChoice(
-      next.kind === "timed"
-        ? { mode: next.kind, thinkingTime: next.thinkingTime }
-        : { mode: next.kind },
-    );
+  const { range } = choice;
+  const mode = chosenMode(choice);
   const [played, setPlayed] = useState<Played | undefined>(() => {
     if (linkedTrip === undefined) return undefined;
     // A drawn trip behind Starta has no save yet, but may have been noted this session.
@@ -182,12 +164,9 @@ export function FreePlayScreen({
     return (
       <FreePlaySetup
         graph={graph}
-        mode={mode}
-        thinkingTime={thinkingTime}
-        onModeChange={changeMode}
-        range={range}
         largest={largest}
-        onRangeChange={(next) => changeChoice({ range: next })}
+        choice={choice}
+        onChoiceChange={changeChoice}
         onDraw={() => draw(mode, range)}
         onPick={(trip) => play(trip, mode)}
         resume={unfinished && <ResumeTrip unfinished={unfinished} />}
@@ -249,57 +228,43 @@ function SetupLink() {
   );
 }
 
-const ID_PREFIX = "free-play";
-
 function FreePlaySetup({
   graph,
-  mode,
-  thinkingTime,
-  onModeChange,
-  range,
   largest,
-  onRangeChange,
+  choice,
+  onChoiceChange,
   onDraw,
   onPick,
   resume,
 }: {
   graph: GraphVersion;
-  mode: ModeSetting;
-  thinkingTime: number;
-  onModeChange: (mode: ModeSetting) => void;
-  range: DistanceRange;
   largest: number;
-  onRangeChange: (range: DistanceRange) => void;
+  /** The choice setup opens on. */
+  choice: SetupChoice;
+  onChoiceChange: (choice: SetupChoice) => void;
   onDraw: () => void;
   onPick: (trip: Trip) => void;
   /** The way back to an unfinished trip, first under the heading so it's seen without scrolling. */
   resume?: ReactNode;
 }) {
-  const [tab, setTab] = useState<TripChoiceTab>("draw");
   return (
     <section className="free-play-setup" aria-labelledby="free-play-heading">
       <h2 id="free-play-heading">Fri resa</h2>
       {resume}
-      <ModeCards mode={mode} thinkingTime={thinkingTime} onChange={onModeChange} />
-      <TripChoiceTabs idPrefix={ID_PREFIX} selected={tab} onSelect={setTab} />
-      <div
-        id={tripChoicePanelId(ID_PREFIX, "draw")}
-        role="tabpanel"
-        aria-labelledby={tripChoiceTabId(ID_PREFIX, "draw")}
-        className="free-play-panel"
-        hidden={tab !== "draw"}
-      >
-        <DistanceRangeSlider range={range} largest={largest} onChange={onRangeChange} />
-        <button type="button" className="free-play-go free-play-draw" onClick={onDraw}>
-          <span aria-hidden="true">🎲</span> Slumpa resa
-        </button>
-        <p className="free-play-note">Start och mål visas när resan börjar.</p>
-      </div>
-      <PickTripForm
+      <TripSetup
         graph={graph}
-        idPrefix={ID_PREFIX}
-        hidden={tab !== "pick"}
-        submitLabel="Res"
+        largest={largest}
+        initial={choice}
+        onChange={onChoiceChange}
+        drawActions={
+          <>
+            <button type="button" className="free-play-go free-play-draw" onClick={onDraw}>
+              <span aria-hidden="true">🎲</span> Slumpa resa
+            </button>
+            <p className="free-play-note">Start och mål visas när resan börjar.</p>
+          </>
+        }
+        pickLabel="Res"
         onPick={onPick}
       />
     </section>

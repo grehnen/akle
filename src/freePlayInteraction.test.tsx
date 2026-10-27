@@ -213,16 +213,41 @@ async function click(element: Element) {
   await act(async () => (element as HTMLElement).click());
 }
 
-const startField = (container: HTMLElement) =>
-  query<HTMLInputElement>(container, "#free-play-start");
-const destinationField = (container: HTMLElement) =>
-  query<HTMLInputElement>(container, "#free-play-destination");
+/** The field labelled `label`. */
+const labelledField = (container: HTMLElement, label: string) =>
+  [...container.querySelectorAll("input")].find(
+    (input) => input.labels?.[0]?.textContent === label,
+  ) as HTMLInputElement;
+const startField = (container: HTMLElement) => labelledField(container, "Start");
+const destinationField = (container: HTMLElement) => labelledField(container, "Mål");
+/** The setup's tab named `name`, Slumpa or Välj själv. */
+const tabNamed = (container: HTMLElement, name: string) =>
+  [...container.querySelectorAll('[role="tab"]')].find(
+    (tab) => tab.textContent === name,
+  ) as HTMLElement;
+/** The panel the tab named `name` shows. */
+const tabPanel = (container: HTMLElement, name: string) =>
+  dom.window.document.getElementById(
+    tabNamed(container, name).getAttribute("aria-controls") ?? "",
+  ) as HTMLElement;
+/** The setup's mode card radio for `kind`. */
+const modeChoice = (container: HTMLElement, kind: string) =>
+  query<HTMLInputElement>(container, `.free-play-modes input[value="${kind}"]`);
+/** The betänketid slider, found by its label; none while another mode than Tidspress is chosen. */
+const thinkingTimeSlider = (container: HTMLElement) =>
+  [...container.querySelectorAll<HTMLInputElement>('input[type="range"]')].find(
+    (slider) => slider.labels?.[0]?.textContent === "Betänketid",
+  );
 const resButton = (container: HTMLElement) =>
   [...container.querySelectorAll("button")].find((b) => b.textContent === "Res") as HTMLElement;
 
+/** The open list of suggestions for `field`. */
+const suggestionList = (field: HTMLInputElement) =>
+  dom.window.document.getElementById(field.getAttribute("aria-controls") ?? "") as HTMLElement;
+
 /** Each option of a field's open list, as its text and whether it's disabled. */
-function options(container: HTMLElement, field: string) {
-  return [...container.querySelectorAll(`#${field}-suggestions [role="option"]`)].map((option) => [
+function options(field: HTMLInputElement) {
+  return [...suggestionList(field).querySelectorAll('[role="option"]')].map((option) => [
     option.textContent,
     option.getAttribute("aria-disabled") === "true",
   ]);
@@ -262,7 +287,7 @@ describe("Välj själv", () => {
 
     await type(startField(container), "Haninge");
     await type(destinationField(container), "n");
-    expect(options(container, "free-play-destination")).toEqual([
+    expect(options(destinationField(container))).toEqual([
       ["Nynäshamngranne", true],
       ["Haningesamma", true],
     ]);
@@ -278,7 +303,9 @@ describe("Välj själv", () => {
     expect(query(container, ".free-play-distance").textContent).toBe("");
 
     await type(destinationField(container), "Tro");
-    await click(query(container, '#free-play-destination-suggestions [role="option"]'));
+    await click(
+      suggestionList(destinationField(container)).querySelector('[role="option"]') as HTMLElement,
+    );
     expect(destinationField(container).value).toBe("Trosa");
     expect(query(container, ".free-play-distance").textContent).toBe("Avstånd 2");
     expect(resButton(container).hasAttribute("disabled")).toBe(false);
@@ -368,9 +395,9 @@ describe("Slumpa", () => {
   test("is the open tab, with a distance slider from 1 to the version's largest distance", async () => {
     const { container } = await mountApp("/fri");
 
-    expect(query(container, "#free-play-tab-draw").getAttribute("aria-selected")).toBe("true");
-    expect(query(container, "#free-play-panel-draw").hidden).toBe(false);
-    expect(query(container, "#free-play-panel-pick").hidden).toBe(true);
+    expect(tabNamed(container, "Slumpa").getAttribute("aria-selected")).toBe("true");
+    expect(tabPanel(container, "Slumpa").hidden).toBe(false);
+    expect(tabPanel(container, "Välj själv").hidden).toBe(true);
     const { min, max } = distanceThumbs(container);
     expect([min.min, min.max, max.min, max.max]).toEqual(["1", "2", "1", "2"]);
     // 3–8 by default, cut down to this version's largest distance, 2.
@@ -389,10 +416,10 @@ describe("Slumpa", () => {
   test("Välj själv shows its panel instead", async () => {
     const { container } = await mountApp("/fri");
 
-    await click(query(container, "#free-play-tab-pick"));
-    expect(query(container, "#free-play-tab-pick").getAttribute("aria-selected")).toBe("true");
-    expect(query(container, "#free-play-panel-pick").hidden).toBe(false);
-    expect(query(container, "#free-play-panel-draw").hidden).toBe(true);
+    await click(tabNamed(container, "Välj själv"));
+    expect(tabNamed(container, "Välj själv").getAttribute("aria-selected")).toBe("true");
+    expect(tabPanel(container, "Välj själv").hidden).toBe(false);
+    expect(tabPanel(container, "Slumpa").hidden).toBe(true);
   });
 
   test("starts the drawn trip at once, never showing its pair before", async () => {
@@ -430,7 +457,7 @@ describe("Slumpa", () => {
   test("Slumpa ny resa after a picked trip draws from setup's range", async () => {
     const { container } = await mountApp("/fri");
 
-    await click(query(container, "#free-play-tab-pick"));
+    await click(tabNamed(container, "Välj själv"));
     await type(startField(container), "Nynäshamn");
     await type(destinationField(container), "Salem");
     await click(resButton(container));
@@ -472,7 +499,7 @@ describe("Slumpa", () => {
       await type(max, "1");
       await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
     } else {
-      await click(query(container, "#free-play-tab-pick"));
+      await click(tabNamed(container, "Välj själv"));
       await type(startField(container), picked[0] as string);
       await type(destinationField(container), picked[1] as string);
       await click(resButton(container));
@@ -498,8 +525,7 @@ describe("a trip going on the board", () => {
     mode: { kind: "unlimited" },
   });
   const focused = () => dom.window.document.activeElement;
-  const chooseUnlimited = (container: HTMLElement) =>
-    click(query(container, 'input[name="free-play-mode"][value="unlimited"]'));
+  const chooseUnlimited = (container: HTMLElement) => click(modeChoice(container, "unlimited"));
 
   test("Slumpa resa on an Obegränsad trip scrolls to the top and focuses the guess input", async () => {
     const { container } = await mountApp("/fri");
@@ -513,7 +539,7 @@ describe("a trip going on the board", () => {
   test("Res and Slumpa ny resa do too", async () => {
     const { container } = await mountApp("/fri");
     await chooseUnlimited(container);
-    await click(query(container, "#free-play-tab-pick"));
+    await click(tabNamed(container, "Välj själv"));
     await pick(container, "Haninge", "Trosa");
     expect(focused()).toBe(query(container, "#guess-input"));
     await winDistanceOneTrip(container);
@@ -1135,7 +1161,7 @@ describe("Läge", () => {
     await click(modeRadio(container, "Obegränsad"));
     expect(modeRadio(container, "Obegränsad").checked).toBe(true);
 
-    await click(query(container, "#free-play-tab-pick"));
+    await click(tabNamed(container, "Välj själv"));
     await pick(container, "Nynäshamn", "Trosa");
     expect(container.textContent).toContain("Fri resa · Obegränsad");
     expect(address()).toBe(unlimitedLink("0192", "0488"));
@@ -1197,18 +1223,17 @@ describe("Läge", () => {
 
 describe("the setup choice", () => {
   const SETUP_KEY = "akle:free-play-setup";
-  const modeRadio = (container: HTMLElement, kind: string) =>
-    query<HTMLInputElement>(container, `input[name="free-play-mode"][value="${kind}"]`);
+  const modeRadio = (container: HTMLElement, kind: string) => modeChoice(container, kind);
   const modeCard = (container: HTMLElement, kind: string) =>
     modeRadio(container, kind).closest(".free-play-mode") as HTMLElement;
   const chosenMode = (container: HTMLElement) =>
-    query<HTMLInputElement>(container, 'input[name="free-play-mode"]:checked').value;
+    query<HTMLInputElement>(container, ".free-play-modes input:checked").value;
   const rangeValues = (container: HTMLElement) => {
     const { min, max } = distanceThumbs(container);
     return [min.value, max.value];
   };
   const thinkingTimeField = (container: HTMLElement) =>
-    query<HTMLInputElement>(container, '.free-play-modes input[type="range"]');
+    thinkingTimeSlider(container) as HTMLInputElement;
 
   test("a reload of /fri shows the mode and range last chosen", async () => {
     const storage = memoryStorage();
@@ -1299,10 +1324,6 @@ describe("the setup choice", () => {
 
     await click(modeCard(container, "tie-breaker"));
     expect(chosenMode(container)).toBe("tie-breaker");
-
-    // Tidspress's betänketid keeps its place, hidden, while another mode is chosen.
-    await click(query(container, ".free-play-mode-setting"));
-    expect(chosenMode(container)).toBe("timed");
   });
 
   test("once Tidspress is chosen, its betänketid works as before and picks no other mode", async () => {
@@ -1324,13 +1345,12 @@ describe("Tidtagning", () => {
   const clockShown = (container: HTMLElement) =>
     query(container, '.trip-clock [role="timer"]').textContent;
   const resultTime = (container: HTMLElement) => query(container, ".result-time").textContent;
-  const chooseTieBreaker = (container: HTMLElement) =>
-    click(query(container, 'input[name="free-play-mode"][value="tie-breaker"]'));
+  const chooseTieBreaker = (container: HTMLElement) => click(modeChoice(container, "tie-breaker"));
 
   test("a picked trip opens hidden behind Starta, which shows its ends and a quiet clock", async () => {
     const { container } = await mountApp("/fri");
     await chooseTieBreaker(container);
-    await click(query(container, "#free-play-tab-pick"));
+    await click(tabNamed(container, "Välj själv"));
     await pick(container, "Nynäshamn", "Trosa");
 
     expect(container.querySelector("#trip-heading")).toBeNull();
@@ -1535,34 +1555,34 @@ describe("Tidtagning", () => {
 describe("Tidspress", () => {
   const timedLink = (start: string, destination: string, thinkingTime = 10) =>
     tripLinkPath(0, { start, destination, mode: { kind: "timed", thinkingTime } });
-  const chooseTimed = (container: HTMLElement) =>
-    click(query(container, 'input[name="free-play-mode"][value="timed"]'));
-  const thinkingTimeField = (container: HTMLElement) =>
-    container.querySelector<HTMLInputElement>('.free-play-modes input[type="range"]');
+  const chooseTimed = (container: HTMLElement) => click(modeChoice(container, "timed"));
+  const thinkingTimeField = thinkingTimeSlider;
   const startaButton = (container: HTMLElement) => buttonNamed(container, "Starta") as HTMLElement;
 
-  // Until Tidspress is chosen, its betänketid keeps its place in the card, hidden and inert.
-  const isShown = (field: HTMLInputElement | null) =>
-    field !== null && field.closest("[inert]") === null;
-
-  test("choosing Tidspress shows its betänketid in its card: 5–60 whole seconds, 10 by default", async () => {
+  test("choosing Tidspress shows its betänketid in its own row under the mode cards: 5–60 whole seconds, 10 by default", async () => {
     const { container } = await mountApp("/fri");
-    expect(isShown(thinkingTimeField(container))).toBe(false);
+    expect(thinkingTimeField(container)).toBeUndefined();
 
     await chooseTimed(container);
     const field = thinkingTimeField(container) as HTMLInputElement;
-    expect(field.closest(".free-play-mode")?.textContent).toContain("Tidspress");
-    expect(field.labels?.[0]?.textContent).toContain("Betänketid");
+    const modes = query(container, "fieldset.free-play-modes");
+    expect(modes.contains(field)).toBe(false);
+    expect(
+      modes.compareDocumentPosition(field) & dom.window.Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      field.compareDocumentPosition(query(container, '[role="tablist"]')) &
+        dom.window.Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect([field.min, field.max, field.step, field.value]).toEqual(["5", "60", "1", "10"]);
     expect(query(container, ".free-play-thinking-time output").textContent).toBe("10 s");
 
     await type(field, "25");
     expect(query(container, ".free-play-thinking-time output").textContent).toBe("25 s");
     // Another mode and back keeps the betänketid.
-    await click(query(container, 'input[name="free-play-mode"][value="standard"]'));
-    expect(isShown(thinkingTimeField(container))).toBe(false);
+    await click(modeChoice(container, "standard"));
+    expect(thinkingTimeField(container)).toBeUndefined();
     await chooseTimed(container);
-    expect(isShown(thinkingTimeField(container))).toBe(true);
     expect(thinkingTimeField(container)?.value).toBe("25");
   });
 
@@ -1570,7 +1590,7 @@ describe("Tidspress", () => {
     const { container } = await mountApp("/fri");
     await chooseTimed(container);
     await type(thinkingTimeField(container) as HTMLInputElement, "25");
-    await click(query(container, "#free-play-tab-pick"));
+    await click(tabNamed(container, "Välj själv"));
     await pick(container, "Nynäshamn", "Trosa");
 
     expect(container.querySelector("#trip-heading")).toBeNull();
@@ -1873,7 +1893,7 @@ describe("the board behind Starta", () => {
     expect(written).toEqual([]);
 
     const setup = await reopen("/fri", storage);
-    await click(query(setup.container, 'input[name="free-play-mode"][value="timed"]'));
+    await click(modeChoice(setup.container, "timed"));
     const card = query(setup.container, 'input[value="timed"]').closest(".free-play-mode");
     expect(card?.querySelector(".free-play-mode-description")?.textContent).toBe(tidspress);
   });
@@ -1936,7 +1956,7 @@ describe("the board behind Starta", () => {
     const session = recordingStorage();
     const drawMaps = holdMaps();
     const { container } = await mountApp("/fri", storage, session.storage);
-    await click(query(container, 'input[name="free-play-mode"][value="tie-breaker"]'));
+    await click(modeChoice(container, "tie-breaker"));
     await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
 
     const named = () =>

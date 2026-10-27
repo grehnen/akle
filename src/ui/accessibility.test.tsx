@@ -13,7 +13,7 @@ import { GuessInput } from "./GuessInput";
 import { ItineraryBuilder } from "./ItineraryBuilder";
 import { ItineraryScreen } from "./ItineraryScreen";
 import { ItinerarySummaryView } from "./ItinerarySummary";
-import { ModeCards } from "./ModeCards";
+import { TripSetup } from "./TripSetup";
 
 const graph = buildGraphVersion({
   id: "test",
@@ -204,11 +204,57 @@ describe("automated accessibility check", () => {
     expect(await seriousViolations(board)).toEqual([]);
   });
 
-  test("the Tidspress card with its betänketid has no serious violations", async () => {
-    const cards = (
-      <ModeCards mode={{ kind: "timed", thinkingTime: 10 }} thinkingTime={10} onChange={() => {}} />
+  const timedSetup = (shortDescriptions = false) => (
+    <TripSetup
+      graph={graph}
+      largest={2}
+      initial={{ mode: "timed", thinkingTime: 10, range: { min: 1, max: 2 } }}
+      onChange={() => {}}
+      shortDescriptions={shortDescriptions}
+      pickLabel="Res"
+      onPick={() => {}}
+    />
+  );
+
+  test("a setup on Tidspress, with its betänketid row, has no serious violations", async () => {
+    expect(await seriousViolations(timedSetup())).toEqual([]);
+  });
+
+  test("two setups on one page share no id or radio group", async () => {
+    const twoSetups = (
+      <>
+        <section aria-label="Sidan">{timedSetup()}</section>
+        <section aria-label="Dialogen">{timedSetup(true)}</section>
+      </>
     );
-    expect(await seriousViolations(cards)).toEqual([]);
+    expect(await seriousViolations(twoSetups)).toEqual([]);
+
+    const sections = [...dom.window.document.querySelectorAll("section")];
+    const ids = sections.map((section) =>
+      [...section.querySelectorAll("[id]")].map((element) => element.id),
+    );
+    const radioGroups = sections.map(
+      (section) =>
+        new Set(
+          [...section.querySelectorAll("input[name]")].map((input) => input.getAttribute("name")),
+        ),
+    );
+    expect(ids[0].length).toBeGreaterThan(0);
+    expect(ids[0].filter((id) => ids[1].includes(id))).toEqual([]);
+    expect([...radioGroups[0]].filter((name) => radioGroups[1].has(name))).toEqual([]);
+  });
+
+  test("a setup's short texts tell each mode in a few words", async () => {
+    await seriousViolations(timedSetup(true));
+    const descriptions = [
+      ...dom.window.document.querySelectorAll(".free-play-mode-description"),
+    ].map((description) => description.textContent);
+    expect(descriptions).toEqual([
+      "Som dagens resa.",
+      "Gissa hur många gånger du vill.",
+      "Gissa inom betänketiden.",
+      "Snabbast vinner vid lika poäng.",
+    ]);
   });
 
   test.each([
