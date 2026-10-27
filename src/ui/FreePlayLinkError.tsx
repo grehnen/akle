@@ -1,6 +1,7 @@
 import { ITINERARY_PATH } from "../freePlay/itineraryLink";
 import { FREE_PLAY_PATH } from "../freePlay/tripLink";
 import { AppLink } from "./AppLink";
+import { ButtonGroup } from "./ButtonGroup";
 import "./FreePlayScreen.css";
 
 /**
@@ -24,7 +25,7 @@ export function FreePlayLinkError({
           ? `Länken till ${itinerary ? "resplanen" : "den fria resan"} är trasig eller ogiltig.`
           : `Resan från ${trip.start} till ${trip.destination} i länken kan inte spelas.`}
       </p>
-      <nav className="free-play-error-actions" aria-label="Vidare">
+      <ButtonGroup as="nav" label="Vidare">
         {itinerary ? (
           <>
             <AppLink className="primary-link" href={ITINERARY_PATH}>
@@ -41,7 +42,7 @@ export function FreePlayLinkError({
             <AppLink href="/">Dagens resa</AppLink>
           </>
         )}
-      </nav>
+      </ButtonGroup>
     </section>
   );
 }
