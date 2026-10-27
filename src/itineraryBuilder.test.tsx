@@ -417,7 +417,7 @@ describe("the itinerary's link", () => {
         ],
       },
     });
-    expect(query(container, ".itinerary-toast").textContent).toBe("Kopierat!");
+    expect(query(container, ".copy-link-toast").textContent).toBe("Kopierat!");
   });
 
   test("the mode for new trips says how it plays, and its betänketid slider is labelled in sight", async () => {
@@ -492,7 +492,7 @@ describe("the itinerary's link", () => {
 
     await click(button(container, "Kopiera länk"));
     expect(container.querySelector(".itinerary-copy-fallback")).toBeNull();
-    expect(query(container, ".itinerary-toast").textContent).toBe("Kopierat!");
+    expect(query(container, ".copy-link-toast").textContent).toBe("Kopierat!");
   });
 
   test("the link to copy by hand goes away after an edit", async () => {
@@ -526,6 +526,10 @@ describe("the itinerary's link", () => {
     expect(query(container, ".itinerary-count").textContent).toBe("2 av 20 resor");
     expect(button(container, "Kopiera länk").disabled).toBe(false);
     expect(button(container, "Spela").disabled).toBe(false);
+    // Kopiera länk sits left of Spela.
+    expect(
+      [...container.querySelectorAll(".itinerary-bar button")].map((action) => action.textContent),
+    ).toEqual(["Kopiera länk", "Spela"]);
   });
 
   test("Spela opens the built link in place", async () => {
