@@ -186,7 +186,16 @@ export const TIME_TIE_BREAK_EXPLANATION =
 
 /** An itinerary's total time and its won tie-breaker trips: `4:12,3 (2 vunna)`. */
 export function totalTimeText(tenths: number, won: number): string {
-  return `${timeText(tenths)} (${won} ${won === 1 ? "vunnen" : "vunna"})`;
+  return `${timeText(tenths)} (${wonCountText(won)})`;
+}
+
+/** An itinerary's won tie-breaker trips, naming their mode: `2 vunna i Tidtagning`. */
+export function wonTieBreakersText(won: number): string {
+  return `${wonCountText(won)} i Tidtagning`;
+}
+
+function wonCountText(won: number): string {
+  return `${won} ${won === 1 ? "vunnen" : "vunna"}`;
 }
 
 function hoursMinutesSeconds(totalSeconds: number): string {
