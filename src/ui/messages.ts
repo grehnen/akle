@@ -1,6 +1,6 @@
 import type { Feedback, GameReview, GameStatus, GuessCard, GuessResult } from "../engine/game";
 import type { HINT_COUNT } from "../engine/hints";
-import { TIMEOUT_COST } from "../engine/score";
+import { AWAY_WEIGHT_AT_LIMIT, AWAY_WEIGHT_GIVEN_UP, TIMEOUT_COST } from "../engine/score";
 import { MODE_KINDS, type ModeKind, type ModeSetting } from "../freePlay/linkPayload";
 import { gameOutcome, type Outcome } from "../progress/outcome";
 
@@ -176,6 +176,13 @@ export const LOWER_IS_BETTER = "Lägre är bättre";
 
 /** What a free-play score means, in the score tooltip and wherever scoring is explained. */
 export const SCORE_EXPLANATION = `Lägre poäng är bättre. En perfekt resa ger −1; varje extra gissning, ledtråd och ⏱ kostar ${TIMEOUT_COST}.`;
+
+/** How a lost free-play trip scores, given up or out of guesses. */
+export const LOSS_SCORE_EXPLANATION = `Kommer du inte fram räknas varje gissning utöver avståndet, plus ${AWAY_WEIGHT_AT_LIMIT} poäng för varje kommun du är ifrån målet, eller ${AWAY_WEIGHT_GIVEN_UP} om du gav upp. Ledtrådar och ⏱ kostar som vanligt.`;
+
+/** That time never enters a score but only separates equal ones, as the glossary's Score says. */
+export const TIME_TIE_BREAK_EXPLANATION =
+  "Tiden räknas aldrig in i poängen. Den skiljer bara lika poäng åt: i en resplan vinner först den som vunnit flest resor i Tidtagning, sedan den med lägst total tid.";
 
 /** An itinerary's total time and its won tie-breaker trips: `4:12,3 (2 vunna)`. */
 export function totalTimeText(tenths: number, won: number): string {
