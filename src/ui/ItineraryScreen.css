@@ -208,15 +208,20 @@
   }
 }
 
-.itinerary-total {
-  margin: 0;
-  font-weight: 700;
-}
-
+/* Two lines that never wrap: the title cut short by an ellipsis, then where the player stands. */
 .itinerary-progress {
   max-width: 100%;
-  text-align: center;
-  overflow-wrap: anywhere;
+}
+
+.itinerary-progress-title,
+.itinerary-progress-detail {
+  display: block;
+  white-space: nowrap;
+}
+
+.itinerary-progress-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* The way on, in the yellow of the app's main actions. */
