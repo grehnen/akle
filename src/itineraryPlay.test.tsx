@@ -402,7 +402,7 @@ describe("an itinerary from its link", () => {
     );
     expect(container.textContent).not.toContain("Trosa");
     expect(container.textContent).toContain("Tiden går även om du lämnar sidan.");
-    expect(text(container, ".start-gate-mode")).toBe(
+    expect(text(container, ".start-gate-rules")).toBe(
       "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng.",
     );
     // Its trips are played in order, once: no way back to setup.
@@ -421,7 +421,7 @@ describe("an itinerary from its link", () => {
     expect(text(container, ".start-gate .trip-number")).toBe(
       "Fredagsresan · Resa 3 av 3 · Tidtagning · Totalt 1 poäng",
     );
-    expect(text(container, ".start-gate-mode")).toBe(
+    expect(text(container, ".start-gate-rules")).toBe(
       "Tiden tas. Vid lika poäng vinner den snabbaste.",
     );
     await click(button(container, "Starta"));
