@@ -861,23 +861,18 @@ describe("an invalid itinerary link", () => {
     expect(text(container, ".free-play-error p")).toBe(
       "Länken till resplanen är trasig eller ogiltig.",
     );
-    expect(
-      [...container.querySelectorAll(".free-play-error-actions a")].map((a) => [
-        a.textContent,
-        a.getAttribute("href"),
-      ]),
-    ).toEqual([
+    const actions = query(container, '.free-play-error nav[aria-label="Vidare"]');
+    expect(actions.classList.contains("button-group")).toBe(true);
+    expect([...actions.children].map((a) => [a.textContent, a.getAttribute("href")])).toEqual([
       ["Bygg en resplan", "/resplan"],
       ["Dagens resa", "/"],
       ["Fri resa", "/fri"],
     ]);
-    expect(
-      container.querySelector(".free-play-error-actions a.primary-link")?.getAttribute("href"),
-    ).toBe("/resplan");
+    expect(actions.firstElementChild?.classList.contains("primary-link")).toBe(true);
     expect(button(container, "Starta resplanen")).toBeUndefined();
 
     // Within the app, without loading the page again.
-    await click(query(container, ".free-play-error-actions a.primary-link"));
+    await click(actions.firstElementChild ?? undefined);
     expect(dom.window.location.pathname).toBe("/resplan");
     expect(text(container, "#itinerary-heading")).toBe("Bygg en resplan");
   });

@@ -1,0 +1,32 @@
+.button-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 20rem;
+  margin-inline: auto;
+}
+
+.button-group > * {
+  justify-content: center;
+  text-align: center;
+}
+
+/* Links that look like the app's buttons. */
+.button-group > a {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--night);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* The way on, in the yellow of the app's main actions. */
+.button-group > .primary-link {
+  background: var(--start);
+}
