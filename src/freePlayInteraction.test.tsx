@@ -361,8 +361,8 @@ describe("playing a picked trip", () => {
     await settle();
 
     expect(query(container, "#result-heading").textContent).toBe("Perfekt!");
-    expect(query(container, ".result-score").textContent).toBe("+0 (Perfekt) · −1 poäng");
-    expect(query(container, ".result-score-note").textContent).toBe("Lägre är bättre");
+    expect(query(container, ".result-points").textContent).toBe("−1 poäng");
+    expect(query(container, ".result-score-detail").textContent).toBe("+0 (Perfekt)");
     expect(fetched).toEqual(["current"]);
     expect(new Set(progress.writes)).toEqual(new Set(["akle:free-play-trips"]));
     expect(progress.storage.getItem("akle:game")).toBe(progress.savedGame);
@@ -454,6 +454,30 @@ describe("Slumpa", () => {
     expect(buttonNamed(container, "Slumpa ny resa")).toBeDefined();
   });
 
+  test("Slumpa ny resa shows the played mode and the range it draws from on a second line", async () => {
+    const redrawLines = (container: HTMLElement) =>
+      [...query(container, ".free-play-redraw").children].map((line) => line.textContent);
+    const { container } = await mountApp("/fri");
+    await click(modeChoice(container, "timed"));
+    await type(thinkingTimeSlider(container) as HTMLInputElement, "12");
+    await type(distanceThumbs(container).min, "1");
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+    await click(buttonNamed(container, "Starta") as HTMLElement);
+    // Whichever pair was drawn, giving up ends the trip.
+    await click(query(container, ".give-up-button"));
+    await click(query(container, "dialog.give-up-dialog .give-up-confirm"));
+    await settle();
+
+    expect(redrawLines(container)).toEqual(["Slumpa ny resa", "Tidspress 12 s · avstånd 1–2"]);
+    // After a trip not drawn, it draws from setup's range.
+    await click(query(container, ".result-view a"));
+    await click(tabNamed(container, "Välj själv"));
+    await pick(container, "Nynäshamn", "Salem");
+    await click(buttonNamed(container, "Starta") as HTMLElement);
+    await winDistanceOneTrip(container);
+    expect(redrawLines(container)).toEqual(["Slumpa ny resa", "Tidspress 12 s · avstånd 1–2"]);
+  });
+
   test("Slumpa ny resa after a picked trip draws from setup's range", async () => {
     const { container } = await mountApp("/fri");
 
@@ -491,7 +515,7 @@ describe("Slumpa", () => {
   test.each([
     ["drawn", undefined],
     ["picked", ["Nynäshamn", "Salem"]],
-  ])("a %s trip's result leads back to setup", async (_, picked) => {
+  ])("a %s trip's result leads back to setup", async (kind, picked) => {
     const { container } = await mountApp("/fri");
     if (picked === undefined) {
       const { min, max } = distanceThumbs(container);
@@ -506,12 +530,15 @@ describe("Slumpa", () => {
     }
     await winDistanceOneTrip(container);
 
-    const next = [...container.querySelectorAll(".result-header .free-play-next > *")].map(
+    const actions = [...container.querySelectorAll(".result-header .result-actions > *")].map(
       (element) => [element.textContent, element.getAttribute("href")],
     );
-    expect(next).toEqual([
-      ["Välj läge och resa", "/fri"],
-      ["Slumpa ny resa", null],
+    // A drawn trip redraws from its own range; a picked one, from setup's, cut down to 2.
+    const redraws = kind === "drawn" ? "avstånd 1" : "avstånd 2";
+    expect(actions).toEqual([
+      [`Slumpa ny resa Standard · ${redraws}`, null],
+      ["Ändra inställningar", "/fri"],
+      ["Dela resultat", null],
     ]);
   });
 });
@@ -817,7 +844,8 @@ describe("resuming the free-play trip", () => {
 
     const reopened = await reopen(`${nynashamnTrosa}&utm_source=chat`, storage);
     expect(query(reopened.container, "#result-heading").textContent).toBe("Perfekt!");
-    expect(query(reopened.container, ".result-score").textContent).toBe("+0 (Perfekt) · −1 poäng");
+    expect(query(reopened.container, ".result-points").textContent).toBe("−1 poäng");
+    expect(query(reopened.container, ".result-score-detail").textContent).toBe("+0 (Perfekt)");
     await click(query(reopened.container, ".share-button"));
     expect(copied).toEqual([
       `#åkle Fri resa · Standard\n+0 (Perfekt) · −1 poäng\n✅✅\nhttps://akle.grehn.net${nynashamnTrosa}`,
@@ -1052,7 +1080,8 @@ describe("giving up", () => {
 
     expect(query(container, "#result-heading").textContent).toBe("Gav upp");
     // 0 guesses − distance 1 + 3·1 away.
-    expect(query(container, ".result-score").textContent).toBe("Gav upp (1 ifrån) · 2 poäng");
+    expect(query(container, ".result-points").textContent).toBe("2 poäng");
+    expect(query(container, ".result-score-detail").textContent).toBe("Gav upp (1 ifrån)");
   });
 
   test("asks before ending the trip, and going back keeps playing", async () => {
@@ -1073,7 +1102,8 @@ describe("giving up", () => {
 
     expect(query(container, "#result-heading").textContent).toBe("Gav upp");
     // 1 guess − distance 1 + 3·1 away.
-    expect(query(container, ".result-score").textContent).toBe("Gav upp (1 ifrån) · 3 poäng");
+    expect(query(container, ".result-points").textContent).toBe("3 poäng");
+    expect(query(container, ".result-score-detail").textContent).toBe("Gav upp (1 ifrån)");
     await click(query(container, ".share-button"));
     expect(copied).toEqual([
       `#åkle Fri resa · Standard\nGav upp (1 ifrån) · 3 poäng\n🟧\nhttps://akle.grehn.net${nynashamnSalem}`,
@@ -1088,9 +1118,8 @@ describe("giving up", () => {
 
     const reloaded = await reopen(nynashamnSalem, storage);
     expect(query(reloaded.container, "#result-heading").textContent).toBe("Gav upp");
-    expect(query(reloaded.container, ".result-score").textContent).toBe(
-      "Gav upp (1 ifrån) · 3 poäng",
-    );
+    expect(query(reloaded.container, ".result-points").textContent).toBe("3 poäng");
+    expect(query(reloaded.container, ".result-score-detail").textContent).toBe("Gav upp (1 ifrån)");
     expect(reloaded.container.querySelector("#guess-input")).toBeNull();
   });
 });
@@ -1108,7 +1137,7 @@ describe("the score tooltip", () => {
     await settle();
   }
   const resultScore = (container: HTMLElement) =>
-    [...container.querySelectorAll<HTMLButtonElement>(".result-score button")].find(
+    [...container.querySelectorAll<HTMLButtonElement>(".result-points button")].find(
       (button) => button.textContent === "2 poäng",
     ) as HTMLButtonElement;
 
@@ -1348,21 +1377,6 @@ describe("the setup choice", () => {
     expect(chosenMode(reloaded.container)).toBe("standard");
     await click(modeRadio(reloaded.container, "timed"));
     expect(thinkingTimeField(reloaded.container).value).toBe("12");
-  });
-
-  test("Välj läge och resa after a trip opens setup with that trip's choices", async () => {
-    const storage = memoryStorage();
-    const { container } = await mountApp("/fri", storage);
-    await click(modeRadio(container, "unlimited"));
-    await type(distanceThumbs(container).min, "1");
-    await type(distanceThumbs(container).max, "1");
-    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
-    await winDistanceOneTrip(container);
-    // Within the app, without loading the page again.
-    await click(query(container, ".free-play-setup-link"));
-    expect(dom.window.location.pathname).toBe("/fri");
-    expect(chosenMode(container)).toBe("unlimited");
-    expect(rangeValues(container)).toEqual(["1", "1"]);
   });
 
   test("a trip link in another mode leaves the kept choice as it was", async () => {
@@ -1862,8 +1876,9 @@ describe("Tidspress", () => {
 
     await playToTheEnd(container, "Salem");
     expect(query(container, "#result-heading").textContent).toBe("Framme!");
-    expect(seenText(query(container, ".result-score"))).toBe("+0 (5 ⏱) · 5 poäng");
-    expect(query(container, ".result-score .visually-hidden").textContent).toBe(
+    expect(query(container, ".result-points").textContent).toBe("5 poäng");
+    expect(seenText(query(container, ".result-score-detail"))).toBe("+0 (5 ⏱)");
+    expect(query(container, ".result-score-detail .visually-hidden").textContent).toBe(
       "Tiden ute 5 gånger",
     );
     expect(container.querySelector(".result-time")).toBeNull();
@@ -2207,5 +2222,77 @@ describe("‹ Tillbaka from the Starta gate", () => {
     const reloaded = await reopen("/fri", storage);
     expect(chosenMode(reloaded.container)).toBe("timed");
     expect((thinkingTimeSlider(reloaded.container) as HTMLInputElement).value).toBe("20");
+  });
+});
+
+describe("Ändra inställningar from a trip's result", () => {
+  const SETUP_KEY = "akle:free-play-setup";
+  const changeSettings = (container: HTMLElement) =>
+    [...container.querySelectorAll(".result-view a")].find(
+      (link) => link.textContent === "Ändra inställningar",
+    ) as HTMLElement;
+  const chosenMode = (container: HTMLElement) =>
+    query<HTMLInputElement>(container, ".free-play-modes input:checked").value;
+  const rangeValues = (container: HTMLElement) => {
+    const { min, max } = distanceThumbs(container);
+    return [min.value, max.value];
+  };
+  const selectedTab = (container: HTMLElement) =>
+    query(container, '[role="tab"][aria-selected="true"]').textContent;
+  /** Setup's kept choice moves on meanwhile, as in another tab. */
+  const keepOtherChoice = (storage: ReturnType<typeof memoryStorage>) => {
+    const other = { format: 1, mode: "standard", thinkingTime: 15, range: { min: 2, max: 2 } };
+    storage.setItem(SETUP_KEY, JSON.stringify(other));
+    return storage.getItem(SETUP_KEY);
+  };
+
+  test("opens setup on a drawn trip's mode and range, leaving the kept choice as it was", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    await click(modeChoice(container, "unlimited"));
+    await type(distanceThumbs(container).min, "1");
+    await type(distanceThumbs(container).max, "1");
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+    await winDistanceOneTrip(container);
+    const kept = keepOtherChoice(storage);
+
+    await click(changeSettings(container));
+    expect(dom.window.location.pathname).toBe("/fri");
+    expect(chosenMode(container)).toBe("unlimited");
+    expect(rangeValues(container)).toEqual(["1", "1"]);
+    expect(selectedTab(container)).toBe("Slumpa");
+    expect(storage.getItem(SETUP_KEY)).toBe(kept);
+  });
+
+  test("opens setup on a picked trip's mode, with Välj själv filled with its pair", async () => {
+    const { container } = await mountApp("/fri");
+    await click(modeChoice(container, "unlimited"));
+    await click(tabNamed(container, "Välj själv"));
+    await pick(container, "Nynäshamn", "Salem");
+    await winDistanceOneTrip(container);
+
+    await click(changeSettings(container));
+    expect(chosenMode(container)).toBe("unlimited");
+    expect(selectedTab(container)).toBe("Välj själv");
+    expect(startField(container).value).toBe("Nynäshamn");
+    expect(destinationField(container).value).toBe("Salem");
+  });
+
+  test("keeps the opened choice only once a trip is drawn from it", async () => {
+    const storage = memoryStorage();
+    const { container } = await mountApp("/fri", storage);
+    await click(modeChoice(container, "unlimited"));
+    await type(distanceThumbs(container).min, "1");
+    await type(distanceThumbs(container).max, "1");
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+    await winDistanceOneTrip(container);
+    const kept = keepOtherChoice(storage);
+
+    await click(changeSettings(container));
+    await click(modeChoice(container, "tie-breaker"));
+    expect(storage.getItem(SETUP_KEY)).toBe(kept);
+    await click(buttonNamed(container, "Slumpa resa") as HTMLElement);
+    const reloaded = await reopen("/fri", storage);
+    expect(chosenMode(reloaded.container)).toBe("tie-breaker");
   });
 });

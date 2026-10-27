@@ -175,19 +175,10 @@
   outline-offset: 4px;
 }
 
-/* The result's next steps take a row of their own, so the score and sharing above never move. */
-.free-play-next {
-  flex-basis: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 .free-play-setup-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 2.75rem;
   padding: 0.55rem 0.75rem;
   border-radius: 8px;
@@ -196,28 +187,37 @@
   text-decoration: none;
 }
 
+/* The way on, in the yellow of the app's main actions, saying below its name what it draws. */
 .free-play-redraw {
-  padding-inline: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 1rem;
   background: var(--start);
   color: var(--night);
   font-weight: 700;
+  line-height: 1.25;
 }
 
-.result-score,
-.result-time {
+.free-play-redraw-draws {
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.result-points,
+.result-score-detail {
   margin: 0;
+}
+
+.result-points {
+  font-size: 1.25rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
-.result-score-block {
-  display: flex;
-  flex-direction: column;
-}
-
-.result-score-note {
-  margin: 0;
+.result-score-detail {
   color: var(--muted);
-  font-size: 0.875rem;
 }
 
 .result-time {
