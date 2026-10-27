@@ -1,7 +1,7 @@
 import { type KeyboardEvent, useRef, useState } from "react";
 import type { Trip } from "../engine/game";
 import { endpointSuggestions, pickedTrip, resolveEndpoint } from "../freePlay/endpoints";
-import type { GraphVersion } from "../graph/graphVersion";
+import type { GraphVersion, KommunCode } from "../graph/graphVersion";
 import { EndpointField } from "./EndpointField";
 import "./FreePlayScreen.css";
 
@@ -78,6 +78,7 @@ export function TripChoiceTabs({
  * The Välj själv panel: Start and Mål, each tagging the other end `samma` and its neighbors
  * `granne`, the distance once both are set, and a button that takes the trip only when it can
  * be played. `clearOnPick` empties the fields after, for picking one trip after another.
+ * `initial` fills the fields with a pair to begin with.
  */
 export function PickTripForm({
   graph,
@@ -85,6 +86,7 @@ export function PickTripForm({
   hidden,
   submitLabel,
   clearOnPick = false,
+  initial,
   onPick,
 }: {
   graph: GraphVersion;
@@ -92,10 +94,12 @@ export function PickTripForm({
   hidden: boolean;
   submitLabel: string;
   clearOnPick?: boolean;
+  initial?: Trip;
   onPick: (trip: Trip) => void;
 }) {
-  const [startText, setStartText] = useState("");
-  const [destinationText, setDestinationText] = useState("");
+  const nameOf = (code?: KommunCode) => (code && graph.kommuner.get(code)?.name) ?? "";
+  const [startText, setStartText] = useState(() => nameOf(initial?.start));
+  const [destinationText, setDestinationText] = useState(() => nameOf(initial?.destination));
   const start = resolveEndpoint(graph, startText);
   const destination = resolveEndpoint(graph, destinationText);
   const picked = pickedTrip(graph, start, destination);
