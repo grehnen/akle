@@ -28,6 +28,7 @@ import { TripModal, type TripModalResult } from "./TripModal";
 import { chosenMode } from "./TripSetup";
 import { UndoToast, useUndoRemoval } from "./UndoToast";
 import { useAnnouncer } from "./useAnnouncer";
+import { type ReorderHandleProps, useReorderableList } from "./useReorderableList";
 import "./ItineraryBuilder.css";
 
 type ItineraryBuilderProps = {
@@ -111,6 +112,7 @@ export function ItineraryBuilder({
     if (selector !== undefined) section.current?.querySelector<HTMLElement>(selector)?.focus();
   });
   const removeButton = (number: number) => `[data-remove-trip="${number}"]`;
+  const handleOf = (id: number) => `[data-trip-handle="${id}"]`;
 
   const { announcement, announce } = useAnnouncer();
   // The latest removal, until Ångra, its time running out, or another trip added.
@@ -147,12 +149,20 @@ export function ItineraryBuilder({
     );
     if (added.length >= room) focusAfterRender.current = COUNT;
   };
-  const move = (index: number, by: -1 | 1) =>
-    setTrips((current) => {
-      const next = [...current];
-      [next[index], next[index + by]] = [next[index + by], next[index]];
-      return next;
-    });
+  const list = useRef<HTMLOListElement>(null);
+  const { dragged, handleProps } = useReorderableList(list, {
+    ids: trips.map(({ id }) => id),
+    onMove: (from, to) =>
+      setTrips((current) => {
+        const next = [...current];
+        next.splice(to, 0, ...next.splice(from, 1));
+        return next;
+      }),
+    onMoved: (id, position) => {
+      announce(`Resa flyttad till plats ${position + 1} av ${trips.length}`);
+      focusAfterRender.current = handleOf(id);
+    },
+  });
   const duplicate = (index: number) => {
     setTrips((current) =>
       [
@@ -222,17 +232,16 @@ export function ItineraryBuilder({
           Inga resor än. Lägg till minst två.
         </p>
       ) : (
-        <ol className="itinerary-trips" aria-label="Resor">
+        <ol ref={list} className="itinerary-trips" aria-label="Resor">
           {trips.map((entry, index) => (
             <TripRow
               key={entry.id}
               graph={graph}
               entry={entry}
               number={index + 1}
-              first={index === 0}
-              last={index === trips.length - 1}
               full={room === 0}
-              onMove={(by) => move(index, by)}
+              dragOffset={dragged?.id === entry.id ? dragged.offset : undefined}
+              handleProps={handleProps(entry.id)}
               onDuplicate={() => duplicate(index)}
               onRemove={() => remove(index)}
             />
@@ -330,20 +339,19 @@ function TripRow({
   graph,
   entry,
   number,
-  first,
-  last,
   full,
-  onMove,
+  dragOffset,
+  handleProps,
   onDuplicate,
   onRemove,
 }: {
   graph: GraphVersion;
   entry: BuilderTrip;
   number: number;
-  first: boolean;
-  last: boolean;
   full: boolean;
-  onMove: (by: -1 | 1) => void;
+  /** How far the pointer has pulled the row from its place, while it is being dragged. */
+  dragOffset?: number;
+  handleProps: ReorderHandleProps;
   onDuplicate: () => void;
   onRemove: () => void;
 }) {
@@ -351,7 +359,21 @@ function TripRow({
   const start = kommunName(graph, trip.start);
   const destination = kommunName(graph, trip.destination);
   return (
-    <li className="itinerary-trip">
+    <li
+      className={
+        dragOffset === undefined ? "itinerary-trip" : "itinerary-trip itinerary-trip--dragged"
+      }
+      style={dragOffset === undefined ? undefined : { transform: `translateY(${dragOffset}px)` }}
+    >
+      <button
+        type="button"
+        className="itinerary-trip-handle"
+        data-trip-handle={entry.id}
+        aria-label={`Flytta resa ${number}`}
+        {...handleProps}
+      >
+        <span aria-hidden="true">⠿</span>
+      </button>
       <span className="itinerary-trip-number" aria-hidden="true">
         {number}
       </span>
@@ -373,22 +395,6 @@ function TripRow({
         <span className="itinerary-trip-mode">{modeName(trip.mode)}</span>
       </span>
       <span className="itinerary-trip-actions">
-        <button
-          type="button"
-          aria-label={`Flytta upp resa ${number}`}
-          disabled={first}
-          onClick={() => onMove(-1)}
-        >
-          <span aria-hidden="true">↑</span>
-        </button>
-        <button
-          type="button"
-          aria-label={`Flytta ner resa ${number}`}
-          disabled={last}
-          onClick={() => onMove(1)}
-        >
-          <span aria-hidden="true">↓</span>
-        </button>
         <button
           type="button"
           aria-label={`Dubblera resa ${number}`}
