@@ -117,12 +117,6 @@
   font-size: 1.25rem;
 }
 
-.itinerary-summary-totals .itinerary-summary-note {
-  grid-column: 1;
-  color: var(--muted);
-  font-size: 0.875rem;
-}
-
 /*
  * Dela resultat as wide as the Vidare group under it, with room above for its toast, so the toast
  * doesn't cover the totals.
