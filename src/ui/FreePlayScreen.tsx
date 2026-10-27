@@ -184,7 +184,11 @@ export function FreePlayScreen({
           ? undefined
           : {
               // Behind Starta the trip has no save yet, so leaving for setup records nothing of it.
-              wayBack: <SetupLink />,
+              wayBack: (
+                <AppLink className="start-gate-back" href={FREE_PLAY_PATH}>
+                  ‹ Tillbaka
+                </AppLink>
+              ),
               onStart: () =>
                 setPlayed({ ...played, started: true, game: startTime(played.game, clock()) }),
             }
