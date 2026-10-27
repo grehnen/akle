@@ -2,7 +2,7 @@ import type { Trip } from "../engine/game";
 import type { GraphVersion } from "../graph/graphVersion";
 import type { DistanceRange } from "./draw";
 import type { LinkedTrip } from "./linkPayload";
-import { readSetupChoice, type SetupChoice } from "./setupChoice";
+import { readSetupChoice, type SetupChoice, setupChoiceOfTrip } from "./setupChoice";
 import { isRecord } from "./storedGame";
 
 /**
@@ -22,12 +22,7 @@ export function setupOpeningOn(
   { drawn, range, endsKnown }: { drawn: boolean; range?: DistanceRange; endsKnown: boolean },
   setupChoice: SetupChoice,
 ): SetupOpening {
-  const { mode } = trip;
-  const choice: SetupChoice = {
-    mode: mode.kind,
-    thinkingTime: mode.kind === "timed" ? mode.thinkingTime : setupChoice.thinkingTime,
-    range: range ?? setupChoice.range,
-  };
+  const choice = setupChoiceOfTrip(trip.mode, range, setupChoice);
   const pair =
     !drawn && endsKnown ? { start: trip.start, destination: trip.destination } : undefined;
   return { choice, pair };

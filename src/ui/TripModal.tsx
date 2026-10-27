@@ -14,8 +14,8 @@ export type TripModalResult = { choice: SetupChoice } & (
 );
 
 /**
- * The builder's modal for a trip's settings: the shared setup, with its short mode texts, and
- * Avbryt and the button that takes the settings in its footer. Given `room`, it adds trips: Antal
+ * The builder's modal for setting up a trip: the shared setup, with its short mode texts, and
+ * Avbryt and the button that takes the setup in its footer. Given `room`, it adds trips: Antal
  * then draws up to that many at once, and the button counts them. Without `room`, it edits one
  * trip, and `initialPair` opens it on Välj själv with a picked trip's pair.
  */

@@ -18,7 +18,7 @@ import {
   titleLength,
 } from "../freePlay/itineraryLink";
 import { DEFAULT_THINKING_TIME } from "../freePlay/modeRules";
-import type { SetupChoice } from "../freePlay/setupChoice";
+import { chosenMode, setupChoiceOfTrip, type SetupChoice } from "../freePlay/setupChoice";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SITE_URL } from "../siteUrl";
 import { CopyLinkButton } from "./CopyLinkButton";
@@ -26,7 +26,6 @@ import { modeName } from "./messages";
 import { Modal } from "./Modal";
 import { OverflowMenu } from "./OverflowMenu";
 import { TripModal, type TripModalResult } from "./TripModal";
-import { chosenMode } from "./TripSetup";
 import { UndoToast, useUndoRemoval } from "./UndoToast";
 import { useAnnouncer } from "./useAnnouncer";
 import { type ReorderHandleProps, useReorderableList } from "./useReorderableList";
@@ -330,7 +329,11 @@ export function ItineraryBuilder({
           graph={graph}
           largest={largest}
           heading="Ändra resa"
-          initial={settingsOf(trips[editingIndex], lastUsed)}
+          initial={setupChoiceOfTrip(
+            trips[editingIndex].trip.mode,
+            trips[editingIndex].drawnFrom,
+            lastUsed,
+          )}
           initialPair={trips[editingIndex].drawnFrom ? undefined : trips[editingIndex].trip}
           submitLabel="Spara"
           onCancel={closeEditModal}
@@ -383,15 +386,6 @@ function TitleField({ title, onChange }: { title: string; onChange: (title: stri
       </span>
     </div>
   );
-}
-
-/** A row's settings as the modal opens on them: its mode, and the range it was drawn from. */
-function settingsOf({ trip, drawnFrom }: DraftTrip, fallback: SetupChoice): SetupChoice {
-  return {
-    mode: trip.mode.kind,
-    thinkingTime: trip.mode.kind === "timed" ? trip.mode.thinkingTime : fallback.thinkingTime,
-    range: drawnFrom ?? fallback.range,
-  };
 }
 
 const rangeText = ({ min, max }: DistanceRange) => (min === max ? `${min}` : `${min}–${max}`);

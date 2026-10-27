@@ -2,7 +2,7 @@ import { type ReactNode, useId, useState } from "react";
 import type { Trip } from "../engine/game";
 import type { DistanceRange } from "../freePlay/draw";
 import type { ModeSetting } from "../freePlay/linkPayload";
-import type { SetupChoice } from "../freePlay/setupChoice";
+import { chosenMode, type SetupChoice } from "../freePlay/setupChoice";
 import type { GraphVersion } from "../graph/graphVersion";
 import { DistanceRangeSlider } from "./DistanceRangeSlider";
 import { ModeCards, ThinkingTimeField } from "./ModeCards";
@@ -14,11 +14,6 @@ import {
   tripChoiceTabId,
 } from "./TripChoice";
 import "./TripSetup.css";
-
-/** A setup choice's mode as a trip takes it: Tidspress with its betänketid. */
-export function chosenMode({ mode, thinkingTime }: SetupChoice): ModeSetting {
-  return mode === "timed" ? { kind: "timed", thinkingTime } : { kind: mode };
-}
 
 /**
  * How a trip is set up, wherever one is: the Läge cards, Tidspress's betänketid in its own row
