@@ -14,6 +14,16 @@ const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>', {
 // The satellite map asks for the touch-screen media query; jsdom has no matchMedia.
 const matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
 Object.assign(dom.window, { matchMedia });
+// jsdom has no modal dialogs: opening one only marks it open, and closing it fires close.
+Object.assign(dom.window.HTMLDialogElement.prototype, {
+  showModal(this: HTMLDialogElement) {
+    this.setAttribute("open", "");
+  },
+  close(this: HTMLDialogElement) {
+    this.removeAttribute("open");
+    this.dispatchEvent(new dom.window.Event("close"));
+  },
+});
 Object.assign(globalThis, {
   window: dom.window,
   document: dom.window.document,
@@ -122,10 +132,12 @@ describe("getting to the itinerary builder", () => {
     expect(dom.window.location.pathname).toBe("/resplan");
     expect(dom.window.document.title).toBe("Åkle – Resplan");
     expect(query(container, "#itinerary-heading").textContent).toBe("Bygg en resplan");
+    expect(query(container, ".itinerary-list-heading").textContent).toBe("Resor");
     expect(query(container, ".itinerary-empty").textContent).toBe(
-      "Inga resor än. Lägg till minst två nedan.",
+      "Inga resor än. Lägg till minst två.",
     );
     expect(query(container, ".itinerary-count").textContent).toBe("0 av 20 resor · minst 2");
+    expect(button(container, "+ Lägg till").disabled).toBe(false);
     expect(button(container, "Kopiera länk").disabled).toBe(true);
     expect(button(container, "Spela").disabled).toBe(true);
   });
@@ -142,97 +154,208 @@ async function type(input: HTMLInputElement, text: string) {
 /** Each row of the trip list as its pair's visible text. */
 const rows = (container: HTMLElement) =>
   [...container.querySelectorAll(".itinerary-trip-pair")].map((pair) => pair.textContent);
+/** Each row's mode, as its read-only text. */
+const rowModes = (container: HTMLElement) =>
+  [...container.querySelectorAll(".itinerary-trip-mode")].map((mode) => mode.textContent);
 
-/** Hand-picks a trip by its ends' names on the Välj själv tab. */
-async function pick(container: HTMLElement, start: string, destination: string) {
-  await click(query(container, "#itinerary-tab-pick"));
-  await type(query(container, "#itinerary-start"), start);
-  await type(query(container, "#itinerary-destination"), destination);
-  await click(button(container, "Lägg till"));
+const labelled = (container: HTMLElement, label: string) =>
+  query<HTMLButtonElement>(container, `[aria-label="${label}"]`);
+
+/** The add modal, while it's open. */
+const addModal = (container: HTMLElement) =>
+  container.querySelector<HTMLDialogElement>('dialog[aria-label="Lägg till resor"]');
+const inModal = <E extends Element = HTMLElement>(container: HTMLElement, selector: string) =>
+  addModal(container)?.querySelector(selector) as E;
+const modalTab = (container: HTMLElement, name: string) =>
+  [...(addModal(container)?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [])].find(
+    (tab) => tab.textContent === name,
+  ) as HTMLButtonElement;
+/** The modal footer's button that adds, whatever it reads. */
+const submitButton = (container: HTMLElement) =>
+  inModal<HTMLButtonElement>(container, ".modal-footer .trip-modal-submit");
+/** The Antal slider, found by its label. */
+const countSlider = (container: HTMLElement) =>
+  [...(addModal(container)?.querySelectorAll<HTMLInputElement>('input[type="range"]') ?? [])].find(
+    (input) => input.labels?.[0]?.textContent?.startsWith("Antal"),
+  );
+const modeRadio = (container: HTMLElement, kind: string) =>
+  inModal<HTMLInputElement>(container, `.free-play-modes input[value="${kind}"]`);
+
+async function openAddModal(container: HTMLElement) {
+  await click(button(container, "+ Lägg till"));
 }
 
-describe("adding trips", () => {
-  test("a hand-picked trip shows its pair, and the fields clear for the next", async () => {
-    const container = await mountApp("/resplan");
-    await click(query(container, "#itinerary-tab-pick"));
-    await type(query(container, "#itinerary-start"), "Nynäshamn");
-    await type(query(container, "#itinerary-destination"), "Salem");
-    expect(query(container, "#itinerary-panel-pick .free-play-distance").textContent).toBe(
-      "Avstånd 1",
-    );
-    await click(button(container, "Lägg till"));
+/** Chooses the modal's mode, and Tidspress's betänketid when given. */
+async function chooseMode(container: HTMLElement, kind: string, thinkingTime?: number) {
+  await click(modeRadio(container, kind));
+  if (thinkingTime !== undefined) {
+    await type(inModal(container, "input[id$='-thinking-time']"), String(thinkingTime));
+  }
+}
 
+/** Hand-picks a trip by its ends' names on the modal's Välj själv tab, in `mode`. */
+async function pick(
+  container: HTMLElement,
+  start: string,
+  destination: string,
+  mode?: { kind: string; thinkingTime?: number },
+) {
+  await openAddModal(container);
+  if (mode) await chooseMode(container, mode.kind, mode.thinkingTime);
+  await click(modalTab(container, "Välj själv"));
+  await type(inModal(container, "input[id$='-start']"), start);
+  await type(inModal(container, "input[id$='-destination']"), destination);
+  await click(submitButton(container));
+}
+
+/** Adds `count` drawn trips from the modal's Slumpa tab, in `mode`. */
+async function draw(container: HTMLElement, count = 1, mode?: { kind: string }) {
+  await openAddModal(container);
+  if (mode) await chooseMode(container, mode.kind);
+  if (count > 1) await type(countSlider(container) as HTMLInputElement, String(count));
+  await click(submitButton(container));
+}
+
+describe("the add modal", () => {
+  test("+ Lägg till opens it with the setup's short texts, on Slumpa", async () => {
+    const container = await mountApp("/resplan");
+    expect(addModal(container)).toBeNull();
+    await openAddModal(container);
+
+    expect(addModal(container)?.open).toBe(true);
+    expect(inModal(container, "h2").textContent).toBe("Lägg till resor");
+    expect(modeRadio(container, "standard").checked).toBe(true);
+    expect(
+      modeRadio(container, "standard")
+        .closest("label")
+        ?.querySelector(".free-play-mode-description")?.textContent,
+    ).toBe("Som dagens resa.");
+    expect(modalTab(container, "Slumpa").getAttribute("aria-selected")).toBe("true");
+    expect(button(container, "Avbryt")).toBeDefined();
+  });
+
+  test("a click on the backdrop leaves it open, and Avbryt or Escape closes it", async () => {
+    const container = await mountApp("/resplan");
+    await openAddModal(container);
+    await click(addModal(container) as HTMLDialogElement);
+    expect(addModal(container)?.open).toBe(true);
+
+    await click(button(container, "Avbryt"));
+    expect(addModal(container)).toBeNull();
+
+    await openAddModal(container);
+    await act(async () => {
+      addModal(container)?.dispatchEvent(
+        new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+    });
+    expect(addModal(container)).toBeNull();
+    expect(rows(container)).toEqual([]);
+  });
+
+  test("a hand-picked trip shows its pair, and the modal closes", async () => {
+    const container = await mountApp("/resplan");
+    await openAddModal(container);
+    await click(modalTab(container, "Välj själv"));
+    expect(submitButton(container).textContent).toBe("Lägg till");
+    expect(submitButton(container).disabled).toBe(true);
+    await type(inModal(container, "input[id$='-start']"), "Nynäshamn");
+    await type(inModal(container, "input[id$='-destination']"), "Salem");
+    expect(inModal(container, ".free-play-distance").textContent).toBe("Avstånd 1");
+    await click(submitButton(container));
+
+    expect(addModal(container)).toBeNull();
     expect(rows(container)).toEqual(["Nynäshamn → Salem"]);
+    expect(rowModes(container)).toEqual(["Standard"]);
     expect(container.querySelector(".itinerary-empty")).toBeNull();
-    expect(query<HTMLInputElement>(container, "#itinerary-start").value).toBe("");
-    expect(query<HTMLInputElement>(container, "#itinerary-destination").value).toBe("");
     expect(query(container, ".itinerary-count").textContent).toBe("1 av 20 resor · minst 2");
   });
 
   test("Välj själv can't add a trip to the same kommun or a neighbor", async () => {
     const container = await mountApp("/resplan");
-    await click(query(container, "#itinerary-tab-pick"));
-    await type(query(container, "#itinerary-start"), "Nynäshamn");
-    await type(query(container, "#itinerary-destination"), "Haninge");
-    expect(button(container, "Lägg till").disabled).toBe(true);
-    await type(query(container, "#itinerary-destination"), "Nynäshamn");
-    expect(button(container, "Lägg till").disabled).toBe(true);
+    await openAddModal(container);
+    await click(modalTab(container, "Välj själv"));
+    await type(inModal(container, "input[id$='-start']"), "Nynäshamn");
+    await type(inModal(container, "input[id$='-destination']"), "Haninge");
+    expect(submitButton(container).disabled).toBe(true);
+    await type(inModal(container, "input[id$='-destination']"), "Nynäshamn");
+    expect(submitButton(container).disabled).toBe(true);
+  });
+
+  test("it opens on the mode and range last used this visit, and not after a reload", async () => {
+    const storage = memoryStorage();
+    const container = await mountApp("/resplan", storage);
+    await openAddModal(container);
+    await chooseMode(container, "timed", 17);
+    const [minimum] = inModal(container, ".distance-range").querySelectorAll("input");
+    await type(minimum as HTMLInputElement, "1");
+    await click(submitButton(container));
+
+    await openAddModal(container);
+    expect(modeRadio(container, "timed").checked).toBe(true);
+    expect(inModal(container, ".free-play-thinking-time output").textContent).toBe("17 s");
+    expect(inModal(container, ".free-play-range-label").textContent).toBe("Avstånd 1–2");
+    await click(button(container, "Avbryt"));
+    unmount();
+
+    const reloaded = await mountApp("/resplan", storage);
+    await openAddModal(reloaded);
+    expect(modeRadio(reloaded, "standard").checked).toBe(true);
+    expect(inModal(reloaded, ".free-play-range-label").textContent).toBe("Avstånd 2");
   });
 });
 
-const drawButton = (container: HTMLElement) =>
-  query<HTMLButtonElement>(container, "#itinerary-panel-draw .itinerary-draw");
-const labelled = (container: HTMLElement, label: string) =>
-  query<HTMLButtonElement>(container, `[aria-label="${label}"]`);
-/** The mode dropdown of the trip list's row `number`. */
-const rowMode = (container: HTMLElement, number: number) =>
-  query<HTMLSelectElement>(container, `.itinerary-trip:nth-child(${number}) select`);
-
-async function choose(select: HTMLSelectElement, value: string) {
-  await act(async () => {
-    select.value = value;
-    select.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
-  });
-}
-
 describe("drawing trips", () => {
-  test("Slumpa adds five drawn trips at once, each hidden until Visa", async () => {
+  test("Antal adds that many drawn trips, its button counting them", async () => {
     const container = await mountApp("/resplan");
+    await openAddModal(container);
     // The four-kommun path's largest distance is 2, so the range is 2–2: Nynäshamn–Trosa.
-    expect(query(container, ".free-play-range-label").textContent).toBe("Avstånd 2");
-    expect(drawButton(container).textContent).toBe("🎲 Lägg till 5 slumpade");
-    await click(drawButton(container));
+    expect(inModal(container, ".free-play-range-label").textContent).toBe("Avstånd 2");
+    const slider = countSlider(container) as HTMLInputElement;
+    expect([slider.min, slider.max, slider.value]).toEqual(["1", "20", "1"]);
+    expect(submitButton(container).textContent).toBe("Lägg till 1 resa");
+    await type(slider, "3");
+    expect(slider.labels?.[0]?.textContent).toBe("Antal 3 av högst 20");
+    expect(submitButton(container).textContent).toBe("Lägg till 3 resor");
+    await click(submitButton(container));
 
-    expect(rows(container)).toEqual(Array(5).fill("🎲 Slumpad · avstånd 2"));
-    await click(labelled(container, "Visa resa 2"));
-    expect(rows(container)[1]).toMatch(/^(Nynäshamn → Trosa|Trosa → Nynäshamn)$/);
-    expect(rows(container).filter((row) => row?.startsWith("🎲"))).toHaveLength(4);
+    expect(addModal(container)).toBeNull();
+    expect(rows(container)).toEqual(Array(3).fill("Slumpad · avstånd 2"));
+    expect(container.querySelector(".itinerary-trips")?.textContent).not.toContain("Nynäshamn");
   });
 
-  test("the count can be changed, and is capped at the room left", async () => {
+  test("Antal resets to 1 on each open, up to the slots left, and hides at one slot", async () => {
     const container = await mountApp("/resplan");
-    await click(labelled(container, "Fler resor"));
-    expect(drawButton(container).textContent).toBe("🎲 Lägg till 6 slumpade");
-    await click(drawButton(container));
-    await click(drawButton(container));
-    await click(drawButton(container));
-    expect(query(container, ".itinerary-count").textContent).toBe("18 av 20 resor");
-    expect(drawButton(container).textContent).toBe("🎲 Lägg till 2 slumpade");
-    expect(labelled(container, "Fler resor").disabled).toBe(true);
+    await draw(container, 15);
+    await openAddModal(container);
+    const slider = countSlider(container) as HTMLInputElement;
+    expect([slider.max, slider.value]).toEqual(["5", "1"]);
+    await type(slider, "4");
+    await click(submitButton(container));
+
+    await openAddModal(container);
+    expect(countSlider(container)).toBeUndefined();
+    expect(submitButton(container).textContent).toBe("Lägg till 1 resa");
   });
 
-  test("Antal drops to the room left after adding, and stays there when trips are removed", async () => {
+  test("Antal is only on Slumpa", async () => {
     const container = await mountApp("/resplan");
-    for (let step = 0; step < 3; step++) await click(labelled(container, "Fler resor"));
-    await click(drawButton(container));
-    await click(drawButton(container));
-    expect(query(container, ".itinerary-count").textContent).toBe("16 av 20 resor");
-    expect(query(container, ".itinerary-stepper output").textContent).toBe("4");
+    await openAddModal(container);
+    await click(modalTab(container, "Välj själv"));
+    expect(countSlider(container)?.closest("[hidden]")).not.toBeNull();
+  });
 
-    await click(labelled(container, "Ta bort resa 1"));
-    await click(labelled(container, "Ta bort resa 1"));
-    expect(query(container, ".itinerary-stepper output").textContent).toBe("4");
-    expect(drawButton(container).textContent).toBe("🎲 Lägg till 4 slumpade");
+  test("a drawn row shows the range it was drawn from, never its pair", async () => {
+    const container = await mountApp("/resplan");
+    await openAddModal(container);
+    const [minimum] = inModal(container, ".distance-range").querySelectorAll("input");
+    await type(minimum as HTMLInputElement, "1");
+    await click(submitButton(container));
+
+    expect(rows(container)).toEqual(["Slumpad · avstånd 1–2"]);
+    expect(button(container, "Visa")).toBeUndefined();
+    expect(container.querySelector(".itinerary-trips select")).toBeNull();
+    expect(container.querySelector(".itinerary-trips")?.textContent).not.toContain("🎲");
   });
 });
 
@@ -242,56 +365,42 @@ const announced = (container: HTMLElement) =>
 const focused = () => dom.window.document.activeElement;
 
 describe("announcing added trips", () => {
-  test("Lägg till announces the trip and focuses Start for the next pair", async () => {
+  test("adding announces the trips and focuses + Lägg till again", async () => {
     const container = await mountApp("/resplan");
     await pick(container, "Nynäshamn", "Salem");
     expect(announced(container)).toBe("Resa 1 tillagd");
-    await pick(container, "Haninge", "Trosa");
-    expect(announced(container)).toBe("Resa 2 tillagd");
-    expect(focused()).toBe(query(container, "#itinerary-start"));
-  });
-
-  test("a draw of five announces them all, focus staying on the draw button", async () => {
-    const container = await mountApp("/resplan");
-    await click(drawButton(container));
+    expect(focused()).toBe(button(container, "+ Lägg till"));
+    await draw(container, 5);
     expect(announced(container)).toBe("5 resor tillagda");
-    expect(focused()).toBe(drawButton(container));
   });
 
   test("the add that fills the itinerary moves focus to the bar's count", async () => {
     const container = await mountApp("/resplan");
-    for (let draw = 0; draw < 4; draw++) await click(drawButton(container));
-    expect(announced(container)).toBe("5 resor tillagda");
+    await draw(container, 20);
+    expect(announced(container)).toBe("20 resor tillagda");
     expect(focused()).toBe(query(container, ".itinerary-count"));
   });
 });
 
 describe("a full itinerary", () => {
-  test("at 20 trips the panel and duplicating are disabled, until a trip is removed", async () => {
+  test("at 20 trips + Lägg till and duplicating are disabled, until a trip is removed", async () => {
     const container = await mountApp("/resplan");
-    for (let draw = 0; draw < 4; draw++) await click(drawButton(container));
+    await draw(container, 20);
 
     expect(query(container, ".itinerary-count").textContent).toBe("20 av 20 resor");
-    const panel = query<HTMLFieldSetElement>(container, "fieldset.itinerary-add");
-    expect(panel.disabled).toBe(true);
-    expect(query(container, "fieldset.itinerary-add legend").textContent).toBe(
-      "Lägg till resor (fullt)",
-    );
+    expect(button(container, "+ Lägg till (fullt)").disabled).toBe(true);
     expect(labelled(container, "Dubblera resa 1").disabled).toBe(true);
-    expect(drawButton(container).textContent).toBe("🎲 Lägg till 1 slumpad");
 
     await click(labelled(container, "Ta bort resa 20"));
-    expect(panel.disabled).toBe(false);
-    expect(drawButton(container).textContent).toBe("🎲 Lägg till 1 slumpad");
+    expect(button(container, "+ Lägg till").disabled).toBe(false);
   });
 });
 
 describe("editing the trip list", () => {
   test("trips can be moved, duplicated with their settings and removed", async () => {
     const container = await mountApp("/resplan");
-    await pick(container, "Nynäshamn", "Salem");
-    await pick(container, "Haninge", "Trosa");
-    await choose(rowMode(container, 1), "unlimited");
+    await pick(container, "Nynäshamn", "Salem", { kind: "unlimited" });
+    await pick(container, "Haninge", "Trosa", { kind: "standard" });
 
     await click(labelled(container, "Flytta ner resa 1"));
     expect(rows(container)).toEqual(["Haninge → Trosa", "Nynäshamn → Salem"]);
@@ -300,43 +409,28 @@ describe("editing the trip list", () => {
 
     await click(labelled(container, "Dubblera resa 2"));
     expect(rows(container)).toEqual(["Haninge → Trosa", "Nynäshamn → Salem", "Nynäshamn → Salem"]);
-    const modes = [
-      ...container.querySelectorAll<HTMLSelectElement>(".itinerary-trip select[id$='-mode']"),
-    ];
-    expect(modes.map((select) => select.value)).toEqual(["standard", "unlimited", "unlimited"]);
+    expect(rowModes(container)).toEqual(["Standard", "Obegränsad", "Obegränsad"]);
 
     await click(labelled(container, "Ta bort resa 1"));
     expect(rows(container)).toEqual(["Nynäshamn → Salem", "Nynäshamn → Salem"]);
   });
 
-  test("a duplicated drawn trip copies its pair, still hidden", async () => {
+  test("a duplicated drawn trip copies its range", async () => {
     const container = await mountApp("/resplan");
-    for (let step = 0; step < 4; step++) await click(labelled(container, "Färre resor"));
-    await click(drawButton(container));
+    await draw(container);
     await click(labelled(container, "Dubblera resa 1"));
-    expect(rows(container)).toEqual(["🎲 Slumpad · avstånd 2", "🎲 Slumpad · avstånd 2"]);
-    await click(labelled(container, "Visa resa 1"));
-    await click(labelled(container, "Visa resa 2"));
-    expect(rows(container)[0]).toBe(rows(container)[1]);
+    expect(rows(container)).toEqual(["Slumpad · avstånd 2", "Slumpad · avstånd 2"]);
   });
 });
 
 const undoToast = (container: HTMLElement) => container.querySelector(".itinerary-undo");
-/** Row `number`'s betänketid. */
-const rowThinkingTime = (container: HTMLElement, number: number) =>
-  query<HTMLSelectElement>(
-    container,
-    `.itinerary-trip:nth-child(${number}) .itinerary-thinking-time`,
-  );
 
 describe("removing a trip", () => {
-  test("shows Ångra, which puts the trip back in place with its mode and revealed pair", async () => {
+  test("shows Ångra, which puts the trip back in place with its mode", async () => {
     const container = await mountApp("/resplan");
-    await click(drawButton(container));
-    await choose(rowMode(container, 3), "timed");
-    await choose(rowThinkingTime(container, 3), "23");
-    await click(labelled(container, "Visa resa 3"));
-    const pair = rows(container)[2];
+    await draw(container, 2);
+    await pick(container, "Nynäshamn", "Salem", { kind: "timed", thinkingTime: 23 });
+    await draw(container, 2);
 
     await click(labelled(container, "Ta bort resa 3"));
     expect(rows(container)).toHaveLength(4);
@@ -346,19 +440,10 @@ describe("removing a trip", () => {
 
     await click(button(container, "Ångra"));
     expect(rows(container)).toHaveLength(5);
-    expect(rows(container)[2]).toBe(pair);
-    expect(rowMode(container, 3).value).toBe("timed");
-    expect(rowThinkingTime(container, 3).value).toBe("23");
+    expect(rows(container)[2]).toBe("Nynäshamn → Salem");
+    expect(rowModes(container)[2]).toBe("Tidspress 23 s");
     expect(undoToast(container)).toBeNull();
     expect(focused()).toBe(labelled(container, "Ta bort resa 3"));
-  });
-
-  test("a hidden drawn trip comes back still hidden", async () => {
-    const container = await mountApp("/resplan");
-    await click(drawButton(container));
-    await click(labelled(container, "Ta bort resa 4"));
-    await click(button(container, "Ångra"));
-    expect(rows(container)[3]).toBe("🎲 Slumpad · avstånd 2");
   });
 
   test("only the latest removal can be undone", async () => {
@@ -389,14 +474,9 @@ describe("the itinerary's link", () => {
   test("Kopiera länk copies a link with the title, trips, modes, thinking times and version", async () => {
     const container = await mountApp("/resplan");
     await type(query(container, "#itinerary-title"), "Helgresan");
-    await pick(container, "Nynäshamn", "Salem");
-    await choose(query(container, "#itinerary-new-mode"), "timed");
-    const newThinkingTime = query<HTMLInputElement>(container, "#itinerary-new-thinking-time");
-    expect(newThinkingTime.value).toBe("10");
-    await type(newThinkingTime, "17");
-    await pick(container, "Trosa", "Haninge");
+    await pick(container, "Nynäshamn", "Salem", { kind: "tie-breaker" });
+    await pick(container, "Trosa", "Haninge", { kind: "timed", thinkingTime: 17 });
     await click(labelled(container, "Dubblera resa 1"));
-    await choose(rowMode(container, 2), "tie-breaker");
     expect(query(container, ".itinerary-count").textContent).toBe("3 av 20 resor");
 
     await click(button(container, "Kopiera länk"));
@@ -411,56 +491,13 @@ describe("the itinerary's link", () => {
         // "current" is the version today's trip uses, second by start trip after "older".
         versionOrdinal: 1,
         trips: [
-          { start: "0192", destination: "0128", mode: { kind: "standard" } },
+          { start: "0192", destination: "0128", mode: { kind: "tie-breaker" } },
           { start: "0192", destination: "0128", mode: { kind: "tie-breaker" } },
           { start: "0488", destination: "0136", mode: { kind: "timed", thinkingTime: 17 } },
         ],
       },
     });
     expect(query(container, ".copy-link-toast").textContent).toBe("Kopierat!");
-  });
-
-  test("the mode for new trips says how it plays, and its betänketid slider is labelled in sight", async () => {
-    const container = await mountApp("/resplan");
-    const description = () => query(container, ".itinerary-add .itinerary-mode-description");
-    const select = query<HTMLSelectElement>(container, "#itinerary-new-mode");
-    expect(description().textContent).toBe(
-      "Som dagens resa: gissningarna räcker till avståndet och lite till.",
-    );
-    expect(select.getAttribute("aria-describedby")).toBe(description().id);
-
-    await choose(select, "timed");
-    expect(description().textContent).toBe(
-      "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng.",
-    );
-    const label = query<HTMLInputElement>(container, "#itinerary-new-thinking-time").labels?.[0];
-    expect(label?.textContent).toBe("Betänketid");
-    expect(label?.classList.contains("visually-hidden")).toBe(false);
-
-    // Not repeated on each trip.
-    await pick(container, "Nynäshamn", "Salem");
-    expect(container.querySelector(".itinerary-trip .itinerary-mode-description")).toBeNull();
-  });
-
-  test("a trip's betänketid takes any whole second from 5 to 60 from a compact dropdown", async () => {
-    const container = await mountApp("/resplan");
-    await pick(container, "Nynäshamn", "Salem");
-    await pick(container, "Trosa", "Haninge");
-    await choose(rowMode(container, 2), "timed");
-    const thinkingTime = rowThinkingTime(container, 2);
-    expect(thinkingTime.labels[0]?.textContent).toBe("Betänketid, resa 2");
-    expect([...thinkingTime.options].map((option) => option.textContent)).toEqual(
-      Array.from({ length: 56 }, (_, index) => `${index + 5} s`),
-    );
-    await choose(thinkingTime, "23");
-
-    await click(button(container, "Kopiera länk"));
-    const url = new URL(copied[0]);
-    const decoded = decodeLinkPayload(url.searchParams.get("r") ?? "");
-    expect(decoded.ok && decoded.payload.trips[1]?.mode).toEqual({
-      kind: "timed",
-      thinkingTime: 23,
-    });
   });
 
   test("a failed copy shows the link selected in a read-only field, until the next edit", async () => {
@@ -591,23 +628,17 @@ function unmount() {
   mounted = undefined;
 }
 
-const modes = (container: HTMLElement) =>
-  [...container.querySelectorAll<HTMLSelectElement>(".itinerary-trip select[id$='-mode']")].map(
-    (select) => select.value,
-  );
-
-/** A title, three trips in a changed order, one drawn, with modes and a betänketid. */
+/** A title and three trips in a changed order: two picked with modes, one drawn from 1–2. */
 async function buildDraft(container: HTMLElement) {
   await type(query(container, "#itinerary-title"), "Helgresan");
   await pick(container, "Nynäshamn", "Salem");
-  await pick(container, "Haninge", "Trosa");
-  for (let step = 0; step < 4; step++) await click(labelled(container, "Färre resor"));
-  await click(query(container, "#itinerary-tab-draw"));
-  await click(drawButton(container));
+  await pick(container, "Haninge", "Trosa", { kind: "timed", thinkingTime: 23 });
+  await openAddModal(container);
+  await chooseMode(container, "tie-breaker");
+  const [minimum] = inModal(container, ".distance-range").querySelectorAll("input");
+  await type(minimum as HTMLInputElement, "1");
+  await click(submitButton(container));
   await click(labelled(container, "Flytta ner resa 1"));
-  await choose(rowMode(container, 1), "timed");
-  await choose(rowThinkingTime(container, 1), "23");
-  await choose(rowMode(container, 3), "tie-breaker");
 }
 
 async function expectDraft(container: HTMLElement) {
@@ -615,14 +646,13 @@ async function expectDraft(container: HTMLElement) {
   expect(rows(container)).toEqual([
     "Haninge → Trosa",
     "Nynäshamn → Salem",
-    "🎲 Slumpad · avstånd 2",
+    "Slumpad · avstånd 1–2",
   ]);
-  expect(modes(container)).toEqual(["timed", "standard", "tie-breaker"]);
-  expect(rowThinkingTime(container, 1).value).toBe("23");
+  expect(rowModes(container)).toEqual(["Tidspress 23 s", "Standard", "Tidtagning"]);
 }
 
 describe("the builder's draft", () => {
-  test("the title, trips, their order, modes and betänketider survive a reload", async () => {
+  test("the title, trips, their order, modes, betänketider and ranges survive a reload", async () => {
     const storage = memoryStorage();
     await buildDraft(await mountApp("/resplan", storage));
     unmount();
@@ -661,9 +691,27 @@ describe("the builder's draft", () => {
 
   test("a corrupt stored draft is ignored, and the builder opens empty", async () => {
     const storage = memoryStorage();
-    storage.setItem("akle:itinerary-draft", '{"format":1,"versionOrdinal":1,"title":7}');
+    storage.setItem("akle:itinerary-draft", '{"format":2,"versionOrdinal":1,"title":7}');
     const container = await mountApp("/resplan", storage);
     expect(query(container, "#itinerary-heading").textContent).toBe("Bygg en resplan");
+    expect(query(container, ".itinerary-count").textContent).toBe("0 av 20 resor · minst 2");
+  });
+
+  test("a draft in the old format, without ranges, is ignored", async () => {
+    const storage = memoryStorage();
+    storage.setItem(
+      "akle:itinerary-draft",
+      JSON.stringify({
+        format: 1,
+        versionOrdinal: 1,
+        title: "Helgresan",
+        trips: [
+          { trip: { start: "0192", destination: "0128", mode: { kind: "standard" } }, drawn: true },
+        ],
+      }),
+    );
+    const container = await mountApp("/resplan", storage);
+    expect(query<HTMLInputElement>(container, "#itinerary-title").value).toBe("");
     expect(query(container, ".itinerary-count").textContent).toBe("0 av 20 resor · minst 2");
   });
 });

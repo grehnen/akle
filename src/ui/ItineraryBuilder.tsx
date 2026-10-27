@@ -1,16 +1,9 @@
-import {
-  type ReactNode,
-  type RefObject,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Trip } from "../engine/game";
 import type { BuilderDraft, DraftTrip } from "../freePlay/builderDraft";
 import {
   defaultDistanceRange,
+  type DistanceRange,
   drawTrips,
   largestDistance,
   type RandomSource,
@@ -23,24 +16,16 @@ import {
   MAX_ITINERARY_TITLE,
   titleLength,
 } from "../freePlay/itineraryLink";
-import type { ModeSetting } from "../freePlay/linkPayload";
+import { DEFAULT_THINKING_TIME } from "../freePlay/modeRules";
+import type { SetupChoice } from "../freePlay/setupChoice";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
-import { shortestRouteLength } from "../graph/routes";
 import { SITE_URL } from "../siteUrl";
 import { CopyLinkButton } from "./CopyLinkButton";
-import { DistanceRangeSlider } from "./DistanceRangeSlider";
-import { modeDescription } from "./messages";
-import { ModeSelect } from "./ModeSelect";
-import {
-  PickTripForm,
-  type TripChoiceTab,
-  TripChoiceTabs,
-  tripChoicePanelId,
-  tripChoiceTabId,
-} from "./TripChoice";
+import { modeName } from "./messages";
+import { TripModal, type TripModalResult } from "./TripModal";
+import { chosenMode } from "./TripSetup";
 import { UndoToast, useUndoRemoval } from "./UndoToast";
 import { useAnnouncer } from "./useAnnouncer";
-import { useKeepOnScreen } from "./useKeepOnScreen";
 import "./ItineraryBuilder.css";
 
 type ItineraryBuilderProps = {
@@ -59,19 +44,17 @@ type ItineraryBuilderProps = {
   onDraftChange?: (draft: BuilderDraft) => void;
 };
 
-/** A trip in the itinerary being built, with a key for its row and whether it was drawn. */
+/** A trip in the itinerary being built, with a key for its row and the range it was drawn from. */
 type BuilderTrip = DraftTrip & { id: number };
 
-/** How many trips Slumpa adds at once unless the player asks for another number. */
-const DEFAULT_DRAW_COUNT = 5;
-
-const ID_PREFIX = "itinerary";
+const ADD_BUTTON = ".itinerary-add-trips";
+const COUNT = ".itinerary-count";
 
 /**
- * The itinerary builder (Bygg en resplan): a title, the ordered trip list, a panel that adds
- * drawn or hand-picked trips, and a bar that copies or plays the itinerary's link. It can only
- * make valid itineraries: playable trips, at most 20 of them and a title of at most 40
- * characters; the link waits for the second trip.
+ * The itinerary builder (Bygg en resplan): a title, the ordered trip list under its "Resor"
+ * header, whose "+ Lägg till" opens a modal that adds drawn or hand-picked trips, and a bar that
+ * copies or plays the itinerary's link. It can only make valid itineraries: playable trips, at
+ * most 20 of them and a title of at most 40 characters; the link waits for the second trip.
  */
 export function ItineraryBuilder({
   graph,
@@ -82,6 +65,8 @@ export function ItineraryBuilder({
   initialDraft,
   onDraftChange,
 }: ItineraryBuilderProps) {
+  const pairs = useMemo(() => tripPairs(graph), [graph]);
+  const largest = largestDistance(pairs);
   const [title, setTitle] = useState(initialDraft?.title ?? "");
   // A restored draft's rows are numbered from 1, and new rows after them.
   const [trips, setTrips] = useState<readonly BuilderTrip[]>(() =>
@@ -90,10 +75,9 @@ export function ItineraryBuilder({
   const nextId = useRef((initialDraft?.trips.length ?? 0) + 1);
   const withIds = (added: readonly DraftTrip[]) =>
     added.map((trip) => ({ ...trip, id: nextId.current++ }));
-  // A drawn trip's pair shows only once the player asks for it, for this visit to the builder.
-  const [revealed, setRevealed] = useState<ReadonlySet<number>>(new Set());
   useEffect(
-    () => onDraftChange?.({ title, trips: trips.map(({ trip, drawn }) => ({ trip, drawn })) }),
+    () =>
+      onDraftChange?.({ title, trips: trips.map(({ trip, drawnFrom }) => ({ trip, drawnFrom })) }),
     [title, trips, onDraftChange],
   );
   const room = ITINERARY_TRIPS.max - trips.length;
@@ -106,9 +90,14 @@ export function ItineraryBuilder({
         )
       : undefined;
 
-  // Room made to keep the add panel in place goes once the list is empty again.
-  const { keep, scrollRoom } = useKeepOnScreen(trips.length === 0);
-  const addPanel = useRef<HTMLFieldSetElement>(null);
+  const [adding, setAdding] = useState(false);
+  // What the add modal opens on: the mode and range last added with, kept for this visit only.
+  const [lastUsed, setLastUsed] = useState<SetupChoice>(() => ({
+    mode: "standard",
+    thinkingTime: DEFAULT_THINKING_TIME,
+    range: defaultDistanceRange(largest),
+  }));
+
   // What the next render focuses, by a selector within the builder.
   const section = useRef<HTMLElement>(null);
   const focusAfterRender = useRef<string>(undefined);
@@ -123,23 +112,37 @@ export function ItineraryBuilder({
   // The latest removal, until Ångra, its time running out, or another trip added.
   const { removed, showRemoval, hold } = useUndoRemoval<{ entry: BuilderTrip; index: number }>();
 
-  const add = (added: readonly DraftTrip[], drawn: boolean) => {
-    const count = Math.min(added.length, room);
-    if (count === 0) return;
-    // Rows go in above the panel: it stays put on screen, so the button just used never moves.
-    if (addPanel.current !== null) keep(addPanel.current);
+  const closeModal = () => {
+    setAdding(false);
+    focusAfterRender.current = ADD_BUTTON;
+  };
+  const add = (result: TripModalResult) => {
+    const { choice } = result;
+    const trip = ({ start, destination }: Trip) => ({
+      start,
+      destination,
+      mode: chosenMode(choice),
+    });
+    const added: DraftTrip[] =
+      result.tab === "pick"
+        ? [{ trip: trip(result.trip) }]
+        : drawTrips(
+            pairs,
+            choice.range,
+            Math.min(result.count, room),
+            random,
+            trips.at(-1)?.trip,
+          ).map((pair) => ({ trip: trip(pair), drawnFrom: choice.range }));
+    setLastUsed(choice);
+    closeModal();
+    if (added.length === 0) return;
     setTrips((current) => [...current, ...withIds(added)].slice(0, ITINERARY_TRIPS.max));
     showRemoval(undefined);
-    announce(count === 1 ? `Resa ${trips.length + 1} tillagd` : `${count} resor tillagda`);
-    focusAfterRender.current =
-      count === room ? ".itinerary-count" : drawn ? ".itinerary-draw" : `#${ID_PREFIX}-start`;
-  };
-  const changeTrip = (id: number, mode: ModeSetting) =>
-    setTrips((current) =>
-      current.map((entry) =>
-        entry.id === id ? { ...entry, trip: { ...entry.trip, mode } } : entry,
-      ),
+    announce(
+      added.length === 1 ? `Resa ${trips.length + 1} tillagd` : `${added.length} resor tillagda`,
     );
+    if (added.length >= room) focusAfterRender.current = COUNT;
+  };
   const move = (index: number, by: -1 | 1) =>
     setTrips((current) => {
       const next = [...current];
@@ -177,7 +180,6 @@ export function ItineraryBuilder({
   const startOver = () => {
     setTitle("");
     setTrips([]);
-    setRevealed(new Set());
     showRemoval(undefined);
   };
 
@@ -195,9 +197,20 @@ export function ItineraryBuilder({
       >
         Ny resplan
       </button>
+      <div className="itinerary-list-header">
+        <h3 className="itinerary-list-heading">Resor</h3>
+        <button
+          type="button"
+          className="itinerary-add-trips"
+          disabled={room === 0}
+          onClick={() => setAdding(true)}
+        >
+          <span aria-hidden="true">+</span> Lägg till{room === 0 && " (fullt)"}
+        </button>
+      </div>
       {trips.length === 0 ? (
         <p className="itinerary-empty" tabIndex={-1}>
-          Inga resor än. Lägg till minst två nedan.
+          Inga resor än. Lägg till minst två.
         </p>
       ) : (
         <ol className="itinerary-trips" aria-label="Resor">
@@ -207,12 +220,9 @@ export function ItineraryBuilder({
               graph={graph}
               entry={entry}
               number={index + 1}
-              hidden={entry.drawn && !revealed.has(entry.id)}
               first={index === 0}
               last={index === trips.length - 1}
               full={room === 0}
-              onReveal={() => setRevealed(new Set([...revealed, entry.id]))}
-              onModeChange={(mode) => changeTrip(entry.id, mode)}
               onMove={(by) => move(index, by)}
               onDuplicate={() => duplicate(index)}
               onRemove={() => remove(index)}
@@ -220,18 +230,18 @@ export function ItineraryBuilder({
           ))}
         </ol>
       )}
-      <AddTrips
-        panelRef={addPanel}
-        graph={graph}
-        room={room}
-        random={random}
-        onAdd={(added, mode, drawn) =>
-          add(
-            added.map((trip) => ({ trip: { ...trip, mode }, drawn })),
-            drawn,
-          )
-        }
-      />
+      {adding && (
+        <TripModal
+          graph={graph}
+          largest={largest}
+          heading="Lägg till resor"
+          initial={lastUsed}
+          submitLabel="Lägg till"
+          room={room}
+          onCancel={closeModal}
+          onSubmit={add}
+        />
+      )}
       <LinkBar
         count={trips.length}
         link={link}
@@ -244,7 +254,6 @@ export function ItineraryBuilder({
           }
         }
       />
-      <div ref={scrollRoom} className="itinerary-scroll-room" aria-hidden="true" />
       <p role="status" className="visually-hidden itinerary-announcer">
         {announcement}
       </p>
@@ -281,16 +290,16 @@ function TitleField({ title, onChange }: { title: string; onChange: (title: stri
   );
 }
 
+const rangeText = ({ min, max }: DistanceRange) => (min === max ? `${min}` : `${min}–${max}`);
+
+/** A row of the trip list: its pair, or a drawn trip's range, over its mode, then its actions. */
 function TripRow({
   graph,
   entry,
   number,
-  hidden,
   first,
   last,
   full,
-  onReveal,
-  onModeChange,
   onMove,
   onDuplicate,
   onRemove,
@@ -298,17 +307,14 @@ function TripRow({
   graph: GraphVersion;
   entry: BuilderTrip;
   number: number;
-  hidden: boolean;
   first: boolean;
   last: boolean;
   full: boolean;
-  onReveal: () => void;
-  onModeChange: (mode: ModeSetting) => void;
   onMove: (by: -1 | 1) => void;
   onDuplicate: () => void;
   onRemove: () => void;
 }) {
-  const { trip } = entry;
+  const { trip, drawnFrom } = entry;
   const start = kommunName(graph, trip.start);
   const destination = kommunName(graph, trip.destination);
   return (
@@ -317,16 +323,11 @@ function TripRow({
         {number}
       </span>
       <span className="itinerary-trip-what">
-        {/* Cut short with an ellipsis when it doesn't fit; the whole pair stays in the text. */}
-        <span
-          className="itinerary-trip-pair"
-          title={hidden ? undefined : `${start} → ${destination}`}
-        >
-          {hidden ? (
+        {/* A drawn trip's pair stays a surprise, even to its builder. */}
+        <span className="itinerary-trip-pair">
+          {drawnFrom ? (
             <>
-              <span aria-hidden="true">🎲</span>{" "}
-              <span className="itinerary-drawn-word">Slumpad · </span>avstånd{" "}
-              {shortestRouteLength(graph, trip.start, trip.destination)}
+              Slumpad · <span className="itinerary-trip-range">avstånd {rangeText(drawnFrom)}</span>
             </>
           ) : (
             <>
@@ -336,25 +337,8 @@ function TripRow({
             </>
           )}
         </span>
-        {hidden && (
-          <button
-            type="button"
-            className="itinerary-reveal"
-            aria-label={`Visa resa ${number}`}
-            onClick={onReveal}
-          >
-            Visa
-          </button>
-        )}
+        <span className="itinerary-trip-mode">{modeName(trip.mode)}</span>
       </span>
-      <ModeSelect
-        id={`itinerary-trip-${entry.id}`}
-        label={`Läge, resa ${number}`}
-        labelHidden
-        compactThinkingTime={`Betänketid, resa ${number}`}
-        mode={trip.mode}
-        onChange={onModeChange}
-      />
       <span className="itinerary-trip-actions">
         <button
           type="button"
@@ -391,121 +375,6 @@ function TripRow({
         </button>
       </span>
     </li>
-  );
-}
-
-/**
- * Lägg till resor: the mode for new trips and how it plays, then Slumpa, which draws a number of
- * trips at once, or Välj själv, which adds one hand-picked trip. Disabled once the itinerary is
- * full.
- */
-function AddTrips({
-  panelRef,
-  graph,
-  room,
-  random,
-  onAdd,
-}: {
-  panelRef: RefObject<HTMLFieldSetElement | null>;
-  graph: GraphVersion;
-  /** How many more trips fit. */
-  room: number;
-  random: RandomSource;
-  onAdd: (trips: readonly Trip[], mode: ModeSetting, drawn: boolean) => void;
-}) {
-  const pairs = useMemo(() => tripPairs(graph), [graph]);
-  const largest = largestDistance(pairs);
-  const [range, setRange] = useState(() => defaultDistanceRange(largest));
-  const [mode, setMode] = useState<ModeSetting>({ kind: "standard" });
-  const [tab, setTab] = useState<TripChoiceTab>("draw");
-  const [count, setCount] = useState(DEFAULT_DRAW_COUNT);
-  // Antal never changes by itself but to follow the room left down, never back up: at least 1.
-  const roomForCount = Math.max(1, room);
-  if (count > roomForCount) setCount(roomForCount);
-  const drawCount = Math.min(count, roomForCount);
-  const [lastDrawn, setLastDrawn] = useState<Trip>();
-  const full = room === 0;
-
-  const draw = () => {
-    const drawn = drawTrips(pairs, range, Math.min(drawCount, room), random, lastDrawn);
-    if (drawn.length === 0) return;
-    setLastDrawn(drawn.at(-1));
-    onAdd(drawn, mode, true);
-  };
-
-  return (
-    <fieldset ref={panelRef} className="itinerary-add" disabled={full}>
-      <legend>Lägg till resor{full && " (fullt)"}</legend>
-      <ModeSelect
-        id="itinerary-new"
-        label="Läge för nya resor"
-        describedBy="itinerary-new-mode-description"
-        mode={mode}
-        onChange={setMode}
-      />
-      <p id="itinerary-new-mode-description" className="itinerary-mode-description">
-        {modeDescription(mode.kind)}
-      </p>
-      <TripChoiceTabs idPrefix={ID_PREFIX} selected={tab} onSelect={setTab} />
-      <div
-        id={tripChoicePanelId(ID_PREFIX, "draw")}
-        role="tabpanel"
-        aria-labelledby={tripChoiceTabId(ID_PREFIX, "draw")}
-        className="free-play-panel"
-        hidden={tab !== "draw"}
-      >
-        <DistanceRangeSlider range={range} largest={largest} onChange={setRange} />
-        <Stepper value={drawCount} max={roomForCount} onChange={setCount} />
-        <button type="button" className="free-play-go itinerary-draw" onClick={draw}>
-          <span aria-hidden="true">🎲</span> Lägg till {drawCount}{" "}
-          {drawCount === 1 ? "slumpad" : "slumpade"}
-        </button>
-      </div>
-      <PickTripForm
-        graph={graph}
-        idPrefix={ID_PREFIX}
-        hidden={tab !== "pick"}
-        submitLabel="Lägg till"
-        clearOnPick
-        onPick={(trip) => onAdd([trip], mode, false)}
-      />
-    </fieldset>
-  );
-}
-
-/** How many trips Slumpa adds: 1 up to the room left. */
-function Stepper({
-  value,
-  max,
-  onChange,
-}: {
-  value: number;
-  max: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <div className="itinerary-stepper">
-      <span id="itinerary-count-label">Antal</span>
-      <button
-        type="button"
-        aria-label="Färre resor"
-        disabled={value <= 1}
-        onClick={() => onChange(value - 1)}
-      >
-        <span aria-hidden="true">−</span>
-      </button>
-      <output aria-labelledby="itinerary-count-label" aria-live="polite">
-        {value}
-      </output>
-      <button
-        type="button"
-        aria-label="Fler resor"
-        disabled={value >= max}
-        onClick={() => onChange(value + 1)}
-      >
-        <span aria-hidden="true">+</span>
-      </button>
-    </div>
   );
 }
 

@@ -14,11 +14,6 @@
   order: -1;
 }
 
-/* Room at the end the add panel may need to stay in place as rows go in above it. */
-.itinerary-scroll-room {
-  margin-top: -1rem;
-}
-
 .itinerary-builder h2,
 .itinerary-builder .trip-number {
   margin: 0;
@@ -45,14 +40,37 @@
 /* Starts a new, empty itinerary: a quiet button under the title, shown even when empty. */
 .itinerary-new {
   align-self: flex-end;
+}
+
+.itinerary-new,
+.itinerary-add-trips {
   background: var(--surface);
   color: var(--text);
   box-shadow: inset 0 0 0 1px var(--rule);
 }
 
-.itinerary-new:disabled {
+.itinerary-new:disabled,
+.itinerary-add-trips:disabled {
   color: var(--muted);
   cursor: default;
+}
+
+/* The list's header: Resor on the left, + Lägg till on the right. */
+.itinerary-list-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.itinerary-list-heading {
+  flex: 1;
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.itinerary-add-trips {
+  font-weight: 700;
 }
 
 .itinerary-empty {
@@ -60,11 +78,7 @@
   color: var(--muted);
 }
 
-/*
- * Trip rows in aligned columns: number, pair, Läge, actions. On a phone a row takes two lines,
- * the pair on the first and Läge and the actions under it; wider, one line, every row on the
- * list's shared columns so Läge and the actions line up whatever the mode.
- */
+/* Trip rows: number, the pair (or a drawn trip's range) over the mode, then the actions. */
 .itinerary-trips {
   margin: 0;
   padding: 0;
@@ -74,68 +88,36 @@
 
 .itinerary-trip {
   display: grid;
-  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
-  grid-template-areas:
-    "number what what"
-    "mode mode actions";
-  gap: 0.25rem 0.5rem;
+  grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+  gap: 0.4rem;
   align-items: center;
   padding: 0.35rem 0;
   border-bottom: 1px solid var(--rule);
 }
 
 .itinerary-trip-number {
-  grid-area: number;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
 .itinerary-trip-what {
-  grid-area: what;
   display: flex;
-  gap: 0.5rem;
-  align-items: baseline;
+  flex-direction: column;
   min-width: 0;
+  line-height: 1.3;
 }
 
-.itinerary-trip > .itinerary-mode {
-  grid-area: mode;
-  flex-wrap: nowrap;
-}
-
-.itinerary-trip-actions {
-  grid-area: actions;
-}
-
-@media (min-width: 30rem) {
-  .itinerary-trips {
-    display: grid;
-    grid-template-columns: 1.25rem minmax(0, 1fr) auto auto;
-  }
-
-  .itinerary-trip {
-    grid-column: 1 / -1;
-    grid-template-columns: subgrid;
-    grid-template-areas: "number what mode actions";
-    column-gap: 0.4rem;
-  }
-
-  /* The die says a hidden trip was drawn, so on one line only screen readers hear the word. */
-  .itinerary-drawn-word {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-}
-
+/* Cut short with an ellipsis when it doesn't fit; the whole pair stays in the text. */
 .itinerary-trip-pair {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.itinerary-trip-mode {
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .itinerary-start {
@@ -151,57 +133,14 @@
   text-underline-offset: 3px;
 }
 
-.itinerary-reveal {
-  flex-shrink: 0;
-  min-height: 0;
-  padding: 0;
-  background: none;
-  color: var(--start);
-  font-weight: 400;
-  text-decoration: underline;
-}
-
-.itinerary-mode {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.itinerary-mode select {
-  min-height: 2.75rem;
-  padding: 0 0.5rem;
-  border: 1px solid var(--rule);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
-}
-
-/* A row's dropdowns trimmed to leave the pair room. */
-.itinerary-trip select {
-  padding: 0 0.15rem 0 0.35rem;
-}
-
-.itinerary-mode .itinerary-thinking-time {
-  font-variant-numeric: tabular-nums;
-}
-
-/* The setup's betänketid slider beside the mode, labelled, rather than in a card. */
-.itinerary-mode .free-play-thinking-time {
-  flex: 1 1 14rem;
-  min-height: 2.75rem;
-  padding: 0;
-}
-
 .itinerary-trip-actions {
   display: inline-flex;
   gap: 0.15rem;
 }
 
-.itinerary-trip-actions button,
-.itinerary-stepper button {
-  min-width: 2.75rem;
+/* Narrow to leave room for the pair; 2.75rem tall to tap. */
+.itinerary-trip-actions button {
+  min-width: 2.25rem;
   min-height: 2.75rem;
   padding: 0;
   background: transparent;
@@ -209,63 +148,10 @@
   box-shadow: inset 0 0 0 1px var(--rule);
 }
 
-.itinerary-trip-actions button:disabled,
-.itinerary-stepper button:disabled {
+.itinerary-trip-actions button:disabled {
   color: var(--muted);
   opacity: 0.5;
   cursor: default;
-}
-
-/* Narrower actions leave room for the pair and Läge; they stay 2.75rem tall to tap. */
-.itinerary-trip-actions button {
-  min-width: 2.25rem;
-}
-
-.itinerary-add {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  min-width: 0;
-  margin: 0;
-  padding: 0.75rem;
-  border: 1px solid var(--rule);
-  border-radius: 10px;
-}
-
-.itinerary-add legend {
-  padding: 0 0.25rem;
-  font-weight: 700;
-}
-
-.itinerary-add:disabled {
-  opacity: 0.6;
-}
-
-.itinerary-add > .itinerary-mode > label {
-  font-weight: 700;
-}
-
-.itinerary-mode-description {
-  margin: -0.4rem 0 0;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.itinerary-stepper {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.itinerary-stepper output {
-  min-width: 2ch;
-  text-align: center;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.itinerary-draw {
-  min-width: 12rem;
 }
 
 .itinerary-bar {
