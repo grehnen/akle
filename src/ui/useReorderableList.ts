@@ -36,6 +36,27 @@ export type ReorderHandleProps = {
 /** Where a row lay, and how tall it was, when a drag started. */
 type RowBox = { top: number; height: number };
 
+/** How close to the top or bottom of the screen a dragged row's pointer scrolls the page. */
+const SCROLL_EDGE = 72;
+/** The fastest the page scrolls, in pixels a second, with the pointer at the screen's very edge. */
+const MAX_SCROLL_SPEED = 1200;
+/** The longest a frame counts for, so a stalled one doesn't make the page jump. */
+const LONGEST_FRAME_MS = 64;
+/** What a frame counts for when it is the first, with nothing before it to measure from. */
+const FIRST_FRAME_MS = 16;
+
+/** How fast to scroll the page, in pixels a second (negative is up), for a pointer at `clientY`. */
+export function edgeScrollSpeed(clientY: number, viewportHeight: number): number {
+  if (clientY < SCROLL_EDGE) {
+    return -MAX_SCROLL_SPEED * Math.min(1, (SCROLL_EDGE - clientY) / SCROLL_EDGE);
+  }
+  const fromBottom = viewportHeight - clientY;
+  if (fromBottom < SCROLL_EDGE) {
+    return MAX_SCROLL_SPEED * Math.min(1, (SCROLL_EDGE - fromBottom) / SCROLL_EDGE);
+  }
+  return 0;
+}
+
 /** The item a keyboard lift holds, and the position it was lifted from. */
 type Lift = { id: number; from: number };
 
@@ -71,22 +92,28 @@ export function useReorderableList(
     event.preventDefault();
     event.currentTarget.focus();
 
+    // Rows are measured by where they lie on the page, which a scroll during the drag moves under
+    // the pointer.
     const boxes = new Map<number, RowBox>(
       [...list.current.children].map((row, index) => {
         const { top, height } = row.getBoundingClientRect();
-        return [order.current[index], { top, height }];
+        return [order.current[index], { top: top + window.scrollY, height }];
       }),
     );
     const startPosition = order.current.indexOf(id);
     const listTop = boxes.get(order.current[0])?.top ?? 0;
     const grabbed = boxes.get(id) ?? { top: 0, height: 0 };
-    const grabOffset = event.clientY - grabbed.top;
+    const grabOffset = event.clientY + window.scrollY - grabbed.top;
+    let pointerY = event.clientY;
+    let scrollFrame: number | undefined;
+    let lastFrameTime: number | undefined;
     setDragged({ id, offset: 0 });
 
-    const move = ({ clientY }: MouseEvent) => {
+    const follow = () => {
+      const pageY = pointerY + window.scrollY;
       // The row drops among the others, packed as they lie without it, by its centre.
       const others = order.current.filter((other) => other !== id);
-      const center = clientY - grabOffset + grabbed.height / 2;
+      const center = pageY - grabOffset + grabbed.height / 2;
       let slotTop = listTop;
       let target = 0;
       for (const other of others) {
@@ -100,12 +127,37 @@ export function useReorderableList(
         latest.current.onMove(position, target);
         order.current = [...others.slice(0, target), id, ...others.slice(target)];
       }
-      setDragged({ id, offset: clientY - grabOffset - slotTop });
+      setDragged({ id, offset: pageY - grabOffset - slotTop });
+    };
+    // While the pointer is near the top or bottom of the screen, the page scrolls on each frame by
+    // the time since the last, so the speed is the same on any screen.
+    const scrollNearEdge = (frameTime: number) => {
+      scrollFrame = undefined;
+      const speed = edgeScrollSpeed(pointerY, window.innerHeight);
+      if (speed === 0) {
+        lastFrameTime = undefined;
+        return;
+      }
+      const elapsed = Math.min(
+        LONGEST_FRAME_MS,
+        lastFrameTime === undefined ? FIRST_FRAME_MS : frameTime - lastFrameTime,
+      );
+      lastFrameTime = frameTime;
+      window.scrollBy({ top: (speed * elapsed) / 1000, behavior: "instant" });
+      follow();
+      scrollFrame = window.requestAnimationFrame(scrollNearEdge);
+    };
+    const move = ({ clientY }: MouseEvent) => {
+      pointerY = clientY;
+      follow();
+      if (scrollFrame === undefined) scrollFrame = window.requestAnimationFrame(scrollNearEdge);
     };
     const end = () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", end);
       window.removeEventListener("pointercancel", end);
+      window.removeEventListener("scroll", follow);
+      if (scrollFrame !== undefined) window.cancelAnimationFrame(scrollFrame);
       setDragged(undefined);
       const position = order.current.indexOf(id);
       if (position !== startPosition) latest.current.onMoved(id, position);
@@ -113,6 +165,7 @@ export function useReorderableList(
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", end);
     window.addEventListener("pointercancel", end);
+    window.addEventListener("scroll", follow);
   };
 
   /** Moves the lifted item to `target` in the order the next render will show. */
