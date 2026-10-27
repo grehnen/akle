@@ -13,6 +13,7 @@ export function TripRow({
   number,
   full,
   dragOffset,
+  lifted,
   handleProps,
   onEdit,
   onDuplicate,
@@ -24,6 +25,8 @@ export function TripRow({
   full: boolean;
   /** How far the pointer has pulled the row from its place, while it is being dragged. */
   dragOffset?: number;
+  /** Whether the keyboard holds the row, to move with the arrow keys. */
+  lifted: boolean;
   handleProps: ReorderHandleProps;
   onEdit: () => void;
   onDuplicate: () => void;
@@ -34,9 +37,13 @@ export function TripRow({
   const destination = kommunName(graph, trip.destination);
   return (
     <li
-      className={
-        dragOffset === undefined ? "itinerary-trip" : "itinerary-trip itinerary-trip--dragged"
-      }
+      className={[
+        "itinerary-trip",
+        dragOffset !== undefined && "itinerary-trip--dragged",
+        lifted && "itinerary-trip--lifted",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       style={dragOffset === undefined ? undefined : { transform: `translateY(${dragOffset}px)` }}
     >
       <button

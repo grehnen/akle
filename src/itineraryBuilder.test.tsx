@@ -409,7 +409,7 @@ describe("editing the trip list", () => {
     await pick(container, "Nynäshamn", "Salem", { kind: "unlimited" });
     await pick(container, "Haninge", "Trosa", { kind: "standard" });
 
-    await pressKey(handle(container, 1), "ArrowDown");
+    await reorderWithKeys(container, 1, "ArrowDown");
     expect(rows(container)).toEqual(["Haninge → Trosa", "Nynäshamn → Salem"]);
 
     await click(labelled(container, "Dubblera resa 2"));
@@ -446,6 +446,17 @@ function layOutRows(container: HTMLElement) {
       return { top, bottom: top + ROW_HEIGHT, height: ROW_HEIGHT } as DOMRect;
     };
   }
+}
+
+/** Lifts trip `number` with Space, presses each of `keys`, then drops it. */
+async function reorderWithKeys(container: HTMLElement, number: number, ...keys: string[]) {
+  let position = number;
+  await pressKey(handle(container, position), " ");
+  for (const key of keys) {
+    await pressKey(handle(container, position), key);
+    position += key === "ArrowDown" ? 1 : -1;
+  }
+  await pressKey(handle(container, position), " ");
 }
 
 /** Presses `element` at height `from` and moves, then releases, at each height of `to`. */
@@ -541,32 +552,122 @@ describe("reordering the trip list", () => {
     expect(rows(reloaded)).toEqual([THREE[1], THREE[2], THREE[0]]);
   });
 
-  test("the focused handle moves its row with ArrowUp and ArrowDown, and keeps focus", async () => {
+  test("arrow keys on a handle that isn't lifted do nothing", async () => {
     const container = await mountApp("/resplan");
     await pickThree(container);
+    const before = announced(container);
+    await pressKey(handle(container, 1), "ArrowDown");
+    await pressKey(handle(container, 3), "ArrowUp");
+    expect(rows(container)).toEqual(THREE);
+    expect(announced(container)).toBe(before);
+  });
+
+  test("Space lifts the row, the arrow keys move it while lifted, and Space drops it", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+
+    await pressKey(handle(container, 1), " ");
+    expect(announced(container)).toBe(
+      "Resa 1 lyft. Pil upp och ner flyttar, mellanslag släpper, Esc avbryter.",
+    );
+    expect(container.querySelectorAll(".itinerary-trip--lifted")).toHaveLength(1);
+    expect(handle(container, 1).getAttribute("aria-pressed")).toBe("true");
+    expect(rows(container)).toEqual(THREE);
+
     await pressKey(handle(container, 1), "ArrowDown");
     expect(rows(container)).toEqual([THREE[1], THREE[0], THREE[2]]);
-    expect(announced(container)).toBe("Resa flyttad till plats 2 av 3");
+    expect(announced(container)).toBe("Plats 2 av 3");
     expect(focused()).toBe(handle(container, 2));
 
     await pressKey(handle(container, 2), "ArrowDown");
     expect(rows(container)).toEqual([THREE[1], THREE[2], THREE[0]]);
-    expect(announced(container)).toBe("Resa flyttad till plats 3 av 3");
-    expect(focused()).toBe(handle(container, 3));
-
+    expect(announced(container)).toBe("Plats 3 av 3");
     await pressKey(handle(container, 3), "ArrowUp");
     expect(rows(container)).toEqual([THREE[1], THREE[0], THREE[2]]);
     expect(focused()).toBe(handle(container, 2));
+    expect(container.querySelectorAll(".itinerary-trip--lifted")).toHaveLength(1);
+
+    await pressKey(handle(container, 2), " ");
+    expect(announced(container)).toBe("Resa flyttad till plats 2 av 3");
+    expect(container.querySelector(".itinerary-trip--lifted")).toBeNull();
+    expect(handle(container, 2).getAttribute("aria-pressed")).toBe("false");
+    expect(focused()).toBe(handle(container, 2));
+
+    // Dropped, the arrow keys do nothing again.
+    await pressKey(handle(container, 2), "ArrowDown");
+    expect(rows(container)).toEqual([THREE[1], THREE[0], THREE[2]]);
   });
 
-  test("the first row can't go up and the last can't go down", async () => {
+  test("dropping where it was lifted from says it was dropped, not moved", async () => {
     const container = await mountApp("/resplan");
     await pickThree(container);
-    const before = announced(container);
-    await pressKey(handle(container, 1), "ArrowUp");
-    await pressKey(handle(container, 3), "ArrowDown");
+    await pressKey(handle(container, 2), " ");
+    await pressKey(handle(container, 2), "ArrowUp");
+    await pressKey(handle(container, 1), "ArrowDown");
+    await pressKey(handle(container, 2), " ");
     expect(rows(container)).toEqual(THREE);
-    expect(announced(container)).toBe(before);
+    expect(announced(container)).toBe("Resa släppt på plats 2 av 3");
+  });
+
+  test("a lifted row stops at the ends of the list", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+    await pressKey(handle(container, 1), " ");
+    const lifted = announced(container);
+    await pressKey(handle(container, 1), "ArrowUp");
+    expect(rows(container)).toEqual(THREE);
+    expect(announced(container)).toBe(lifted);
+
+    await pressKey(handle(container, 1), "ArrowDown");
+    await pressKey(handle(container, 2), "ArrowDown");
+    const atEnd = announced(container);
+    await pressKey(handle(container, 3), "ArrowDown");
+    expect(rows(container)).toEqual([THREE[1], THREE[2], THREE[0]]);
+    expect(announced(container)).toBe(atEnd);
+  });
+
+  test("Escape puts a lifted row back where it was lifted from", async () => {
+    const storage = memoryStorage();
+    const container = await mountApp("/resplan", storage);
+    await pickThree(container);
+    await pressKey(handle(container, 1), " ");
+    await pressKey(handle(container, 1), "ArrowDown");
+    await pressKey(handle(container, 2), "ArrowDown");
+    expect(rows(container)).toEqual([THREE[1], THREE[2], THREE[0]]);
+
+    await pressKey(handle(container, 3), "Escape");
+    expect(rows(container)).toEqual(THREE);
+    expect(announced(container)).toBe("Flytten avbruten. Resa 1 är kvar på plats 1 av 3");
+    expect(container.querySelector(".itinerary-trip--lifted")).toBeNull();
+    expect(focused()).toBe(handle(container, 1));
+
+    // The cancelled lift left nothing in the draft.
+    unmount();
+    expect(rows(await mountApp("/resplan", storage))).toEqual(THREE);
+  });
+
+  test("a lifted row is put back when the focus leaves its handle", async () => {
+    const container = await mountApp("/resplan");
+    await pickThree(container);
+    await pressKey(handle(container, 1), " ");
+    await pressKey(handle(container, 1), "ArrowDown");
+    expect(rows(container)).toEqual([THREE[1], THREE[0], THREE[2]]);
+
+    const elsewhere = labelled(container, "Ändra resa 3");
+    await act(async () => elsewhere.focus());
+    expect(rows(container)).toEqual(THREE);
+    expect(announced(container)).toBe("Flytten avbruten. Resa 1 är kvar på plats 1 av 3");
+    expect(container.querySelector(".itinerary-trip--lifted")).toBeNull();
+    expect(focused()).toBe(elsewhere);
+  });
+
+  test("a keyboard drop is kept in the draft", async () => {
+    const storage = memoryStorage();
+    const container = await mountApp("/resplan", storage);
+    await pickThree(container);
+    await reorderWithKeys(container, 1, "ArrowDown", "ArrowDown");
+    unmount();
+    expect(rows(await mountApp("/resplan", storage))).toEqual([THREE[1], THREE[2], THREE[0]]);
   });
 });
 
@@ -954,7 +1055,7 @@ async function buildDraft(container: HTMLElement) {
   const [minimum] = inModal(container, ".distance-range").querySelectorAll("input");
   await type(minimum as HTMLInputElement, "1");
   await click(submitButton(container));
-  await pressKey(handle(container, 1), "ArrowDown");
+  await reorderWithKeys(container, 1, "ArrowDown");
 }
 
 async function expectDraft(container: HTMLElement) {
