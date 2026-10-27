@@ -1,4 +1,5 @@
 import type { DistanceRange } from "../freePlay/draw";
+import { SliderTrack } from "./SliderTrack";
 
 type DistanceRangeSliderProps = {
   range: DistanceRange;
@@ -18,11 +19,7 @@ export function DistanceRangeSlider({ range, largest, onChange }: DistanceRangeS
       <p className="free-play-range-label">
         Avstånd <strong>{min === max ? min : `${min}–${max}`}</strong>
       </p>
-      <div className="distance-range-track">
-        <span
-          className="distance-range-fill"
-          style={{ left: `${percent(min)}%`, right: `${100 - percent(max)}%` }}
-        />
+      <SliderTrack startPercent={percent(min)} endPercent={percent(max)}>
         <input
           type="range"
           aria-label="Minsta avstånd"
@@ -40,7 +37,7 @@ export function DistanceRangeSlider({ range, largest, onChange }: DistanceRangeS
           value={max}
           onChange={(event) => onChange({ min, max: Math.max(Number(event.target.value), min) })}
         />
-      </div>
+      </SliderTrack>
     </div>
   );
 }
