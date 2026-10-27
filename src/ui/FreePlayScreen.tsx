@@ -26,6 +26,7 @@ import { GatedBoard } from "./GatedBoard";
 import { distanceRangeText, guessesSoFar, modeName } from "./messages";
 import { useNavigation } from "./navigation";
 import { ResumeLink } from "./ResumeLink";
+import type { TripChoiceTab } from "./TripChoice";
 import { TripSetup } from "./TripSetup";
 import "./FreePlayScreen.css";
 
@@ -285,6 +286,7 @@ function FreePlaySetup({
   /** The way back to an unfinished trip, first under the heading so it's seen without scrolling. */
   resume?: ReactNode;
 }) {
+  const [tab, setTab] = useState<TripChoiceTab>(initialPair ? "pick" : "draw");
   return (
     <section className="free-play-setup" aria-labelledby="free-play-heading">
       <h2 id="free-play-heading">Fri resa</h2>
@@ -292,9 +294,11 @@ function FreePlaySetup({
       <TripSetup
         graph={graph}
         largest={largest}
-        initial={choice}
-        initialPair={initialPair}
+        choice={choice}
         onChange={onChoiceChange}
+        tab={tab}
+        onTabChange={setTab}
+        initialPair={initialPair}
         drawActions={
           <>
             <button type="button" className="free-play-go free-play-draw" onClick={onDraw}>

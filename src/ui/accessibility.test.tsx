@@ -208,8 +208,10 @@ describe("automated accessibility check", () => {
     <TripSetup
       graph={graph}
       largest={2}
-      initial={{ mode: "timed", thinkingTime: 10, range: { min: 1, max: 2 } }}
+      choice={{ mode: "timed", thinkingTime: 10, range: { min: 1, max: 2 } }}
       onChange={() => {}}
+      tab="draw"
+      onTabChange={() => {}}
       shortDescriptions={shortDescriptions}
       pickLabel="Res"
       onPick={() => {}}
