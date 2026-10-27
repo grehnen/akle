@@ -240,6 +240,11 @@
   color: var(--night);
 }
 
+/* A screen's main action, in the yellow of the app's main actions. */
+.share-button.primary-button {
+  background: var(--start);
+}
+
 .share-toast {
   position: absolute;
   bottom: calc(100% + 0.4rem);

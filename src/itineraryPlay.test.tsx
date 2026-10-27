@@ -580,22 +580,23 @@ describe("an itinerary from its link", () => {
     await click(button(container, "Avsluta resplanen"));
 
     expect(summaryTotals(container)).toEqual([["Totalt", "−2 poäng"]]);
+    // Dela resultat first, as the primary, then the ways on stacked in a Vidare group below it.
+    const share = query(container, ".itinerary-summary .share-button");
+    expect(share.classList.contains("primary-button")).toBe(true);
+    const onward = query(container, '.itinerary-summary nav[aria-label="Vidare"]');
+    expect(onward.classList.contains("button-group")).toBe(true);
     expect(
-      [...container.querySelectorAll(".itinerary-summary-actions a")].map((a) => [
-        a.textContent,
-        a.getAttribute("href"),
-      ]),
-    ).toEqual([
+      share.compareDocumentPosition(onward) & dom.window.Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect([...onward.children].map((a) => [a.textContent, a.getAttribute("href")])).toEqual([
       ["Bygg en resplan", "/resplan"],
       ["Dagens resa", "/"],
       ["Fri resa", "/fri"],
     ]);
-    expect(
-      container.querySelector(".itinerary-summary-actions a.primary-link")?.getAttribute("href"),
-    ).toBe("/resplan");
+    expect(onward.querySelector(".primary-link")).toBeNull();
 
     // Within the app, without loading the page again.
-    await click(query(container, ".itinerary-summary-actions a.primary-link"));
+    await click(onward.firstElementChild ?? undefined);
     expect(dom.window.location.pathname).toBe("/resplan");
     expect(text(container, "#itinerary-heading")).toBe("Bygg en resplan");
   });

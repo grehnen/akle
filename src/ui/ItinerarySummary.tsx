@@ -3,6 +3,7 @@ import { ITINERARY_PATH } from "../freePlay/itineraryLink";
 import { itineraryShareText } from "../freePlay/shareText";
 import { FREE_PLAY_PATH } from "../freePlay/tripLink";
 import { AppLink } from "./AppLink";
+import { ButtonGroup } from "./ButtonGroup";
 import { LOWER_IS_BETTER, modeName, scoreText, timeText, wonTieBreakersText } from "./messages";
 import { ScoreLabel } from "./ScoreLabel";
 import { ScoreTooltip } from "./ScoreTooltip";
@@ -14,8 +15,8 @@ import "./ItinerarySummary.css";
  * A finished itinerary's summary: its title, a row per trip (its ends, mode, outcome label as the
  * share text words it, a won tie-breaker trip's time and its score), and the list's footer of
  * totals in its score column: the total score, saying lower is better, and the total time when it
- * has a tie-breaker trip, with the won count in a tooltip on Total tid. Then share, the builder,
- * today's trip and free play.
+ * has a tie-breaker trip, with the won count in a tooltip on Total tid. Then share, the primary, over
+ * a Vidare group: the builder, today's trip and free play.
  */
 export function ItinerarySummaryView({
   title,
@@ -55,14 +56,12 @@ export function ItinerarySummaryView({
           </div>
         )}
       </dl>
-      <ShareButton text={itineraryShareText({ title, summary, link })} />
-      <nav className="itinerary-summary-actions" aria-label="Vidare">
-        <AppLink className="primary-link" href={ITINERARY_PATH}>
-          Bygg en resplan
-        </AppLink>
+      <ShareButton text={itineraryShareText({ title, summary, link })} primary />
+      <ButtonGroup as="nav" label="Vidare">
+        <AppLink href={ITINERARY_PATH}>Bygg en resplan</AppLink>
         <AppLink href="/">Dagens resa</AppLink>
         <AppLink href={FREE_PLAY_PATH}>Fri resa</AppLink>
-      </nav>
+      </ButtonGroup>
     </section>
   );
 }
