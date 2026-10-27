@@ -22,6 +22,8 @@ import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SITE_URL } from "../siteUrl";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { modeName } from "./messages";
+import { Modal } from "./Modal";
+import { OverflowMenu } from "./OverflowMenu";
 import { TripModal, type TripModalResult } from "./TripModal";
 import { chosenMode } from "./TripSetup";
 import { UndoToast, useUndoRemoval } from "./UndoToast";
@@ -49,6 +51,8 @@ type BuilderTrip = DraftTrip & { id: number };
 
 const ADD_BUTTON = ".itinerary-add-trips";
 const COUNT = ".itinerary-count";
+const MENU_BUTTON = ".overflow-menu-button";
+const EMPTY_LIST = ".itinerary-empty";
 
 /**
  * The itinerary builder (Bygg en resplan): a title, the ordered trip list under its "Resor"
@@ -177,10 +181,17 @@ export function ItineraryBuilder({
     announce(`Resa ${index + 1} tillbaka`);
     focusAfterRender.current = removeButton(index + 1);
   };
-  const startOver = () => {
-    setTitle("");
+  const [confirmingRemoveAll, setConfirmingRemoveAll] = useState(false);
+  const cancelRemoveAll = () => {
+    setConfirmingRemoveAll(false);
+    focusAfterRender.current = MENU_BUTTON;
+  };
+  const removeAll = () => {
+    setConfirmingRemoveAll(false);
     setTrips([]);
     showRemoval(undefined);
+    announce("Alla resor borttagna");
+    focusAfterRender.current = EMPTY_LIST;
   };
 
   return (
@@ -189,16 +200,14 @@ export function ItineraryBuilder({
       <p className="trip-number">Resplan</p>
       <h2 id="itinerary-heading">Bygg en resplan</h2>
       <TitleField title={title} onChange={setTitle} />
-      <button
-        type="button"
-        className="itinerary-new"
-        disabled={title === "" && trips.length === 0}
-        onClick={startOver}
-      >
-        Ny resplan
-      </button>
       <div className="itinerary-list-header">
         <h3 className="itinerary-list-heading">Resor</h3>
+        <OverflowMenu
+          label="Fler val"
+          itemLabel="Ta bort alla resor"
+          itemDisabled={trips.length === 0}
+          onSelect={() => setConfirmingRemoveAll(true)}
+        />
         <button
           type="button"
           className="itinerary-add-trips"
@@ -241,6 +250,30 @@ export function ItineraryBuilder({
           onCancel={closeModal}
           onSubmit={add}
         />
+      )}
+      {confirmingRemoveAll && (
+        <Modal
+          label="Ta bort alla resor"
+          className="remove-all-modal"
+          onClose={cancelRemoveAll}
+          footer={
+            <>
+              <button type="button" className="remove-all-cancel" onClick={cancelRemoveAll}>
+                Avbryt
+              </button>
+              <button type="button" className="remove-all-confirm" onClick={removeAll}>
+                Ta bort alla resor
+              </button>
+            </>
+          }
+        >
+          <h2 className="remove-all-heading">
+            Ta bort {trips.length === 1 ? "resan" : `alla ${trips.length} resor`}?
+          </h2>
+          <p className="remove-all-text">
+            Namnet {title === "" ? "(inget än)" : `”${title}”`} behålls.
+          </p>
+        </Modal>
       )}
       <LinkBar
         count={trips.length}

@@ -37,25 +37,18 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Starts a new, empty itinerary: a quiet button under the title, shown even when empty. */
-.itinerary-new {
-  align-self: flex-end;
-}
-
-.itinerary-new,
 .itinerary-add-trips {
   background: var(--surface);
   color: var(--text);
   box-shadow: inset 0 0 0 1px var(--rule);
 }
 
-.itinerary-new:disabled,
 .itinerary-add-trips:disabled {
   color: var(--muted);
   cursor: default;
 }
 
-/* The list's header: Resor on the left, + Lägg till on the right. */
+/* The list's header: Resor on the left, the ⋯ menu and + Lägg till on the right. */
 .itinerary-list-header {
   display: flex;
   align-items: center;
@@ -107,12 +100,10 @@
   line-height: 1.3;
 }
 
-/* Cut short with an ellipsis when it doesn't fit; the whole pair stays in the text. */
+/* Wraps, at a space or anywhere, when it doesn't fit. */
 .itinerary-trip-pair {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .itinerary-trip-mode {
@@ -152,6 +143,49 @@
   color: var(--muted);
   opacity: 0.5;
   cursor: default;
+}
+
+/* On a narrow phone the actions drop to a line of their own under the pair and mode. */
+@media (max-width: 24rem) {
+  .itinerary-trip-actions {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
+
+/* The confirm before Ta bort alla resor. */
+.remove-all-modal {
+  width: min(26rem, calc(100% - 2rem));
+}
+
+.remove-all-heading {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.remove-all-text {
+  margin: 0;
+  color: var(--muted);
+}
+
+.remove-all-modal .modal-footer {
+  padding: 0.75rem 0 0;
+}
+
+.remove-all-cancel,
+.remove-all-confirm {
+  font-weight: 700;
+}
+
+.remove-all-cancel {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.remove-all-confirm {
+  background: var(--warning);
+  color: var(--night);
 }
 
 .itinerary-bar {

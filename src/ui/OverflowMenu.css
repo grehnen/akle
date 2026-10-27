@@ -1,0 +1,44 @@
+.overflow-menu {
+  position: relative;
+}
+
+.overflow-menu-button {
+  min-width: 2.75rem;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.4rem;
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.overflow-menu-list {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: 20;
+  min-width: 13rem;
+  padding: 0.25rem;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 1px var(--rule),
+    0 0.5rem 1.5rem rgb(0 0 0 / 50%);
+}
+
+.overflow-menu-list button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  background: transparent;
+  color: var(--warning);
+  font-weight: 400;
+}
+
+.overflow-menu-list button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+}
+
+.overflow-menu-list button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
