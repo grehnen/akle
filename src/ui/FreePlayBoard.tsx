@@ -12,6 +12,7 @@ import { gameOutcome } from "../progress/outcome";
 import type { KeyValueStorage } from "../progress/storage";
 import { freePlayHeadline, LOWER_IS_BETTER, scoreText, timeText } from "./messages";
 import { ScoreLabel } from "./ScoreLabel";
+import { ScoreTooltip } from "./ScoreTooltip";
 import { ShareButton } from "./ShareButton";
 import { ThinkingTimeBar } from "./ThinkingTimeBar";
 import { TripBoard } from "./TripBoard";
@@ -79,7 +80,7 @@ export function FreePlayBoard({
       : undefined;
   const scoreLine = score !== undefined && outcome !== undefined && (
     <p className="result-score">
-      <ScoreLabel outcome={outcome} /> · {scoreText(score)}
+      <ScoreLabel outcome={outcome} /> · <ScoreTooltip>{scoreText(score)}</ScoreTooltip>
     </p>
   );
   const timeAndShare = score !== undefined && (
