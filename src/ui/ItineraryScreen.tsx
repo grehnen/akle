@@ -16,9 +16,11 @@ import type { LinkedTrip } from "../freePlay/linkPayload";
 import { opensAtStarta } from "../freePlay/modeRules";
 import type { GraphVersion } from "../graph/graphVersion";
 import type { KeyValueStorage } from "../progress/storage";
+import { SITE_URL } from "../siteUrl";
+import { CopyLinkButton } from "./CopyLinkButton";
 import { GatedBoard } from "./GatedBoard";
 import { ItinerarySummaryView } from "./ItinerarySummary";
-import { modeName, scoreText } from "./messages";
+import { MODE_NAMES, modeDescription, modeName, SCORE_EXPLANATION, scoreText } from "./messages";
 import { ScoreTooltip } from "./ScoreTooltip";
 import { useNavigation } from "./navigation";
 import "./ItineraryScreen.css";
@@ -77,6 +79,7 @@ export function ItineraryScreen({
       <ItineraryIntro
         title={title}
         trips={trips}
+        url={`${SITE_URL}${link}`}
         onBegin={() => moveOn((last) => beginItinerary(trips, last, clock()))}
       />
     );
@@ -143,34 +146,73 @@ export function ItineraryScreen({
   );
 }
 
-/** The itinerary's intro: its title, its number of trips and each trip's mode, ends hidden. */
+/**
+ * The itinerary's intro, in two columns on a wide screen: its title, how it's played and scored
+ * and its actions, beside its trips as a route, ends hidden, with each mode played explained once
+ * in a legend below. On a phone it's one column, the actions last.
+ */
 function ItineraryIntro({
   title,
   trips,
+  url,
   onBegin,
 }: {
   title?: string;
   trips: readonly LinkedTrip[];
+  /** The itinerary's link in full, for Kopiera länk. */
+  url: string;
   onBegin: () => void;
 }) {
   const button = useRef<HTMLButtonElement>(null);
   useEffect(() => button.current?.focus(), []);
+  const [fallbackTarget, setFallbackTarget] = useState<HTMLDivElement | null>(null);
+  const modesPlayed = [...new Set(trips.map((trip) => trip.mode.kind))];
   return (
     <section className="itinerary-intro" aria-labelledby="itinerary-intro-heading">
-      <h2 id="itinerary-intro-heading">{title ?? "Resplan"}</h2>
-      <p className="itinerary-intro-count">{trips.length} resor</p>
-      <ol className="itinerary-intro-trips" aria-label="Resornas lägen">
-        {trips.map((trip, index) => (
-          // oxlint-disable-next-line react/no-array-index-key -- the order is fixed: a trip is its place.
-          <li key={index}>{modeName(trip.mode)}</li>
-        ))}
-      </ol>
-      <p className="itinerary-intro-note">
-        Start och mål visas resa för resa. Varje resa spelas en gång, i tur och ordning.
-      </p>
-      <button ref={button} type="button" className="itinerary-begin" onClick={onBegin}>
-        Starta resplanen
-      </button>
+      <div className="itinerary-intro-side">
+        <p className="itinerary-intro-eyebrow">Resplan · {trips.length} resor</p>
+        <h2 id="itinerary-intro-heading">{title ?? "Resplan"}</h2>
+        <p className="itinerary-intro-note">
+          Start och mål visas resa för resa. Varje resa spelas en gång, i tur och ordning.
+        </p>
+        <p className="itinerary-intro-score">{SCORE_EXPLANATION}</p>
+        <div className="itinerary-intro-actions">
+          <div className="itinerary-intro-buttons">
+            <CopyLinkButton url={url} fallbackTarget={fallbackTarget} />
+            <button ref={button} type="button" className="itinerary-begin" onClick={onBegin}>
+              Starta resplanen
+            </button>
+          </div>
+          <div className="itinerary-intro-fallback" ref={setFallbackTarget} />
+        </div>
+      </div>
+      <div className="itinerary-intro-main">
+        <ol className="itinerary-route" aria-label="Resornas lägen">
+          {trips.map((trip, index) => (
+            // oxlint-disable-next-line react/no-array-index-key -- the order is fixed: a trip is its place.
+            <li key={index} className="itinerary-stop">
+              <span className="itinerary-stop-number" aria-hidden="true">
+                {index + 1}
+              </span>
+              <strong className="itinerary-stop-mode">{modeName(trip.mode)}</strong>
+              <span className="itinerary-stop-ends" aria-hidden="true">
+                ? → ?
+              </span>
+            </li>
+          ))}
+        </ol>
+        <dl className="itinerary-legend">
+          {modesPlayed.map((kind) => (
+            <div key={kind}>
+              <dt>
+                <span className="itinerary-legend-marker" aria-hidden="true" />
+                {MODE_NAMES[kind]}
+              </dt>
+              <dd>{modeDescription(kind)}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
     </section>
   );
 }

@@ -278,23 +278,92 @@ describe("an itinerary from its link", () => {
     expect(written.at(-1)).toContain(`"startedAt":${clockTime}`);
   });
 
-  test("opens on its intro: the title, the number of trips and each trip's mode, ends hidden", async () => {
-    const container = await mountApp(fridayLink);
+  test("opens on its intro: the title, its trips as a route with ends hidden, each mode explained once", async () => {
+    const container = await mountApp(
+      itineraryLinkPath(0, "Fredagsresan", [
+        nynashamnSalem,
+        haningeTrosa,
+        trosaHaninge,
+        trosaHaninge,
+      ]),
+    );
 
     expect(text(container, "#itinerary-intro-heading")).toBe("Fredagsresan");
-    expect(text(container, ".itinerary-intro-count")).toBe("3 resor");
+    expect(text(container, ".itinerary-intro-eyebrow")).toBe("Resplan · 4 resor");
+    const stops = [...container.querySelectorAll(".itinerary-route li")];
     expect(
-      [...container.querySelectorAll(".itinerary-intro-trips li")].map((li) => li.textContent),
-    ).toEqual(["Standard", "Tidspress 10 s", "Tidtagning"]);
+      stops.map((stop) => [
+        stop.querySelector(".itinerary-stop-number")?.textContent,
+        stop.querySelector(".itinerary-stop-mode")?.textContent,
+        stop.querySelector(".itinerary-stop-ends")?.textContent,
+      ]),
+    ).toEqual([
+      ["1", "Standard", "? → ?"],
+      ["2", "Tidspress 10 s", "? → ?"],
+      ["3", "Tidtagning", "? → ?"],
+      ["4", "Tidtagning", "? → ?"],
+    ]);
+    const legend = [...container.querySelectorAll(".itinerary-legend > div")].map((entry) => [
+      entry.querySelector("dt")?.textContent,
+      entry.querySelector("dd")?.textContent,
+    ]);
+    expect(legend).toEqual([
+      ["Standard", "Som dagens resa: gissningarna räcker till avståndet och lite till."],
+      [
+        "Tidspress",
+        "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng.",
+      ],
+      ["Tidtagning", "Tiden tas. Vid lika poäng vinner den snabbaste."],
+    ]);
+    expect(text(container, ".itinerary-intro-score")).toBe(
+      "Lägre poäng är bättre. En perfekt resa ger −1; varje extra gissning, ledtråd och ⏱ kostar 1.",
+    );
     expect(container.textContent).not.toContain("Nynäshamn");
     expect(container.querySelector("#guess-input")).toBeNull();
-    expect(button(container, "Starta resplanen")).toBeDefined();
+    expect(dom.window.document.activeElement).toBe(button(container, "Starta resplanen") ?? null);
   });
 
   test("without a title the intro is headed Resplan", async () => {
     const container = await mountApp(itineraryLinkPath(0, "", [nynashamnSalem, haningeTrosa]));
     expect(text(container, "#itinerary-intro-heading")).toBe("Resplan");
-    expect(text(container, ".itinerary-intro-count")).toBe("2 resor");
+    expect(text(container, ".itinerary-intro-eyebrow")).toBe("Resplan · 2 resor");
+  });
+
+  test("the intro's Kopiera länk, left of Starta resplanen, copies the itinerary's link", async () => {
+    const container = await mountApp(fridayLink);
+    const actions = [...container.querySelectorAll(".itinerary-intro-actions button")];
+    expect(actions.map((action) => action.textContent)).toEqual([
+      "Kopiera länk",
+      "Starta resplanen",
+    ]);
+
+    await click(button(container, "Kopiera länk"));
+    expect(copied).toEqual([`https://akle.grehn.net${fridayLink}`]);
+    expect(text(container, ".copy-link-toast")).toBe("Kopierat!");
+    expect(text(container, "#itinerary-intro-heading")).toBe("Fredagsresan");
+  });
+
+  test("a failed copy on the intro shows the link to copy by hand, until it's closed", async () => {
+    const container = await mountApp(fridayLink);
+    const clipboard = globalThis.navigator.clipboard;
+    Object.defineProperty(globalThis.navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: () => Promise.reject(new Error("denied")) },
+    });
+    try {
+      await click(button(container, "Kopiera länk"));
+    } finally {
+      Object.defineProperty(globalThis.navigator, "clipboard", {
+        configurable: true,
+        value: clipboard,
+      });
+    }
+
+    const field = query<HTMLInputElement>(container, ".itinerary-copy-fallback input");
+    expect(field.value).toBe(`https://akle.grehn.net${fridayLink}`);
+    expect(dom.window.document.activeElement).toBe(field);
+    await click(query(container, '.itinerary-copy-fallback button[aria-label="Stäng"]'));
+    expect(container.querySelector(".itinerary-copy-fallback")).toBeNull();
   });
 
   test("plays through each trip, a card only before one on the clock, to a total score", async () => {
