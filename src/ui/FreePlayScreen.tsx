@@ -21,6 +21,7 @@ import { GatedBoard } from "./GatedBoard";
 import { ModeCards } from "./ModeCards";
 import { guessesSoFar, modeName } from "./messages";
 import { useNavigation } from "./navigation";
+import { ResumeLink } from "./ResumeLink";
 import {
   PickTripForm,
   type TripChoiceTab,
@@ -311,8 +312,11 @@ function FreePlaySetup({
  */
 function ResumeTrip({ unfinished: { mode, guesses, link } }: { unfinished: UnfinishedTrip }) {
   return (
-    <AppLink className="resume-link free-play-resume" href={link}>
-      Fortsätt resan: {modeName(mode)}, {guessesSoFar(guesses)}
-    </AppLink>
+    <ResumeLink
+      className="free-play-resume"
+      href={link}
+      what="Oavslutad resa"
+      progress={`${modeName(mode)} · ${guessesSoFar(guesses)}`}
+    />
   );
 }

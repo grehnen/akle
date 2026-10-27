@@ -9,6 +9,11 @@
   text-align: left;
 }
 
+/* First on screen as in the source, before the eyebrow that every screen lifts to the top. */
+.itinerary-resume {
+  order: -1;
+}
+
 /* Room at the end the add panel may need to stay in place as rows go in above it. */
 .itinerary-scroll-room {
   margin-top: -1rem;

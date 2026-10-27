@@ -21,10 +21,10 @@ import {
   unfinishedItinerary,
 } from "../freePlay/itinerarySaves";
 import { browserSessionStorage, browserStorage, type KeyValueStorage } from "../progress/storage";
-import { AppLink } from "./AppLink";
 import { FreePlayLinkError } from "./FreePlayLinkError";
 import { ItineraryBuilder } from "./ItineraryBuilder";
 import { ItineraryScreen } from "./ItineraryScreen";
+import { ResumeLink } from "./ResumeLink";
 import { useLoaded } from "./useLoaded";
 
 type ItineraryViewProps = {
@@ -165,10 +165,13 @@ function ResumeBanner({
 }: {
   unfinished: UnfinishedItinerary;
 }) {
-  const named = title === undefined ? "" : `${title}, `;
+  const named = title === undefined ? "" : `${title} · `;
   return (
-    <AppLink className="resume-link itinerary-resume" href={link}>
-      Fortsätt resplanen: {named}resa {tripNumber} av {tripCount}
-    </AppLink>
+    <ResumeLink
+      className="itinerary-resume"
+      href={link}
+      what="Oavslutad resplan"
+      progress={`${named}resa ${tripNumber} av ${tripCount}`}
+    />
   );
 }

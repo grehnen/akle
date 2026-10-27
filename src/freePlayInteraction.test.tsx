@@ -538,7 +538,7 @@ describe("a trip going on the board", () => {
     expect(scrolls).toEqual([]);
   });
 
-  test("Fortsätt resan puts the trip on the board, focused", async () => {
+  test("the banner's Fortsätt puts the trip on the board, focused", async () => {
     const storage = memoryStorage();
     const { container } = await mountApp(unlimitedTrip, storage);
     await guess(container, "Haninge");
@@ -664,6 +664,9 @@ async function guess(container: HTMLElement, name: string) {
 const resumeEntry = (container: HTMLElement) =>
   container.querySelector<HTMLAnchorElement>(".free-play-resume") ?? undefined;
 
+/** A resume banner's lines, each its own element: what it is, how far it got, and the way back. */
+const resumeLines = (banner: Element) => Array.from(banner.children, (line) => line.textContent);
+
 describe("resuming the free-play trip", () => {
   const nynashamnTrosa = tripLinkPath(0, {
     start: "0192",
@@ -702,8 +705,13 @@ describe("resuming the free-play trip", () => {
     expect(address()).toBe("/fri");
     expect(reopened.container.querySelectorAll(".free-play-resume")).toHaveLength(1);
     const entry = resumeEntry(reopened.container);
-    expect(entry?.textContent).toBe("Fortsätt resan: Standard, 1 gissning");
+    expect(entry?.textContent).toBe("Oavslutad resa Standard · 1 gissning Fortsätt");
     expect(entry?.getAttribute("href")).toBe(nynashamnTrosa);
+    expect(resumeLines(entry as Element)).toEqual([
+      "Oavslutad resa",
+      "Standard · 1 gissning",
+      "Fortsätt",
+    ]);
     // At the top, right under the heading: first in tab order, before the mode cards.
     const heading = query(reopened.container, "#free-play-heading");
     expect(heading.nextElementSibling).toBe(entry as Element);
@@ -728,7 +736,9 @@ describe("resuming the free-play trip", () => {
     });
     expect(address()).toBe("/fri");
     expect(query(container, "#free-play-heading").textContent).toBe("Fri resa");
-    expect(resumeEntry(container)?.textContent).toBe("Fortsätt resan: Standard, 1 gissning");
+    expect(resumeEntry(container)?.textContent).toBe(
+      "Oavslutad resa Standard · 1 gissning Fortsätt",
+    );
   });
 
   test("the way back to a trip with no guesses yet says so, in the board's words", async () => {
@@ -736,7 +746,7 @@ describe("resuming the free-play trip", () => {
     await mountApp(nynashamnTrosa, storage);
     const setup = await reopen("/fri", storage);
     expect(resumeEntry(setup.container)?.textContent).toBe(
-      "Fortsätt resan: Standard, inga gissningar än",
+      "Oavslutad resa Standard · inga gissningar än Fortsätt",
     );
   });
 
@@ -752,7 +762,7 @@ describe("resuming the free-play trip", () => {
 
     const setup = await reopen("/fri", storage);
     const entry = resumeEntry(setup.container) as HTMLAnchorElement;
-    expect(entry.textContent).toBe("Fortsätt resan: Tidspress 12 s, inga gissningar än");
+    expect(entry.textContent).toBe("Oavslutad resa Tidspress 12 s · inga gissningar än Fortsätt");
     await click(entry);
     expect(setup.container.textContent).toContain("Fri resa · Tidspress 12 s");
   });
@@ -942,7 +952,9 @@ describe("resuming the free-play trip", () => {
       }),
     );
     const { container } = await mountApp("/fri", storage);
-    expect(resumeEntry(container)?.textContent).toBe("Fortsätt resan: Standard, 1 gissning");
+    expect(resumeEntry(container)?.textContent).toBe(
+      "Oavslutad resa Standard · 1 gissning Fortsätt",
+    );
 
     const reopened = await reopen(nynashamnTrosa, storage);
     expect(guessNames(reopened.container)).toEqual(["1. Haninge ✅"]);
@@ -962,7 +974,9 @@ describe("resuming the free-play trip", () => {
       }),
     );
     const { container } = await mountApp("/fri", storage);
-    expect(resumeEntry(container)?.textContent).toBe("Fortsätt resan: Standard, 1 gissning");
+    expect(resumeEntry(container)?.textContent).toBe(
+      "Oavslutad resa Standard · 1 gissning Fortsätt",
+    );
     const reopened = await reopen(nynashamnTrosa, storage);
     expect(guessNames(reopened.container)).toEqual(["1. Haninge ✅"]);
   });
@@ -1457,7 +1471,7 @@ describe("Tidtagning", () => {
     // The trip already started, so setup's way back resumes it straight onto the board.
     const setup = await reopen("/fri", storage);
     expect(resumeEntry(setup.container)?.textContent).toBe(
-      "Fortsätt resan: Tidtagning, 1 gissning",
+      "Oavslutad resa Tidtagning · 1 gissning Fortsätt",
     );
     await click(resumeEntry(setup.container) as Element);
     const reloaded = setup;
@@ -1487,14 +1501,14 @@ describe("Tidtagning", () => {
     await reopen(tieBreakerLink("0136", "0488"), storage);
     const notStarted = await reopen("/fri", storage);
     expect(resumeEntry(notStarted.container)?.textContent).toBe(
-      "Fortsätt resan: Standard, 1 gissning",
+      "Oavslutad resa Standard · 1 gissning Fortsätt",
     );
 
     const opened = await reopen(tieBreakerLink("0136", "0488"), storage);
     await click(startaButton(opened.container));
     const started = await reopen("/fri", storage);
     expect(resumeEntry(started.container)?.textContent).toBe(
-      "Fortsätt resan: Tidtagning, inga gissningar än",
+      "Oavslutad resa Tidtagning · inga gissningar än Fortsätt",
     );
   });
 
