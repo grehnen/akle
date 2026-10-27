@@ -127,7 +127,7 @@ export function latestItineraryVersion(storage: KeyValueStorage): number | undef
 
 /**
  * The most recently played itinerary while it's unfinished, from its first trip until its last
- * trip's `Avsluta resplanen`, resumed on `version`, the one it's pinned to; undefined once
+ * trip's `Visa sammanfattning →`, resumed on `version`, the one it's pinned to; undefined once
  * finished, when its save can't be resumed there, or with none saved. An older unfinished
  * itinerary never stands in for it.
  */

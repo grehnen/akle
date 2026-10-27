@@ -186,6 +186,9 @@ function seenText(element: Element): string {
 }
 const text = (container: HTMLElement, selector: string) =>
   query(container, selector)?.textContent ?? undefined;
+/** An itinerary label's lines: the title, then the trip's place, mode and the running total. */
+const labelLines = (container: HTMLElement, selector: string) =>
+  [...query(container, selector).children].map((line) => line.textContent);
 const button = (container: HTMLElement, label: string) =>
   [...container.querySelectorAll("button")].find(
     (element) => element.textContent?.trim() === label,
@@ -380,9 +383,10 @@ describe("an itinerary from its link", () => {
 
     // Trip 1: off the clock, so straight on the board under Standard, ready for a guess.
     expect(container.querySelector(".start-gate")).toBeNull();
-    expect(text(container, ".trip-number")).toBe(
-      "Fredagsresan · Resa 1 av 3 · Standard · Totalt 0 poäng",
-    );
+    expect(labelLines(container, ".trip-number")).toEqual([
+      "Fredagsresan",
+      "Resa 1 av 3 · Standard · Totalt 0 poäng",
+    ]);
     expect(text(container, "#trip-heading")).toContain("Nynäshamn");
     expect(dom.window.document.activeElement?.id).toBe("guess-input");
     expect(container.querySelector(".thinking-time")).toBeNull();
@@ -396,18 +400,20 @@ describe("an itinerary from its link", () => {
     expect(container.textContent).toContain("Kortaste rutt");
     expect(text(container, ".result-score")).toBe("+0 (Perfekt) · −1 poäng");
     expect(text(container, ".result-score-note")).toBe("Lägre är bättre");
-    expect(text(container, ".itinerary-total")).toBe("Totalt −1 poäng");
-    expect(text(container, ".trip-number")).toBe(
-      "Fredagsresan · Resa 1 av 3 · Standard · Totalt −1 poäng",
-    );
+    expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt −1 poäng");
+    expect(labelLines(container, ".trip-number")).toEqual([
+      "Fredagsresan",
+      "Resa 1 av 3 · Standard · Totalt −1 poäng",
+    ]);
     expect(container.querySelector(".share-button")).toBeNull();
     expect(query(container, ".result-view .itinerary-next").textContent).toBe("Nästa resa");
     await click(button(container, "Nästa resa"));
 
     // Trip 2: Tidspress, on its card until Starta, its thinking time running from then.
-    expect(text(container, ".start-gate .trip-number")).toBe(
-      "Fredagsresan · Resa 2 av 3 · Tidspress 10 s · Totalt −1 poäng",
-    );
+    expect(labelLines(container, ".start-gate .trip-number")).toEqual([
+      "Fredagsresan",
+      "Resa 2 av 3 · Tidspress 10 s · Totalt −1 poäng",
+    ]);
     expect(container.textContent).not.toContain("Trosa");
     expect(container.textContent).toContain("Tiden går även om du lämnar sidan.");
     expect(text(container, ".start-gate-rules")).toBe(
@@ -422,13 +428,14 @@ describe("an itinerary from its link", () => {
     await guess(container, "Salem");
     await settle();
     expect(seenText(query(container, ".result-score"))).toBe("+0 (2 ⏱) · 2 poäng");
-    expect(text(container, ".itinerary-total")).toBe("Totalt 1 poäng");
+    expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt 1 poäng");
     await click(button(container, "Nästa resa"));
 
     // Trip 3: Tidtagning, its clock on the board, given up after a wrong guess: 1 − 1 + 3·1.
-    expect(text(container, ".start-gate .trip-number")).toBe(
-      "Fredagsresan · Resa 3 av 3 · Tidtagning · Totalt 1 poäng",
-    );
+    expect(labelLines(container, ".start-gate .trip-number")).toEqual([
+      "Fredagsresan",
+      "Resa 3 av 3 · Tidtagning · Totalt 1 poäng",
+    ]);
     expect(text(container, ".start-gate-rules")).toBe(
       "Tiden tas. Vid lika poäng vinner den snabbaste.",
     );
@@ -441,10 +448,10 @@ describe("an itinerary from its link", () => {
     await settle();
     expect(text(container, "#result-heading")).toBe("Gav upp");
     expect(text(container, ".result-score")).toBe("Gav upp (1 ifrån) · 3 poäng");
-    expect(text(container, ".itinerary-total")).toBe("Totalt 4 poäng");
+    expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt 4 poäng");
     expect(container.querySelector(".share-button")).toBeNull();
     expect(button(container, "Nästa resa")).toBeUndefined();
-    await click(button(container, "Avsluta resplanen"));
+    await click(button(container, "Visa sammanfattning →"));
 
     // The summary: the title, then a row per trip with all it has.
     expect(text(container, "#itinerary-summary-heading")).toBe("Fredagsresan");
@@ -507,7 +514,7 @@ describe("an itinerary from its link", () => {
     await settle();
     expect(text(container, "#result-heading")).toBe("Gav upp");
     expect(text(container, ".result-score")).toBe("Gav upp (1 ifrån) · 2 poäng");
-    expect(text(container, ".itinerary-total")).toBe("Totalt 2 poäng");
+    expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt 2 poäng");
     expect(button(container, "Nästa resa")).toBeDefined();
   });
 
@@ -516,9 +523,10 @@ describe("an itinerary from its link", () => {
     const container = await mountApp(link);
     await click(button(container, "Starta resplanen"));
     // Untitled, it's named Resplan as on its intro.
-    expect(text(container, ".start-gate .trip-number")).toBe(
-      "Resplan · Resa 1 av 2 · Tidtagning · Totalt 0 poäng",
-    );
+    expect(labelLines(container, ".start-gate .trip-number")).toEqual([
+      "Resplan",
+      "Resa 1 av 2 · Tidtagning · Totalt 0 poäng",
+    ]);
     await click(button(container, "Starta"));
     clockTime += 12_340;
     await guess(container, "Salem");
@@ -531,7 +539,7 @@ describe("an itinerary from its link", () => {
     await click(query(container, ".hint-button"));
     await guess(container, "Haninge");
     await settle();
-    await click(button(container, "Avsluta resplanen"));
+    await click(button(container, "Visa sammanfattning →"));
 
     expect(text(container, "#itinerary-summary-heading")).toBe("Resplan");
     expect(
@@ -577,7 +585,7 @@ describe("an itinerary from its link", () => {
     await click(button(container, "Starta"));
     await guess(container, "Salem");
     await settle();
-    await click(button(container, "Avsluta resplanen"));
+    await click(button(container, "Visa sammanfattning →"));
 
     expect(summaryTotals(container)).toEqual([["Totalt", "−2 poäng"]]);
     // Dela resultat first, as the primary, then the ways on stacked in a Vidare group below it.
@@ -628,7 +636,7 @@ describe("an itinerary from its link", () => {
     await click(button(container, "Starta"));
     await guess(container, "Salem");
     await settle();
-    await click(button(container, "Avsluta resplanen"));
+    await click(button(container, "Visa sammanfattning →"));
 
     const summaryScores = [
       ...container.querySelectorAll<HTMLButtonElement>(".itinerary-summary button"),
@@ -667,7 +675,7 @@ describe("an itinerary from its link", () => {
     await click(button(container, "Starta"));
     await guess(container, "Salem");
     await settle();
-    await click(button(container, "Avsluta resplanen"));
+    await click(button(container, "Visa sammanfattning →"));
 
     // Only the itinerary's save is written.
     expect(new Set(writes)).toEqual(new Set(["akle:itineraries"]));
@@ -704,16 +712,17 @@ describe("resuming an itinerary", () => {
     await guess(container, "Nynäshamn");
 
     container = await reopen(fridayLink, storage);
-    expect(text(container, ".trip-number")).toBe(
-      "Fredagsresan · Resa 2 av 3 · Tidspress 10 s · Totalt −1 poäng",
-    );
+    expect(labelLines(container, ".trip-number")).toEqual([
+      "Fredagsresan",
+      "Resa 2 av 3 · Tidspress 10 s · Totalt −1 poäng",
+    ]);
     expect(text(container, "#trip-heading")).toContain("Haninge");
     expect(guessNames(container)).toEqual(["1. Nynäshamn 🟧"]);
     await guess(container, "Salem");
     await settle();
     // The first trip's −1 is still in the total: +1 for the wrong guess.
     expect(text(container, ".result-score")).toBe("+1 · 1 poäng");
-    expect(text(container, ".itinerary-total")).toBe("Totalt 0 poäng");
+    expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt 0 poäng");
   });
 
   test("a reload on a trip's card returns to the card", async () => {
@@ -724,9 +733,10 @@ describe("resuming an itinerary", () => {
     await settle();
     await click(button(container, "Nästa resa"));
     container = await reopen(fridayLink, storage);
-    expect(text(container, ".start-gate .trip-number")).toBe(
-      "Fredagsresan · Resa 2 av 3 · Tidspress 10 s · Totalt −1 poäng",
-    );
+    expect(labelLines(container, ".start-gate .trip-number")).toEqual([
+      "Fredagsresan",
+      "Resa 2 av 3 · Tidspress 10 s · Totalt −1 poäng",
+    ]);
     expect(button(container, "Starta resplanen")).toBeUndefined();
   });
 
@@ -741,7 +751,7 @@ describe("resuming an itinerary", () => {
     await click(button(container, "Starta"));
     await guess(container, "Salem");
     await settle();
-    await click(button(container, "Avsluta resplanen"));
+    await click(button(container, "Visa sammanfattning →"));
 
     container = await reopen(link, storage);
     expect(text(container, "#itinerary-summary-heading")).toBe("Kort");
@@ -770,9 +780,10 @@ describe("resuming an itinerary", () => {
     container = await reopen(fridayLink, storage);
     expect(guessNames(container)).toEqual(["1. Trosa 🟧"]);
     container = await reopen(other, storage);
-    expect(text(container, ".start-gate .trip-number")).toBe(
-      "Lördag · Resa 1 av 2 · Tidspress 10 s · Totalt 0 poäng",
-    );
+    expect(labelLines(container, ".start-gate .trip-number")).toEqual([
+      "Lördag",
+      "Resa 1 av 2 · Tidspress 10 s · Totalt 0 poäng",
+    ]);
   });
 
   test("a finished itinerary's link reopens its summary after another is played", async () => {
@@ -786,7 +797,7 @@ describe("resuming an itinerary", () => {
     await click(button(container, "Starta"));
     await guess(container, "Salem");
     await settle();
-    await click(button(container, "Avsluta resplanen"));
+    await click(button(container, "Visa sammanfattning →"));
 
     container = await reopen(fridayLink, storage);
     await click(button(container, "Starta resplanen"));
@@ -907,9 +918,10 @@ describe("the builder's banner", () => {
     expect(query(container, ".itinerary-builder").firstElementChild).toBe(banner(container));
     await click(banner(container));
     expect(dom.window.location.pathname + dom.window.location.search).toBe(fridayLink);
-    expect(text(container, ".start-gate .trip-number")).toBe(
-      "Fredagsresan · Resa 2 av 3 · Tidspress 10 s · Totalt −1 poäng",
-    );
+    expect(labelLines(container, ".start-gate .trip-number")).toEqual([
+      "Fredagsresan",
+      "Resa 2 av 3 · Tidspress 10 s · Totalt −1 poäng",
+    ]);
   });
 
   test("at a trip's result, before Nästa resa, names the next trip", async () => {
@@ -949,7 +961,7 @@ describe("the builder's banner", () => {
     await click(button(container, "Starta"));
     await guess(container, "Salem");
     await settle();
-    await click(button(container, "Avsluta resplanen"));
+    await click(button(container, "Visa sammanfattning →"));
     container = await reopen("/resplan", storage);
     expect(banner(container)).toBeNull();
   });
@@ -968,7 +980,7 @@ describe("the builder's banner", () => {
     await click(button(container, "Nästa resa"));
     await guess(container, "Haninge");
     await settle();
-    await click(button(container, "Avsluta resplanen"));
+    await click(button(container, "Visa sammanfattning →"));
     container = await reopen("/resplan", storage);
     expect(banner(container)).toBeNull();
 
