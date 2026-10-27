@@ -23,13 +23,15 @@ export function chosenMode({ mode, thinkingTime }: SetupChoice): ModeSetting {
 /**
  * How a trip is set up, wherever one is: the Läge cards, Tidspress's betänketid in its own row
  * under them, and the Slumpa / Välj själv tabs, Slumpa with its distance range. It opens on
- * `initial` and reports each change through `onChange`; keeping the choice is the caller's. Its
- * names and ids are its own, so two can be on the page at once.
+ * `initial` and reports each change through `onChange`; keeping the choice is the caller's. With
+ * `initialPair`, it opens on Välj själv, filled with that pair. Its names and ids are its own, so
+ * two can be on the page at once.
  */
 export function TripSetup({
   graph,
   largest,
   initial,
+  initialPair,
   onChange,
   shortDescriptions = false,
   drawActions,
@@ -40,6 +42,7 @@ export function TripSetup({
   /** The largest distance in the version, the distance range's top. */
   largest: number;
   initial: SetupChoice;
+  initialPair?: Trip;
   onChange: (choice: SetupChoice) => void;
   /** Each mode's short text instead of its full description, where room is tight. */
   shortDescriptions?: boolean;
@@ -51,7 +54,7 @@ export function TripSetup({
 }) {
   const idPrefix = `setup-${useId().replace(/[^\w-]/g, "")}`;
   const [choice, setChoice] = useState(initial);
-  const [tab, setTab] = useState<TripChoiceTab>("draw");
+  const [tab, setTab] = useState<TripChoiceTab>(initialPair ? "pick" : "draw");
   const change = (changes: Partial<SetupChoice>) => {
     const next = { ...choice, ...changes };
     setChoice(next);
@@ -101,6 +104,7 @@ export function TripSetup({
         idPrefix={idPrefix}
         hidden={tab !== "pick"}
         submitLabel={pickLabel}
+        initial={initialPair}
         onPick={onPick}
       />
     </>
