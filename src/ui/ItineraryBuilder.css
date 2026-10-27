@@ -98,6 +98,12 @@
     0 0.5rem 1.5rem color-mix(in srgb, var(--night) 60%, transparent);
 }
 
+/* The row the keyboard has lifted: outlined like a dragged one, but in its place. */
+.itinerary-trip--lifted {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--start);
+}
+
 /* Dragged from, never scrolled: touch-action keeps a touch on it from panning the page. */
 .itinerary-trip-handle {
   min-width: 2rem;
