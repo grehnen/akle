@@ -16,13 +16,15 @@ export type TripModalResult = { choice: SetupChoice } & (
 /**
  * The builder's modal for a trip's settings: the shared setup, with its short mode texts, and
  * Avbryt and the button that takes the settings in its footer. Given `room`, it adds trips: Antal
- * then draws up to that many at once, and the button counts them.
+ * then draws up to that many at once, and the button counts them. Without `room`, it edits one
+ * trip, and `initialPair` opens it on Välj själv with a picked trip's pair.
  */
 export function TripModal({
   graph,
   largest,
   heading,
   initial,
+  initialPair,
   submitLabel,
   room,
   onCancel,
@@ -33,6 +35,8 @@ export function TripModal({
   largest: number;
   heading: string;
   initial: SetupChoice;
+  /** Editing a picked trip: its pair, which Välj själv opens filled with. */
+  initialPair?: Trip;
   /** The button's words where it doesn't count the trips it adds. */
   submitLabel: string;
   /** Adding: how many more trips fit. */
@@ -41,8 +45,8 @@ export function TripModal({
   onSubmit: (result: TripModalResult) => void;
 }) {
   const [choice, setChoice] = useState(initial);
-  const [tab, setTab] = useState<TripChoiceTab>("draw");
-  const [picked, setPicked] = useState<Trip>();
+  const [tab, setTab] = useState<TripChoiceTab>(initialPair ? "pick" : "draw");
+  const [picked, setPicked] = useState<Trip | undefined>(initialPair);
   const [count, setCount] = useState(1);
   const adding = room !== undefined;
   const maxCount = Math.max(1, room ?? 1);
@@ -84,6 +88,7 @@ export function TripModal({
         graph={graph}
         largest={largest}
         initial={initial}
+        initialPair={initialPair}
         onChange={setChoice}
         shortDescriptions
         drawActions={
