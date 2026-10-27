@@ -1095,6 +1095,58 @@ describe("giving up", () => {
   });
 });
 
+describe("the score tooltip", () => {
+  const SCORE_EXPLANATION =
+    "Lägre poäng är bättre. En perfekt resa ger −1; varje extra gissning, ledtråd och ⏱ kostar 1.";
+  const tooltip = (container: HTMLElement) =>
+    container.querySelector<HTMLElement>('[role="tooltip"]');
+
+  async function giveUpAtOnce(container: HTMLElement) {
+    await pick(container, "Nynäshamn", "Salem");
+    await click(query(container, ".give-up-button"));
+    await click(query(container, "dialog.give-up-dialog .give-up-confirm"));
+    await settle();
+  }
+  const resultScore = (container: HTMLElement) =>
+    [...container.querySelectorAll<HTMLButtonElement>(".result-score button")].find(
+      (button) => button.textContent === "2 poäng",
+    ) as HTMLButtonElement;
+
+  test("focusing the result's score shows what the score means, and Escape hides it", async () => {
+    const { container } = await mountApp("/fri");
+    await giveUpAtOnce(container);
+    expect(tooltip(container)).toBeNull();
+
+    await act(async () => resultScore(container).focus());
+    expect(tooltip(container)?.textContent).toBe(SCORE_EXPLANATION);
+    expect(resultScore(container).getAttribute("aria-describedby")).toBe(tooltip(container)?.id);
+
+    await act(async () => {
+      resultScore(container).dispatchEvent(
+        new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+    });
+    expect(tooltip(container)).toBeNull();
+  });
+
+  test("tapping the score shows it, and a tap elsewhere hides it", async () => {
+    const { container } = await mountApp("/fri");
+    await giveUpAtOnce(container);
+
+    await click(resultScore(container));
+    expect(tooltip(container)?.textContent).toBe(SCORE_EXPLANATION);
+    await click(resultScore(container));
+    expect(tooltip(container)?.textContent).toBe(SCORE_EXPLANATION);
+
+    await act(async () => {
+      query(container, "#result-heading").dispatchEvent(
+        new dom.window.MouseEvent("pointerdown", { bubbles: true }),
+      );
+    });
+    expect(tooltip(container)).toBeNull();
+  });
+});
+
 describe("Läge", () => {
   const modeRadios = (container: HTMLElement) => [
     ...container.querySelectorAll<HTMLInputElement>('.free-play-modes input[type="radio"]'),
