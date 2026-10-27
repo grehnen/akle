@@ -10,7 +10,7 @@ import type { GraphVersion } from "../graph/graphVersion";
 import { emojiLine } from "../progress/history";
 import { gameOutcome } from "../progress/outcome";
 import type { KeyValueStorage } from "../progress/storage";
-import { freePlayHeadline, LOWER_IS_BETTER, scoreText, timeText } from "./messages";
+import { freePlayHeadline, scoreText, timeText } from "./messages";
 import { ScoreLabel } from "./ScoreLabel";
 import { ScoreTooltip } from "./ScoreTooltip";
 import { ShareButton } from "./ShareButton";
@@ -40,9 +40,9 @@ export type FreePlayBoardProps = {
 
 /**
  * A free-play trip on the board in its mode: its clock or thinking time while played, then in
- * the result its headline, its outcome label and score as the share text words them (saying lower
- * is better), a won tie-breaker's time, and a share button when it has a `link` to share.
- * `resultActions` and `stripActions` follow those, in the result view and its strip.
+ * the result its headline, its score (explained in a tooltip) over its outcome label as the share
+ * text words it and a won tie-breaker's time, and a share button when it has a `link` to share.
+ * `resultActions` come before that button in the result view, `stripActions` after it in the strip.
  */
 export function FreePlayBoard({
   graph,
@@ -78,19 +78,24 @@ export function FreePlayBoard({
           link,
         })
       : undefined;
-  const scoreLine = score !== undefined && outcome !== undefined && (
-    <p className="result-score">
-      <ScoreLabel outcome={outcome} /> · <ScoreTooltip>{scoreText(score)}</ScoreTooltip>
+  const scoreFinished = score !== undefined && outcome !== undefined;
+  const points = scoreFinished && (
+    <p className="result-points">
+      <ScoreTooltip>{scoreText(score)}</ScoreTooltip>
     </p>
   );
-  const timeAndShare = score !== undefined && (
-    <>
+  const pointsDetail = scoreFinished && (
+    <p className="result-score-detail">
+      <ScoreLabel outcome={outcome} />
       {game.rules.keepsTime && time !== undefined && (
-        <p className="result-time">Tid {timeText(time)}</p>
+        <>
+          {" · "}
+          <span className="result-time">Tid {timeText(time)}</span>
+        </>
       )}
-      {share !== undefined && <ShareButton text={share} />}
-    </>
+    </p>
   );
+  const shareButton = share !== undefined && <ShareButton text={share} />;
   return (
     <TripBoard
       graph={graph}
@@ -105,22 +110,19 @@ export function FreePlayBoard({
       openedByPlayer={openedByPlayer}
       concealed={concealed}
       onMapReady={onMapReady}
+      resultScore={points}
+      resultScoreDetail={pointsDetail}
       resultActions={
         <>
-          {scoreLine && (
-            <div className="result-score-block">
-              {scoreLine}
-              <p className="result-score-note">{LOWER_IS_BETTER}</p>
-            </div>
-          )}
-          {timeAndShare}
           {resultActions}
+          {shareButton}
         </>
       }
       stripActions={
         <>
-          {scoreLine}
-          {timeAndShare}
+          {points}
+          {pointsDetail}
+          {shareButton}
           {stripActions}
         </>
       }

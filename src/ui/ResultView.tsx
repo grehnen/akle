@@ -29,6 +29,12 @@ type ResultViewProps = {
   headline?: string;
   /** What the screen around the board adds beside the outcome, such as sharing. */
   actions?: ReactNode;
+  /**
+   * A score with its detail, which lay the header out in two columns: the outcome, the emoji line
+   * and the score on one side, the actions on the other. On a phone the actions are a button grid.
+   */
+  score?: ReactNode;
+  scoreDetail?: ReactNode;
   /** Adds the Statistik tab. */
   stats?: Stats;
   /** Where the chosen tab is kept for the rest of the browser session. */
@@ -48,6 +54,8 @@ export function ResultView({
   review,
   headline,
   actions,
+  score,
+  scoreDetail,
   stats,
   sessionStorage,
   onClose,
@@ -73,10 +81,11 @@ export function ResultView({
 
   return (
     <section className="result-view" aria-labelledby="result-heading">
-      <header className="result-header">
+      <header className={score ? "result-header result-header--columns" : "result-header"}>
         <h2 id="result-heading" ref={heading} tabIndex={-1} className="result-outcome">
           {outcome}
         </h2>
+        {score}
         {onClose && (
           <button
             type="button"
@@ -88,9 +97,12 @@ export function ResultView({
           </button>
         )}
 
-        <p className="result-emoji" aria-label={`Gissningar: ${emojiLine(review.cards)}`}>
-          {emojiLine(review.cards)}
-        </p>
+        <div className="result-line">
+          <p className="result-emoji" aria-label={`Gissningar: ${emojiLine(review.cards)}`}>
+            {emojiLine(review.cards)}
+          </p>
+          {scoreDetail}
+        </div>
 
         {actions && <div className="result-actions">{actions}</div>}
       </header>
