@@ -1,9 +1,9 @@
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Trip } from "../engine/game";
 import type { BuilderDraft, DraftTrip } from "../freePlay/builderDraft";
+import type { LinkedTrip } from "../freePlay/linkPayload";
 import {
   defaultDistanceRange,
-  type DistanceRange,
   drawTrip,
   drawTrips,
   largestDistance,
@@ -22,7 +22,7 @@ import { chosenMode, setupChoiceOfTrip, type SetupChoice } from "../freePlay/set
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SITE_URL } from "../siteUrl";
 import { CopyLinkButton } from "./CopyLinkButton";
-import { modeName } from "./messages";
+import { distanceRangeText, modeName } from "./messages";
 import { Modal } from "./Modal";
 import { OverflowMenu } from "./OverflowMenu";
 import { TripModal, type TripModalResult } from "./TripModal";
@@ -140,21 +140,16 @@ export function ItineraryBuilder({
   };
   const add = (result: TripModalResult) => {
     const { choice } = result;
-    const trip = ({ start, destination }: Trip) => ({
-      start,
-      destination,
-      mode: chosenMode(choice),
-    });
     const added: DraftTrip[] =
       result.tab === "pick"
-        ? [{ trip: trip(result.trip) }]
+        ? [{ trip: inChosenMode(result.trip, choice) }]
         : drawTrips(
             pairs,
             choice.range,
             Math.min(result.count, room),
             random,
             trips.at(-1)?.trip,
-          ).map((pair) => ({ trip: trip(pair), drawnFrom: choice.range }));
+          ).map((pair) => ({ trip: inChosenMode(pair, choice), drawnFrom: choice.range }));
     setLastUsed(choice);
     closeModal();
     if (added.length === 0) return;
@@ -181,12 +176,6 @@ export function ItineraryBuilder({
   });
   const save = (index: number, result: TripModalResult) => {
     const { choice } = result;
-    const mode = chosenMode(choice);
-    const withMode = ({ start, destination }: Trip) => ({
-      start,
-      destination,
-      mode,
-    });
     // A new pair is one other than the trip had, so a drawn trip never comes back unchanged.
     const redrawn =
       result.tab === "draw" ? drawTrip(pairs, choice.range, random, trips[index].trip) : undefined;
@@ -194,8 +183,8 @@ export function ItineraryBuilder({
     closeEditModal();
     const replacement: DraftTrip | undefined =
       result.tab === "pick"
-        ? { trip: withMode(result.trip) }
-        : redrawn && { trip: withMode(redrawn), drawnFrom: choice.range };
+        ? { trip: inChosenMode(result.trip, choice) }
+        : redrawn && { trip: inChosenMode(redrawn, choice), drawnFrom: choice.range };
     if (replacement === undefined) return;
     setTrips((all) =>
       all.map((entry) => (entry.id === trips[index].id ? { id: entry.id, ...replacement } : entry)),
@@ -389,7 +378,11 @@ function TitleField({ title, onChange }: { title: string; onChange: (title: stri
   );
 }
 
-const rangeText = ({ min, max }: DistanceRange) => (min === max ? `${min}` : `${min}–${max}`);
+const inChosenMode = ({ start, destination }: Trip, choice: SetupChoice): LinkedTrip => ({
+  start,
+  destination,
+  mode: chosenMode(choice),
+});
 
 /** A row of the trip list: its pair, or a drawn trip's range, over its mode, then its actions. */
 function TripRow({
@@ -441,7 +434,7 @@ function TripRow({
         <span className="itinerary-trip-pair">
           {drawnFrom ? (
             <>
-              Slumpad · <span className="itinerary-trip-range">avstånd {rangeText(drawnFrom)}</span>
+              Slumpad · <span className="itinerary-trip-range">{distanceRangeText(drawnFrom)}</span>
             </>
           ) : (
             <>
