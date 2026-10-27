@@ -468,14 +468,14 @@ describe("Slumpa", () => {
     await click(query(container, "dialog.give-up-dialog .give-up-confirm"));
     await settle();
 
-    expect(redrawLines(container)).toEqual(["Slumpa ny resa", "Tidspress 12 s · avstånd 1–2"]);
+    expect(redrawLines(container)).toEqual(["Slumpa ny resa", "Tidspress · 12 s · avstånd 1–2"]);
     // After a trip not drawn, it draws from setup's range.
     await click(query(container, ".result-view a"));
     await click(tabNamed(container, "Välj själv"));
     await pick(container, "Nynäshamn", "Salem");
     await click(buttonNamed(container, "Starta") as HTMLElement);
     await winDistanceOneTrip(container);
-    expect(redrawLines(container)).toEqual(["Slumpa ny resa", "Tidspress 12 s · avstånd 1–2"]);
+    expect(redrawLines(container)).toEqual(["Slumpa ny resa", "Tidspress · 12 s · avstånd 1–2"]);
   });
 
   test("Slumpa ny resa after a picked trip draws from setup's range", async () => {
@@ -815,9 +815,9 @@ describe("resuming the free-play trip", () => {
 
     const setup = await reopen("/fri", storage);
     const entry = resumeEntry(setup.container) as HTMLAnchorElement;
-    expect(entry.textContent).toBe("Oavslutad resa Tidspress 12 s · inga gissningar än Fortsätt");
+    expect(entry.textContent).toBe("Oavslutad resa Tidspress · 12 s · inga gissningar än Fortsätt");
     await click(entry);
-    expect(setup.container.textContent).toContain("Fri resa · Tidspress 12 s");
+    expect(setup.container.textContent).toContain("Fri resa · Tidspress · 12 s");
   });
 
   test("the way back is only for the most recently played trip, never an older unfinished one", async () => {
@@ -1694,7 +1694,7 @@ describe("Tidspress", () => {
     await pick(container, "Nynäshamn", "Trosa");
 
     expect(container.querySelector("#trip-heading")).toBeNull();
-    expect(container.textContent).toContain("Fri resa · Tidspress 25 s");
+    expect(container.textContent).toContain("Fri resa · Tidspress · 25 s");
     expect(address()).toBe(timedLink("0192", "0488", 25));
     await click(startaButton(container));
     expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
@@ -1712,7 +1712,7 @@ describe("Tidspress", () => {
     await winDistanceOneTrip(container);
 
     await click(buttonNamed(container, "Slumpa ny resa") as HTMLElement);
-    expect(container.textContent).toContain("Fri resa · Tidspress 15 s");
+    expect(container.textContent).toContain("Fri resa · Tidspress · 15 s");
   });
 
   /** Lets the injected clock's time pass, as the page sees it on coming back into view. */
@@ -1898,7 +1898,7 @@ describe("Tidspress", () => {
     expect(container.querySelector(".result-time")).toBeNull();
     await click(query(container, ".share-button"));
     expect(copied).toEqual([
-      `#åkle Fri resa · Tidspress 10 s\n+0 (5 ⏱) · 5 poäng\n✅✅\nhttps://akle.grehn.net${link}`,
+      `#åkle Fri resa · Tidspress · 10 s\n+0 (5 ⏱) · 5 poäng\n✅✅\nhttps://akle.grehn.net${link}`,
     ]);
   });
 
@@ -1989,7 +1989,7 @@ describe("the board behind Starta", () => {
 
     expect(query(container, ".start-gate h2").textContent).toBe("Redo att resa?");
     expect(query(container, ".start-gate .trip-number").textContent).toBe(
-      "Fri resa · Tidspress 10 s",
+      "Fri resa · Tidspress · 10 s",
     );
     expect(query(container, ".start-gate-rules").textContent).toBe(tidspress);
     const back = query<HTMLAnchorElement>(container, ".start-gate a");
