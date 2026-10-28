@@ -1,0 +1,273 @@
+import { describe, expect, test } from "bun:test";
+import { renderToStaticMarkup } from "react-dom/server";
+import { buildGraphVersion } from "../graph/graphVersion";
+import { saveGame } from "../progress/savedGame";
+import { memoryStorage } from "../progress/storage";
+import { DailyTripView } from "./DailyTripView";
+
+function sessionWith(key: string, value: unknown) {
+  const session = memoryStorage();
+  session.setItem(key, JSON.stringify(value));
+  return session;
+}
+
+/** The text as seen, without what only screen readers read. */
+const visibleText = (markup: string) =>
+  markup.replace(/<span class="visually-hidden">.*?<\/span>/g, "").replace(/<[^>]+>/g, "");
+
+const graph = buildGraphVersion({
+  id: "test",
+  startsAtTrip: 1,
+  kommuner: [
+    { code: "0192", name: "Nynäshamn" },
+    { code: "0181", name: "Södertälje" },
+    { code: "0488", name: "Trosa" },
+    { code: "0136", name: "Haninge" },
+    { code: "0484", name: "Eskilstuna" },
+  ],
+  links: [
+    { between: ["0192", "0181"], kind: "land" },
+    { between: ["0181", "0488"], kind: "land" },
+    { between: ["0488", "0484"], kind: "land" },
+  ],
+});
+
+describe("DailyTripView", () => {
+  test("shows a loading text before the trip has loaded", () => {
+    expect(renderToStaticMarkup(<DailyTripView daily={undefined} />)).toContain("Laddar");
+  });
+
+  test.each(["before-epoch", "schedule-ended"] as const)(
+    "shows the Swedish no-trip message (%s)",
+    (reason) => {
+      const markup = renderToStaticMarkup(<DailyTripView daily={{ kind: "no-trip", reason }} />);
+      expect(markup).toContain("Ingen resa i dag");
+    },
+  );
+
+  test("shows the trip's start, destination and guess counter", () => {
+    const markup = renderToStaticMarkup(
+      <DailyTripView
+        daily={{
+          kind: "trip",
+          trip: { number: 21, start: "0192", destination: "0488", n: 1 },
+          graph,
+        }}
+      />,
+    );
+    expect(markup).toContain(
+      '<span>Från:</span> <strong class="sign sign--start">Nynäshamn</strong> <span>Till:</span> <strong class="sign sign--destination">Trosa</strong>',
+    );
+    expect(markup).toContain("#21");
+    expect(visibleText(markup)).toContain("Gissa (1/5)");
+  });
+
+  test("has no Ge upp, even with the distance's worth of guesses", () => {
+    const trip = { number: 21, start: "0192", destination: "0488", n: 1 };
+    const storage = memoryStorage();
+    saveGame(storage, { trip, guesses: ["0136"] });
+    const markup = renderToStaticMarkup(
+      <DailyTripView daily={{ kind: "trip", trip, graph }} storage={storage} />,
+    );
+    expect(visibleText(markup)).toContain("Gissa (2/5)");
+    expect(markup).not.toContain("Ge upp");
+  });
+
+  describe("on the play screen", () => {
+    const markup = renderToStaticMarkup(
+      <DailyTripView
+        daily={{
+          kind: "trip",
+          trip: { number: 21, start: "0192", destination: "0488", n: 1 },
+          graph,
+        }}
+      />,
+    );
+
+    test("shows the satellite map", () => {
+      expect(markup).toContain('aria-label="Karta över Nynäshamn och Trosa"');
+    });
+
+    test("notes that the graph and shape data are under ODbL", () => {
+      expect(markup).toContain("OpenStreetMap");
+      expect(markup).toContain("ODbL");
+    });
+
+    test("links Rapportera fel to a prefilled issue for this trip", () => {
+      const link = markup.match(/<a href="([^"]+)"[^>]*>Rapportera fel<\/a>/);
+      const href = new URL((link?.[1] ?? "").replaceAll("&amp;", "&"));
+      expect(href.pathname).toBe("/grehnen/akle/issues/new");
+      expect(href.searchParams.get("title")).toBe("Fel i resa #21");
+    });
+  });
+
+  describe("with a saved game", () => {
+    const trip = { number: 21, start: "0192", destination: "0488", n: 1 };
+    const renderWith = (guesses: string[], savedFor = trip, hintsTaken = 0, today = trip) => {
+      const storage = memoryStorage();
+      const hints = hintsTaken > 0 ? { taken: hintsTaken, nextKommun: "0181" } : undefined;
+      saveGame(storage, { trip: savedFor, guesses, hints });
+      return renderToStaticMarkup(
+        <DailyTripView
+          daily={{ kind: "trip", trip: today, graph }}
+          storage={storage}
+          now={new Date(2026, 9, 21, 13, 5, 9)}
+        />,
+      );
+    };
+
+    test("a game in progress is restored and keeps playing", () => {
+      const markup = renderWith(["0136"]);
+      expect(visibleText(markup)).toContain("Gissa (2/5)");
+      expect(markup).toContain("Haninge");
+      expect(markup).not.toContain('aria-labelledby="result-heading"');
+    });
+
+    test("a game saved for another trip number is not restored", () => {
+      const markup = renderWith(["0181"], { ...trip, number: 20 });
+      expect(visibleText(markup)).toContain("Gissa (1/5)");
+    });
+
+    test("a finished game reopens with the result view open", () => {
+      const markup = renderWith(["0181"]);
+      expect(markup).toContain('aria-labelledby="result-heading"');
+      expect(markup).toContain(">Perfekt!</h2>");
+    });
+
+    test("the result view offers to share and counts down to the next trip at midnight", () => {
+      const markup = renderWith(["0181"]);
+      expect(markup).toMatch(/<button[^>]*>Dela resultat<\/button>/);
+      expect(markup).toContain("Nästa resa om");
+      expect(markup).toContain("10:54:51");
+    });
+
+    test("the result view takes the board's place: no game map, guess input, toast, hints or guess list", () => {
+      const markup = renderWith(["0181"]);
+      expect(markup).not.toContain('aria-label="Karta över Nynäshamn och Trosa"');
+      expect(markup).not.toContain('id="guess-input"');
+      expect(markup).not.toContain('class="toast"');
+      expect(markup).not.toContain('class="hint-section"');
+      expect(markup).not.toContain('aria-label="Gissningar"');
+      expect(markup).toContain(
+        'aria-label="Bästa vägen med dina gissningar från Nynäshamn till Trosa"',
+      );
+    });
+
+    test("shows the toast over the bottom of the map, before the guess input", () => {
+      expect(renderWith([])).toMatch(
+        /<div class="map-frame"><div class="satellite-map"[^]*?<\/div><p role="alert" class="toast"><\/p><\/div>(?:(?!<\/form>)[^])*<form/,
+      );
+    });
+
+    test("lists past guesses under a heading, before the hints", () => {
+      const markup = renderWith(["0136"]);
+      expect(visibleText(markup)).toMatch(/Tidigare gissningar.*Haninge.*Ledtrådar \(0\/3\)/s);
+    });
+
+    test("offers three numbered hint buttons before the first guess, only the first enabled", () => {
+      const markup = renderWith([]);
+      expect(markup).toContain('<div role="group" aria-label="Ledtrådar" class="hint-buttons">');
+      expect(markup).toMatch(
+        /<button[^>]*class="hint-button"(?![^>]*disabled)[^>]*><span class="hint-step" aria-hidden="true">1<\/span>Visa nästa kommun</,
+      );
+      expect(markup).toMatch(
+        /<button[^>]*class="hint-button"[^>]*disabled=""[^>]*><span class="hint-step" aria-hidden="true">2<\/span>Visa alla kommuner</,
+      );
+      expect(markup).toMatch(
+        /<button[^>]*class="hint-button"[^>]*disabled=""[^>]*><span class="hint-step" aria-hidden="true">3<\/span>Visa initialer</,
+      );
+    });
+
+    test("restores the hints taken, ticked off", () => {
+      const markup = renderWith(["0136"], trip, 2);
+      expect(
+        markup.match(
+          /<button[^>]*class="hint-button taken"[^>]*disabled=""[^>]*><span class="hint-step" aria-hidden="true">✓<\/span>/g,
+        ),
+      ).toHaveLength(2);
+      expect(markup).toMatch(
+        /<button[^>]*class="hint-button"(?![^>]*disabled)[^>]*><span class="hint-step" aria-hidden="true">3<\/span>Visa initialer</,
+      );
+    });
+
+    test("disables every hint button once all three are taken", () => {
+      const markup = renderWith([], trip, 3);
+      expect(markup.match(/<button[^>]*class="hint-button taken"[^>]*disabled=""/g)).toHaveLength(
+        3,
+      );
+    });
+
+    test("hides the hint buttons once the game has ended", () => {
+      expect(renderWith(["0181"], trip, 1)).not.toContain("hint-button");
+    });
+
+    test("once the game is over, the Gissa button counts the guesses made", () => {
+      const longer = { number: 21, start: "0192", destination: "0484", n: 2 };
+      const storage = memoryStorage();
+      saveGame(storage, { trip: longer, guesses: ["0136", "0181", "0488"] });
+      const markup = renderToStaticMarkup(
+        <DailyTripView
+          daily={{ kind: "trip", trip: longer, graph }}
+          storage={storage}
+          sessionStorage={sessionWith("akle:result-closed", longer.number)}
+          now={new Date(2026, 9, 21, 13, 5, 9)}
+        />,
+      );
+      expect(visibleText(markup)).toContain("Gissa (3/6)");
+      expect(markup).toMatch(/<button type="submit"[^>]*>.*?3 av 6 använda.*?<\/button>/);
+    });
+
+    test("each guess card shows its number, then the kommun, then its feedback", () => {
+      const longer = { number: 21, start: "0192", destination: "0484", n: 2 };
+      const markup = renderWith(["0136", "0181"], longer, 0, longer);
+      expect(markup).toContain('<li><span aria-hidden="true">1. Haninge 🟥</span>');
+      expect(markup).toContain('<li><span aria-hidden="true">2. Södertälje ✅</span>');
+    });
+
+    test("each guess card reads out its number, feedback and connection", () => {
+      const longer = { number: 21, start: "0192", destination: "0484", n: 2 };
+      const markup = renderWith(["0136", "0181"], longer, 0, longer);
+      expect(markup).toContain(
+        '<span class="visually-hidden">Gissning 1: Haninge, långt från en kortaste väg, inte ansluten till start.</span>',
+      );
+      expect(markup).toContain(
+        '<span class="visually-hidden">Gissning 2: Södertälje, på kortaste vägen och ansluten.</span>',
+      );
+    });
+
+    test("the Gissa button says which guess is next, and taken hint buttons say so", () => {
+      const markup = renderWith(["0136"], trip, 1);
+      expect(markup).toMatch(/<button type="submit"[^>]*>.*?gissning 2 av 5.*?<\/button>/);
+      expect(markup).toMatch(
+        /<button[^>]*class="hint-button taken"[^>]*>.*?Visa nästa kommun.*?\(använd\).*?<\/button>/,
+      );
+    });
+
+    test("a restored game announces nothing until the next guess or hint", () => {
+      const markup = renderWith(["0136"], trip, 1);
+      expect(markup).toContain('<p class="visually-hidden" aria-live="polite"></p>');
+    });
+
+    test("rejections are shown in an alert", () => {
+      expect(renderWith([])).toContain('<p role="alert" class="toast"></p>');
+    });
+
+    test("the map has a text description of what it shows", () => {
+      const markup = renderWith(["0136"], trip, 1);
+      expect(markup).toContain(
+        "Start (gul): Nynäshamn. Mål (blå): Trosa. Anslutna gissningar: inga. Gissningar som inte är anslutna: Haninge. 1 ledtrådskontur.",
+      );
+    });
+
+    test("a finished game's result is not announced again on reload", () => {
+      const markup = renderWith(["0181"]);
+      expect(markup).not.toContain('role="alert">');
+      expect(markup).toContain('<p class="visually-hidden" aria-live="polite"></p>');
+    });
+
+    test("a win with a hint is not Perfekt", () => {
+      const markup = renderWith(["0181"], trip, 1);
+      expect(markup).toContain(">Framme! (+0, 1 ledtråd)</h2>");
+    });
+  });
+});

@@ -1,4 +1,4 @@
-/** Guesses allowed for a daily puzzle whose shortest route has `n` intermediate kommuner. */
+/** Guesses allowed for a daily trip whose shortest route has `n` intermediate kommuner. */
 export function guessLimit(n: number): number {
   if (n <= 3) return n + 4;
   if (n <= 6) return n + 5;

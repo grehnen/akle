@@ -1,10 +1,11 @@
+import type { DailyTrip } from "../daily/dailyTrip";
 import { type Game, type GuessCard, reviewGame } from "../engine/game";
 import type { GraphVersion } from "../graph/graphVersion";
 import { type KeyValueStorage, readJson, writeJson } from "./storage";
 
 const HISTORY_KEY = "akle:history";
 
-/** One finished daily puzzle, as the stats are derived from it. */
+/** One finished daily trip, as the stats are derived from it. */
 export type HistoryEntry = {
   won: boolean;
   /** Guesses beyond the shortest route on a win; null on a loss. */
@@ -28,10 +29,14 @@ export function readHistory(storage: KeyValueStorage): History {
     : {};
 }
 
-/** The history with a finished game's entry added once; an unfinished game or an already recorded puzzle is left alone. */
-export function withFinishedGame(history: History, graph: GraphVersion, game: Game): History {
+/** The history with a finished game's entry added once; an unfinished game or an already recorded trip is left alone. */
+export function withFinishedGame(
+  history: History,
+  graph: GraphVersion,
+  game: Game<DailyTrip>,
+): History {
   const review = reviewGame(graph, game);
-  if (review.status === "playing" || history[game.puzzle.number] !== undefined) return history;
+  if (review.status === "playing" || history[game.trip.number] !== undefined) return history;
   const entry: HistoryEntry = {
     won: review.status === "won",
     extra: review.extra ?? null,
@@ -39,14 +44,14 @@ export function withFinishedGame(history: History, graph: GraphVersion, game: Ga
     hintsUsed: review.hintsUsed,
     emojiLine: emojiLine(review.cards),
   };
-  return { ...history, [game.puzzle.number]: entry };
+  return { ...history, [game.trip.number]: entry };
 }
 
-/** Writes a finished game's entry once; an unfinished game or an already recorded puzzle is left alone. */
+/** Writes a finished game's entry once; an unfinished game or an already recorded trip is left alone. */
 export function recordFinishedGame(
   storage: KeyValueStorage,
   graph: GraphVersion,
-  game: Game,
+  game: Game<DailyTrip>,
 ): void {
   const history = readHistory(storage);
   const updated = withFinishedGame(history, graph, game);

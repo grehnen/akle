@@ -1,4 +1,5 @@
-import type { DailyPuzzleSource } from "../daily/loadDailyPuzzle";
+import type { DailyTripSource } from "../daily/loadDailyTrip";
+import { exclavePartsFile } from "../graph/exclaveParts";
 import {
   graphVersionDirectory,
   graphVersionFileNames,
@@ -14,7 +15,7 @@ const dataFile = (path: string) => Bun.file(new URL(path, dataDirectory));
  * Reads the data committed under `data/` from disk, the way `bundledDataSource` reads it in the
  * browser. For tests and scripts under Bun; the app never imports it.
  */
-export const committedDataSource: DailyPuzzleSource = {
+export const committedDataSource: DailyTripSource = {
   scheduleConfig: async () => parseScheduleConfig(await dataFile("schedule/config.json").json()),
   scheduleChunk: async (chunk) => {
     const file = dataFile(`schedule/${scheduleChunkFileName(chunk)}`);
@@ -28,6 +29,11 @@ export const committedDataSource: DailyPuzzleSource = {
         ),
       ].map(async (path) => parseGraphVersionHeader(await dataFile(path).json())),
     ),
-  graphVersionFiles: async (id) =>
-    readGraphVersionFiles(graphVersionDirectory(id), (path) => dataFile(path).text()),
+  graphVersionFiles: async (id) => {
+    const files = await readGraphVersionFiles(graphVersionDirectory(id), (path) =>
+      dataFile(path).text(),
+    );
+    const exclaves = dataFile(exclavePartsFile(id));
+    return (await exclaves.exists()) ? { ...files, exclaves: await exclaves.json() } : files;
+  },
 };

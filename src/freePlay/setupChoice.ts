@@ -1,0 +1,72 @@
+import { type KeyValueStorage, readJson, writeJson } from "../progress/storage";
+import { defaultDistanceRange, type DistanceRange } from "./draw";
+import { isModeKind, isThinkingTime, type ModeKind, type ModeSetting } from "./linkPayload";
+import { DEFAULT_THINKING_TIME } from "./modeRules";
+import { hasFormat, isDistanceRange, isRecord } from "./storedGame";
+
+const SETUP_KEY = "akle:free-play-setup";
+
+/** The stored shape's format; a choice of any other format is ignored, as if none were kept. */
+const SETUP_FORMAT = 1;
+
+/**
+ * What the player last chose in free play's setup: the mode, the betänketid Tidspress takes
+ * (kept while another mode is chosen) and the distance range a draw is made from.
+ */
+export type SetupChoice = { mode: ModeKind; thinkingTime: number; range: DistanceRange };
+
+/** A setup choice's mode as a trip takes it: Tidspress with its betänketid. */
+export function chosenMode({ mode, thinkingTime }: SetupChoice): ModeSetting {
+  return mode === "timed" ? { kind: "timed", thinkingTime } : { kind: mode };
+}
+
+/**
+ * The setup choice that opens on a trip: its mode and the `range` it was drawn from, with
+ * `fallback`'s betänketid (unless the trip is timed) and range for what the trip doesn't have.
+ */
+export function setupChoiceOfTrip(
+  mode: ModeSetting,
+  range: DistanceRange | undefined,
+  fallback: SetupChoice,
+): SetupChoice {
+  return {
+    mode: mode.kind,
+    thinkingTime: mode.kind === "timed" ? mode.thinkingTime : fallback.thinkingTime,
+    range: range ?? fallback.range,
+  };
+}
+
+/** Keeps the setup choice on this device, a view preference beside, never in, any record. */
+export function saveSetupChoice(storage: KeyValueStorage, choice: SetupChoice): void {
+  writeJson(storage, SETUP_KEY, { format: SETUP_FORMAT, ...choice });
+}
+
+/**
+ * The kept setup choice, its range cut to fit 1 to the version's `largest` distance. The
+ * defaults (Standard, the default betänketid and range) when none is kept, or it's corrupt, out
+ * of shape or of another format.
+ */
+export function restoreSetupChoice(storage: KeyValueStorage, largest: number): SetupChoice {
+  const defaults: SetupChoice = {
+    mode: "standard",
+    thinkingTime: DEFAULT_THINKING_TIME,
+    range: defaultDistanceRange(largest),
+  };
+  const stored = readJson(storage, SETUP_KEY);
+  if (!hasFormat(stored, SETUP_FORMAT)) return defaults;
+  return readSetupChoice(stored, largest) ?? defaults;
+}
+
+/** A setup choice held as plain data, its range cut to fit 1 to `largest`; none if out of shape. */
+export function readSetupChoice(value: unknown, largest: number): SetupChoice | undefined {
+  if (!isRecord(value)) return undefined;
+  const { mode, thinkingTime, range } = value;
+  if (!isModeKind(mode) || !isThinkingTime(thinkingTime)) return undefined;
+  if (!isDistanceRange(range)) return undefined;
+  const fit = (distance: number) => Math.max(1, Math.min(distance, largest));
+  return {
+    mode,
+    thinkingTime,
+    range: { min: fit(range.min), max: fit(range.max) },
+  };
+}

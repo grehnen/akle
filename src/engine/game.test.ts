@@ -1,6 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { buildGraphVersion } from "../graph/graphVersion";
-import { type Game, newGame, reviewGame, submitGuess } from "./game";
+import {
+  DAILY_RULES,
+  type Game,
+  giveUp,
+  newGame,
+  reviewGame,
+  type Rules,
+  submitGuess,
+} from "./game";
 
 /*
  * S ── A ── B ── D        shortest route S-A-B-D, N = 2, guess limit 6
@@ -10,7 +18,7 @@ import { type Game, newGame, reviewGame, submitGuess } from "./game";
  */
 const graph = buildGraphVersion({
   id: "test",
-  startsAtPuzzle: 1,
+  startsAtTrip: 1,
   kommuner: ["S", "A", "B", "D", "P", "Q", "R", "Z", "W1", "W2", "W3", "F"].map((code) => ({
     code,
     name: `Kommun ${code}`,
@@ -32,10 +40,13 @@ const graph = buildGraphVersion({
   ],
 });
 
-const puzzle = { number: 1, start: "S", destination: "D" };
+// A trip is only its endpoints; a daily trip's number lives outside the engine.
+const trip = { start: "S", destination: "D" };
 
-function play(...inputs: string[]): Game {
-  let game = newGame(puzzle);
+const play = (...inputs: string[]): Game => playUnder(DAILY_RULES, ...inputs);
+
+function playUnder(rules: Rules, ...inputs: string[]): Game {
+  let game = newGame(trip, rules);
   for (const input of inputs) {
     const result = submitGuess(graph, game, input);
     if (result.kind !== "accepted") {
@@ -50,7 +61,7 @@ const feedbackOf = (game: Game) => reviewGame(graph, game).cards.map((card) => c
 
 describe("a new game", () => {
   test("knows N and the guess limit", () => {
-    const review = reviewGame(graph, newGame(puzzle));
+    const review = reviewGame(graph, newGame(trip));
     expect(review.n).toBe(2);
     expect(review.limit).toBe(6);
     expect(review.status).toBe("playing");
@@ -122,7 +133,8 @@ describe("winning and losing", () => {
       graph,
       play("Kommun Z", "Kommun F", "Kommun W1", "Kommun W2", "Kommun A", "Kommun B"),
     );
-    expect(review.cards).toHaveLength(review.limit);
+    expect(review.cards).toHaveLength(6);
+    expect(review.limit).toBe(6);
     expect(review.status).toBe("won");
     expect(review.extra).toBe(4);
   });
@@ -143,6 +155,72 @@ describe("winning and losing", () => {
     const review = reviewGame(graph, play("Kommun A"));
     expect(review.status).toBe("playing");
     expect(review.away).toBe(1);
+  });
+});
+
+describe("with no guess limit", () => {
+  const unlimited: Rules = { guessLimit: "none", giveUp: false, keepsTime: false };
+  const farOff = ["Kommun Z", "Kommun F", "Kommun W1", "Kommun W2", "Kommun W3", "Kommun P"];
+
+  test("has no limit to show", () => {
+    expect(reviewGame(graph, newGame(trip, unlimited)).limit).toBeUndefined();
+  });
+
+  test("keeps playing past the standard guess limit", () => {
+    const review = reviewGame(graph, playUnder(unlimited, ...farOff, "Kommun Q"));
+    expect(review.cards).toHaveLength(7);
+    expect(review.status).toBe("playing");
+    expect(review.away).toBe(1);
+  });
+
+  test("still wins once a route is complete, counting extra beyond N", () => {
+    const review = reviewGame(graph, playUnder(unlimited, ...farOff, "Kommun A", "Kommun B"));
+    expect(review.status).toBe("won");
+    expect(review.extra).toBe(6);
+  });
+});
+
+describe("giving up", () => {
+  const freePlay: Rules = { guessLimit: "distance", giveUp: true, keepsTime: false };
+
+  test("is allowed from the start, before any guess, and ends the trip as a loss", () => {
+    const fresh = playUnder(freePlay);
+    expect(reviewGame(graph, fresh).canGiveUp).toBe(true);
+    const review = reviewGame(graph, giveUp(graph, fresh));
+    expect(review.status).toBe("lost");
+    expect(review.givenUp).toBe(true);
+    expect(review.away).toBe(2);
+    expect(review.missing).toEqual(["A", "B"]);
+    expect(review.canGiveUp).toBe(false);
+  });
+
+  test("is allowed after fewer guesses than the distance", () => {
+    const game = playUnder(freePlay, "Kommun Z");
+    expect(reviewGame(graph, game).canGiveUp).toBe(true);
+    expect(reviewGame(graph, giveUp(graph, game)).status).toBe("lost");
+  });
+
+  test("is never allowed under rules without it, as in a daily trip", () => {
+    const game = play("Kommun Z", "Kommun A", "Kommun P");
+    expect(reviewGame(graph, game).canGiveUp).toBe(false);
+    expect(giveUp(graph, game)).toBe(game);
+  });
+
+  test("is not allowed once the trip is over", () => {
+    const won = playUnder(freePlay, "Kommun A", "Kommun B");
+    expect(reviewGame(graph, won).canGiveUp).toBe(false);
+    expect(reviewGame(graph, giveUp(graph, won)).status).toBe("won");
+  });
+
+  test("works without a guess limit too, where it is the only loss", () => {
+    const unlimited: Rules = { guessLimit: "none", giveUp: true, keepsTime: false };
+    const game = playUnder(unlimited, "Kommun Z", "Kommun F", "Kommun W1", "Kommun W2");
+    expect(reviewGame(graph, giveUp(graph, game)).status).toBe("lost");
+  });
+
+  test("a given-up trip takes no more guesses", () => {
+    const givenUp = giveUp(graph, playUnder(freePlay, "Kommun Z", "Kommun A"));
+    expect(submitGuess(graph, givenUp, "Kommun B")).toMatchObject({ reason: "game-over" });
   });
 });
 

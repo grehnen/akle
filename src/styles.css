@@ -23,12 +23,16 @@
   --start-edge: #ed1c24;
   --destination-edge: #ffffff;
   --focus: #fecc02;
+  /* A thinking time running out: a red light enough to read on the night background. */
+  --warning: #ff5a5f;
   /* Hint outlines: unfilled, thin and white at half opacity. */
   --hint-outline: rgb(255 255 255 / 50%);
 
   --ui-font: Seravek, "Gill Sans Nova", Ubuntu, Calibri, "DejaVu Sans", source-sans-pro, sans-serif;
 
   color-scheme: dark;
+  /* Pages with and without a scrollbar keep the same width, so the header doesn't shift between them. */
+  scrollbar-gutter: stable;
   font-family: var(--ui-font);
   line-height: 1.45;
   color: var(--text);
@@ -66,16 +70,28 @@ h1 {
 }
 
 .site-header {
+  --header-button-width: 2.75rem;
+
   position: relative;
   width: 100%;
+  /* As tall as the full-size title, so a shrunk one leaves the page below where it was. */
+  min-height: 2.75rem;
+  container-type: inline-size;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+/* The title stays centred on the screen, like everything below it, between two buttons on each
+   side; on a screen too narrow for that it shrinks: "Åkle" is a little over 2.1em wide. */
+.site-header h1 {
+  font-size: min(2.5rem, (100cqi - 4 * var(--header-button-width)) / 2.5);
+  white-space: nowrap;
+}
+
 .header-button {
   position: absolute;
-  width: 2.75rem;
+  width: var(--header-button-width);
   padding: 0;
   display: grid;
   place-items: center;
@@ -88,7 +104,37 @@ h1 {
 }
 
 .stats-open {
+  left: var(--header-button-width);
+}
+
+.free-play-open,
+.itinerary-open {
+  height: 2.75rem;
+  font-size: 1.4rem;
+  text-decoration: none;
+}
+
+.itinerary-open {
+  right: var(--header-button-width);
+}
+
+.free-play-open {
   right: 0;
+}
+
+/* The page the player is on: a bar under its button, the colour of the start sign. */
+.header-button[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0.55rem 0.1rem;
+  height: 0.15rem;
+  border-radius: 0.075rem;
+  background: var(--start);
+}
+
+/* In free play the title leads back to today's trip. */
+h1 a {
+  text-decoration: none;
 }
 
 .header-button:hover {
@@ -137,20 +183,29 @@ a {
   gap: 0.75rem;
 }
 
-.puzzle-number {
+/* Behind Starta the board loads at its full width, unseen and taking no room. */
+.play-screen--concealed {
+  height: 0;
+  margin-top: -0.75rem;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.trip-number {
   order: -1;
   margin: -0.5rem 0 0;
   color: var(--muted);
   font-size: 0.95rem;
 }
 
-/* The puzzle as two road signs: a direction sign pointing on toward the place-name sign. */
-#puzzle-heading {
+/* The trip as two road signs, each on its own row after its label: a direction sign, then the place-name sign. */
+#trip-heading {
   margin: 0.25rem 0 0.25rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  justify-items: start;
   gap: 0.4rem 0.6rem;
   font-size: 1.2rem;
   font-weight: 400;
@@ -216,7 +271,22 @@ a {
   padding-right: calc(0.75em - 0.14em);
 }
 
+.map-frame {
+  position: relative;
+  width: 100%;
+}
+
+/* Over the map's top-left corner, clear of the zoom buttons at its top-right. */
+.map-corner {
+  position: absolute;
+  z-index: 3;
+  top: 0.6rem;
+  left: 0.6rem;
+  pointer-events: none;
+}
+
 .satellite-map {
+  position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
   border-radius: 14px;
@@ -228,6 +298,36 @@ a {
 .satellite-map__canvas {
   width: 100%;
   height: 100%;
+}
+
+/* Covers the map's frame, at its final size, until the map is drawn. */
+.map-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--rule) 60%, transparent) 50%,
+      transparent 70%
+    )
+    var(--surface);
+  background-size: 250% 100%;
+  animation: map-skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes map-skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -150% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-skeleton {
+    animation: none;
+  }
 }
 
 /* The map clips its corners, so its focus ring is drawn on the frame instead of the canvas. */
@@ -408,6 +508,59 @@ input::placeholder {
   font-weight: 700;
 }
 
+/*
+ * Ge upp has its own row under the hints, at their left edge: a neutral outlined button, edged in
+ * the rule colour rather than a hint's white, so it is never taken for a hint.
+ */
+.give-up-row {
+  width: 100%;
+  display: flex;
+}
+
+.give-up-button {
+  padding-inline: 1.25rem;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--rule);
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.give-up-button:hover {
+  box-shadow: inset 0 0 0 1px var(--muted);
+  color: var(--text);
+}
+
+.give-up-dialog {
+  max-width: 24rem;
+}
+
+.give-up-dialog h2,
+.give-up-dialog p {
+  margin: 0;
+}
+
+.give-up-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.give-up-actions button {
+  padding-inline: 1.25rem;
+}
+
+.give-up-cancel {
+  background: var(--text);
+  color: var(--night);
+}
+
+.give-up-confirm {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--hint-outline);
+  color: var(--text);
+}
+
 form {
   display: flex;
   flex-wrap: wrap;
@@ -455,9 +608,40 @@ input:disabled {
   cursor: default;
 }
 
-[role="status"]:empty,
-.toast:empty {
+[role="status"]:empty {
   display: none;
+}
+
+/*
+ * A rejected guess's toast floats over the map's bottom edge, above the guess input, so nothing
+ * moves as it comes and goes. It stays clear of the ⓘ button and lets taps through to the map.
+ */
+.toast {
+  position: absolute;
+  z-index: 3;
+  bottom: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 7rem);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  background: var(--text);
+  color: var(--night);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+  pointer-events: none;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* An empty toast stays in place, so screen readers keep hearing it, but shows nothing. */
+.toast:empty {
+  padding: 0;
 }
 
 [role="status"],
@@ -481,6 +665,17 @@ ol[aria-label="Gissningar"] li {
   background: var(--surface);
 }
 
+/* Wide enough for `⏱ ×99`, so a run's row keeps its width as its count grows. */
+.timeout-row {
+  min-width: 4.5em;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.timeout-row--held {
+  visibility: hidden;
+}
+
 .credits {
   margin-top: 1.5rem;
   max-width: 56rem;
@@ -498,4 +693,74 @@ ol[aria-label="Gissningar"] li {
 
 .credits p {
   margin: 0.4rem 0 0;
+}
+
+/*
+ * The way back to an unfinished game, on /fri and in the builder alike: a sign-like link with
+ * what it is in bold over how far it got, and Fortsätt › beside both, lit up on hover and on
+ * keyboard focus.
+ */
+.resume-link {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "what go"
+    "progress go";
+  align-items: center;
+  column-gap: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--rule);
+  border-left: 0.3rem solid var(--start);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.resume-what {
+  grid-area: what;
+}
+
+.resume-progress {
+  grid-area: progress;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.resume-go {
+  grid-area: go;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--start);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.resume-go::after {
+  content: "›" / "";
+  font-size: 1.5rem;
+  line-height: 1;
+  transform: translateY(-0.1rem);
+  transition: transform 0.15s ease;
+}
+
+.resume-link:hover,
+.resume-link:focus-visible {
+  border-color: var(--start);
+  background: color-mix(in srgb, var(--start) 12%, var(--surface));
+  text-decoration: underline;
+}
+
+.resume-link:hover .resume-go::after,
+.resume-link:focus-visible .resume-go::after {
+  transform: translate(0.2rem, -0.1rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resume-go::after {
+    transition: none;
+  }
 }

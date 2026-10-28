@@ -54,3 +54,11 @@ export function writeJson(storage: KeyValueStorage, key: string, value: unknown)
     // Full or blocked storage: the game still plays, it just won't survive a reload.
   }
 }
+
+export function removeKey(storage: KeyValueStorage, key: string): void {
+  try {
+    storage.removeItem(key);
+  } catch {
+    // Blocked storage: there's nothing kept to remove, or it stays and is read again next time.
+  }
+}

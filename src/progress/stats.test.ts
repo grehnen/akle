@@ -13,8 +13,8 @@ const perfect: HistoryEntry = { won: true, extra: 0, perfect: true, hintsUsed: 0
 const loss: HistoryEntry = { won: false, extra: null, perfect: false, hintsUsed: 0, emojiLine: "" };
 
 describe("the stats", () => {
-  test("count finished games only, so an unfinished puzzle changes neither Spelade nor Vinst %", () => {
-    // Puzzle 2 was started but not finished by midnight, so it never reached the history.
+  test("count finished games only, so an unfinished trip changes neither Spelade nor Vinst %", () => {
+    // Trip 2 was started but not finished by midnight, so it never reached the history.
     const history: History = { 1: win(1), 3: loss, 4: perfect };
     const stats = deriveStats(history, 5);
     expect(stats.played).toBe(3);
@@ -26,13 +26,13 @@ describe("the stats", () => {
   });
 
   describe("streaks", () => {
-    test("count wins on consecutive puzzle numbers up to today", () => {
+    test("count wins on consecutive trip numbers up to today", () => {
       const stats = deriveStats({ 3: win(2), 4: perfect, 5: win(0) }, 5);
       expect(stats.currentStreak).toBe(3);
       expect(stats.longestStreak).toBe(3);
     });
 
-    test("a skipped puzzle resets the current streak", () => {
+    test("a skipped trip resets the current streak", () => {
       const stats = deriveStats({ 1: win(1), 2: win(1), 3: win(1), 5: win(0) }, 5);
       expect(stats.currentStreak).toBe(1);
       expect(stats.longestStreak).toBe(3);
@@ -48,11 +48,11 @@ describe("the stats", () => {
       expect(deriveStats({ 1: win(1), 2: win(1), 3: loss }, 3).currentStreak).toBe(0);
     });
 
-    test("today's puzzle still in play keeps yesterday's streak alive", () => {
+    test("today's trip still in play keeps yesterday's streak alive", () => {
       expect(deriveStats({ 1: win(1), 2: win(1) }, 3).currentStreak).toBe(2);
     });
 
-    test("a puzzle left unfinished yesterday ends the streak", () => {
+    test("a trip left unfinished yesterday ends the streak", () => {
       const stats = deriveStats({ 1: win(1), 2: win(1) }, 4);
       expect(stats.currentStreak).toBe(0);
       expect(stats.longestStreak).toBe(2);
@@ -119,7 +119,7 @@ describe("the stats", () => {
       expect(todayRows({ 1: win(3), 2: loss }, 2)).toEqual(["Förlust"]);
     });
 
-    test("highlights no row while today's puzzle is unfinished", () => {
+    test("highlights no row while today's trip is unfinished", () => {
       expect(todayRows({ 1: win(3) }, 2)).toEqual([]);
     });
   });

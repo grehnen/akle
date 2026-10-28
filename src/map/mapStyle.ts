@@ -50,13 +50,19 @@ export function fitPadding({ width, height }: MapSize): number {
   return Math.round(Math.min(width, height) * FIT_PADDING_SHARE);
 }
 
-/** The endpoints' sign-coloured edges are drawn a little heavier than other outlines. */
-const ENDPOINT_OR_ONE_PX: ExpressionSpecification = [
-  "match",
+const ENDPOINT: ExpressionSpecification = [
+  "in",
   ["get", "kind"],
-  ["start", "destination"],
-  2,
-  1,
+  ["literal", ["start", "destination"]],
+];
+
+/** Exclaves are filled but not outlined, so an outline only ever traces a kommun's main part. */
+const NOT_EXCLAVE: ExpressionSpecification = ["!=", ["get", "exclave"], true];
+
+/** The endpoints get their own outline layer, above every other outline. */
+const NOT_UNFILLED_OR_ENDPOINT: ExpressionSpecification = [
+  "!",
+  ["in", ["get", "kind"], ["literal", ["hint", "other", "start", "destination"]]],
 ];
 
 export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
@@ -92,7 +98,27 @@ export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
       id: "kommun-outline-solid",
       type: "line",
       source: "kommuner",
-      filter: ["all", FILLED, ["==", ["get", "connected"], true]],
+      filter: ["all", NOT_UNFILLED_OR_ENDPOINT, ["==", ["get", "connected"], true], NOT_EXCLAVE],
+      paint: { "line-color": ["get", "color"], "line-width": 1, "line-opacity": 1 },
+    },
+    {
+      id: "kommun-outline-dashed",
+      type: "line",
+      source: "kommuner",
+      filter: ["all", ["==", ["get", "connected"], false], NOT_EXCLAVE],
+      paint: {
+        "line-color": ["get", "color"],
+        "line-width": 1,
+        "line-opacity": 1,
+        "line-dasharray": [3, 2],
+      },
+    },
+    // Last of the outlines, so no neighbouring guess's edge hides the endpoints' sign-coloured, heavier edges.
+    {
+      id: "endpoint-outline",
+      type: "line",
+      source: "kommuner",
+      filter: ["all", ENDPOINT, NOT_EXCLAVE],
       paint: {
         "line-color": [
           "match",
@@ -103,20 +129,8 @@ export function satelliteMapStyle(drawn: DrawnFeatures): StyleSpecification {
           DESTINATION_EDGE_COLOR,
           ["get", "color"],
         ],
-        "line-width": ENDPOINT_OR_ONE_PX,
+        "line-width": 2,
         "line-opacity": 1,
-      },
-    },
-    {
-      id: "kommun-outline-dashed",
-      type: "line",
-      source: "kommuner",
-      filter: ["==", ["get", "connected"], false],
-      paint: {
-        "line-color": ["get", "color"],
-        "line-width": 1,
-        "line-opacity": 1,
-        "line-dasharray": [3, 2],
       },
     },
     // Invisible, but MapLibre still finds its features under the pointer.

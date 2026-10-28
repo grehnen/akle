@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { Game } from "../engine/game";
+import type { DailyTrip } from "../daily/dailyTrip";
+import { type Game, newGame } from "../engine/game";
 import { buildGraphVersion } from "../graph/graphVersion";
 import { readHistory, recordFinishedGame } from "./history";
 import { memoryStorage } from "./storage";
@@ -8,7 +9,7 @@ import { memoryStorage } from "./storage";
 const far = ["W1", "W2", "W3", "W4", "W5", "W6"];
 const graph = buildGraphVersion({
   id: "test",
-  startsAtPuzzle: 1,
+  startsAtTrip: 1,
   kommuner: ["S", "A", "B", "D", ...far].map((code) => ({ code, name: `Kommun ${code}` })),
   links: [
     { between: ["S", "A"], kind: "land" },
@@ -21,13 +22,13 @@ const graph = buildGraphVersion({
   ],
 });
 
-const game = (number: number, ...guesses: string[]): Game => ({
-  puzzle: { number, start: "S", destination: "D" },
+const game = (number: number, ...guesses: string[]): Game<DailyTrip> => ({
+  ...newGame({ number, start: "S", destination: "D" }),
   guesses,
 });
 
 describe("the history", () => {
-  test("a Perfect win is recorded under its puzzle number", () => {
+  test("a Perfect win is recorded under its trip number", () => {
     const storage = memoryStorage();
     recordFinishedGame(storage, graph, game(4, "A", "B"));
     expect(readHistory(storage)).toEqual({
@@ -80,7 +81,7 @@ describe("the history", () => {
     expect(readHistory(storage)).toEqual({});
   });
 
-  test("finishing a puzzle again keeps its one first entry", () => {
+  test("finishing a trip again keeps its one first entry", () => {
     const storage = memoryStorage();
     recordFinishedGame(storage, graph, game(4, "A", "B"));
     recordFinishedGame(storage, graph, game(4, "W1", "A", "B"));
@@ -88,7 +89,7 @@ describe("the history", () => {
     expect(readHistory(storage)[4]?.perfect).toBe(true);
   });
 
-  test("keeps the entries of earlier puzzles", () => {
+  test("keeps the entries of earlier trips", () => {
     const storage = memoryStorage();
     recordFinishedGame(storage, graph, game(4, "A", "B"));
     recordFinishedGame(storage, graph, game(5, ...far));

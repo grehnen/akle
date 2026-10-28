@@ -1,0 +1,351 @@
+/* Room at the bottom so the sticky bar never covers the last of the page. */
+.itinerary-builder {
+  width: 100%;
+  max-width: 34rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-bottom: 9rem;
+  text-align: left;
+}
+
+/* First on screen as in the source, before the eyebrow that every screen lifts to the top. */
+.itinerary-resume {
+  order: -1;
+}
+
+.itinerary-builder h2,
+.itinerary-builder .trip-number {
+  margin: 0;
+  text-align: center;
+}
+
+.itinerary-title {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 0.5rem;
+  align-items: center;
+}
+
+.itinerary-title label {
+  grid-column: 1 / -1;
+  font-weight: 700;
+}
+
+.itinerary-title-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.itinerary-add-trips {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.itinerary-add-trips:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+/* The list's header: Resor on the left, the ⋯ menu and + Lägg till on the right. */
+.itinerary-list-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.itinerary-list-heading {
+  flex: 1;
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.itinerary-add-trips {
+  font-weight: 700;
+}
+
+.itinerary-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Trip rows: number, the pair (or a drawn trip's range) over the mode, then the actions. */
+.itinerary-trips {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+
+.itinerary-trip {
+  display: grid;
+  grid-template-columns: auto 1.25rem minmax(0, 1fr) auto;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* The row being dragged rides above the others, on the pointer. */
+.itinerary-trip--dragged {
+  position: relative;
+  z-index: 5;
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 2px var(--start),
+    0 0.5rem 1.5rem color-mix(in srgb, var(--night) 60%, transparent);
+}
+
+/* The row the keyboard has lifted: outlined like a dragged one, but in its place. */
+.itinerary-trip--lifted {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--start);
+}
+
+/* Dragged from, never scrolled: touch-action keeps a touch on it from panning the page. */
+.itinerary-trip-handle {
+  min-width: 2rem;
+  min-height: 2.75rem;
+  padding: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.25rem;
+  cursor: grab;
+  touch-action: none;
+}
+
+.itinerary-trip--dragged .itinerary-trip-handle {
+  cursor: grabbing;
+}
+
+.itinerary-trip-number {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.itinerary-trip-what {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+/* Wraps, at a space or anywhere, when it doesn't fit. */
+.itinerary-trip-pair {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.itinerary-trip-mode {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.itinerary-start {
+  color: var(--start);
+  font-weight: 700;
+}
+
+/* The sign blue is too dark to read as text on the night background; its white edge is not. */
+.itinerary-destination {
+  color: var(--destination-edge);
+  font-weight: 700;
+  text-decoration: underline 3px var(--destination);
+  text-underline-offset: 3px;
+}
+
+.itinerary-trip-actions {
+  display: inline-flex;
+  gap: 0.15rem;
+}
+
+/* Narrow to leave room for the pair; 2.75rem tall to tap. */
+.itinerary-trip-actions button {
+  min-width: 2.25rem;
+  min-height: 2.75rem;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.itinerary-trip-actions button:disabled {
+  color: var(--muted);
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* On a narrow phone the actions drop to a line of their own under the pair and mode. */
+@media (max-width: 24rem) {
+  .itinerary-trip-actions {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
+
+/* The confirm before Ta bort alla resor. */
+.remove-all-modal {
+  width: min(26rem, calc(100% - 2rem));
+}
+
+.remove-all-heading {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.remove-all-text {
+  margin: 0;
+  color: var(--muted);
+}
+
+.remove-all-modal .modal-footer {
+  padding: 0.75rem 0 0;
+}
+
+.remove-all-cancel,
+.remove-all-confirm {
+  font-weight: 700;
+}
+
+.remove-all-cancel {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.remove-all-confirm {
+  background: var(--warning);
+  color: var(--night);
+}
+
+.itinerary-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  padding: 0.75rem max(1rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom))
+    max(1rem, env(safe-area-inset-left));
+  border-top: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--night) 94%, transparent);
+}
+
+.itinerary-bar-content {
+  position: relative;
+  max-width: 34rem;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+/*
+ * On a phone the count has a row of its own above the two buttons, which share the row, so the
+ * bar keeps its height whatever the count says.
+ */
+.itinerary-count {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+@media (max-width: 32rem) {
+  .itinerary-count {
+    flex-basis: 100%;
+  }
+
+  .itinerary-bar .copy-link,
+  .itinerary-play {
+    flex: 1;
+  }
+
+  .itinerary-bar .copy-link-button {
+    width: 100%;
+  }
+
+  .itinerary-bar .copy-link-button,
+  .itinerary-play {
+    white-space: nowrap;
+  }
+}
+
+/* On the narrowest phones the buttons give up some padding to stay side by side. */
+@media (max-width: 24rem) {
+  .itinerary-bar .copy-link-button,
+  .itinerary-play {
+    padding-inline: 0.6rem;
+  }
+}
+
+.itinerary-count-minimum {
+  white-space: nowrap;
+}
+
+.itinerary-play {
+  background: var(--start);
+  color: var(--night);
+  font-weight: 700;
+}
+
+.itinerary-play:disabled {
+  background: var(--surface);
+  color: var(--muted);
+  cursor: default;
+}
+
+/*
+ * What floats above the bar, as the share button's toast does, so the bar keeps its height and no
+ * control moves: the latest removal's Ångra, the link to copy by hand, and the copy toast.
+ */
+.itinerary-bar-overlays {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 0.75rem + 0.4rem);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  pointer-events: none;
+}
+
+.itinerary-bar-overlays > * {
+  pointer-events: auto;
+}
+
+/* The copy toast floats at the bar's right, where the overlays end. */
+.itinerary-bar .copy-link {
+  position: static;
+}
+
+.itinerary-bar .copy-link-toast {
+  right: 0;
+  bottom: calc(100% + 0.75rem + 0.4rem);
+}
+
+.itinerary-bar-overlays .copy-link-fallback {
+  align-self: stretch;
+}
+
+.itinerary-undo {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.25rem 0.25rem 0.25rem 1rem;
+  border-radius: 0.75rem;
+  background: var(--text);
+  color: var(--night);
+  font-weight: 700;
+  box-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--night) 60%, transparent);
+}
+
+.itinerary-undo button {
+  background: var(--night);
+  color: var(--text);
+}

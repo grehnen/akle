@@ -36,10 +36,11 @@ export function compareLinks(a: NeighborLink, b: NeighborLink): number {
 
 export type GraphVersionSource = {
   id: string;
-  startsAtPuzzle: number;
+  startsAtTrip: number;
   kommuner: readonly Kommun[];
   links: readonly NeighborLink[];
   shapes?: KommunShapes;
+  exclaveParts?: ReadonlyMap<KommunCode, ReadonlySet<number>>;
 };
 
 /** GeoJSON FeatureCollection whose features carry `properties.code`. */
@@ -55,7 +56,7 @@ export type KommunShapes = {
 /** One graph version, loaded as a unit (ADR 0004). */
 export type GraphVersion = {
   id: string;
-  startsAtPuzzle: number;
+  startsAtTrip: number;
   kommuner: ReadonlyMap<KommunCode, Kommun>;
   links: readonly NeighborLink[];
   neighbors: ReadonlyMap<KommunCode, ReadonlySet<KommunCode>>;
@@ -63,6 +64,8 @@ export type GraphVersion = {
   /** Kommuner linked to others only by ferry: a route may start or end there, never pass through. */
   deadEnds: ReadonlySet<KommunCode>;
   shapes: KommunShapes;
+  /** The parts of each kommun's shape that are exclaves, by index (`src/graph/exclaveParts.ts`). */
+  exclaveParts: ReadonlyMap<KommunCode, ReadonlySet<number>>;
 };
 
 export function buildGraphVersion(source: GraphVersionSource): GraphVersion {
@@ -106,13 +109,14 @@ export function buildGraphVersion(source: GraphVersionSource): GraphVersion {
 
   return {
     id: source.id,
-    startsAtPuzzle: source.startsAtPuzzle,
+    startsAtTrip: source.startsAtTrip,
     kommuner,
     links: source.links,
     neighbors,
     ferryLinks: source.links.filter((link) => link.kind === "ferry"),
     deadEnds,
     shapes: source.shapes ?? { type: "FeatureCollection", features: [] },
+    exclaveParts: source.exclaveParts ?? new Map(),
   };
 }
 

@@ -1,4 +1,12 @@
-import { type KeyboardEvent, type Ref, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type KeyboardEvent,
+  type ReactNode,
+  type Ref,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { Game, GameReview } from "../engine/game";
 import { routeStops } from "../engine/routeStops";
 import { type GraphVersion, type KommunCode, kommunName } from "../graph/graphVersion";
@@ -10,17 +18,27 @@ import { balancedRows } from "./balancedRows";
 import { CloseIcon } from "./CloseIcon";
 import { countdownToMidnight } from "./countdown";
 import { resultOutcome } from "./messages";
-import { ShareButton } from "./ShareButton";
 import { StatsPanel } from "./StatsPanel";
 import "./ResultView.css";
+
+/** A finished trip's score as the result lays it out, and the detail that goes with it. */
+export type ResultScore = { score: ReactNode; detail: ReactNode };
 
 type ResultViewProps = {
   graph: GraphVersion;
   game: Game;
   review: GameReview;
-  now: Date;
-  stats: Stats;
-  shareText: string;
+  /** Heads the result in place of the daily outcome, such as a free-play headline. */
+  headline?: string;
+  /** What the screen around the board adds beside the outcome, such as sharing. */
+  actions?: ReactNode;
+  /**
+   * A score with its detail, which lay the header out in two columns: the outcome, the emoji line
+   * and the score on one side, the actions on the other. On a phone the actions are a button grid.
+   */
+  score?: ResultScore;
+  /** Adds the Statistik tab. */
+  stats?: Stats;
   /** Where the chosen tab is kept for the rest of the browser session. */
   sessionStorage: KeyValueStorage;
   onClose?: () => void;
@@ -29,21 +47,23 @@ type ResultViewProps = {
 };
 
 /**
- * Opens when the game ends: a header with the outcome, the emoji line, sharing and the countdown,
- * over the tabs Min rutt (the cheapest route), Kortaste rutt and Statistik.
+ * Opens when the game ends: a header with the outcome, the emoji line and the screen's actions,
+ * over the tabs Min rutt (the cheapest route), Kortaste rutt and, given stats, Statistik.
  */
 export function ResultView({
   graph,
   game,
   review,
-  now,
+  headline,
+  actions,
+  score,
   stats,
-  shareText,
   sessionStorage,
   onClose,
   focusOnOpen = false,
 }: ResultViewProps) {
-  const [tab, setTab] = useState(() => readTab(sessionStorage));
+  const tabs = stats ? RESULT_TABS : RESULT_TABS.filter(({ id }) => id !== "stats");
+  const [tab, setTab] = useState(() => readTab(sessionStorage, tabs));
   const chooseTab = (chosen: ResultTab) => {
     setTab(chosen);
     writeJson(sessionStorage, TAB_KEY, chosen);
@@ -52,7 +72,7 @@ export function ResultView({
   useEffect(() => {
     if (focusOnOpen) heading.current?.focus();
   }, [focusOnOpen]);
-  const outcome = resultOutcome(review);
+  const outcome = headline ?? resultOutcome(review);
   const { cheapestRoute, shortestRoute } = review;
   // Both route maps share one framing, so switching tabs doesn't move the map.
   const frame = useMemo(
@@ -62,10 +82,11 @@ export function ResultView({
 
   return (
     <section className="result-view" aria-labelledby="result-heading">
-      <header className="result-header">
+      <header className={score ? "result-header result-header--columns" : "result-header"}>
         <h2 id="result-heading" ref={heading} tabIndex={-1} className="result-outcome">
           {outcome}
         </h2>
+        {score?.score}
         {onClose && (
           <button
             type="button"
@@ -77,20 +98,18 @@ export function ResultView({
           </button>
         )}
 
-        <p className="result-emoji" aria-label={`Gissningar: ${emojiLine(review.cards)}`}>
-          {emojiLine(review.cards)}
-        </p>
-
-        <div className="result-actions">
-          <p className="result-countdown">
-            Nästa pussel om <Countdown from={now} />
+        <div className="result-line">
+          <p className="result-emoji" aria-label={`Gissningar: ${emojiLine(review.cards)}`}>
+            {emojiLine(review.cards)}
           </p>
-          <ShareButton text={shareText} />
+          {score?.detail}
         </div>
+
+        {actions && <div className="result-actions">{actions}</div>}
       </header>
 
-      <ResultTabs selected={tab} onSelect={chooseTab} />
-      {RESULT_TABS.map(({ id }) => (
+      <ResultTabs tabs={tabs} selected={tab} onSelect={chooseTab} />
+      {tabs.map(({ id }) => (
         <div
           key={id}
           id={panelId(id)}
@@ -124,7 +143,7 @@ export function ResultView({
               />
             </>
           )}
-          {id === tab && id === "stats" && <StatsPanel stats={stats} hideHeading />}
+          {id === tab && id === "stats" && stats && <StatsPanel stats={stats} hideHeading />}
         </div>
       ))}
     </section>
@@ -133,18 +152,27 @@ export function ResultView({
 
 type ResultStripProps = {
   review: GameReview;
-  shareText: string;
+  /** Heads the strip in place of the daily outcome, such as a free-play headline. */
+  headline?: string;
+  /** What the screen around the board adds before Visa resultat, such as sharing. */
+  actions?: ReactNode;
   onOpen: () => void;
   openButtonRef?: Ref<HTMLButtonElement>;
 };
 
-/** The result view collapsed to one row over the board: the outcome, sharing and Visa resultat. */
-export function ResultStrip({ review, shareText, onOpen, openButtonRef }: ResultStripProps) {
+/** The result view collapsed to one row over the board: the outcome, the actions and Visa resultat. */
+export function ResultStrip({
+  review,
+  headline,
+  actions,
+  onOpen,
+  openButtonRef,
+}: ResultStripProps) {
   return (
     <div className="result-strip">
-      <p className="result-outcome">{resultOutcome(review)}</p>
+      <p className="result-outcome">{headline ?? resultOutcome(review)}</p>
       <div className="result-actions">
-        <ShareButton text={shareText} />
+        {actions}
         <button ref={openButtonRef} type="button" className="result-reopen" onClick={onOpen}>
           Visa resultat <span aria-hidden="true">›</span>
         </button>
@@ -162,10 +190,11 @@ const RESULT_TABS = [
 ] as const;
 
 type ResultTab = (typeof RESULT_TABS)[number]["id"];
+type ResultTabList = readonly (typeof RESULT_TABS)[number][];
 
-function readTab(storage: KeyValueStorage): ResultTab {
+function readTab(storage: KeyValueStorage, tabs: ResultTabList): ResultTab {
   const stored = readJson(storage, TAB_KEY);
-  return RESULT_TABS.find(({ id }) => id === stored)?.id ?? "mine";
+  return tabs.find(({ id }) => id === stored)?.id ?? "mine";
 }
 
 const tabId = (tab: ResultTab) => `result-tab-${tab}`;
@@ -173,27 +202,29 @@ const panelId = (tab: ResultTab) => `result-panel-${tab}`;
 
 /** The tab row, following the WAI-ARIA tabs pattern: arrow keys, Home and End move between tabs. */
 function ResultTabs({
+  tabs,
   selected,
   onSelect,
 }: {
+  tabs: ResultTabList;
   selected: ResultTab;
   onSelect: (tab: ResultTab) => void;
 }) {
   const list = useRef<HTMLDivElement>(null);
   const moveTo = (index: number) => {
-    const count = RESULT_TABS.length;
-    const target = RESULT_TABS[(index + count) % count];
+    const count = tabs.length;
+    const target = tabs[(index + count) % count];
     if (!target) return;
     onSelect(target.id);
     list.current?.querySelector<HTMLElement>(`#${tabId(target.id)}`)?.focus();
   };
   const onKeyDown = (event: KeyboardEvent) => {
-    const current = RESULT_TABS.findIndex(({ id }) => id === selected);
+    const current = tabs.findIndex(({ id }) => id === selected);
     const next = {
       ArrowRight: current + 1,
       ArrowLeft: current - 1,
       Home: 0,
-      End: RESULT_TABS.length - 1,
+      End: tabs.length - 1,
     }[event.key];
     if (next === undefined) return;
     event.preventDefault();
@@ -208,7 +239,7 @@ function ResultTabs({
       className="result-tabs"
       onKeyDown={onKeyDown}
     >
-      {RESULT_TABS.map(({ id, name }) => (
+      {tabs.map(({ id, name }) => (
         <button
           key={id}
           type="button"
@@ -244,13 +275,13 @@ function RoutePanel({ graph, game, review, route, label, frame }: RoutePanelProp
     <>
       <SatelliteMap
         graph={graph}
-        puzzle={game.puzzle}
+        trip={game.trip}
         cards={review.cards}
         route={mapRoute}
         allOutlines
       />
       <RouteLine
-        stops={routeStops(game.puzzle, route, guessed)}
+        stops={routeStops(game.trip, route, guessed)}
         label={label}
         nameOf={(code) => kommunName(graph, code)}
       />
@@ -313,7 +344,8 @@ function RouteLine({ stops, label, nameOf }: RouteLineProps) {
   );
 }
 
-function Countdown({ from }: { from: Date }) {
+/** The time left until the next daily trip, ticking every second from `from`. */
+export function Countdown({ from }: { from: Date }) {
   const [offset] = useState(() => from.getTime() - Date.now());
   const [now, setNow] = useState(from);
   useEffect(() => {

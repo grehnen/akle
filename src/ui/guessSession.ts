@@ -1,11 +1,11 @@
-import { type Game, reviewGame, submitGuess } from "../engine/game";
+import { type Game, reviewGame, submitGuess, type Trip } from "../engine/game";
 import { takeHint } from "../engine/hints";
 import { foldKommunName, normalizeKommunName, resolveKommunName } from "../engine/kommunNames";
 import { type GraphVersion, type KommunCode, kommunName } from "../graph/graphVersion";
 import { guessAnnouncement, hintAnnouncement, rejectionMessage } from "./messages";
 
 /** Why a suggestion can't be picked, shown as its tag. */
-export type SuggestionTag = "redan gissad" | "start" | "mål";
+export type SuggestionTag = "redan gissad" | "start" | "mål" | "samma" | "granne";
 
 export type Suggestion = {
   code: KommunCode;
@@ -19,8 +19,8 @@ const MAX_SUGGESTIONS = 8;
  * The play screen's input state: the game, the typed text, the arrow highlight, the toast and
  * what the live region last announced.
  */
-export type GuessSession = {
-  game: Game;
+export type GuessSession<T extends Trip = Trip> = {
+  game: Game<T>;
   text: string;
   highlighted?: KommunCode;
   toast?: string;
@@ -53,11 +53,11 @@ export function arrowDirection(
  * The two-step guess input: picking a suggestion only fills the field, and only an exact
  * match is submitted. Rejected guesses show a toast and are not counted.
  */
-export function applyGuessInput(
+export function applyGuessInput<T extends Trip>(
   graph: GraphVersion,
-  session: GuessSession,
+  session: GuessSession<T>,
   event: GuessInputEvent,
-): GuessSession {
+): GuessSession<T> {
   switch (event.type) {
     case "type":
       return { ...session, text: event.text, highlighted: undefined };
@@ -74,7 +74,10 @@ export function applyGuessInput(
   }
 }
 
-function pressEnter(graph: GraphVersion, session: GuessSession): GuessSession {
+function pressEnter<T extends Trip>(
+  graph: GraphVersion,
+  session: GuessSession<T>,
+): GuessSession<T> {
   const options = pickable(graph, session);
   const highlighted = options.find((s) => s.code === session.highlighted);
   if (highlighted) return fill(session, highlighted);
@@ -97,11 +100,11 @@ export function enterTarget(graph: GraphVersion, session: GuessSession): KommunC
   return options[0]?.code;
 }
 
-function moveHighlight(
+function moveHighlight<T extends Trip>(
   graph: GraphVersion,
-  session: GuessSession,
+  session: GuessSession<T>,
   direction: "up" | "down",
-): GuessSession {
+): GuessSession<T> {
   const options = pickable(graph, session);
   if (options.length === 0) return session;
   const current = options.findIndex((s) => s.code === enterTarget(graph, session));
@@ -115,7 +118,7 @@ function moveHighlight(
   return { ...session, highlighted: options[next]?.code };
 }
 
-function fill(session: GuessSession, suggestion: Suggestion): GuessSession {
+function fill<T extends Trip>(session: GuessSession<T>, suggestion: Suggestion): GuessSession<T> {
   return { ...session, text: suggestion.name, highlighted: undefined };
 }
 
@@ -123,7 +126,7 @@ function pickable(graph: GraphVersion, session: GuessSession): Suggestion[] {
   return suggestKommuner(graph, session.game, session.text).filter((s) => !s.disabled);
 }
 
-function submit(graph: GraphVersion, session: GuessSession): GuessSession {
+function submit<T extends Trip>(graph: GraphVersion, session: GuessSession<T>): GuessSession<T> {
   if (session.text.trim() === "") return session;
   const result = submitGuess(graph, session.game, session.text);
   if (result.kind === "accepted") {
@@ -144,7 +147,10 @@ function submit(graph: GraphVersion, session: GuessSession): GuessSession {
 }
 
 /** The Ledtråd button: takes the next hint, if any is left, and announces it. */
-export function takeSessionHint(graph: GraphVersion, session: GuessSession): GuessSession {
+export function takeSessionHint<T extends Trip>(
+  graph: GraphVersion,
+  session: GuessSession<T>,
+): GuessSession<T> {
   const game = takeHint(graph, session.game);
   if (game === session.game) return session;
   return { ...session, game, announcement: hintAnnouncement(game.hints?.taken ?? 0) };
@@ -152,6 +158,18 @@ export function takeSessionHint(graph: GraphVersion, session: GuessSession): Gue
 
 /** Autocomplete for the guess input: fuzzysort-style subsequence matching over folded names. */
 export function suggestKommuner(graph: GraphVersion, game: Game, text: string): Suggestion[] {
+  return rankKommuner(graph, text, (code) => disabledTag(game, code));
+}
+
+/**
+ * The kommuner whose names best match `text`, as suggestions tagged by `tagOf`: fuzzysort-style
+ * subsequence matching over folded names, a prefix first.
+ */
+export function rankKommuner(
+  graph: GraphVersion,
+  text: string,
+  tagOf: (code: KommunCode) => SuggestionTag | undefined,
+): Suggestion[] {
   const folded = foldKommunName(text);
   if (folded === "") return [];
   const literal = normalizeKommunName(text);
@@ -161,7 +179,7 @@ export function suggestKommuner(graph: GraphVersion, game: Game, text: string): 
     const score = subsequenceScore(foldKommunName(kommun.name), folded);
     if (score === undefined) continue;
     const literalBonus = normalizeKommunName(kommun.name).includes(literal) ? 1 : 0;
-    const disabled = disabledTag(game, kommun.code);
+    const disabled = tagOf(kommun.code);
     scored.push({
       suggestion: { code: kommun.code, name: kommun.name, ...(disabled && { disabled }) },
       score: score + literalBonus,
@@ -175,8 +193,8 @@ export function suggestKommuner(graph: GraphVersion, game: Game, text: string): 
 }
 
 function disabledTag(game: Game, code: KommunCode): SuggestionTag | undefined {
-  if (code === game.puzzle.start) return "start";
-  if (code === game.puzzle.destination) return "mål";
+  if (code === game.trip.start) return "start";
+  if (code === game.trip.destination) return "mål";
   if (game.guesses.includes(code)) return "redan gissad";
   return undefined;
 }

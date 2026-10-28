@@ -1,6 +1,6 @@
 # Åkle
 
-Travel across Sweden one kommun at a time. A new puzzle every day at **[akle.grehn.net](https://akle.grehn.net)**.
+Travel across Sweden one kommun at a time. A new trip every day at **[akle.grehn.net](https://akle.grehn.net)**.
 
 ![A game of Åkle in progress, travelling from Östhammar to Linköping: a satellite map of Sweden with the start kommun in yellow, the destination in blue, connected guesses in green, and guesses not yet connected in grey](docs/images/screenshot.png)
 
@@ -19,7 +19,7 @@ How many guesses you get depends on how long the shortest route is. Finish with 
 
 Stuck? There are three hints (_ledtrådar_): the outline of the next kommun on a shortest route, the outlines of every kommun, and then their initials. Hints don't cost guesses, but a game with hints can't be Perfekt.
 
-Win on consecutive days to build a streak, and share a spoiler-free result with your friends. A new puzzle starts at midnight, your local time.
+Win on consecutive days to build a streak, and share a spoiler-free result with your friends. A new trip starts at midnight, your local time.
 
 ## What counts as a neighbor?
 
@@ -36,7 +36,7 @@ Every borderline case was checked by hand. Think two kommuner should (or shouldn
 
 ## Behind the scenes
 
-- Each day's puzzle is picked in advance from a reviewed schedule, so it's the same for everyone and never changes.
+- Each day's trip is picked in advance from a reviewed schedule, so it's the same for everyone and never changes.
 - The kommun borders come from [OpenStreetMap](https://www.openstreetmap.org/), and the neighbors are computed from them.
 - No account, no tracking: your stats and streak stay in your browser.
 

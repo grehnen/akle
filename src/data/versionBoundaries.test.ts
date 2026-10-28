@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { loadDailyPuzzle } from "../daily/loadDailyPuzzle";
+import { loadDailyTrip } from "../daily/loadDailyTrip";
 import { committedDataSource } from "./committedDataSource";
 
 /** Records which graph versions the app fetches. */
@@ -17,44 +17,44 @@ function recordingSource() {
 
 const config = await committedDataSource.scheduleConfig();
 const versions = [...(await committedDataSource.graphVersions())].sort(
-  (a, b) => a.startsAtPuzzle - b.startsAtPuzzle,
+  (a, b) => a.startsAtTrip - b.startsAtTrip,
 );
 const boundaries = versions.slice(1).map((version, index) => ({
   before: versions[index].id,
   after: version.id,
-  puzzle: version.startsAtPuzzle,
+  trip: version.startsAtTrip,
 }));
 
-/** Local noon on the day of a puzzle number. */
-function dayOf(puzzleNumber: number): Date {
+/** Local noon on the day of a trip number. */
+function dayOf(tripNumber: number): Date {
   const [year, month, day] = config.epoch.split("-").map(Number);
-  return new Date(year, month - 1, day + puzzleNumber - 1, 12);
+  return new Date(year, month - 1, day + tripNumber - 1, 12);
 }
 
 describe("graph version boundaries in the committed data", () => {
-  test("puzzle #1 loads the first graph version", async () => {
+  test("trip #1 loads the first graph version", async () => {
     const { source, fetched } = recordingSource();
-    const daily = await loadDailyPuzzle(source, dayOf(1));
-    expect(daily.kind === "puzzle" && daily.puzzle.number).toBe(1);
+    const daily = await loadDailyTrip(source, dayOf(1));
+    expect(daily.kind === "trip" && daily.trip.number).toBe(1);
     expect(fetched).toEqual([versions[0].id]);
   });
 
   test.skipIf(boundaries.length === 0).each(boundaries)(
-    "puzzle #$puzzle loads $after and the puzzle before it loads $before",
-    async ({ before, after, puzzle }) => {
-      for (const [puzzleNumber, expected] of [
-        [puzzle - 1, before],
-        [puzzle, after],
+    "trip #$trip loads $after and the trip before it loads $before",
+    async ({ before, after, trip }) => {
+      for (const [tripNumber, expected] of [
+        [trip - 1, before],
+        [trip, after],
       ] as const) {
         const { source, fetched } = recordingSource();
-        const daily = await loadDailyPuzzle(source, dayOf(puzzleNumber));
-        if (daily.kind !== "puzzle") {
+        const daily = await loadDailyTrip(source, dayOf(tripNumber));
+        if (daily.kind !== "trip") {
           throw new Error(
-            `Puzzle #${puzzleNumber} is not in the schedule; run bun run schedule so it covers every version's start`,
+            `Trip #${tripNumber} is not in the schedule; run bun run schedule so it covers every version's start`,
           );
         }
-        expect({ puzzle: daily.puzzle.number, graph: daily.graph.id, fetched }).toEqual({
-          puzzle: puzzleNumber,
+        expect({ trip: daily.trip.number, graph: daily.graph.id, fetched }).toEqual({
+          trip: tripNumber,
           graph: expected,
           fetched: [expected],
         });

@@ -5,7 +5,7 @@ import { graphVersionFileContents } from "./graphVersionWriter";
 describe("readBuildEvidence", () => {
   test("reads back what the graph build wrote", () => {
     const files = graphVersionFileContents({
-      version: { id: "osm-test", startsAtPuzzle: 3 },
+      version: { id: "osm-test", startsAtTrip: 3 },
       kommuner: [
         { code: "0125", name: "Ekerö" },
         { code: "0180", name: "Stockholm" },

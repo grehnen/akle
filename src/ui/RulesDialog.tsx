@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { LOSS_SCORE_EXPLANATION, SCORE_EXPLANATION, TIME_TIE_BREAK_EXPLANATION } from "./messages";
 import { Modal } from "./Modal";
 import "./RulesDialog.css";
 
@@ -41,7 +42,7 @@ export function RulesDialog({ onClose }: RulesDialogProps) {
           </p>
           <p>
             Vinn flera dagar i rad för att bygga en svit, och dela ett resultat utan spoilers med
-            dina vänner. Ett nytt pussel börjar vid midnatt, din lokala tid.
+            dina vänner. En ny resa börjar vid midnatt, din lokala tid.
           </p>
         </RulesSection>
         <RulesSection title="Ledtrådar">
@@ -76,6 +77,11 @@ export function RulesDialog({ onClose }: RulesDialogProps) {
             Varje gränsfall har kontrollerats för hand. Tycker du att två kommuner borde (eller inte
             borde) vara grannar? Använd länken <em>Rapportera fel</em> i spelet.
           </p>
+        </RulesSection>
+        <RulesSection title="Poäng i fri resa">
+          <p>{SCORE_EXPLANATION}</p>
+          <p>{LOSS_SCORE_EXPLANATION}</p>
+          <p>{TIME_TIE_BREAK_EXPLANATION}</p>
         </RulesSection>
       </div>
       <p className="rules-source">

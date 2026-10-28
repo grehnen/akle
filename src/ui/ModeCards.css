@@ -1,0 +1,93 @@
+/*
+ * The cards stack at their natural heights on narrow screens and sit two by two, all of one
+ * height, on wide ones.
+ */
+.free-play-modes {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+  text-align: left;
+}
+
+@media (min-width: 36rem) {
+  .free-play-modes {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr 1fr;
+  }
+}
+
+.free-play-modes legend {
+  float: left;
+  grid-column: 1 / -1;
+  width: 100%;
+  margin-bottom: 0.25rem;
+  padding: 0;
+}
+
+.free-play-mode {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--rule);
+  cursor: pointer;
+}
+
+/* The radio itself stays for keyboard and screen readers; the card shows its state. */
+.free-play-mode input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.free-play-mode:has(input[type="radio"]:checked) {
+  box-shadow: inset 0 0 0 2px var(--start);
+}
+
+.free-play-mode:has(input[type="radio"]:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.free-play-mode:has(input[type="radio"]:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.free-play-mode-name {
+  font-weight: 700;
+}
+
+.free-play-mode-description {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.free-play-thinking-time {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.free-play-thinking-time input {
+  inline-size: 100%;
+  margin: 0;
+  accent-color: var(--start);
+}
+
+/* Wide enough for "60 s", so the slider keeps its width as the seconds go from one digit to two. */
+.free-play-thinking-time output {
+  min-inline-size: 4ch;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

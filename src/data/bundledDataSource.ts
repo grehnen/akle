@@ -1,4 +1,5 @@
-import type { DailyPuzzleSource } from "../daily/loadDailyPuzzle";
+import type { DailyTripSource } from "../daily/loadDailyTrip";
+import { exclavePartsFile } from "../graph/exclaveParts";
 import {
   graphVersionDirectory,
   parseGraphVersionHeader,
@@ -32,6 +33,11 @@ const shapeFiles: LazyText = import.meta.glob<string>("/data/graphs/*/shapes.geo
   import: "default",
 });
 
+const exclaveFiles: LazyText = import.meta.glob<string>("/data/exclaves/*.json", {
+  query: "?raw",
+  import: "default",
+});
+
 const graphVersionFiles: LazyText = {
   ...Object.fromEntries(
     Object.entries(versionFiles).map(([path, text]) => [path, async () => text]),
@@ -48,7 +54,7 @@ function loadFile(path: string): Promise<string> {
 }
 
 /** Reads the data committed under `data/`, bundled by Vite and fetched on demand. */
-export const bundledDataSource: DailyPuzzleSource = {
+export const bundledDataSource: DailyTripSource = {
   scheduleConfig: async () => parseScheduleConfig(scheduleConfig),
   scheduleChunk: async (chunk) => {
     const load = scheduleChunks[`/data/schedule/${scheduleChunkFileName(chunk)}`];
@@ -56,6 +62,12 @@ export const bundledDataSource: DailyPuzzleSource = {
   },
   graphVersions: async () =>
     Object.values(versionFiles).map((text) => parseGraphVersionHeader(JSON.parse(text))),
-  graphVersionFiles: async (id) =>
-    readGraphVersionFiles(`/data/${graphVersionDirectory(id)}`, loadFile),
+  graphVersionFiles: async (id) => {
+    const loadExclaves = exclaveFiles[`/data/${exclavePartsFile(id)}`];
+    const [files, exclaves] = await Promise.all([
+      readGraphVersionFiles(`/data/${graphVersionDirectory(id)}`, loadFile),
+      loadExclaves?.(),
+    ]);
+    return exclaves === undefined ? files : { ...files, exclaves: JSON.parse(exclaves) };
+  },
 };

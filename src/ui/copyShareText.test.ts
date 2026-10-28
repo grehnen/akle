@@ -6,16 +6,25 @@ describe("copying the share text", () => {
     const written: string[] = [];
     const clipboard = { writeText: async (text: string) => void written.push(text) };
 
-    expect(await copyShareText(clipboard, "#åkle #1 +0 (Perfekt)")).toBe("Kopierat!");
+    expect(await copyShareText(clipboard, "#åkle #1 +0 (Perfekt)")).toEqual({
+      copied: true,
+      message: "Kopierat!",
+    });
     expect(written).toEqual(["#åkle #1 +0 (Perfekt)"]);
   });
 
   test("says so when the clipboard refuses", async () => {
     const clipboard = { writeText: () => Promise.reject(new Error("denied")) };
-    expect(await copyShareText(clipboard, "text")).toBe("Kunde inte kopiera");
+    expect(await copyShareText(clipboard, "text")).toEqual({
+      copied: false,
+      message: "Kunde inte kopiera",
+    });
   });
 
   test("says so when there is no clipboard", async () => {
-    expect(await copyShareText(undefined, "text")).toBe("Kunde inte kopiera");
+    expect(await copyShareText(undefined, "text")).toEqual({
+      copied: false,
+      message: "Kunde inte kopiera",
+    });
   });
 });

@@ -1,4 +1,4 @@
-import type { GuessCard, Puzzle } from "../engine/game";
+import type { GuessCard, Trip } from "../engine/game";
 import { type GraphVersion, type KommunCode, kommunName } from "../graph/graphVersion";
 
 /**
@@ -8,7 +8,7 @@ import { type GraphVersion, type KommunCode, kommunName } from "../graph/graphVe
  */
 export function mapDescription(
   graph: GraphVersion,
-  puzzle: Pick<Puzzle, "start" | "destination">,
+  trip: Pick<Trip, "start" | "destination">,
   cards: readonly Pick<GuessCard, "code" | "connected">[],
   hintOutlines: readonly KommunCode[] = [],
   { allOutlines = false }: { allOutlines?: boolean } = {},
@@ -18,7 +18,7 @@ export function mapDescription(
       .filter((card) => card.connected === connected)
       .map((card) => kommunName(graph, card.code))
       .join(", ") || "inga";
-  const shown = new Set([puzzle.start, puzzle.destination, ...cards.map((card) => card.code)]);
+  const shown = new Set([trip.start, trip.destination, ...cards.map((card) => card.code)]);
   const outlines = hintOutlines.filter((code) => !shown.has(code)).length;
   const outlineText = allOutlines
     ? "Alla kommuners konturer visas."
@@ -26,8 +26,8 @@ export function mapDescription(
       ? "Inga ledtrådskonturer."
       : `${outlines} ${outlines === 1 ? "ledtrådskontur" : "ledtrådskonturer"}.`;
   return [
-    `Start (gul): ${kommunName(graph, puzzle.start)}.`,
-    `Mål (blå): ${kommunName(graph, puzzle.destination)}.`,
+    `Start (gul): ${kommunName(graph, trip.start)}.`,
+    `Mål (blå): ${kommunName(graph, trip.destination)}.`,
     `Anslutna gissningar: ${names(true)}.`,
     `Gissningar som inte är anslutna: ${names(false)}.`,
     outlineText,

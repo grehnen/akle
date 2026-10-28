@@ -1,6 +1,7 @@
-import { connectedTo, type Feedback, type GuessCard, type Puzzle } from "../engine/game";
+import { connectedTo, type Feedback, type GuessCard, type Trip } from "../engine/game";
 import { routeStops } from "../engine/routeStops";
 import type { GraphVersion, KommunCode } from "../graph/graphVersion";
+import { splitExclaves } from "./exclaves";
 
 export const START_COLOR = "#fecc02";
 export const DESTINATION_COLOR = "#006aa7";
@@ -22,13 +23,17 @@ export type DrawnKommun = {
    */
   kind: "start" | "destination" | "guess" | "missed" | "hint" | "other";
   color: string;
-  /** Unconnected guesses get a dashed outline; endpoints are always drawn solid. */
+  /**
+   * Drawn with a solid outline when true, dashed otherwise: unconnected guesses while playing and
+   * missed kommuner on the result view's route are dashed. Endpoints are always drawn solid.
+   */
   connected: boolean;
 };
 
 export type DrawnFeature = {
   type: "Feature";
-  properties: DrawnKommun;
+  /** `exclave` marks a feature holding a kommun's exclaves, which are filled but never outlined. */
+  properties: DrawnKommun & { exclave?: true };
   geometry: unknown;
 };
 
@@ -52,18 +57,18 @@ type FeatureOptions = {
  */
 export function mapFeatures(
   graph: GraphVersion,
-  puzzle: Pick<Puzzle, "start" | "destination">,
+  trip: Pick<Trip, "start" | "destination">,
   cards: readonly Pick<GuessCard, "code" | "connected">[],
   hintOutlines: readonly KommunCode[] = [],
   { allOutlines = false }: FeatureOptions = {},
 ): DrawnFeatures {
-  const shown = new Set([puzzle.start, puzzle.destination, ...cards.map((card) => card.code)]);
+  const shown = new Set([trip.start, trip.destination, ...cards.map((card) => card.code)]);
   const drawn: DrawnKommun[] = [
     ...(allOutlines ? [] : hintOutlines)
       .filter((code) => !shown.has(code))
       .map((code) => ({ code, kind: "hint" as const, color: HINT_COLOR, connected: true })),
-    { code: puzzle.start, kind: "start", color: START_COLOR, connected: true },
-    { code: puzzle.destination, kind: "destination", color: DESTINATION_COLOR, connected: true },
+    { code: trip.start, kind: "start", color: START_COLOR, connected: true },
+    { code: trip.destination, kind: "destination", color: DESTINATION_COLOR, connected: true },
     ...cards.map((card) => ({
       code: card.code,
       kind: "guess" as const,
@@ -75,13 +80,13 @@ export function mapFeatures(
 }
 
 /**
- * The result view's map: guesses off the route underneath, drawn like unconnected guesses, then the endpoints, then the
+ * The result view's map: guesses off the route underneath, grey with a solid outline, then the endpoints, then the
  * route's kommuner, guessed or missed, over the outlines of every other kommun when
  * `allOutlines` is set.
  */
 export function routeFeatures(
   graph: GraphVersion,
-  puzzle: Pick<Puzzle, "start" | "destination">,
+  trip: Pick<Trip, "start" | "destination">,
   route: readonly KommunCode[],
   guesses: ReadonlySet<KommunCode>,
   { allOutlines = false }: FeatureOptions = {},
@@ -94,11 +99,11 @@ export function routeFeatures(
         code,
         kind: "guess" as const,
         color: UNCONNECTED_COLOR,
-        connected: false,
+        connected: true,
       })),
-    { code: puzzle.start, kind: "start", color: START_COLOR, connected: true },
-    { code: puzzle.destination, kind: "destination", color: DESTINATION_COLOR, connected: true },
-    ...routeStops(puzzle, route, guesses).flatMap(({ code, kind }): DrawnKommun[] => {
+    { code: trip.start, kind: "start", color: START_COLOR, connected: true },
+    { code: trip.destination, kind: "destination", color: DESTINATION_COLOR, connected: true },
+    ...routeStops(trip, route, guesses).flatMap(({ code, kind }): DrawnKommun[] => {
       if (kind === "guessed")
         return [{ code, kind: "guess", color: CONNECTED_COLOR, connected: true }];
       if (kind === "missed")
@@ -126,7 +131,16 @@ function withShapes(graph: GraphVersion, drawn: readonly DrawnKommun[]): DrawnFe
   const features: DrawnFeature[] = [];
   for (const kommun of drawn) {
     const geometry = shapes.get(kommun.code);
-    if (geometry !== undefined) features.push({ type: "Feature", properties: kommun, geometry });
+    if (geometry === undefined) continue;
+    const { main, exclaves } = splitExclaves(geometry, graph.exclaveParts.get(kommun.code));
+    features.push({ type: "Feature", properties: kommun, geometry: main });
+    if (exclaves !== undefined) {
+      features.push({
+        type: "Feature",
+        properties: { ...kommun, exclave: true },
+        geometry: exclaves,
+      });
+    }
   }
   return { type: "FeatureCollection", features };
 }
@@ -141,14 +155,10 @@ const FRAMED_FEEDBACK: ReadonlySet<Feedback> = new Set(["✅", "🟩", "🟧"]);
  */
 export function defaultBounds(
   graph: GraphVersion,
-  puzzle: Pick<Puzzle, "start" | "destination">,
+  trip: Pick<Trip, "start" | "destination">,
   cards: readonly FramedCard[],
 ): Bounds | undefined {
-  return routeBounds(graph, [
-    puzzle.start,
-    puzzle.destination,
-    ...framedGuesses(graph, puzzle, cards),
-  ]);
+  return routeBounds(graph, [trip.start, trip.destination, ...framedGuesses(graph, trip, cards)]);
 }
 
 /**
@@ -157,26 +167,44 @@ export function defaultBounds(
  */
 export function guessViewBounds(
   graph: GraphVersion,
-  puzzle: Pick<Puzzle, "start" | "destination">,
+  trip: Pick<Trip, "start" | "destination">,
   cards: readonly FramedCard[],
 ): Bounds | undefined {
   const latest = cards.at(-1)?.code;
   return routeBounds(graph, [
-    puzzle.start,
-    puzzle.destination,
-    ...framedGuesses(graph, puzzle, cards),
+    trip.start,
+    trip.destination,
+    ...framedGuesses(graph, trip, cards),
     ...(latest === undefined ? [] : [latest]),
+  ]);
+}
+
+/**
+ * The box the map is fitted to after a hint outlines a kommun: the default bounds, plus every
+ * hinted kommun. A far-off guess outside the default bounds is left out, so the outlines show.
+ */
+export function hintViewBounds(
+  graph: GraphVersion,
+  trip: Pick<Trip, "start" | "destination">,
+  cards: readonly FramedCard[],
+  hintOutlines: readonly KommunCode[],
+): Bounds | undefined {
+  return routeBounds(graph, [
+    trip.start,
+    trip.destination,
+    ...framedGuesses(graph, trip, cards),
+    ...hintOutlines,
   ]);
 }
 
 function framedGuesses(
   graph: GraphVersion,
-  puzzle: Pick<Puzzle, "start" | "destination">,
+  trip: Pick<Trip, "start" | "destination">,
   cards: readonly FramedCard[],
 ): KommunCode[] {
   const toDestination = connectedTo(
     graph,
-    puzzle.destination,
+    trip.destination,
     cards.map((card) => card.code),
   );
   return cards

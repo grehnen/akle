@@ -7,8 +7,8 @@ export type CommittedGraphVersion = GraphVersionHeader & {
 
 /**
  * Why the current graph versions break ADR 0004's freeze, compared with the previous ones: a
- * version a played puzzle has used must stay byte for byte as it was, and no version may start
- * at a puzzle that is already played. An empty list means the change is allowed.
+ * version a played trip has used must stay byte for byte as it was, and no version may start
+ * at a trip that is already played. An empty list means the change is allowed.
  */
 export function frozenGraphVersionViolations(input: {
   previous: readonly CommittedGraphVersion[];
@@ -18,15 +18,15 @@ export function frozenGraphVersionViolations(input: {
   const { previous, current, playedThrough } = input;
   const violations: string[] = [];
 
-  for (const frozen of previous.filter((version) => version.startsAtPuzzle <= playedThrough)) {
-    const prefix = `Graph version ${frozen.id} is frozen (played since #${frozen.startsAtPuzzle})`;
+  for (const frozen of previous.filter((version) => version.startsAtTrip <= playedThrough)) {
+    const prefix = `Graph version ${frozen.id} is frozen (played since #${frozen.startsAtTrip})`;
     const now = current.find((version) => version.id === frozen.id);
     if (now === undefined) {
       violations.push(`${prefix}: removed`);
       continue;
     }
-    if (now.startsAtPuzzle !== frozen.startsAtPuzzle) {
-      violations.push(`${prefix}: starting puzzle moved to #${now.startsAtPuzzle}`);
+    if (now.startsAtTrip !== frozen.startsAtTrip) {
+      violations.push(`${prefix}: starting trip moved to #${now.startsAtTrip}`);
     }
     for (const [file, hash] of Object.entries(frozen.files)) {
       if (!(file in now.files)) violations.push(`${prefix}: ${file} removed`);
@@ -37,11 +37,11 @@ export function frozenGraphVersionViolations(input: {
     }
   }
 
-  for (const version of current.filter((candidate) => candidate.startsAtPuzzle <= playedThrough)) {
+  for (const version of current.filter((candidate) => candidate.startsAtTrip <= playedThrough)) {
     const before = previous.find((earlier) => earlier.id === version.id);
-    if (before === undefined || before.startsAtPuzzle > playedThrough) {
+    if (before === undefined || before.startsAtTrip > playedThrough) {
       violations.push(
-        `Graph version ${version.id} starts at #${version.startsAtPuzzle}, but puzzles up to #${playedThrough} are already played`,
+        `Graph version ${version.id} starts at #${version.startsAtTrip}, but trips up to #${playedThrough} are already played`,
       );
     }
   }

@@ -1,0 +1,69 @@
+.trip-modal .trip-modal-heading {
+  margin: 0;
+  padding-right: 2.5rem;
+  text-align: left;
+  font-size: 1.25rem;
+}
+
+/* The mode cards two by two at every width; on a phone each row takes its cards' height. */
+.trip-modal .free-play-modes {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr 1fr;
+}
+
+@media (max-width: 36rem) {
+  .trip-modal .free-play-modes {
+    grid-template-rows: none;
+  }
+
+  .trip-modal .free-play-mode {
+    padding: 0.6rem 0.7rem;
+  }
+}
+
+.trip-modal .free-play-mode,
+.trip-modal .trip-setup-thinking-time {
+  background: var(--night);
+}
+
+/* Antal's label, set like the distance slider's. */
+.trip-modal .distance-range label {
+  display: block;
+  margin: 0 0 0.25rem;
+}
+
+.trip-modal-count-max {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.trip-modal .modal-footer button {
+  min-width: 7rem;
+}
+
+/* Start and Mål take the sheet's width, like everything else in it. */
+.trip-modal .free-play-panel {
+  align-items: stretch;
+}
+
+.trip-modal-cancel,
+.trip-modal-submit {
+  font-weight: 700;
+}
+
+.trip-modal-cancel {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.trip-modal-submit {
+  background: var(--start);
+  color: var(--night);
+}
+
+.trip-modal-submit:disabled {
+  background: var(--surface);
+  color: var(--muted);
+  cursor: default;
+}

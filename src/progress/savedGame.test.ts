@@ -6,7 +6,7 @@ import { memoryStorage } from "./storage";
 
 const graph = buildGraphVersion({
   id: "test",
-  startsAtPuzzle: 1,
+  startsAtTrip: 1,
   kommuner: ["S", "A", "B", "D"].map((code) => ({ code, name: `Kommun ${code}` })),
   links: [
     { between: ["S", "A"], kind: "land" },
@@ -21,13 +21,16 @@ const tomorrow = { number: 8, start: "S", destination: "D" };
 describe("the saved game", () => {
   test("a reload restores today's guesses", () => {
     const storage = memoryStorage();
-    saveGame(storage, { puzzle: today, guesses: ["A", "B"] });
-    expect(loadSavedGame(storage, graph, today)).toEqual({ puzzle: today, guesses: ["A", "B"] });
+    saveGame(storage, { trip: today, guesses: ["A", "B"] });
+    expect(loadSavedGame(storage, graph, today)).toEqual({
+      ...newGame(today),
+      guesses: ["A", "B"],
+    });
   });
 
-  test("a new puzzle number starts a fresh game", () => {
+  test("a new trip number starts a fresh game", () => {
     const storage = memoryStorage();
-    saveGame(storage, { puzzle: today, guesses: ["A"] });
+    saveGame(storage, { trip: today, guesses: ["A"] });
     expect(loadSavedGame(storage, graph, tomorrow)).toEqual(newGame(tomorrow));
   });
 
@@ -45,14 +48,14 @@ describe("the saved game", () => {
     const storage = memoryStorage();
     storage.setItem(
       "akle:game",
-      JSON.stringify({ puzzleNumber: 7, guesses: ["A", "nope", "S", "A", 3, "B"] }),
+      JSON.stringify({ tripNumber: 7, guesses: ["A", "nope", "S", "A", 3, "B"] }),
     );
     expect(loadSavedGame(storage, graph, today).guesses).toEqual(["A", "B"]);
   });
 
   test("a reload keeps the hints taken and hint 1's kommun", () => {
     const storage = memoryStorage();
-    const game = { puzzle: today, guesses: ["B"], hints: { taken: 2, nextKommun: "A" } };
+    const game = { ...newGame(today), guesses: ["B"], hints: { taken: 2, nextKommun: "A" } };
     saveGame(storage, game);
     expect(loadSavedGame(storage, graph, today)).toEqual(game);
   });
@@ -65,7 +68,7 @@ describe("the saved game", () => {
       "3",
     ]) {
       const storage = memoryStorage();
-      storage.setItem("akle:game", JSON.stringify({ puzzleNumber: 7, guesses: ["B"], hints }));
+      storage.setItem("akle:game", JSON.stringify({ tripNumber: 7, guesses: ["B"], hints }));
       expect(loadSavedGame(storage, graph, today).hints).toBeUndefined();
     }
   });

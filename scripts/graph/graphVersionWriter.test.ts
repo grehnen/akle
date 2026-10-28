@@ -3,7 +3,7 @@ import { parseGraphVersionFiles } from "../../src/graph/graphVersionFiles";
 import { graphVersionFileContents } from "./graphVersionWriter";
 
 const contents = graphVersionFileContents({
-  version: { id: "osm-test", startsAtPuzzle: 3, source: { extract: "https://example.org/x.pbf" } },
+  version: { id: "osm-test", startsAtTrip: 3, source: { extract: "https://example.org/x.pbf" } },
   kommuner: [
     { code: "0180", name: "Stockholm" },
     { code: "0114", name: "Upplands Väsby" },
@@ -27,7 +27,7 @@ describe("graphVersionFileContents", () => {
       shapes: JSON.parse(contents["shapes.geojson"]),
     });
     expect(graph.id).toBe("osm-test");
-    expect(graph.startsAtPuzzle).toBe(3);
+    expect(graph.startsAtTrip).toBe(3);
     expect([...graph.neighbors.get("0114")!]).toEqual(["0180"]);
   });
 
@@ -43,7 +43,7 @@ describe("graphVersionFileContents", () => {
 
   test("records the OSM way ids of the detected fixed links and why a link doesn't qualify", () => {
     const withFixedLinks = graphVersionFileContents({
-      version: { id: "osm-test", startsAtPuzzle: 3 },
+      version: { id: "osm-test", startsAtTrip: 3 },
       kommuner: [
         { code: "0180", name: "Stockholm" },
         { code: "0186", name: "Lidingö" },
@@ -71,7 +71,7 @@ describe("graphVersionFileContents", () => {
 
   test("writes the evidence the review of flagged pairs reads", () => {
     const withEvidence = graphVersionFileContents({
-      version: { id: "osm-test", startsAtPuzzle: 3 },
+      version: { id: "osm-test", startsAtTrip: 3 },
       kommuner: [],
       links: [],
       shapes: { type: "FeatureCollection", features: [] },

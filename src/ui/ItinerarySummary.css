@@ -1,0 +1,134 @@
+.itinerary-summary {
+  width: 100%;
+  max-width: 30rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.itinerary-summary h2,
+.itinerary-summary p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.itinerary-summary-subtitle {
+  color: var(--muted);
+}
+
+.itinerary-summary-trips {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: summary-trip;
+  text-align: left;
+}
+
+.itinerary-summary-trip {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--rule);
+  counter-increment: summary-trip;
+}
+
+.itinerary-summary-pair {
+  font-weight: 700;
+}
+
+.itinerary-summary-pair::before {
+  content: counter(summary-trip) ". ";
+  color: var(--muted);
+}
+
+.itinerary-summary-facts {
+  grid-column: 1;
+  color: var(--muted);
+}
+
+/* Whole facts wrap, never their parts; a line breaks after a separator, not before it. */
+.itinerary-summary-facts > span {
+  white-space: nowrap;
+}
+
+/* The outcome, which can be long, may break after a comma inside its brackets, never elsewhere. */
+.itinerary-summary-facts > .itinerary-summary-outcome {
+  white-space: normal;
+}
+
+.itinerary-summary-outcome .score-label-piece {
+  white-space: nowrap;
+}
+
+.itinerary-summary-facts > span + span::before {
+  content: "\a0· ";
+  white-space: normal;
+}
+
+.itinerary-summary-score {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* The list's footer, under a heavier rule, its values in the trips' score column. */
+.itinerary-summary-totals {
+  width: 100%;
+  margin: -0.75rem 0 0;
+  border-top: 2px solid var(--muted);
+  text-align: left;
+}
+
+.itinerary-summary-trip:last-child {
+  border-bottom: 0;
+}
+
+.itinerary-summary-totals-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 0.75rem;
+  padding: 0.6rem 0 0;
+}
+
+.itinerary-summary-totals dt {
+  font-weight: 700;
+}
+
+.itinerary-summary-totals dd {
+  margin: 0;
+}
+
+.itinerary-summary-total,
+.itinerary-summary-total-time {
+  grid-column: 2;
+  grid-row: 1;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.itinerary-summary-totals-row:first-child > * {
+  font-size: 1.25rem;
+}
+
+/*
+ * Dela resultat as wide as the Vidare group under it, with room above for its toast, so the toast
+ * doesn't cover the totals.
+ */
+.itinerary-summary .share {
+  align-items: stretch;
+  width: 100%;
+  max-width: 20rem;
+  margin-top: 1.4rem;
+}
+
+/* Set apart from Dela resultat, the one main action. */
+.itinerary-summary .button-group {
+  margin-top: 0.5rem;
+}

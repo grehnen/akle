@@ -10,7 +10,7 @@ const kommuner = [
 
 /** A graph version as the build writes it: Ekerö–Stockholm is a 42 m land border. */
 const built = graphVersionFileContents({
-  version: { id: "osm-test", startsAtPuzzle: 31 },
+  version: { id: "osm-test", startsAtTrip: 31 },
   kommuner,
   links: [
     { between: ["0125", "0127"], kind: "land" },

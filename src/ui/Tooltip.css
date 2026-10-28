@@ -1,0 +1,39 @@
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+/* The score reads as text, its dotted underline saying it explains itself. */
+.tooltip-trigger {
+  min-height: 0;
+  padding: 0;
+  border-radius: 2px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  white-space: inherit;
+  text-decoration: underline dotted;
+  text-decoration-color: var(--muted);
+  text-underline-offset: 0.2em;
+  cursor: help;
+}
+
+.tooltip-bubble {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 0.4rem);
+  left: 50%;
+  width: max-content;
+  max-width: min(18rem, calc(100vw - 2rem));
+  padding: 0.5rem 0.7rem;
+  border-radius: 6px;
+  background: var(--night);
+  box-shadow: 0 0 0 1px var(--rule);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+  transform: translateX(calc(-50% + var(--tooltip-shift, 0px)));
+}

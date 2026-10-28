@@ -5,12 +5,19 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { buildGraphVersion } from "../graph/graphVersion";
 import { saveGame } from "../progress/savedGame";
 import { memoryStorage } from "../progress/storage";
-import { DailyPuzzleView } from "./DailyPuzzleView";
+import { DailyTripView } from "./DailyTripView";
+import { EndpointField } from "./EndpointField";
+import { FreePlayLinkError } from "./FreePlayLinkError";
+import { FreePlayScreen } from "./FreePlayScreen";
 import { GuessInput } from "./GuessInput";
+import { ItineraryBuilder } from "./ItineraryBuilder";
+import { ItineraryScreen } from "./ItineraryScreen";
+import { ItinerarySummaryView } from "./ItinerarySummary";
+import { TripSetup } from "./TripSetup";
 
 const graph = buildGraphVersion({
   id: "test",
-  startsAtPuzzle: 1,
+  startsAtTrip: 1,
   kommuner: [
     { code: "0192", name: "Nynäshamn" },
     { code: "0181", name: "Södertälje" },
@@ -27,7 +34,7 @@ const graph = buildGraphVersion({
   ],
 });
 
-const puzzle = { number: 21, start: "0192", destination: "0488", n: 1 };
+const trip = { number: 21, start: "0192", destination: "0488", n: 1 };
 
 const dom = new JSDOM(
   '<!doctype html><html lang="sv"><head><title>Åkle</title></head><body></body></html>',
@@ -63,10 +70,10 @@ async function seriousViolations(body: ReactElement): Promise<string[]> {
 function playScreen(guesses: string[], hintsTaken = 0, sessionStorage = memoryStorage()) {
   const storage = memoryStorage();
   const hints = hintsTaken > 0 ? { taken: hintsTaken, nextKommun: "0181" } : undefined;
-  saveGame(storage, { puzzle, guesses, hints });
+  saveGame(storage, { trip, guesses, hints });
   return (
-    <DailyPuzzleView
-      daily={{ kind: "puzzle", puzzle, graph }}
+    <DailyTripView
+      daily={{ kind: "trip", trip, graph }}
       storage={storage}
       sessionStorage={sessionStorage}
       now={new Date(2026, 9, 21, 13, 5, 9)}
@@ -118,7 +125,232 @@ describe("automated accessibility check", () => {
   );
 
   test("the collapsed result over the board has no serious violations", async () => {
-    const session = sessionWith("akle:result-closed", puzzle.number);
+    const session = sessionWith("akle:result-closed", trip.number);
     expect(await seriousViolations(playScreen(["0181"], 0, session))).toEqual([]);
+  });
+
+  test("the Fri resa setup screen has no serious violations", async () => {
+    const setup = (
+      <FreePlayScreen
+        graph={graph}
+        ordinal={0}
+        storage={memoryStorage()}
+        sessionStorage={memoryStorage()}
+      />
+    );
+    expect(await seriousViolations(setup)).toEqual([]);
+  });
+
+  const tieBreakerTrip = {
+    start: "0192",
+    destination: "0488",
+    mode: { kind: "tie-breaker" },
+  } as const;
+
+  test("a tie-breaker trip behind its Starta gate has no serious violations", async () => {
+    const gate = (
+      <FreePlayScreen
+        graph={graph}
+        ordinal={0}
+        linkedTrip={tieBreakerTrip}
+        storage={memoryStorage()}
+        sessionStorage={memoryStorage()}
+      />
+    );
+    expect(await seriousViolations(gate)).toEqual([]);
+  });
+
+  test("a started tie-breaker trip with its clock has no serious violations", async () => {
+    const rules = { guessLimit: "distance", giveUp: true, keepsTime: true } as const;
+    const game = { trip: tieBreakerTrip, rules, guesses: [], startedAt: 0 };
+    const board = (
+      <FreePlayScreen
+        graph={graph}
+        ordinal={0}
+        linkedTrip={tieBreakerTrip}
+        resumed={{ game, drawn: false }}
+        storage={memoryStorage()}
+        sessionStorage={memoryStorage()}
+        clock={() => 83_000}
+      />
+    );
+    expect(await seriousViolations(board)).toEqual([]);
+  });
+
+  test("a timed trip in its warning third, after timeouts, has no serious violations", async () => {
+    const timedTrip = {
+      start: "0192",
+      destination: "0488",
+      mode: { kind: "timed", thinkingTime: 10 },
+    } as const;
+    const rules = {
+      guessLimit: "distance",
+      giveUp: true,
+      keepsTime: false,
+      thinkingTime: 10,
+    } as const;
+    const game = { trip: timedTrip, rules, guesses: [], startedAt: 0 } as const;
+    const board = (
+      <FreePlayScreen
+        graph={graph}
+        ordinal={0}
+        linkedTrip={timedTrip}
+        resumed={{ game, drawn: false }}
+        storage={memoryStorage()}
+        sessionStorage={memoryStorage()}
+        clock={() => 27_500}
+      />
+    );
+    expect(await seriousViolations(board)).toEqual([]);
+  });
+
+  const timedSetup = (shortDescriptions = false) => (
+    <TripSetup
+      graph={graph}
+      largest={2}
+      choice={{ mode: "timed", thinkingTime: 10, range: { min: 1, max: 2 } }}
+      onChange={() => {}}
+      tab="draw"
+      onTabChange={() => {}}
+      shortDescriptions={shortDescriptions}
+      pickLabel="Res"
+      onPick={() => {}}
+    />
+  );
+
+  test("a setup on Tidspress, with its betänketid row, has no serious violations", async () => {
+    expect(await seriousViolations(timedSetup())).toEqual([]);
+  });
+
+  test("two setups on one page share no id or radio group", async () => {
+    const twoSetups = (
+      <>
+        <section aria-label="Sidan">{timedSetup()}</section>
+        <section aria-label="Dialogen">{timedSetup(true)}</section>
+      </>
+    );
+    expect(await seriousViolations(twoSetups)).toEqual([]);
+
+    const sections = [...dom.window.document.querySelectorAll("section")];
+    const ids = sections.map((section) =>
+      [...section.querySelectorAll("[id]")].map((element) => element.id),
+    );
+    const radioGroups = sections.map(
+      (section) =>
+        new Set(
+          [...section.querySelectorAll("input[name]")].map((input) => input.getAttribute("name")),
+        ),
+    );
+    expect(ids[0].length).toBeGreaterThan(0);
+    expect(ids[0].filter((id) => ids[1].includes(id))).toEqual([]);
+    expect([...radioGroups[0]].filter((name) => radioGroups[1].has(name))).toEqual([]);
+  });
+
+  test("a setup's short texts tell each mode in a few words", async () => {
+    await seriousViolations(timedSetup(true));
+    const descriptions = [
+      ...dom.window.document.querySelectorAll(".free-play-mode-description"),
+    ].map((description) => description.textContent);
+    expect(descriptions).toEqual([
+      "Som dagens resa.",
+      "Gissa hur många gånger du vill.",
+      "Gissa inom betänketiden.",
+      "Snabbast vinner vid lika poäng.",
+    ]);
+  });
+
+  test.each([
+    ["naming its trip", { start: "Nynäshamn", destination: "Haninge" }],
+    ["naming no trip", undefined],
+  ])("the free-play error screen %s has no serious violations", async (_, named) => {
+    expect(await seriousViolations(<FreePlayLinkError trip={named} />)).toEqual([]);
+  });
+
+  test("the itinerary builder has no serious violations", async () => {
+    const builder = <ItineraryBuilder graph={graph} ordinal={0} onPlay={() => {}} />;
+    expect(await seriousViolations(builder)).toEqual([]);
+  });
+
+  test("the itinerary builder with its resume banner has no serious violations", async () => {
+    const banner = (
+      <a className="resume-link itinerary-resume" href="/resplan?namn=Fredag&r=x">
+        <strong className="resume-what">Oavslutad resplan</strong>{" "}
+        <span className="resume-progress">Fredag · resa 3 av 8</span>{" "}
+        <span className="resume-go">Fortsätt</span>
+      </a>
+    );
+    const builder = (
+      <ItineraryBuilder graph={graph} ordinal={0} onPlay={() => {}} banner={banner} />
+    );
+    expect(await seriousViolations(builder)).toEqual([]);
+  });
+
+  test("an itinerary's intro has no serious violations", async () => {
+    const intro = (
+      <ItineraryScreen
+        graph={graph}
+        title="Fredagsresan"
+        trips={[
+          { start: "0192", destination: "0488", mode: { kind: "standard" } },
+          { start: "0488", destination: "0192", mode: { kind: "timed", thinkingTime: 10 } },
+        ]}
+        link="/resplan?namn=Fredagsresan&r=EIYFoKAAoAUMXhQwBgdq"
+        sessionStorage={memoryStorage()}
+      />
+    );
+    expect(await seriousViolations(intro)).toEqual([]);
+  });
+
+  test("an itinerary's summary has no serious violations", async () => {
+    const row = {
+      start: "Nynäshamn",
+      destination: "Trosa",
+      hintsUsed: 1,
+      timeouts: 2,
+      score: 4,
+    };
+    const summary = (
+      <ItinerarySummaryView
+        title="Fredagsresan"
+        summary={{
+          rows: [
+            {
+              ...row,
+              mode: { kind: "timed", thinkingTime: 10 },
+              outcome: { kind: "won", extra: 1, hintsUsed: 1, timeouts: 2 },
+            },
+            {
+              ...row,
+              mode: { kind: "tie-breaker" },
+              outcome: { kind: "perfect", extra: 0 },
+              timeouts: 0,
+              score: -1,
+              time: 834,
+            },
+          ],
+          standing: { score: 3, wonTieBreakers: 1, totalTime: 834 },
+          hasTieBreaker: true,
+        }}
+        link="/resplan?namn=Fredagsresan&r=EIYFoKAAoAUMXhQwBgdq"
+      />
+    );
+    expect(await seriousViolations(summary)).toEqual([]);
+  });
+
+  test("a Start field with its suggestions open has no serious violations", async () => {
+    const field = (
+      <EndpointField
+        id="free-play-start"
+        label="Start"
+        end="start"
+        text="s"
+        suggestions={[
+          { code: "0181", name: "Södertälje" },
+          { code: "0192", name: "Nynäshamn", disabled: "granne" },
+        ]}
+        onTextChange={() => {}}
+      />
+    );
+    expect(await seriousViolations(field)).toEqual([]);
   });
 });

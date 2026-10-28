@@ -7,8 +7,8 @@ const files = {
   "neighbors.csv": "n1",
   "shapes.geojson": "s1",
 };
-const fixture: CommittedGraphVersion = { id: "fixture", startsAtPuzzle: 1, files };
-const osm: CommittedGraphVersion = { id: "osm", startsAtPuzzle: 31, files };
+const fixture: CommittedGraphVersion = { id: "fixture", startsAtTrip: 1, files };
+const osm: CommittedGraphVersion = { id: "osm", startsAtTrip: 31, files };
 
 describe("frozenGraphVersionViolations", () => {
   test("accepts unchanged versions", () => {
@@ -21,7 +21,7 @@ describe("frozenGraphVersionViolations", () => {
     ).toEqual([]);
   });
 
-  test("rejects a changed, added or removed file in a version a played puzzle has used", () => {
+  test("rejects a changed, added or removed file in a version a played trip has used", () => {
     const changed = {
       ...fixture,
       files: { "version.json": "v1", "kommuner.csv": "k2", "neighbors.csv": "n1", "notes.md": "x" },
@@ -39,40 +39,36 @@ describe("frozenGraphVersionViolations", () => {
     expect(
       frozenGraphVersionViolations({
         previous: [fixture, osm],
-        current: [{ ...osm, startsAtPuzzle: 35 }],
+        current: [{ ...osm, startsAtTrip: 35 }],
         playedThrough: 31,
       }),
     ).toEqual([
       "Graph version fixture is frozen (played since #1): removed",
-      "Graph version osm is frozen (played since #31): starting puzzle moved to #35",
+      "Graph version osm is frozen (played since #31): starting trip moved to #35",
     ]);
   });
 
-  test("lets a version change until its first puzzle is played", () => {
+  test("lets a version change until its first trip is played", () => {
     const rebuilt = { ...osm, files: { ...files, "neighbors.csv": "n2" } };
     expect(
       frozenGraphVersionViolations({
         previous: [fixture, osm],
-        current: [fixture, { ...rebuilt, startsAtPuzzle: 32 }],
+        current: [fixture, { ...rebuilt, startsAtTrip: 32 }],
         playedThrough: 30,
       }),
     ).toEqual([]);
   });
 
-  test("rejects a new or moved version that starts at an already played puzzle", () => {
+  test("rejects a new or moved version that starts at an already played trip", () => {
     expect(
       frozenGraphVersionViolations({
         previous: [fixture, osm],
-        current: [
-          fixture,
-          { ...osm, startsAtPuzzle: 20 },
-          { ...osm, id: "new", startsAtPuzzle: 25 },
-        ],
+        current: [fixture, { ...osm, startsAtTrip: 20 }, { ...osm, id: "new", startsAtTrip: 25 }],
         playedThrough: 30,
       }),
     ).toEqual([
-      "Graph version osm starts at #20, but puzzles up to #30 are already played",
-      "Graph version new starts at #25, but puzzles up to #30 are already played",
+      "Graph version osm starts at #20, but trips up to #30 are already played",
+      "Graph version new starts at #25, but trips up to #30 are already played",
     ]);
   });
 

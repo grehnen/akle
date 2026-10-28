@@ -45,6 +45,15 @@ describe("Åkle's _headers", () => {
     );
   });
 
+  test.each(["fri", "resplan"])("the %s page is revalidated on every load", (page) => {
+    expect(headersFor(akleRules, `https://akle.grehn.net/${page}`)["cache-control"]).toBe(
+      "no-cache",
+    );
+    expect(headersFor(akleRules, `https://akle.grehn.net/${page}.html`)["cache-control"]).toBe(
+      "no-cache",
+    );
+  });
+
   test("previews on workers.dev are noindex, production is not", () => {
     expect(headersFor(akleRules, "https://pr-21-akle.grehnen.workers.dev/")["x-robots-tag"]).toBe(
       "noindex",
@@ -58,6 +67,13 @@ describe("cacheViolations", () => {
 
   test("accepts hashed assets cached as immutable and index.html as no-cache", () => {
     expect(cacheViolations(rules, ["index.html", "assets/index-d-LJNzz7.js"])).toEqual([]);
+  });
+
+  test("checks every built page at the path Workers serve it from", () => {
+    expect(cacheViolations(rules, ["index.html", "fri.html"])).toEqual([
+      "fri.html is not served no-cache",
+    ]);
+    expect(cacheViolations(`${rules}/fri\n  Cache-Control: no-cache\n`, ["fri.html"])).toEqual([]);
   });
 
   test("reports a hashed asset or an index.html with the wrong caching", () => {

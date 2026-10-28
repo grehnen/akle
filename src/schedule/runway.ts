@@ -1,12 +1,12 @@
-import { latestPlayedPuzzleNumber } from "../daily/puzzleNumber";
+import { latestPlayedTripNumber } from "../daily/tripNumber";
 
 /**
- * Days of puzzles left (ADR 0001): the scheduled puzzles after today's puzzle number in UTC+14,
+ * Days of trips left (ADR 0001): the scheduled trips after today's trip number in UTC+14,
  * the earliest time zone, so the count never overstates the runway anywhere. 0 when run out.
  */
 export function runwayDays(rows: readonly { number: number }[], now: Date, epoch: string): number {
   const lastScheduled = rows.reduce((last, row) => Math.max(last, row.number), 0);
-  return Math.max(0, lastScheduled - latestPlayedPuzzleNumber(now, epoch));
+  return Math.max(0, lastScheduled - latestPlayedTripNumber(now, epoch));
 }
 
 /** Below this many days left, the required runway check fails. */
@@ -15,12 +15,12 @@ export const minimumRunwayDays = 100;
 /** Why the runway check fails, or undefined when it passes. */
 export function runwayViolation(days: number): string | undefined {
   if (days >= minimumRunwayDays) return undefined;
-  return `Only ${days} days of puzzles left; the runway check needs at least ${minimumRunwayDays}. Run \`bun run schedule\` and merge the extension.`;
+  return `Only ${days} days of trips left; the runway check needs at least ${minimumRunwayDays}. Run \`bun run schedule\` and merge the extension.`;
 }
 
 /**
  * Below this many days left, the quarterly cron opens or updates the extension PR. Launch generates
- * about 27 years of puzzles (ADR 0001), so the cron is only a backstop.
+ * about 27 years of trips (ADR 0001), so the cron is only a backstop.
  */
 export const extendBelowDays = 730;
 /**

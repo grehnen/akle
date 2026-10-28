@@ -12,7 +12,7 @@ import { hintReveals, kommunInitials, takeHint } from "./hints";
  */
 const graph = buildGraphVersion({
   id: "test",
-  startsAtPuzzle: 1,
+  startsAtTrip: 1,
   kommuner: [
     { code: "S", name: "Start" },
     { code: "A", name: "Upplands-Bro" },
@@ -39,7 +39,7 @@ const graph = buildGraphVersion({
   ],
 });
 
-const puzzle = { number: 1, start: "S", destination: "T" };
+const trip = { number: 1, start: "S", destination: "T" };
 
 function guess(game: Game, ...names: string[]): Game {
   for (const name of names) {
@@ -51,7 +51,7 @@ function guess(game: Game, ...names: string[]): Game {
 }
 
 const nextKommunAfter = (...names: string[]) =>
-  hintReveals(graph, takeHint(graph, guess(newGame(puzzle), ...names))).outlines;
+  hintReveals(graph, takeHint(graph, guess(newGame(trip), ...names))).outlines;
 
 describe("hint 1: the next kommun", () => {
   test("taken before any guess, outlines the start's neighbor on the route first by kommun code", () => {
@@ -75,38 +75,38 @@ describe("hint 1: the next kommun", () => {
   });
 
   test("stays put when later guesses change the best route", () => {
-    const hinted = takeHint(graph, newGame(puzzle));
+    const hinted = takeHint(graph, newGame(trip));
     expect(hintReveals(graph, guess(hinted, "Eda")).outlines).toEqual(["A"]);
   });
 });
 
 describe("taking hints", () => {
   test("never costs a guess", () => {
-    const game = takeHint(graph, guess(newGame(puzzle), "Eda"));
+    const game = takeHint(graph, guess(newGame(trip), "Eda"));
     const review = reviewGame(graph, game);
     expect(review.cards).toHaveLength(1);
     expect(review.hintsUsed).toBe(1);
   });
 
   test("allows three hints, then no more", () => {
-    let game = newGame(puzzle);
+    let game = newGame(trip);
     for (let taken = 0; taken < 5; taken++) game = takeHint(graph, game);
     expect(reviewGame(graph, game).hintsUsed).toBe(3);
   });
 
   test("is not possible once the game has ended", () => {
-    const won = guess(newGame(puzzle), "Upplands-Bro", "Malung-Sälen");
+    const won = guess(newGame(trip), "Upplands-Bro", "Malung-Sälen");
     expect(takeHint(graph, won)).toBe(won);
   });
 });
 
 describe("what the hints reveal", () => {
   test("no hints: no outlines, and names stay hidden", () => {
-    expect(hintReveals(graph, newGame(puzzle))).toEqual({ outlines: [], initials: false });
+    expect(hintReveals(graph, newGame(trip))).toEqual({ outlines: [], initials: false });
   });
 
   test("hint 2 outlines every kommun", () => {
-    const game = takeHint(graph, takeHint(graph, newGame(puzzle)));
+    const game = takeHint(graph, takeHint(graph, newGame(trip)));
     expect(hintReveals(graph, game).outlines.sort()).toEqual(
       ["S", "A", "B", "C", "E", "T", "X", "Y", "Z"].sort(),
     );
@@ -114,17 +114,17 @@ describe("what the hints reveal", () => {
   });
 
   test("hint 3 reveals the initials", () => {
-    const game = takeHint(graph, takeHint(graph, takeHint(graph, newGame(puzzle))));
+    const game = takeHint(graph, takeHint(graph, takeHint(graph, newGame(trip))));
     expect(hintReveals(graph, game).initials).toBe(true);
   });
 });
 
 describe("Perfekt", () => {
   test("a win with every guess ✅ but a hint taken is not Perfekt", () => {
-    const clean = guess(newGame(puzzle), "Upplands-Bro", "Malung-Sälen");
+    const clean = guess(newGame(trip), "Upplands-Bro", "Malung-Sälen");
     expect(reviewGame(graph, clean).perfect).toBe(true);
 
-    const hinted = guess(takeHint(graph, newGame(puzzle)), "Upplands-Bro", "Malung-Sälen");
+    const hinted = guess(takeHint(graph, newGame(trip)), "Upplands-Bro", "Malung-Sälen");
     const review = reviewGame(graph, hinted);
     expect(review.status).toBe("won");
     expect(review.perfect).toBe(false);

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { type Game, reviewGame } from "../engine/game";
+import { type Game, newGame, reviewGame } from "../engine/game";
 import { buildGraphVersion, type GraphVersion } from "../graph/graphVersion";
 import { deriveStats } from "../progress/stats";
 import { type KeyValueStorage, memoryStorage } from "../progress/storage";
@@ -9,7 +9,7 @@ import { ResultView } from "./ResultView";
 // Nynäshamn ── Södertälje ── Trosa, or Nynäshamn ── Haninge ── Salem ── Trosa; the rest far away.
 const graph = buildGraphVersion({
   id: "test",
-  startsAtPuzzle: 1,
+  startsAtTrip: 1,
   kommuner: [
     { code: "0192", name: "Nynäshamn" },
     { code: "0181", name: "Södertälje" },
@@ -32,8 +32,7 @@ const graph = buildGraphVersion({
   ],
 });
 
-const puzzle = { number: 21, start: "0192", destination: "0488" };
-const now = new Date(2026, 9, 21, 13, 5, 9);
+const trip = { start: "0192", destination: "0488" };
 
 function routeItems(markup: string, label = "Bästa vägen med dina gissningar"): string[] {
   const route = markup.match(new RegExp(`<ol aria-label="${label}"[^>]*>(.*?)</ol>`))?.[1] ?? "";
@@ -50,34 +49,32 @@ function tabs(markup: string): { name: string; selected: boolean }[] {
 }
 
 function render(...guesses: string[]) {
-  return renderOn(graph, puzzle, guesses);
+  return renderOn(graph, trip, guesses);
 }
 
 /** Renders as if the player last picked `tab` this session. */
 function renderOnTab(tab: string, ...guesses: string[]) {
   const sessionStorage = memoryStorage();
   sessionStorage.setItem("akle:result-tab", JSON.stringify(tab));
-  return renderOn(graph, puzzle, guesses, sessionStorage);
+  return renderOn(graph, trip, guesses, sessionStorage);
 }
 
 function renderOn(
   onGraph: GraphVersion,
-  onPuzzle: Game["puzzle"],
+  onTrip: Game["trip"],
   guesses: string[],
   sessionStorage: KeyValueStorage = memoryStorage(),
 ) {
-  const game: Game = { puzzle: onPuzzle, guesses };
+  const game: Game = { ...newGame(onTrip), guesses };
   return renderToStaticMarkup(
     <ResultView
       graph={onGraph}
       game={game}
       review={reviewGame(onGraph, game)}
-      now={now}
       stats={deriveStats(
         { 20: { won: true, extra: 0, perfect: true, hintsUsed: 0, emojiLine: "✅" } },
         21,
       )}
-      shareText="#åkle #21 +1"
       sessionStorage={sessionStorage}
     />,
   );
@@ -116,15 +113,6 @@ describe("the result view", () => {
     test("keeps the stats out of the Min rutt tab", () => {
       expect(markup).not.toContain("<dt>Spelade</dt>");
     });
-
-    test("offers to share the result", () => {
-      expect(markup).toMatch(/<button[^>]*>Dela resultat<\/button>/);
-    });
-
-    test("counts down to the next puzzle at midnight", () => {
-      expect(markup).toContain("Nästa pussel om");
-      expect(markup).toContain("10:54:51");
-    });
   });
 
   test("a Perfect win shows Perfekt!", () => {
@@ -152,7 +140,7 @@ describe("the result view", () => {
     // S ── A ── B ── T is shortest, but the guesses X and Y leave only Z missing on S ── X ── Y ── Z ── T.
     const detour = buildGraphVersion({
       id: "detour",
-      startsAtPuzzle: 1,
+      startsAtTrip: 1,
       kommuner: ["S", "A", "B", "T", "X", "Y", "Z", "F1", "F2", "F3", "F4"].map((code) => ({
         code,
         name: `Kommun ${code}`,
@@ -170,7 +158,7 @@ describe("the result view", () => {
         ["F3", "F4"],
       ].map(([a, b]) => ({ between: [a, b] as const, kind: "land" as const })),
     });
-    const markup = renderOn(detour, { number: 21, start: "S", destination: "T" }, [
+    const markup = renderOn(detour, { start: "S", destination: "T" }, [
       "X",
       "Y",
       "F1",

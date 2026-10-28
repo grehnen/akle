@@ -1,0 +1,17 @@
+# Free-play links are a packed payload
+
+Every free-play link, for one trip or an itinerary, carries its trips as a bit-packed, unpadded base64url payload: a trip is `/fri?r=<payload>` and an itinerary is `/resplan?namn=<title>&r=<payload>`, where only the optional title stays plain. We chose packing so links stay short (about 10 characters of payload for a trip, about 100 for a 20-trip itinerary), look the same across the app, and don't spoil which kommuner a trip runs between. Links are only ever made by the app, so nobody needs to read or type the payload; picking endpoints by name happens in the UI, not in the address bar.
+
+- Both links use **one codec**. The payload holds a format version, the graph version, the trip count, and for each trip the start and destination **SCB codes**, the mode and, in timed mode only, the thinking time. It ends with an 8-bit checksum. `/fri` requires a count of exactly 1 and `/resplan` 2–20.
+- The graph version is written as its **ordinal**, its position among graph versions ordered by start trip, not as its id. This is safe because free play only pins versions a daily trip has already used ([ADR 0006](./0006-free-play-links-pin-their-graph-version.md)), those are never edited ([ADR 0004](./0004-versioned-graphs-keyed-by-trip-number.md)), and any new version starts at a later trip number, so the ordinal of a usable version never changes.
+- Kommuner stay SCB codes rather than indices, as ADR 0006 requires, at a cost of about 30 characters on 20 trips.
+- The count and checksum turn a truncated or garbled link into an error instead of a silently different trip or itinerary. A bad checksum, count, format version, ordinal or code shows the same clear error as any invalid free-play link.
+- `/fri` without `r` is not an invalid link but the free-play setup screen, and `/resplan` without `r` is the itinerary builder. Other parameters are ignored.
+- The format version lets a later codec be added. Every format ever shipped must stay decodable, because links live on in chats.
+
+## Considered Options
+
+- **A readable, hand-typeable trip link** (`/fri?fran=…&till=…&v=…&lage=…`, endpoints by code or name): lets a URL pick endpoints by name, but it's about 55 characters, shows the endpoints, and is a second link format beside the itinerary's.
+- **One readable `resa` parameter per itinerary trip, like that trip link:** hand-editable and debuggable, but about 650 characters for 20 trips, and it shows the endpoints.
+- **A compact readable list** (`r=0180.1280.s,…`): about 260 characters, but it still shows the endpoints and is a second hand-written format.
+- **The full version id inside the payload:** self-describing, but about 19 characters more, for no gain given the frozen-version rule.

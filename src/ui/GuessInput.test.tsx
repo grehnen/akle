@@ -16,7 +16,7 @@ describe("GuessInput", () => {
           { code: "0139", name: "Upplands-Bro", disabled: "redan gissad" },
         ]}
         highlighted="1880"
-        counter="Gissa (1/5)"
+        counter="Gissa (2/5)"
         onEvent={noop}
       />,
     );
@@ -33,7 +33,7 @@ describe("GuessInput", () => {
         new RegExp(`<li[^>]*id="suggestion-${code}"[^>]*aria-disabled="true"[^>]*>.*?${tag}`),
       );
     }
-    expect(markup).toContain("Gissa (1/5)");
+    expect(markup).toContain("Gissa (2/5)");
   });
 
   test("marks the letters of each suggestion that the typed text matched", () => {
@@ -41,7 +41,7 @@ describe("GuessInput", () => {
       <GuessInput
         text="ore"
         suggestions={[{ code: "1880", name: "Örebro" }]}
-        counter="Gissa (0/5)"
+        counter="Gissa (1/5)"
         onEvent={noop}
       />,
     );
@@ -50,7 +50,7 @@ describe("GuessInput", () => {
 
   test("shows no list without suggestions", () => {
     const markup = renderToStaticMarkup(
-      <GuessInput text="" suggestions={[]} counter="Gissa (0/5)" onEvent={noop} />,
+      <GuessInput text="" suggestions={[]} counter="Gissa (1/5)" onEvent={noop} />,
     );
     expect(markup).not.toContain('role="listbox"');
     expect(markup).toContain('aria-expanded="false"');
@@ -63,7 +63,7 @@ describe("GuessInput", () => {
           text="Örebro"
           exactMatch={exactMatch}
           suggestions={[]}
-          counter="Gissa (0/5)"
+          counter="Gissa (1/5)"
           onEvent={noop}
         />,
       );
@@ -73,7 +73,7 @@ describe("GuessInput", () => {
 
   test("the keyboard doesn't autocorrect or spellcheck kommun names", () => {
     const markup = renderToStaticMarkup(
-      <GuessInput text="" suggestions={[]} counter="Gissa (0/5)" onEvent={noop} />,
+      <GuessInput text="" suggestions={[]} counter="Gissa (1/5)" onEvent={noop} />,
     );
     expect(markup).toContain('autoCorrect="off"');
     expect(markup).toContain('spellCheck="false"');

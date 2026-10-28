@@ -4,6 +4,7 @@ import { buildGraphVersion, type GraphVersion } from "../graph/graphVersion";
 import { graphVersionFor, parseGraphVersionFiles } from "../graph/graphVersionFiles";
 import { cheapestRoute, shortestRouteLength, shortestRouteLengthsFrom } from "../graph/routes";
 import { parseScheduleChunk, parseScheduleConfig } from "../schedule/schedule";
+import { committedDataSource } from "./committedDataSource";
 
 const dataDirectory = new URL("../../data/", import.meta.url);
 const readText = (path: string) => Bun.file(new URL(path, dataDirectory)).text();
@@ -15,12 +16,7 @@ const versionIds = [
   .sort();
 const graphVersions: GraphVersion[] = await Promise.all(
   versionIds.map(async (id) =>
-    parseGraphVersionFiles({
-      version: JSON.parse(await readText(`graphs/${id}/version.json`)),
-      kommuner: await readText(`graphs/${id}/kommuner.csv`),
-      neighbors: await readText(`graphs/${id}/neighbors.csv`),
-      shapes: JSON.parse(await readText(`graphs/${id}/shapes.geojson`)),
-    }),
+    parseGraphVersionFiles(await committedDataSource.graphVersionFiles(id)),
   ),
 );
 const osmGraph = graphVersions.find((graph) => graph.id === "osm-2026-10-01");
@@ -28,6 +24,13 @@ const schedule = parseScheduleChunk(await readText("schedule/0001.csv"));
 
 const codeOf = (graph: GraphVersion, name: string) =>
   [...graph.kommuner.values()].find((kommun) => kommun.name === name)?.code;
+
+/** How many parts a kommun's shape has as a MultiPolygon, or 0 when it isn't one. */
+function partCount(graph: GraphVersion, code: string): number {
+  const shape = graph.shapes.features.find((feature) => feature.properties.code === code);
+  const geometry = shape?.geometry as { type: string; coordinates: unknown[] } | undefined;
+  return geometry?.type === "MultiPolygon" ? geometry.coordinates.length : 0;
+}
 
 describe("committed data", () => {
   test("the schedule config is valid and its cooldowns name committed graph versions", async () => {
@@ -45,10 +48,37 @@ describe("committed data", () => {
     },
   );
 
+  test.each(versionIds)(
+    "graph version %s's exclave parts are parts of its shapes, never all of one",
+    (id) => {
+      const graph = graphVersions[versionIds.indexOf(id)];
+      for (const [code, parts] of graph.exclaveParts) {
+        const count = partCount(graph, code);
+        expect({ code, inShape: [...parts].every((part) => part < count) }).toEqual({
+          code,
+          inShape: true,
+        });
+        expect({ code, leavesMainPart: parts.size < count }).toEqual({
+          code,
+          leavesMainPart: true,
+        });
+      }
+    },
+  );
+
+  test("only real exclaves go unoutlined: not Sunne across Fryken or Östhammar's islands", () => {
+    const graph = osmGraph!;
+    expect(graph.exclaveParts.has(codeOf(graph, "Sunne")!)).toBe(false);
+    expect(graph.exclaveParts.get(codeOf(graph, "Lilla Edet")!)?.size).toBe(1);
+    expect(graph.exclaveParts.get(codeOf(graph, "Borlänge")!)?.size).toBe(3);
+    const osthammar = codeOf(graph, "Östhammar")!;
+    expect(graph.exclaveParts.get(osthammar)!.size).toBeLessThan(partCount(graph, osthammar) - 1);
+  });
+
   // ADR 0004: only the newest version goes through the ADR 0003 checks; older ones are frozen.
   test("the newest graph version has no names that collide after folding", () => {
     const graph = graphVersions.reduce((newest, version) =>
-      version.startsAtPuzzle > newest.startsAtPuzzle ? version : newest,
+      version.startsAtTrip > newest.startsAtTrip ? version : newest,
     );
     const names = [...graph.kommuner.values()].map((kommun) => kommun.name);
     expect(foldedNameCollisions(names)).toEqual([]);
@@ -61,7 +91,7 @@ describe("committed data", () => {
     expect(osmGraph?.kommuner.get("0360")?.name).toBe("Tierp");
   });
 
-  test("launch puzzle #1 is Östhammar to Linköping on the OSM graph version", () => {
+  test("launch trip #1 is Östhammar to Linköping on the OSM graph version", () => {
     expect(graphVersionFor(graphVersions, 1)?.id).toBe("osm-2026-10-01");
     expect(schedule[0]).toEqual({ number: 1, start: "0382", destination: "0580", n: 6 });
   });
@@ -144,7 +174,7 @@ describe("committed data", () => {
     const gotland = codeOf(graph, "Gotland")!;
     const withoutGotland = buildGraphVersion({
       id: graph.id,
-      startsAtPuzzle: graph.startsAtPuzzle,
+      startsAtTrip: graph.startsAtTrip,
       kommuner: [...graph.kommuner.values()],
       links: graph.links.filter((link) => !link.between.includes(gotland)),
     });

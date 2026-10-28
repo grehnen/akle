@@ -7,16 +7,19 @@ import {
   type NeighborLink,
 } from "./graphVersion";
 import { readCsv } from "../data/csv";
+import { parseExclaveParts } from "./exclaveParts";
 
 /**
  * The files of one graph version, as committed under `data/graphs/<id>/`:
- * `version.json`, `kommuner.csv` (code,name), `neighbors.csv` (a,b,link) and `shapes.geojson`.
+ * `version.json`, `kommuner.csv` (code,name), `neighbors.csv` (a,b,link) and `shapes.geojson`,
+ * with its exclave parts from beside the directory when there are any (`exclavePartsFile`).
  */
 export type GraphVersionFiles = {
   version: unknown;
   kommuner: string;
   neighbors: string;
   shapes: unknown;
+  exclaves?: unknown;
 };
 
 /** The file each part of a graph version is committed in. */
@@ -25,7 +28,7 @@ export const graphVersionFileNames = {
   kommuner: "kommuner.csv",
   neighbors: "neighbors.csv",
   shapes: "shapes.geojson",
-} as const satisfies Record<keyof GraphVersionFiles, string>;
+} as const satisfies Record<Exclude<keyof GraphVersionFiles, "exclaves">, string>;
 
 /** A graph version's directory, relative to `data/`. */
 export function graphVersionDirectory(id: string): string {
@@ -50,8 +53,8 @@ export async function readGraphVersionFiles(
 
 export type GraphVersionHeader = {
   id: string;
-  /** The first puzzle number this version applies to (ADR 0004). */
-  startsAtPuzzle: number;
+  /** The first trip number this version applies to (ADR 0004). */
+  startsAtTrip: number;
 };
 
 const linkKinds: readonly LinkKind[] = ["land", "fixed", "ferry"];
@@ -62,6 +65,7 @@ export function parseGraphVersionFiles(files: GraphVersionFiles): GraphVersion {
     kommuner: parseKommunerFile(files.kommuner),
     links: parseNeighborsFile(files.neighbors),
     shapes: files.shapes as KommunShapes,
+    exclaveParts: files.exclaves === undefined ? undefined : parseExclaveParts(files.exclaves),
   });
 }
 
@@ -86,22 +90,22 @@ export function parseGraphVersionHeader(json: unknown): GraphVersionHeader {
   if (typeof header?.id !== "string" || header.id === "") {
     throw new Error("version.json needs an id");
   }
-  if (!Number.isInteger(header.startsAtPuzzle) || (header.startsAtPuzzle as number) < 1) {
-    throw new Error(`version.json for ${header.id} needs a startsAtPuzzle of 1 or more`);
+  if (!Number.isInteger(header.startsAtTrip) || (header.startsAtTrip as number) < 1) {
+    throw new Error(`version.json for ${header.id} needs a startsAtTrip of 1 or more`);
   }
-  return { id: header.id, startsAtPuzzle: header.startsAtPuzzle as number };
+  return { id: header.id, startsAtTrip: header.startsAtTrip as number };
 }
 
-/** The graph version a puzzle number is played on: the newest one that has started. */
+/** The graph version a trip number is played on: the newest one that has started. */
 export function graphVersionFor<Header extends GraphVersionHeader>(
   versions: readonly Header[],
-  puzzleNumber: number,
+  tripNumber: number,
 ): Header | undefined {
   return versions
-    .filter((version) => version.startsAtPuzzle <= puzzleNumber)
+    .filter((version) => version.startsAtTrip <= tripNumber)
     .reduce<Header | undefined>(
       (newest, version) =>
-        newest === undefined || version.startsAtPuzzle > newest.startsAtPuzzle ? version : newest,
+        newest === undefined || version.startsAtTrip > newest.startsAtTrip ? version : newest,
       undefined,
     );
 }

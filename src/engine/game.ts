@@ -2,19 +2,49 @@ import type { GraphVersion, KommunCode } from "../graph/graphVersion";
 import { cheapestRoute, routeCost, shortestRoute, shortestRouteLength } from "../graph/routes";
 import { guessLimit } from "./guessLimit";
 import { resolveKommunName } from "./kommunNames";
+import { timeoutRuns } from "./thinkingTime";
 
-export type Puzzle = {
-  number: number;
+/** A start and a destination; a daily trip adds its trip number outside the engine. */
+export type Trip = {
   start: KommunCode;
   destination: KommunCode;
 };
 
-/** A daily puzzle in progress: the accepted guesses, in order, and any hints taken. Everything else is derived. */
-export type Game = {
-  puzzle: Puzzle;
+/** What a game is played under, so a mode can change the rules without touching daily play. */
+export type Rules = {
+  /** `distance`: the daily guess limit, set by the distance; `none`: guess until the route is found. */
+  guessLimit: "distance" | "none";
+  /** Whether the player may give up, at any point while the trip is being played. */
+  giveUp: boolean;
+  /** Whether a win's time is kept: the real time from Starta to the winning guess. */
+  keepsTime: boolean;
+  /** Whole seconds each guess must be made within, in timed mode; none elsewhere. */
+  thinkingTime?: number;
+};
+
+/** The daily-trip rules: the guess limit set by the distance, no giving up and no time. */
+export const DAILY_RULES: Rules = { guessLimit: "distance", giveUp: false, keepsTime: false };
+
+/**
+ * A trip in progress under its rules: the accepted guesses, in order, and any hints taken.
+ * Everything else is derived. `T` lets a daily game keep its trip number on the trip.
+ */
+export type Game<T extends Trip = Trip> = {
+  trip: T;
+  rules: Rules;
   guesses: readonly KommunCode[];
   /** Absent until the first hint is taken. */
   hints?: TakenHints;
+  /** Set when the player gave up, which ends the trip as a loss. */
+  givenUp?: true;
+  /** When the trip started, at Starta, as a timestamp in milliseconds; set where time is kept. */
+  startedAt?: number;
+  /** When the winning guess was made, as a timestamp in milliseconds; set where time is kept. */
+  wonAt?: number;
+  /** When each counted guess was made, in guess order, as timestamps; set where thinking time runs. */
+  guessedAt?: readonly number[];
+  /** When the trip ended, by its last guess or a give-up, as a timestamp; set where thinking time runs. */
+  endedAt?: number;
 };
 
 export type TakenHints = {
@@ -38,8 +68,13 @@ export type GameStatus = "playing" | "won" | "lost";
 
 export type GameReview = {
   n: number;
-  limit: number;
+  /** Undefined when the rules set no guess limit. */
+  limit?: number;
   status: GameStatus;
+  /** A loss the player chose by giving up, rather than one at the guess limit. */
+  givenUp: boolean;
+  /** Whether giving up is allowed right now: the rules allow it and the trip is still being played. */
+  canGiveUp: boolean;
   cards: GuessCard[];
   /** Kommuner still missing from the cheapest route (the "k ifrån" on a loss). */
   away: number;
@@ -54,24 +89,33 @@ export type GameReview = {
   /** A win where every guess was ✅ and no hint was taken. */
   perfect: boolean;
   hintsUsed: number;
+  /**
+   * Thinking times that ran out, each +1 to the score. Counted up to the last guess, or to the end
+   * once the game is over; while playing, `timeoutRuns` with the time now adds the running ones.
+   */
+  timeouts: number;
 };
 
-export type GuessResult =
-  | { kind: "accepted"; game: Game; card: GuessCard }
+export type GuessResult<T extends Trip = Trip> =
+  | { kind: "accepted"; game: Game<T>; card: GuessCard }
   | { kind: "rejected"; reason: "unknown" | "repeat" | "endpoint" | "game-over"; input: string };
 
-export function newGame(puzzle: Puzzle): Game {
-  return { puzzle, guesses: [] };
+export function newGame<T extends Trip>(trip: T, rules: Rules = DAILY_RULES): Game<T> {
+  return { trip, rules, guesses: [] };
 }
 
 /** Resolves a typed name and adds it as a guess; rejected guesses are not counted. */
-export function submitGuess(graph: GraphVersion, game: Game, input: string): GuessResult {
+export function submitGuess<T extends Trip>(
+  graph: GraphVersion,
+  game: Game<T>,
+  input: string,
+): GuessResult<T> {
   if (reviewGame(graph, game).status !== "playing") {
     return { kind: "rejected", reason: "game-over", input };
   }
   const code = resolveKommunName(graph, input);
   if (code === undefined) return { kind: "rejected", reason: "unknown", input };
-  if (code === game.puzzle.start || code === game.puzzle.destination) {
+  if (code === game.trip.start || code === game.trip.destination) {
     return { kind: "rejected", reason: "endpoint", input };
   }
   if (game.guesses.includes(code)) return { kind: "rejected", reason: "repeat", input };
@@ -82,8 +126,13 @@ export function submitGuess(graph: GraphVersion, game: Game, input: string): Gue
   return { kind: "accepted", game: nextGame, card };
 }
 
+/** Ends the trip as a loss when giving up is allowed; otherwise the game is returned as it was. */
+export function giveUp<T extends Trip>(graph: GraphVersion, game: Game<T>): Game<T> {
+  return reviewGame(graph, game).canGiveUp ? { ...game, givenUp: true } : game;
+}
+
 export function reviewGame(graph: GraphVersion, game: Game): GameReview {
-  const { start, destination } = game.puzzle;
+  const { start, destination } = game.trip;
   const n = shortestRouteLength(graph, start, destination);
 
   const known = new Set<KommunCode>([start, destination]);
@@ -104,10 +153,17 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
     connected: connected.has(code),
   }));
 
-  const limit = guessLimit(n);
-  const status: GameStatus = away === 0 ? "won" : cards.length >= limit ? "lost" : "playing";
+  const limit = game.rules.guessLimit === "distance" ? guessLimit(n) : undefined;
+  const givenUp = away !== 0 && game.givenUp === true;
+  const status: GameStatus =
+    away === 0
+      ? "won"
+      : givenUp || (limit !== undefined && cards.length >= limit)
+        ? "lost"
+        : "playing";
 
   const hintsUsed = game.hints?.taken ?? 0;
+  const timeouts = timeoutRuns(game).reduce((sum, run) => sum + run, 0);
   const resultRoute =
     status === "playing" ? undefined : cheapestRoute(graph, start, destination, known);
   const missing = status === "lost" ? (resultRoute ?? []).filter((code) => !known.has(code)) : [];
@@ -116,6 +172,8 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
     n,
     limit,
     status,
+    givenUp,
+    canGiveUp: status === "playing" && game.rules.giveUp,
     cards,
     away,
     cheapestRoute: resultRoute,
@@ -125,8 +183,13 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
         : shortestRoute(graph, start, destination, new Set(game.guesses)),
     missing,
     extra: status === "won" ? cards.length - n : undefined,
-    perfect: status === "won" && hintsUsed === 0 && cards.every((card) => card.feedback === "✅"),
+    perfect:
+      status === "won" &&
+      hintsUsed === 0 &&
+      timeouts === 0 &&
+      cards.every((card) => card.feedback === "✅"),
     hintsUsed,
+    timeouts,
   };
 }
 

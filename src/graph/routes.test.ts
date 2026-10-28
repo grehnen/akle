@@ -11,7 +11,7 @@ import {
 // A ── B ── C ── D, with ferry-only dead end F linking A and D.
 const graph = buildGraphVersion({
   id: "test",
-  startsAtPuzzle: 1,
+  startsAtTrip: 1,
   kommuner: [
     { code: "A", name: "Alfa" },
     { code: "B", name: "Beta" },
@@ -74,7 +74,7 @@ describe("shortestRouteLengthsFrom", () => {
  */
 const tieGraph = buildGraphVersion({
   id: "ties",
-  startsAtPuzzle: 1,
+  startsAtTrip: 1,
   kommuner: ["S", "A", "B", "C", "D", "T", "L", "M", "N", "X", "Y", "0"].map((code) => ({
     code,
     name: code,

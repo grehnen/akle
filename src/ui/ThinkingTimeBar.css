@@ -1,0 +1,58 @@
+.thinking-time {
+  width: 100%;
+  max-width: 30rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.thinking-time-bar {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--rule);
+  overflow: hidden;
+}
+
+/* Runs from full to empty once per thinking time; its length and start are set on the element. */
+.thinking-time-fill {
+  height: 100%;
+  background: var(--start);
+  transform-origin: left;
+  animation-name: thinking-time;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes thinking-time {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Under reduced motion the bar moves only in whole-second steps, with no gliding between. */
+@media (prefers-reduced-motion: reduce) {
+  .thinking-time-fill {
+    animation-timing-function: steps(var(--thinking-time-seconds), end);
+  }
+}
+
+.thinking-time-seconds {
+  margin: 0;
+  min-inline-size: 3.5ch;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* The last third: the warning colour (a light red) and a bold number. */
+.thinking-time--warning .thinking-time-fill {
+  background: var(--warning);
+}
+
+.thinking-time--warning .thinking-time-seconds {
+  color: var(--warning);
+  font-weight: 700;
+}
