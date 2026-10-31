@@ -7,7 +7,7 @@ import type { GraphVersion, KommunCode } from "../graph/graphVersion";
 import { TOOLTIP_LAYER } from "../map/mapStyle";
 import "./TripEffectPrototype.css";
 
-export type EffectVariant = "a" | "b" | "c" | "nu";
+export type EffectVariant = "alla" | "a" | "b" | "c" | "nu";
 
 /** Undefined outside the prototype, so the board stays as it is today. */
 export const EffectVariantContext = createContext<EffectVariant | undefined>(undefined);
@@ -26,6 +26,24 @@ type TripEffectProps = {
 export function TripEffect({ variant, graph, trip, review, map, holdMs }: TripEffectProps) {
   const outcome: Outcome = review.perfect ? "perfect" : review.status === "won" ? "win" : "loss";
   if (variant === "nu") return null;
+  // The first round's verdict: sweep and glow on every win, confetti only on Perfect, a loss only dims.
+  if (variant === "alla") {
+    if (outcome === "loss") return <div className="trip-effect-dim" aria-hidden="true" />;
+    return (
+      <>
+        <RouteSweep
+          graph={graph}
+          trip={trip}
+          review={review}
+          map={map}
+          outcome={outcome}
+          holdMs={holdMs}
+        />
+        <div className={`trip-effect-glow trip-effect-glow--${outcome}`} aria-hidden="true" />
+        {outcome === "perfect" && <Confetti outcome={outcome} holdMs={holdMs} />}
+      </>
+    );
+  }
   return (
     <>
       {outcome === "loss" && <div className="trip-effect-dim" aria-hidden="true" />}
@@ -58,7 +76,7 @@ const SWEEP_COLORS: Record<Outcome, string> = {
 };
 
 /**
- * Variant A: lights Min rutt stop by stop from start to destination, however long the route, in the
+ * Lights the guesses on Min rutt stop by stop from start to destination, however long the route, in the
  * time the hold leaves. A loss walks only as far as the guesses reach and stops at the first miss.
  * Perfect is gold, and the whole route flashes twice once the sweep lands.
  */
@@ -75,7 +93,10 @@ function RouteSweep({
     const route = review.cheapestRoute ?? [trip.start, trip.destination];
     const missing = new Set(review.missing);
     const firstMiss = route.findIndex((code) => missing.has(code));
-    const walked = firstMiss === -1 ? route : route.slice(0, firstMiss + 1);
+    // Only what the player guessed lights up, never the endpoints.
+    const walked = (firstMiss === -1 ? route : route.slice(0, firstMiss + 1)).filter(
+      (code) => code !== trip.start && code !== trip.destination,
+    );
     const onRoute = new Set(walked);
     const features = graph.shapes.features.filter((feature) =>
       onRoute.has(feature.properties.code),

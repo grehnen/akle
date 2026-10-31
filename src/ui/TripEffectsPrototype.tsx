@@ -1,6 +1,6 @@
 // PROTOTYPE (#137): throwaway. Never merge to main.
 // Three effects for a finished trip, plus today's none, on the real TripBoard, map and hold, on `/`:
-//   /?variant=a|b|c|nu&utfall=perfekt|vinst|forlust|geupp&avstand=2|5|10&hold=1500
+//   /?variant=alla|a|b|c|nu&utfall=perfekt|vinst|forlust|geupp&avstand=2|5|10&hold=1500
 // A trip from the real graph is held in memory one move from its end, then that move is made once
 // the map is drawn. Nothing is saved, so a daily game, history and stats are untouched.
 import { useEffect, useMemo, useState } from "react";
@@ -15,6 +15,7 @@ import { TripBoard } from "./TripBoard";
 import { type EffectVariant, EffectVariantContext } from "./TripEffectPrototype";
 
 const VARIANTS: readonly { key: EffectVariant; name: string }[] = [
+  { key: "alla", name: "Allt ihop" },
   { key: "a", name: "Rutten lyser upp" },
   { key: "b", name: "Konfetti" },
   { key: "c", name: "Sken runt kartan" },
@@ -114,7 +115,7 @@ function Harness({ graph }: { graph: GraphVersion }) {
     readParam(
       "variant",
       VARIANTS.map((option) => option.key),
-      "a",
+      "alla",
     ),
   );
   const [outcome, setOutcome] = useState<OutcomeKey>(() =>
@@ -142,7 +143,7 @@ function Harness({ graph }: { graph: GraphVersion }) {
   const scenario = useMemo(() => scenarioFor(graph, outcome, distance), [graph, outcome, distance]);
   const stepVariant = (by: number) => {
     const index = VARIANTS.findIndex((option) => option.key === variant);
-    setVariant(VARIANTS[(index + by + VARIANTS.length) % VARIANTS.length]?.key ?? "a");
+    setVariant(VARIANTS[(index + by + VARIANTS.length) % VARIANTS.length]?.key ?? "alla");
     replay();
   };
 

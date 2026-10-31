@@ -35,15 +35,6 @@
   --glow: #fecc02;
 }
 
-/* Perfect also runs a band of light across the map. */
-.trip-effect-glow--perfect::after {
-  content: "";
-  position: absolute;
-  inset: -20% -60%;
-  background: linear-gradient(105deg, transparent 40%, rgb(254 204 2 / 55%) 50%, transparent 60%);
-  animation: trip-effect-sheen 1100ms ease-in-out 150ms both;
-}
-
 .trip-effect-glow--loss {
   animation: trip-effect-vignette 900ms ease-out both;
 }
@@ -63,15 +54,6 @@
     box-shadow:
       0 0 0 2px var(--glow),
       inset 0 0 0 0 transparent;
-  }
-}
-
-@keyframes trip-effect-sheen {
-  from {
-    transform: translateX(-60%);
-  }
-  to {
-    transform: translateX(60%);
   }
 }
 
