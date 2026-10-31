@@ -23,3 +23,14 @@ function routeStopKind(
   if (code === trip.destination) return "destination";
   return guesses.has(code) ? "guessed" : "missed";
 }
+
+/** The guesses on a route, in route order: what lights up when a trip is won. */
+export function guessedStops(
+  trip: Pick<Trip, "start" | "destination">,
+  route: readonly KommunCode[],
+  guesses: ReadonlySet<KommunCode>,
+): KommunCode[] {
+  return routeStops(trip, route, guesses)
+    .filter(({ kind }) => kind === "guessed")
+    .map(({ code }) => code);
+}

@@ -15,6 +15,7 @@ import { mapDescription } from "./mapDescription";
 import { MapLibreLoaderContext } from "./mapLibreLoader";
 import { type MapReadiness, mapReadiness } from "./mapReadiness";
 import { mapOptions, satelliteMapStyle, TOOLTIP_LAYER, TOUCH_SCREEN_QUERY } from "./mapStyle";
+import { playRouteSweep, type RouteSweep } from "./routeSweep";
 import { tooltipText } from "./tooltip";
 import { animateToBounds, zoomResetControl } from "./zoomResetControl";
 
@@ -45,6 +46,8 @@ type SatelliteMapProps = {
    * description, until it is shown.
    */
   concealed?: boolean;
+  /** Plays while set, once the map has loaded; a map that never does simply doesn't play it. */
+  sweep?: RouteSweep;
 };
 
 /**
@@ -63,6 +66,7 @@ export function SatelliteMap({
   allOutlines = false,
   onReady,
   concealed = false,
+  sweep,
 }: SatelliteMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap>();
@@ -232,6 +236,10 @@ export function SatelliteMap({
     source.setData(drawn as Parameters<GeoJSONSource["setData"]>[0]);
     readiness.current?.shapesIn(map);
   }, [map, drawn]);
+
+  useEffect(() => {
+    if (map && sweep) return playRouteSweep(map, graph, sweep);
+  }, [map, graph, sweep]);
 
   return (
     <div
