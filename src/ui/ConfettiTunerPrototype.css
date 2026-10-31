@@ -101,3 +101,21 @@
   color: #fff;
   font: inherit;
 }
+
+/* The app's text-field styles would stretch these along the panel's column. */
+.tuner input {
+  flex: none;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.tuner input[type="range"] {
+  height: 1.1rem;
+}
+
+.tuner input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+}

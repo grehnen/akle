@@ -147,16 +147,12 @@ function Tuner({ graph, trip }: { graph: GraphVersion; trip: DailyTrip }) {
     window.history.replaceState(null, "", `?${query}`);
   }, [changed]);
 
-  const firstRender = useRef(true);
-  useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
-    if (!fireOnChange) return;
-    const timer = setTimeout(fire, FIRE_AFTER_CHANGE_MS);
-    return () => clearTimeout(timer);
-  }, [params, fireOnChange, fire]);
+  const pendingFire = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const change = (next: (current: ConfettiParams) => ConfettiParams) => {
+    setParams(next);
+    clearTimeout(pendingFire.current);
+    if (fireOnChange) pendingFire.current = setTimeout(fire, FIRE_AFTER_CHANGE_MS);
+  };
 
   return (
     <ConfettiParamsContext value={params}>
@@ -211,7 +207,7 @@ function Tuner({ graph, trip }: { graph: GraphVersion; trip: DailyTrip }) {
                       step={step}
                       value={params[key]}
                       onChange={(event) =>
-                        setParams((current) => ({ ...current, [key]: Number(event.target.value) }))
+                        change((current) => ({ ...current, [key]: Number(event.target.value) }))
                       }
                     />
                   </label>
@@ -232,7 +228,7 @@ function Tuner({ graph, trip }: { graph: GraphVersion; trip: DailyTrip }) {
                 >
                   {copied ? "Kopierat!" : "Kopiera"}
                 </button>
-                <button type="button" onClick={() => setParams(DEFAULT_CONFETTI_PARAMS)}>
+                <button type="button" onClick={() => change(() => DEFAULT_CONFETTI_PARAMS)}>
                   Återställ
                 </button>
               </div>
