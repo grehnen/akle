@@ -1,19 +1,10 @@
-// PROTOTYPE (#126): switches the mode palette live with ?palette=A|B|C or the ← → keys. Throwaway.
+// PROTOTYPE (#126): switches the mode palette live with ?palette=B|D|E|F|G or the ← → keys. Throwaway.
 import { useEffect, useState } from "react";
 import { MODE_KINDS, type ModeKind } from "../freePlay/linkPayload";
 import { MODE_NAMES } from "./messages";
 import "./ModePalettePrototype.css";
 
 const PALETTES: Record<string, { name: string; colours: Record<ModeKind, string> }> = {
-  A: {
-    name: "Saturated",
-    colours: {
-      standard: "#9d7dff",
-      unlimited: "#e84fb5",
-      timed: "#ff9636",
-      "tie-breaker": "#22cfe6",
-    },
-  },
   B: {
     name: "Soft",
     colours: {
@@ -23,13 +14,40 @@ const PALETTES: Record<string, { name: string; colours: Record<ModeKind, string>
       "tie-breaker": "#4fc3d9",
     },
   },
-  C: {
-    name: "Quiet Standard",
+  D: {
+    name: "Soft, clearer",
     colours: {
-      standard: "#d3dbe3",
-      unlimited: "#9a78ff",
-      timed: "#ff9636",
-      "tie-breaker": "#14aec6",
+      standard: "#bda8fc",
+      unlimited: "#fecee4",
+      timed: "#e9a679",
+      "tie-breaker": "#72a8b6",
+    },
+  },
+  E: {
+    name: "Soft, quiet Standard",
+    colours: {
+      standard: "#e4ecf5",
+      unlimited: "#c8b7ff",
+      timed: "#f2a26a",
+      "tie-breaker": "#72a8b6",
+    },
+  },
+  F: {
+    name: "Periwinkle and mint",
+    colours: {
+      standard: "#8998e9",
+      unlimited: "#f3d1f4",
+      timed: "#c69356",
+      "tie-breaker": "#31c3b5",
+    },
+  },
+  G: {
+    name: "Lavender and sky",
+    colours: {
+      standard: "#e7d5ff",
+      unlimited: "#c08f99",
+      timed: "#d9c190",
+      "tie-breaker": "#67b5e1",
     },
   },
 };
@@ -55,8 +73,8 @@ const nextKey = (current: string, by: number) =>
 export function ModePalettePrototype() {
   const [key, setKey] = useState(() => {
     const asked = new URLSearchParams(window.location.search).get("palette");
-    const wanted = asked ?? sessionStorage.getItem(STORAGE_KEY) ?? "A";
-    return wanted in PALETTES ? wanted : "A";
+    const wanted = asked ?? sessionStorage.getItem(STORAGE_KEY) ?? "B";
+    return wanted in PALETTES ? wanted : "B";
   });
   const palette = PALETTES[key] as (typeof PALETTES)[string];
 
