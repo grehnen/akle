@@ -238,6 +238,10 @@ const summaryTotals = (container: HTMLElement) =>
 
 /** A finished trip keeps the board up for a moment before the result view opens. */
 
+/** The mode each element's colour stands for. */
+const colouredModes = (container: HTMLElement, selector: string) =>
+  [...container.querySelectorAll(selector)].map((element) => element.getAttribute("data-mode"));
+
 const trip = (start: string, destination: string, mode: LinkedTrip["mode"]): LinkedTrip => ({
   start,
   destination,
@@ -325,6 +329,17 @@ describe("an itinerary from its link", () => {
         "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng.",
       ],
       ["Tidtagning", "Tiden tas. Vid lika poäng vinner den snabbaste."],
+    ]);
+    expect(colouredModes(container, ".itinerary-stop-number")).toEqual([
+      "standard",
+      "timed",
+      "tie-breaker",
+      "tie-breaker",
+    ]);
+    expect(colouredModes(container, ".itinerary-legend > div")).toEqual([
+      "standard",
+      "timed",
+      "tie-breaker",
     ]);
     expect(text(container, ".itinerary-intro-score")).toBe(
       "Lägre poäng är bättre. En perfekt resa ger −1; varje extra gissning, ledtråd och ⏱ kostar 1.",
@@ -416,6 +431,8 @@ describe("an itinerary from its link", () => {
     ]);
     expect(container.textContent).not.toContain("Trosa");
     expect(container.textContent).toContain("Tiden går även om du lämnar sidan.");
+    expect(colouredModes(container, ".start-gate-rules")).toEqual(["timed"]);
+    expect(colouredModes(container, ".itinerary-progress .mode-name")).toEqual(["timed"]);
     expect(text(container, ".start-gate-rules")).toBe(
       "Varje gissning måste göras inom betänketiden. Varje gång tiden går ut kostar en poäng.",
     );
@@ -458,6 +475,11 @@ describe("an itinerary from its link", () => {
     // The summary: the title, then a row per trip with all it has.
     expect(text(container, "#itinerary-summary-heading")).toBe("Fredagsresan");
     expect(text(container, ".itinerary-summary-subtitle")).toBe("Sammanfattning");
+    expect(colouredModes(container, ".itinerary-summary-trip")).toEqual([
+      "standard",
+      "timed",
+      "tie-breaker",
+    ]);
     expect(summaryRows(container)).toEqual([
       {
         pair: "Nynäshamn → Salem",

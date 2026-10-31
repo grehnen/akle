@@ -51,7 +51,7 @@ export function StartGate({
         <h2 id="start-gate-heading">Redo att resa?</h2>
         {label}
       </header>
-      <div className="start-gate-rules">
+      <div className="start-gate-rules" data-mode={mode.kind}>
         <p>{modeDescription(mode.kind)}</p>
       </div>
       <div className="start-gate-action">

@@ -37,6 +37,7 @@ export function TripRow({
   const destination = kommunName(graph, trip.destination);
   return (
     <li
+      data-mode={trip.mode.kind}
       className={[
         "itinerary-trip",
         dragOffset !== undefined && "itinerary-trip--dragged",

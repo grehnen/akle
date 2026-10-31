@@ -1274,6 +1274,9 @@ describe("Läge", () => {
     const modes = query(container, "fieldset.free-play-modes");
     expect(modes.querySelector("legend")?.textContent).toBe("Läge");
     expect(
+      [...modes.querySelectorAll(".free-play-mode")].map((card) => card.getAttribute("data-mode")),
+    ).toEqual(["standard", "unlimited", "timed", "tie-breaker"]);
+    expect(
       modes.compareDocumentPosition(query(container, '[role="tablist"]')) &
         dom.window.Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
@@ -2032,6 +2035,9 @@ describe("the board behind Starta", () => {
       "Fri resa · Tidspress · 10 s",
     );
     expect(query(container, ".start-gate-rules").textContent).toBe(tidspress);
+    expect(query(container, ".start-gate-rules").getAttribute("data-mode")).toBe("timed");
+    // The free-play label stays plain: the rules box carries the gate's colour.
+    expect(container.querySelector(".trip-number .mode-name")).toBeNull();
     const back = query<HTMLAnchorElement>(container, ".start-gate a");
     expect(back.textContent).toBe("‹ Tillbaka");
     expect(back.getAttribute("href")).toBe("/fri");

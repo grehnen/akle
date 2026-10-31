@@ -439,6 +439,11 @@ describe("editing the trip list", () => {
     await click(labelled(container, "Dubblera resa 2"));
     expect(rows(container)).toEqual(["Haninge → Trosa", "Nynäshamn → Salem", "Nynäshamn → Salem"]);
     expect(rowModes(container)).toEqual(["Standard", "Obegränsad", "Obegränsad"]);
+    expect(
+      [...container.querySelectorAll(".itinerary-trip")].map((row) =>
+        row.getAttribute("data-mode"),
+      ),
+    ).toEqual(["standard", "unlimited", "unlimited"]);
 
     await click(labelled(container, "Ta bort resa 1"));
     expect(rows(container)).toEqual(["Nynäshamn → Salem", "Nynäshamn → Salem"]);
