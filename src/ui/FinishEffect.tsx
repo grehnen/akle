@@ -26,10 +26,15 @@ export function WinEffect({
 }
 
 const COLORS = ["#fecc02", "#fecc02", "#ffe680", "#ffffff"];
-const PIECES = 240;
+const PIECES = 500;
 const GRAVITY = 900;
 const DRAG = 1.2;
 const SPIN = 8;
+/** How high up the screen, as shares of its height from the top, the pieces are aimed. */
+const REACH_TOP = 0.2;
+const REACH_BOTTOM = 0.6;
+const FLIGHT_SECONDS_MIN = 0.6;
+const FLIGHT_SECONDS_MAX = 1.1;
 /** The share of the hold after which the confetti starts fading, gone as the result opens. */
 const FADE_FROM = 2 / 3;
 
@@ -49,18 +54,22 @@ function Confetti({ holdMs }: { holdMs: number }) {
     element.height = height * scale;
     context.scale(scale, scale);
 
+    const between = (low: number, high: number) => low + Math.random() * (high - low);
     const pieces = Array.from({ length: PIECES }, (_, index) => {
       const fromLeft = index % 2 === 0;
-      const angle = (fromLeft ? -Math.PI / 3 : (-2 * Math.PI) / 3) + (Math.random() - 0.5) * 0.9;
-      const speed = 500 + Math.random() * 900;
+      const x = fromLeft ? 0 : width;
+      // Each piece is launched to pass through a point of its own, so any screen's centre is reached.
+      const reachX = width * between(fromLeft ? 0.1 : 0.35, fromLeft ? 0.65 : 0.9);
+      const reachY = height * between(REACH_TOP, REACH_BOTTOM);
+      const seconds = between(FLIGHT_SECONDS_MIN, FLIGHT_SECONDS_MAX);
       return {
-        x: fromLeft ? 0 : width,
+        x,
         y: height,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
+        vx: ((reachX - x) * DRAG) / (1 - Math.exp(-DRAG * seconds)),
+        vy: (reachY - height) / seconds - (GRAVITY * seconds) / 2,
         size: 5 + Math.random() * 6,
         spin: Math.random() * 6,
-        color: COLORS[index % COLORS.length] as string,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)] as string,
       };
     });
 
