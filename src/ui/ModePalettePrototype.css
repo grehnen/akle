@@ -46,3 +46,41 @@
   font-weight: 700;
   white-space: nowrap;
 }
+
+/* Marker 1: the name itself takes the colour. */
+html[data-marker="name"] .mode-mark,
+html[data-marker="edge"] .itinerary-progress-detail .mode-mark,
+html[data-marker="edge"] .itinerary-legend .mode-mark {
+  color: var(--mode-colour);
+}
+
+/* Marker 2: an edge on the card or row, as on the gate's rules box. */
+html[data-marker="edge"] .free-play-mode {
+  box-shadow:
+    inset 5px 0 0 var(--mode-colour),
+    inset 0 0 0 1px var(--rule);
+  padding-left: 1.1rem;
+}
+
+html[data-marker="edge"] .free-play-mode:has(input[type="radio"]:checked) {
+  box-shadow:
+    inset 5px 0 0 var(--mode-colour),
+    inset 0 0 0 2px var(--start);
+}
+
+html[data-marker="edge"] .itinerary-trip,
+html[data-marker="edge"] .itinerary-summary-trip {
+  box-shadow: inset 4px 0 0 var(--mode-colour);
+  padding-left: 0.7rem;
+}
+
+/* Marker 3: the name in a coloured tag. */
+html[data-marker="pill"] .mode-mark {
+  display: inline-block;
+  padding: 0 0.5em;
+  border-radius: 999px;
+  background: var(--mode-colour);
+  color: var(--night);
+  font-weight: 600;
+  line-height: 1.35;
+}

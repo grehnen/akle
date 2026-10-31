@@ -1,6 +1,6 @@
 import { type ModeKind, type ModeSetting, THINKING_TIME_RANGE } from "../freePlay/linkPayload";
 import { MODES } from "./messages";
-import { ModeDot } from "./ModeDot";
+import { ModeMark } from "./ModeMark";
 import "./ModeCards.css";
 
 /**
@@ -26,7 +26,7 @@ export function ModeCards({
     <fieldset className="free-play-modes">
       <legend className="section-heading">Läge</legend>
       {MODES.map(({ kind, name, description, shortDescription }) => (
-        <label key={kind} className="free-play-mode">
+        <label key={kind} className="free-play-mode" data-mode={kind}>
           <input
             type="radio"
             name={groupName}
@@ -35,8 +35,7 @@ export function ModeCards({
             onChange={() => choose(kind)}
           />
           <span className="free-play-mode-name">
-            <ModeDot kind={kind} />
-            {name}
+            <ModeMark kind={kind}>{name}</ModeMark>
           </span>
           <span className="free-play-mode-description">
             {shortDescriptions ? shortDescription : description}

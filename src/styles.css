@@ -28,10 +28,10 @@
   /* Hint outlines: unfilled, thin and white at half opacity. */
   --hint-outline: rgb(255 255 255 / 50%);
   /* Each mode's colour, kept clear of the colours that mean a game state. */
-  --mode-standard: #9d7dff;
-  --mode-unlimited: #e84fb5;
-  --mode-timed: #ff9636;
-  --mode-tie-breaker: #22cfe6;
+  --mode-standard: #8998e9;
+  --mode-unlimited: #f3d1f4;
+  --mode-timed: #c69356;
+  --mode-tie-breaker: #31c3b5;
 
   --ui-font: Seravek, "Gill Sans Nova", Ubuntu, Calibri, "DejaVu Sans", source-sans-pro, sans-serif;
 
@@ -58,15 +58,6 @@
 
 [data-mode="tie-breaker"] {
   --mode-colour: var(--mode-tie-breaker);
-}
-
-.mode-dot {
-  display: inline-block;
-  width: 0.65em;
-  height: 0.65em;
-  margin-right: 0.4em;
-  border-radius: 50%;
-  background: var(--mode-colour);
 }
 
 * {

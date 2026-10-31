@@ -1,7 +1,7 @@
 import type { DraftTrip } from "../freePlay/builderDraft";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { distanceRangeText, modeName } from "./messages";
-import { ModeDot } from "./ModeDot";
+import { ModeMark } from "./ModeMark";
 import type { ReorderHandleProps } from "./useReorderableList";
 
 /** A trip in the itinerary being built, with a key for its row and the range it was drawn from. */
@@ -38,6 +38,7 @@ export function TripRow({
   const destination = kommunName(graph, trip.destination);
   return (
     <li
+      data-mode={trip.mode.kind}
       className={[
         "itinerary-trip",
         dragOffset !== undefined && "itinerary-trip--dragged",
@@ -75,8 +76,7 @@ export function TripRow({
           )}
         </span>
         <span className="itinerary-trip-mode">
-          <ModeDot kind={trip.mode.kind} />
-          {modeName(trip.mode)}
+          <ModeMark kind={trip.mode.kind}>{modeName(trip.mode)}</ModeMark>
         </span>
       </span>
       <span className="itinerary-trip-actions">

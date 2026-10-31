@@ -5,7 +5,7 @@ import { FREE_PLAY_PATH } from "../freePlay/tripLink";
 import { AppLink } from "./AppLink";
 import { ButtonGroup } from "./ButtonGroup";
 import { modeName, scoreText, timeText, wonTieBreakersText } from "./messages";
-import { ModeDot } from "./ModeDot";
+import { ModeMark } from "./ModeMark";
 import { ScoreLabel } from "./ScoreLabel";
 import { ScoreTooltip } from "./ScoreTooltip";
 import { ShareButton } from "./ShareButton";
@@ -68,14 +68,13 @@ export function ItinerarySummaryView({
 
 function SummaryRow({ row }: { row: ItinerarySummaryRow }) {
   return (
-    <li className="itinerary-summary-trip">
+    <li className="itinerary-summary-trip" data-mode={row.mode.kind}>
       <p className="itinerary-summary-pair">
         {row.start} → {row.destination}
       </p>
       <p className="itinerary-summary-facts">
         <span className="itinerary-summary-mode">
-          <ModeDot kind={row.mode.kind} />
-          {modeName(row.mode)}
+          <ModeMark kind={row.mode.kind}>{modeName(row.mode)}</ModeMark>
         </span>
         <span className="itinerary-summary-outcome">
           <ScoreLabel outcome={row.outcome} />

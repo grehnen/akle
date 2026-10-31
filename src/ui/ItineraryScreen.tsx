@@ -21,7 +21,7 @@ import { CopyLinkButton } from "./CopyLinkButton";
 import { GatedBoard } from "./GatedBoard";
 import { ItinerarySummaryView } from "./ItinerarySummary";
 import { MODE_NAMES, modeDescription, modeName, SCORE_EXPLANATION, scoreText } from "./messages";
-import { ModeDot } from "./ModeDot";
+import { ModeMark } from "./ModeMark";
 import { ScoreTooltip } from "./ScoreTooltip";
 import { useNavigation } from "./navigation";
 import "./ItineraryScreen.css";
@@ -97,8 +97,9 @@ export function ItineraryScreen({
     <p className="trip-number itinerary-progress">
       <span className="itinerary-progress-title">{title ?? "Resplan"}</span>{" "}
       <span className="itinerary-progress-detail">
-        Resa {stage.index + 1} av {trips.length} · <ModeDot kind={trip.mode.kind} />
-        {modeName(trip.mode)} · <ScoreTooltip>Totalt {scoreText(total)}</ScoreTooltip>
+        Resa {stage.index + 1} av {trips.length} ·{" "}
+        <ModeMark kind={trip.mode.kind}>{modeName(trip.mode)}</ModeMark> ·{" "}
+        <ScoreTooltip>Totalt {scoreText(total)}</ScoreTooltip>
       </span>
     </p>
   );
@@ -206,8 +207,7 @@ function ItineraryIntro({
           {modesPlayed.map((kind) => (
             <div key={kind}>
               <dt>
-                <span className="itinerary-legend-marker" data-mode={kind} aria-hidden="true" />
-                {MODE_NAMES[kind]}
+                <ModeMark kind={kind}>{MODE_NAMES[kind]}</ModeMark>
               </dt>
               <dd>{modeDescription(kind)}</dd>
             </div>
