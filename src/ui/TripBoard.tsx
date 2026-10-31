@@ -3,6 +3,7 @@ import { type Game, giveUp, reviewGame, type Trip } from "../engine/game";
 import { hintReveals } from "../engine/hints";
 import { resolveKommunName } from "../engine/kommunNames";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
+import type { Map as MapLibreMap } from "maplibre-gl";
 import { SatelliteMap } from "../map/SatelliteMap";
 import type { Stats } from "../progress/stats";
 import type { KeyValueStorage } from "../progress/storage";
@@ -20,6 +21,7 @@ import {
 } from "./guessSession";
 import { guessCardText, timeoutRowTitle, timeoutsText } from "./messages";
 import { ResultStrip, type ResultScore, ResultView } from "./ResultView";
+import { EffectVariantContext, TripEffect } from "./TripEffectPrototype";
 
 type TripBoardProps<T extends Trip> = {
   graph: GraphVersion;
@@ -120,6 +122,9 @@ export function TripBoard<T extends Trip>({
     return () => clearTimeout(timer);
   }, [finished, boardLingered, finishLingerMs]);
   const settled = finished && boardLingered;
+  // PROTOTYPE (#137): the effect plays only in the hold, which a restored game never has.
+  const effectVariant = useContext(EffectVariantContext);
+  const [mapInstance, setMapInstance] = useState<MapLibreMap>();
   // Focus follows the result view when it opens or closes by the player's hand, not on reload.
   const [resultToggled, setResultToggled] = useState(false);
   const [resultClosed, setResultClosed] = useState(initiallyClosed);
@@ -200,7 +205,18 @@ export function TripBoard<T extends Trip>({
               allOutlines={settled}
               onReady={onMapReady}
               concealed={concealed}
+              onMapInstance={setMapInstance}
             />
+            {effectVariant && finished && !boardLingered && (
+              <TripEffect
+                variant={effectVariant}
+                graph={graph}
+                trip={trip}
+                review={review}
+                map={mapInstance}
+                holdMs={finishLingerMs}
+              />
+            )}
             <p role="alert" className="toast">
               {toast}
             </p>

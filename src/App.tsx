@@ -15,6 +15,7 @@ import { DEFAULT_PACING, type Pacing, PacingContext } from "./ui/pacing";
 import { RulesDialog, RulesIcon } from "./ui/RulesDialog";
 import { StatsDialog, StatsIcon } from "./ui/StatsDialog";
 import { useLoaded } from "./ui/useLoaded";
+import { TripEffectsPrototype } from "./ui/TripEffectsPrototype";
 
 type AppProps = {
   source: DailyTripSource;
@@ -171,7 +172,10 @@ export function App({
                 onClose={() => setStatsOpen(false)}
               />
             )}
-            {freePlay ? (
+            {/* PROTOTYPE (#137): `/?variant=…` in dev only. */}
+            {import.meta.env.DEV && new URLSearchParams(search).has("variant") ? (
+              <TripEffectsPrototype daily={daily} />
+            ) : freePlay ? (
               <FreePlayView
                 key={visit}
                 source={source}

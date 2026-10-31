@@ -45,6 +45,8 @@ type SatelliteMapProps = {
    * description, until it is shown.
    */
   concealed?: boolean;
+  /** PROTOTYPE (#137): hands out the map once it has loaded, for an effect to paint on. */
+  onMapInstance?: (map: MapLibreMap | undefined) => void;
 };
 
 /**
@@ -63,6 +65,7 @@ export function SatelliteMap({
   allOutlines = false,
   onReady,
   concealed = false,
+  onMapInstance,
 }: SatelliteMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap>();
@@ -208,6 +211,10 @@ export function SatelliteMap({
       setMap(undefined);
     };
   }, [described, descriptionId, loadMapLibre]);
+
+  useEffect(() => {
+    onMapInstance?.(map);
+  }, [map, onMapInstance]);
 
   useEffect(() => {
     if (map) resetControl.current?.setBounds(resetBounds);
