@@ -237,6 +237,26 @@ describe("the effect as a trip finishes", () => {
 
     await wait(80);
     expect(glow(container)).toBeNull();
+  });
+
+  test("a Perfect win's confetti keeps falling after the result opens", async () => {
+    const container = await mount(40);
+    await guess(container, "Haninge");
+    await guess(container, "Salem");
+
+    await wait(80);
+    expect(container.querySelector("#result-heading")).not.toBeNull();
+    expect(confetti(container)).not.toBeNull();
+  });
+
+  test("under reduced motion no confetti appears after the hold either", async () => {
+    reducedMotion = true;
+    const container = await mount(40);
+    await guess(container, "Haninge");
+    await guess(container, "Salem");
+
+    await wait(80);
+    expect(container.querySelector("#result-heading")).not.toBeNull();
     expect(confetti(container)).toBeNull();
   });
 

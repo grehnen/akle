@@ -1,4 +1,13 @@
-import { Fragment, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { type Game, giveUp, reviewGame, type Trip } from "../engine/game";
 import { hintReveals } from "../engine/hints";
 import { resolveKommunName } from "../engine/kommunNames";
@@ -7,7 +16,7 @@ import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SatelliteMap } from "../map/SatelliteMap";
 import type { Stats } from "../progress/stats";
 import type { KeyValueStorage } from "../progress/storage";
-import { REDUCED_MOTION_QUERY, WinEffect } from "./FinishEffect";
+import { Confetti, FinishGlow, REDUCED_MOTION_QUERY } from "./FinishEffect";
 import { GiveUp } from "./GiveUp";
 import { GuessCounter } from "./GuessCounter";
 import { GuessInput } from "./GuessInput";
@@ -127,10 +136,15 @@ export function TripBoard<T extends Trip>({
   const finishingNow = finished && !boardLingered;
   const wonNow = finishingNow && review.status === "won";
   const { perfect } = review;
+  const [openedFinished] = useState(finished);
+  const finishedHere = finished && !openedFinished;
   const still = useMemo(
-    () => finishingNow && window.matchMedia(REDUCED_MOTION_QUERY).matches,
-    [finishingNow],
+    () => finishedHere && window.matchMedia(REDUCED_MOTION_QUERY).matches,
+    [finishedHere],
   );
+  // Confetti falls in its own time, past the pause and over the result view.
+  const [confettiLanded, setConfettiLanded] = useState(false);
+  const confettiLand = useCallback(() => setConfettiLanded(true), []);
   const sweep = useMemo(
     () =>
       wonNow
@@ -229,7 +243,7 @@ export function TripBoard<T extends Trip>({
               concealed={concealed}
               sweep={sweep}
             />
-            {wonNow && <WinEffect perfect={perfect} holdMs={lingerMs} still={still} />}
+            {wonNow && <FinishGlow perfect={perfect} />}
             <p role="alert" className="toast">
               {toast}
             </p>
@@ -331,6 +345,8 @@ export function TripBoard<T extends Trip>({
           </p>
         </footer>
       )}
+
+      {finishedHere && perfect && !still && !confettiLanded && <Confetti onDone={confettiLand} />}
     </section>
   );
 }
