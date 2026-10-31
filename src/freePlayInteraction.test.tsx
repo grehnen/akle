@@ -1244,7 +1244,7 @@ describe("the rules", () => {
       [...(section?.querySelectorAll(".rules-section-body p") ?? [])].map((p) => p.textContent),
     ).toEqual([
       "Lägre poäng är bättre. En perfekt resa ger −1; varje extra gissning, ledtråd och ⏱ kostar 1.",
-      "Kommer du inte fram räknas varje gissning utöver avståndet, plus 2 poäng för varje kommun du är ifrån målet, eller 3 om du gav upp. Ledtrådar och ⏱ kostar som vanligt.",
+      "Kommer du inte fram får du 2 poäng för varje kommun du är ifrån målet, eller 3 om du gav upp, plus 1 för varje gissning utöver avståndet. Ledtrådar och ⏱ kostar som vanligt. Ger du upp 1 ifrån målet efter 5 gissningar på en resa med avstånd 3 blir det 5 poäng: 3 för kommunen och 2 för gissningarna.",
       "Tiden räknas aldrig in i poängen. Den skiljer bara lika poäng åt: i en resplan vinner först den som vunnit flest resor i Tidtagning, sedan den med lägst total tid.",
     ]);
   });

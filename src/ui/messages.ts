@@ -181,7 +181,7 @@ export function freePlayHeadline(outcome: Outcome): string {
 export const SCORE_EXPLANATION = `Lägre poäng är bättre. En perfekt resa ger −1; varje extra gissning, ledtråd och ⏱ kostar ${TIMEOUT_COST}.`;
 
 /** How a lost free-play trip scores, given up or out of guesses. */
-export const LOSS_SCORE_EXPLANATION = `Kommer du inte fram räknas varje gissning utöver avståndet, plus ${AWAY_WEIGHT_AT_LIMIT} poäng för varje kommun du är ifrån målet, eller ${AWAY_WEIGHT_GIVEN_UP} om du gav upp. Ledtrådar och ⏱ kostar som vanligt.`;
+export const LOSS_SCORE_EXPLANATION = `Kommer du inte fram får du ${AWAY_WEIGHT_AT_LIMIT} poäng för varje kommun du är ifrån målet, eller ${AWAY_WEIGHT_GIVEN_UP} om du gav upp, plus 1 för varje gissning utöver avståndet. Ledtrådar och ⏱ kostar som vanligt. Ger du upp 1 ifrån målet efter 5 gissningar på en resa med avstånd 3 blir det ${AWAY_WEIGHT_GIVEN_UP + 2} poäng: ${AWAY_WEIGHT_GIVEN_UP} för kommunen och 2 för gissningarna.`;
 
 /** That time never enters a score but only separates equal ones, as the glossary's Score says. */
 export const TIME_TIE_BREAK_EXPLANATION =
