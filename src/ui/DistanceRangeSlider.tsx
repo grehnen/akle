@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { DistanceRange } from "../freePlay/draw";
 import { SliderTrack } from "./SliderTrack";
 
@@ -8,12 +9,21 @@ type DistanceRangeSliderProps = {
   onChange: (range: DistanceRange) => void;
 };
 
-/** One slider with two thumbs for an inclusive distance range, labelled "Avstånd 3–8". */
+/**
+ * One slider with two thumbs for an inclusive distance range, labelled "Avstånd 3–8". Either thumb
+ * can pass the other: each input stays the thumb being dragged, and the lower one is the minimum.
+ */
 export function DistanceRangeSlider({ range, largest, onChange }: DistanceRangeSliderProps) {
   const { min, max } = range;
   const percent = (value: number) => (largest <= 1 ? 0 : ((value - 1) / (largest - 1)) * 100);
-  // Stacked thumbs on the same value: the one that can still move goes on top.
-  const minOnTop = min === max && max === largest;
+  const [thumbsCrossed, setThumbsCrossed] = useState(false);
+  const firstThumb = thumbsCrossed ? max : min;
+  const secondThumb = thumbsCrossed ? min : max;
+  const moveThumbs = (first: number, second: number) => {
+    // On the same value neither has passed the other, so which holds which end stays as it was.
+    if (first !== second) setThumbsCrossed(first > second);
+    onChange({ min: Math.min(first, second), max: Math.max(first, second) });
+  };
   return (
     <div className="distance-range">
       <p className="free-play-range-label">
@@ -22,20 +32,19 @@ export function DistanceRangeSlider({ range, largest, onChange }: DistanceRangeS
       <SliderTrack startPercent={percent(min)} endPercent={percent(max)}>
         <input
           type="range"
-          aria-label="Minsta avstånd"
+          aria-label={thumbsCrossed ? "Största avstånd" : "Minsta avstånd"}
           min={1}
           max={largest}
-          value={min}
-          style={minOnTop ? { zIndex: 1 } : undefined}
-          onChange={(event) => onChange({ min: Math.min(Number(event.target.value), max), max })}
+          value={firstThumb}
+          onChange={(event) => moveThumbs(Number(event.target.value), secondThumb)}
         />
         <input
           type="range"
-          aria-label="Största avstånd"
+          aria-label={thumbsCrossed ? "Minsta avstånd" : "Största avstånd"}
           min={1}
           max={largest}
-          value={max}
-          onChange={(event) => onChange({ min, max: Math.max(Number(event.target.value), min) })}
+          value={secondThumb}
+          onChange={(event) => moveThumbs(firstThumb, Number(event.target.value))}
         />
       </SliderTrack>
     </div>
