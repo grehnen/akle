@@ -1,0 +1,103 @@
+/* PROTOTYPE (#137): throwaway. Never merge to main. */
+
+.tuner {
+  position: fixed;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: min(20rem, calc(100vw - 1rem));
+  max-height: calc(100dvh - 1rem);
+  overflow-y: auto;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  border: 2px solid #ff2fb4;
+  background: rgb(0 0 0 / 88%);
+  color: #fff;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+.tuner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.tuner button {
+  flex: 1;
+  min-height: 2rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: #ff2fb4;
+  color: #000;
+  font: inherit;
+  font-weight: 700;
+}
+
+.tuner__check {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.tuner__check input {
+  width: auto;
+}
+
+.tuner__status {
+  margin: 0;
+  color: #ffb3e4;
+}
+
+.tuner fieldset {
+  margin: 0;
+  padding: 0.3rem 0.5rem 0.5rem;
+  border: 1px solid #555;
+  border-radius: 0.4rem;
+}
+
+.tuner legend {
+  padding: 0 0.3rem;
+  font-weight: 700;
+  color: #ff2fb4;
+}
+
+.tuner__slider {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.3rem;
+}
+
+.tuner__slider span {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tuner__slider input {
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  accent-color: #ff2fb4;
+}
+
+.tuner strong.changed {
+  color: #fecc02;
+}
+
+.tuner__report {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.tuner textarea {
+  width: 100%;
+  resize: vertical;
+  background: #111;
+  color: #fff;
+  font: inherit;
+}
