@@ -1,6 +1,5 @@
 import { type ModeKind, type ModeSetting, THINKING_TIME_RANGE } from "../freePlay/linkPayload";
 import { MODES } from "./messages";
-import { ModeMark } from "./ModeMark";
 import "./ModeCards.css";
 
 /**
@@ -34,9 +33,7 @@ export function ModeCards({
             checked={mode.kind === kind}
             onChange={() => choose(kind)}
           />
-          <span className="free-play-mode-name">
-            <ModeMark kind={kind}>{name}</ModeMark>
-          </span>
+          <span className="free-play-mode-name">{name}</span>
           <span className="free-play-mode-description">
             {shortDescriptions ? shortDescription : description}
           </span>

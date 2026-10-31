@@ -21,7 +21,7 @@ import { CopyLinkButton } from "./CopyLinkButton";
 import { GatedBoard } from "./GatedBoard";
 import { ItinerarySummaryView } from "./ItinerarySummary";
 import { MODE_NAMES, modeDescription, modeName, SCORE_EXPLANATION, scoreText } from "./messages";
-import { ModeMark } from "./ModeMark";
+import { ModeName } from "./ModeName";
 import { ScoreTooltip } from "./ScoreTooltip";
 import { useNavigation } from "./navigation";
 import "./ItineraryScreen.css";
@@ -94,11 +94,11 @@ export function ItineraryScreen({
 
   const trip = trips[stage.index];
   const label = (
-    <p className="trip-number itinerary-progress">
+    <p className="trip-number itinerary-progress" data-mode={trip.mode.kind}>
       <span className="itinerary-progress-title">{title ?? "Resplan"}</span>{" "}
       <span className="itinerary-progress-detail">
         Resa {stage.index + 1} av {trips.length} ·{" "}
-        <ModeMark kind={trip.mode.kind}>{modeName(trip.mode)}</ModeMark> ·{" "}
+        <ModeName kind={trip.mode.kind}>{modeName(trip.mode)}</ModeName> ·{" "}
         <ScoreTooltip>Totalt {scoreText(total)}</ScoreTooltip>
       </span>
     </p>
@@ -205,9 +205,9 @@ function ItineraryIntro({
         </ol>
         <dl className="itinerary-legend">
           {modesPlayed.map((kind) => (
-            <div key={kind}>
+            <div key={kind} data-mode={kind}>
               <dt>
-                <ModeMark kind={kind}>{MODE_NAMES[kind]}</ModeMark>
+                <ModeName kind={kind}>{MODE_NAMES[kind]}</ModeName>
               </dt>
               <dd>{modeDescription(kind)}</dd>
             </div>

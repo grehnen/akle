@@ -1,53 +1,61 @@
-// PROTOTYPE (#126): switches how a mode's colour is marked, with ?marker= or the ← → keys. Throwaway.
+// PROTOTYPE (#126): compares legend and label markers, with ?legend= and ?label= or the bar. Throwaway.
 import { useEffect, useState } from "react";
 import "./ModePalettePrototype.css";
 
-const MARKERS: Record<string, string> = {
-  name: "Coloured name",
-  edge: "Edge bars, coloured names in label and legend",
-  pill: "Pills",
-};
-const KEYS = Object.keys(MARKERS);
-const STORAGE_KEY = "prototype-mode-marker";
+const LEGEND = ["name", "edge", "pill"];
+const LABEL = ["name", "tick", "edge", "pill"];
 
-const nextKey = (current: string, by: number) =>
-  KEYS[(KEYS.indexOf(current) + by + KEYS.length) % KEYS.length] as string;
-
-export function ModePalettePrototype() {
-  const [key, setKey] = useState(() => {
-    const asked = new URLSearchParams(window.location.search).get("marker");
-    const wanted = asked ?? sessionStorage.getItem(STORAGE_KEY) ?? "name";
-    return wanted in MARKERS ? wanted : "name";
+function useChoice(param: "legend" | "label", options: string[]) {
+  const [choice, setChoice] = useState(() => {
+    const wanted =
+      new URLSearchParams(window.location.search).get(param) ??
+      sessionStorage.getItem(`prototype-${param}`) ??
+      "name";
+    return options.includes(wanted) ? wanted : "name";
   });
-
   useEffect(() => {
-    document.documentElement.dataset.marker = key;
-    sessionStorage.setItem(STORAGE_KEY, key);
+    document.documentElement.dataset[param] = choice;
+    sessionStorage.setItem(`prototype-${param}`, choice);
     const url = new URL(window.location.href);
-    url.searchParams.set("marker", key);
+    url.searchParams.set(param, choice);
     window.history.replaceState(window.history.state, "", url);
-  }, [key]);
+  }, [param, choice]);
+  const step = (by: number) =>
+    setChoice(options[(options.indexOf(choice) + by + options.length) % options.length] as string);
+  return { choice, step };
+}
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-      const target = event.target as HTMLElement;
-      if (event.defaultPrevented || target.closest("input, textarea, [contenteditable]")) return;
-      setKey((current) => nextKey(current, event.key === "ArrowLeft" ? -1 : 1));
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
+function Cycler({
+  title,
+  choice,
+  step,
+}: {
+  title: string;
+  choice: string;
+  step: (by: number) => void;
+}) {
   return (
-    <aside className="palette-prototype" aria-label="Prototyp: färgmarkering">
-      <button type="button" onClick={() => setKey(nextKey(key, -1))} aria-label="Föregående">
+    <span className="palette-prototype-cycler">
+      <button type="button" onClick={() => step(-1)} aria-label={`${title}: previous`}>
         ←
       </button>
-      <span className="palette-prototype-name">{MARKERS[key]}</span>
-      <button type="button" onClick={() => setKey(nextKey(key, 1))} aria-label="Nästa">
+      <span className="palette-prototype-name">
+        {title}: {choice}
+      </span>
+      <button type="button" onClick={() => step(1)} aria-label={`${title}: next`}>
         →
       </button>
+    </span>
+  );
+}
+
+export function ModePalettePrototype() {
+  const legend = useChoice("legend", LEGEND);
+  const label = useChoice("label", LABEL);
+  return (
+    <aside className="palette-prototype" aria-label="Prototype: legend and label markers">
+      <Cycler title="Legend" {...legend} />
+      <Cycler title="Label" {...label} />
     </aside>
   );
 }

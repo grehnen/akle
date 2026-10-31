@@ -47,35 +47,24 @@
   white-space: nowrap;
 }
 
-/* Marker 1: the name itself takes the colour. */
-html[data-marker="name"] .mode-mark,
-html[data-marker="edge"] .itinerary-progress-detail .mode-mark,
-html[data-marker="edge"] .itinerary-legend .mode-mark {
-  color: var(--mode-colour);
+.palette-prototype-cycler {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
-/* Marker 2: an edge on the card or row, as on the gate's rules box. */
-html[data-marker="edge"] .free-play-mode {
-  box-shadow:
-    inset 5px 0 0 var(--mode-colour),
-    inset 0 0 0 1px var(--rule);
-  padding-left: 1.1rem;
+/* Legend: name is the base style in styles.css. */
+html[data-legend="edge"] .itinerary-legend .mode-name {
+  color: inherit;
 }
 
-html[data-marker="edge"] .free-play-mode:has(input[type="radio"]:checked) {
-  box-shadow:
-    inset 5px 0 0 var(--mode-colour),
-    inset 0 0 0 2px var(--start);
-}
-
-html[data-marker="edge"] .itinerary-trip,
-html[data-marker="edge"] .itinerary-summary-trip {
-  box-shadow: inset 4px 0 0 var(--mode-colour);
+html[data-legend="edge"] .itinerary-legend > div {
   padding-left: 0.7rem;
+  box-shadow: inset 4px 0 0 var(--mode-colour);
 }
 
-/* Marker 3: the name in a coloured tag. */
-html[data-marker="pill"] .mode-mark {
+html[data-legend="pill"] .itinerary-legend .mode-name,
+html[data-label="pill"] .itinerary-progress-detail .mode-name {
   display: inline-block;
   padding: 0 0.5em;
   border-radius: 999px;
@@ -83,4 +72,26 @@ html[data-marker="pill"] .mode-mark {
   color: var(--night);
   font-weight: 600;
   line-height: 1.35;
+}
+
+/* Label: name is the base style in styles.css. */
+html[data-label="tick"] .itinerary-progress-detail .mode-name,
+html[data-label="edge"] .itinerary-progress-detail .mode-name {
+  color: inherit;
+}
+
+html[data-label="tick"] .itinerary-progress-detail .mode-name::before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 0.95em;
+  margin-right: 0.35em;
+  border-radius: 1px;
+  background: var(--mode-colour);
+  vertical-align: -0.12em;
+}
+
+html[data-label="edge"] .itinerary-progress {
+  padding-left: 0.6rem;
+  box-shadow: inset 4px 0 0 var(--mode-colour);
 }

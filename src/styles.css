@@ -60,6 +60,10 @@
   --mode-colour: var(--mode-tie-breaker);
 }
 
+.mode-name {
+  color: var(--mode-colour);
+}
+
 * {
   box-sizing: border-box;
 }

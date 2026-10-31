@@ -157,24 +157,14 @@
 }
 
 .itinerary-legend dt {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   font-weight: 700;
 }
 
 .itinerary-legend dd {
-  margin: 0.1rem 0 0 1.25rem;
+  margin: 0.1rem 0 0;
   color: var(--muted);
   font-size: 0.92rem;
   text-wrap: pretty;
-}
-
-.itinerary-legend-marker {
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 50%;
-  background: var(--mode-colour);
 }
 
 @media (min-width: 46rem) {
