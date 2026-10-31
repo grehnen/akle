@@ -21,6 +21,7 @@ import { CopyLinkButton } from "./CopyLinkButton";
 import { GatedBoard } from "./GatedBoard";
 import { ItinerarySummaryView } from "./ItinerarySummary";
 import { MODE_NAMES, modeDescription, modeName, SCORE_EXPLANATION, scoreText } from "./messages";
+import { ModeName } from "./ModeName";
 import { ScoreTooltip } from "./ScoreTooltip";
 import { useNavigation } from "./navigation";
 import "./ItineraryScreen.css";
@@ -96,7 +97,8 @@ export function ItineraryScreen({
     <p className="trip-number itinerary-progress">
       <span className="itinerary-progress-title">{title ?? "Resplan"}</span>{" "}
       <span className="itinerary-progress-detail">
-        Resa {stage.index + 1} av {trips.length} · {modeName(trip.mode)} ·{" "}
+        Resa {stage.index + 1} av {trips.length} ·{" "}
+        <ModeName kind={trip.mode.kind}>{modeName(trip.mode)}</ModeName> ·{" "}
         <ScoreTooltip>Totalt {scoreText(total)}</ScoreTooltip>
       </span>
     </p>
@@ -191,7 +193,7 @@ function ItineraryIntro({
           {trips.map((trip, index) => (
             // oxlint-disable-next-line react/no-array-index-key -- the order is fixed: a trip is its place.
             <li key={index} className="itinerary-stop">
-              <span className="itinerary-stop-number" aria-hidden="true">
+              <span className="itinerary-stop-number" data-mode={trip.mode.kind} aria-hidden="true">
                 {index + 1}
               </span>
               <strong className="itinerary-stop-mode">{modeName(trip.mode)}</strong>
@@ -203,11 +205,8 @@ function ItineraryIntro({
         </ol>
         <dl className="itinerary-legend">
           {modesPlayed.map((kind) => (
-            <div key={kind}>
-              <dt>
-                <span className="itinerary-legend-marker" aria-hidden="true" />
-                {MODE_NAMES[kind]}
-              </dt>
+            <div key={kind} data-mode={kind}>
+              <dt>{MODE_NAMES[kind]}</dt>
               <dd>{modeDescription(kind)}</dd>
             </div>
           ))}

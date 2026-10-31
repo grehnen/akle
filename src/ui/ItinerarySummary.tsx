@@ -67,7 +67,7 @@ export function ItinerarySummaryView({
 
 function SummaryRow({ row }: { row: ItinerarySummaryRow }) {
   return (
-    <li className="itinerary-summary-trip">
+    <li className="itinerary-summary-trip" data-mode={row.mode.kind}>
       <p className="itinerary-summary-pair">
         {row.start} → {row.destination}
       </p>

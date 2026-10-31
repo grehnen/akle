@@ -25,7 +25,7 @@ export function ModeCards({
     <fieldset className="free-play-modes">
       <legend className="section-heading">Läge</legend>
       {MODES.map(({ kind, name, description, shortDescription }) => (
-        <label key={kind} className="free-play-mode">
+        <label key={kind} className="free-play-mode" data-mode={kind}>
           <input
             type="radio"
             name={groupName}
