@@ -50,7 +50,7 @@ Every borderline case was checked by hand. Think two kommuner should (or shouldn
 
 ## For developers
 
-You need [Bun](https://bun.sh/) (the version in `package.json`, currently 1.3) and [Node.js](https://nodejs.org/) (the version in `.node-version`, currently 24). Then:
+You need [Bun](https://bun.sh/) (the version in `package.json`) and [Node.js](https://nodejs.org/) (the version in `.node-version`). Then:
 
 ```sh
 bun install
