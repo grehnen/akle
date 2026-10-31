@@ -110,7 +110,7 @@ function dailyProgress() {
 }
 
 /** Lingers and ticks shortened, so the tests wait on no real time to speak of. */
-const SHORT_PACING = { finishLingerMs: 0, tickMs: 5 };
+const SHORT_PACING = { winLingerMs: 0, lossLingerMs: 0, tickMs: 5 };
 /** The pacing the app is mounted with; a test may hold the finish linger longer. */
 let pacing = SHORT_PACING;
 /** Lets the shortened linger and a tick or two pass. */
@@ -1596,7 +1596,7 @@ describe("Tidtagning", () => {
   });
 
   test("a win's clock stops at the final time while the board lingers", async () => {
-    pacing = { ...SHORT_PACING, finishLingerMs: 60_000 };
+    pacing = { ...SHORT_PACING, winLingerMs: 60_000 };
     const { container } = await mountApp(tieBreakerLink("0192", "0488"));
     await click(startaButton(container));
     await guess(container, "Haninge");
