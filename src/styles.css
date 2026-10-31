@@ -27,6 +27,11 @@
   --warning: #ff5a5f;
   /* Hint outlines: unfilled, thin and white at half opacity. */
   --hint-outline: rgb(255 255 255 / 50%);
+  /* Each mode's colour, kept clear of the colours that mean a game state. */
+  --mode-standard: #9d7dff;
+  --mode-unlimited: #e84fb5;
+  --mode-timed: #ff9636;
+  --mode-tie-breaker: #22cfe6;
 
   --ui-font: Seravek, "Gill Sans Nova", Ubuntu, Calibri, "DejaVu Sans", source-sans-pro, sans-serif;
 
@@ -37,6 +42,31 @@
   line-height: 1.45;
   color: var(--text);
   background: var(--night);
+}
+
+[data-mode="standard"] {
+  --mode-colour: var(--mode-standard);
+}
+
+[data-mode="unlimited"] {
+  --mode-colour: var(--mode-unlimited);
+}
+
+[data-mode="timed"] {
+  --mode-colour: var(--mode-timed);
+}
+
+[data-mode="tie-breaker"] {
+  --mode-colour: var(--mode-tie-breaker);
+}
+
+.mode-dot {
+  display: inline-block;
+  width: 0.65em;
+  height: 0.65em;
+  margin-right: 0.4em;
+  border-radius: 50%;
+  background: var(--mode-colour);
 }
 
 * {

@@ -1,0 +1,48 @@
+/* PROTOTYPE (#126): the palette switcher, clearly not part of the design being judged. */
+.palette-prototype {
+  position: fixed;
+  left: 50%;
+  bottom: 0.75rem;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  width: max-content;
+  max-width: calc(100vw - 1rem);
+  padding: 0.4rem 0.75rem;
+  border-radius: 14px;
+  border: 2px dashed #000;
+  background: #fff;
+  color: #000;
+  font-size: 0.8rem;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 60%);
+}
+
+.palette-prototype button {
+  padding: 0.1rem 0.5rem;
+  background: #ddd;
+  color: #000;
+}
+
+.palette-prototype-name {
+  font-weight: 700;
+}
+
+.palette-prototype-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.palette-prototype-swatch {
+  padding: 0.05rem 0.4rem;
+  border-radius: 6px;
+  background: #0d1620;
+  color: var(--swatch);
+  font-weight: 700;
+  white-space: nowrap;
+}

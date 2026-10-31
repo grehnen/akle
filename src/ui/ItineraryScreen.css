@@ -122,7 +122,6 @@
   font-size: 1.125rem;
 }
 
-/* Neutral for every mode for now; a colour per mode would tie the stops to the legend. */
 .itinerary-stop-number {
   flex: none;
   width: var(--stop-size);
@@ -130,7 +129,7 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--text);
+  background: var(--mode-colour);
   color: var(--night);
   font-size: 0.95rem;
   font-weight: 700;
@@ -175,7 +174,7 @@
   width: 0.75rem;
   height: 0.75rem;
   border-radius: 50%;
-  background: var(--text);
+  background: var(--mode-colour);
 }
 
 @media (min-width: 46rem) {
