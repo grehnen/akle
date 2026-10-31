@@ -10,8 +10,19 @@ import { TripBoard } from "./TripBoard";
 
 const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>');
 // The satellite map asks for the touch-screen media query; jsdom has no matchMedia.
-const matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+let reducedMotion = false;
+const matchMedia = (query: string) => ({
+  matches: reducedMotion && query.includes("prefers-reduced-motion"),
+  addEventListener() {},
+  removeEventListener() {},
+});
 Object.assign(dom.window, { matchMedia });
+// Ge upp's dialog opens with showModal, which jsdom doesn't have.
+Object.assign(dom.window.HTMLDialogElement.prototype, {
+  showModal(this: HTMLDialogElement) {
+    this.open = true;
+  },
+});
 Object.assign(globalThis, {
   window: dom.window,
   document: dom.window.document,
@@ -56,6 +67,7 @@ function BareBoard() {
 let mounted: { root: Root; container: HTMLElement } | undefined;
 
 afterEach(() => {
+  reducedMotion = false;
   if (!mounted) return;
   const { root, container } = mounted;
   act(() => root.unmount());
@@ -63,19 +75,42 @@ afterEach(() => {
   mounted = undefined;
 });
 
-async function mount(finishLingerMs = 0): Promise<HTMLElement> {
+async function mount(
+  winLingerMs = 0,
+  lossLingerMs = 0,
+  board = <BareBoard />,
+): Promise<HTMLElement> {
   const container = dom.window.document.createElement("div");
   dom.window.document.body.append(container);
   const root = createRoot(container);
   mounted = { root, container };
   await act(async () =>
     root.render(
-      <PacingContext value={{ finishLingerMs, tickMs: 250 }}>
-        <BareBoard />
-      </PacingContext>,
+      <PacingContext value={{ winLingerMs, lossLingerMs, tickMs: 250 }}>{board}</PacingContext>,
     ),
   );
   return container;
+}
+
+/** A board on a game played up to here, its give-up allowed so a test can lose at will. */
+function BoardOn({ guesses = [], givenUp }: { guesses?: string[]; givenUp?: true }) {
+  const [game, setGame] = useState<Game>(() => ({
+    trip,
+    rules: { guessLimit: "distance", giveUp: true, keepsTime: false },
+    guesses,
+    givenUp,
+  }));
+  return (
+    <TripBoard graph={graph} game={game} onGameChange={setGame} sessionStorage={memoryStorage()} />
+  );
+}
+
+const wait = (ms: number) => act(async () => new Promise((resolve) => setTimeout(resolve, ms)));
+
+/** Gives up, through the Ge upp button and its dialog. */
+async function giveUp(container: HTMLElement) {
+  await act(async () => container.querySelector<HTMLElement>(".give-up-button")?.click());
+  await act(async () => container.querySelector<HTMLElement>(".give-up-confirm")?.click());
 }
 
 /** Types `name` into the guess input and presses Gissa. */
@@ -117,6 +152,26 @@ describe("the board on its own", () => {
     expect(container.querySelector("#result-heading")?.textContent).toBe("Perfekt!");
   });
 
+  test("a win holds the board for the win's linger, however short a loss's is", async () => {
+    const container = await mount(120, 0);
+    await guess(container, "Haninge");
+    await guess(container, "Salem");
+
+    await wait(40);
+    expect(container.querySelector("#result-heading")).toBeNull();
+    await wait(120);
+    expect(container.querySelector("#result-heading")).not.toBeNull();
+  });
+
+  test("a give-up holds the board for the loss's linger, however long a win's is", async () => {
+    const container = await mount(60_000, 40, <BoardOn />);
+    await giveUp(container);
+
+    expect(container.querySelector("#result-heading")).toBeNull();
+    await wait(80);
+    expect(container.querySelector("#result-heading")).not.toBeNull();
+  });
+
   test("a finished trip's board takes no more guesses", async () => {
     const container = await mount(60);
     await guess(container, "Haninge");
@@ -127,5 +182,90 @@ describe("the board on its own", () => {
     expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(
       true,
     );
+  });
+});
+
+describe("the effect as a trip finishes", () => {
+  const glow = (container: HTMLElement) => container.querySelector(".finish-glow");
+  const confetti = (container: HTMLElement) => container.querySelector(".finish-confetti");
+  const dimmed = (container: HTMLElement) => container.querySelector(".map-frame--dimmed");
+
+  test("a Perfect win gets the gold glow and confetti, with the map undimmed", async () => {
+    const container = await mount(60_000);
+    await guess(container, "Haninge");
+    await guess(container, "Salem");
+
+    expect(glow(container)?.classList.contains("finish-glow--perfect")).toBe(true);
+    expect(confetti(container)).not.toBeNull();
+    expect(dimmed(container)).toBeNull();
+  });
+
+  test("a win that isn't Perfect gets the green glow and no confetti", async () => {
+    const container = await mount(60_000);
+    await guess(container, "Salem");
+    await guess(container, "Haninge");
+
+    expect(glow(container)?.classList.contains("finish-glow--perfect")).toBe(false);
+    expect(glow(container)).not.toBeNull();
+    expect(confetti(container)).toBeNull();
+    expect(dimmed(container)).toBeNull();
+  });
+
+  test("a give-up only dims the map", async () => {
+    const container = await mount(0, 60_000, <BoardOn />);
+    await giveUp(container);
+
+    expect(dimmed(container)).not.toBeNull();
+    expect(glow(container)).toBeNull();
+    expect(confetti(container)).toBeNull();
+  });
+
+  test("nothing plays while the trip is still being played", async () => {
+    const container = await mount(60_000);
+    await guess(container, "Haninge");
+
+    expect(glow(container)).toBeNull();
+    expect(confetti(container)).toBeNull();
+    expect(dimmed(container)).toBeNull();
+  });
+
+  test("the effect ends when the hold does", async () => {
+    const container = await mount(40);
+    await guess(container, "Haninge");
+    await guess(container, "Salem");
+    expect(glow(container)).not.toBeNull();
+
+    await wait(80);
+    expect(glow(container)).toBeNull();
+    expect(confetti(container)).toBeNull();
+  });
+
+  test("a win reopened from its save plays nothing, even with its result closed", async () => {
+    const container = await mount(60_000, 60_000, <BoardOn guesses={["0136", "0128"]} />);
+    expect(glow(container)).toBeNull();
+    expect(confetti(container)).toBeNull();
+
+    await act(async () => container.querySelector<HTMLElement>(".result-close")?.click());
+    expect(container.querySelector(".satellite-map")).not.toBeNull();
+    expect(glow(container)).toBeNull();
+    expect(confetti(container)).toBeNull();
+  });
+
+  test("a give-up reopened from its save leaves the map undimmed", async () => {
+    const container = await mount(60_000, 60_000, <BoardOn givenUp />);
+    await act(async () => container.querySelector<HTMLElement>(".result-close")?.click());
+
+    expect(container.querySelector(".satellite-map")).not.toBeNull();
+    expect(dimmed(container)).toBeNull();
+  });
+
+  test("under reduced motion a Perfect win keeps its glow but drops the confetti", async () => {
+    reducedMotion = true;
+    const container = await mount(60_000);
+    await guess(container, "Haninge");
+    await guess(container, "Salem");
+
+    expect(glow(container)?.classList.contains("finish-glow--perfect")).toBe(true);
+    expect(confetti(container)).toBeNull();
   });
 });

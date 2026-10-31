@@ -1,0 +1,49 @@
+/* A loss drains and darkens the map; under reduced motion, at once. */
+.map-frame--dimmed .satellite-map {
+  filter: saturate(0.3) brightness(0.75);
+  transition: filter 800ms ease-out;
+}
+
+/* Its resting ring is what reduced motion shows, with the pulse switched off. */
+.finish-glow {
+  --glow: #4ade80;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: 14px;
+  box-shadow: 0 0 0 2px var(--glow);
+  pointer-events: none;
+  animation: finish-glow-pulse 900ms ease-out both;
+}
+
+.finish-glow--perfect {
+  --glow: #fecc02;
+  animation: finish-glow-pulse 650ms ease-out 2 both;
+}
+
+@keyframes finish-glow-pulse {
+  0% {
+    box-shadow:
+      0 0 0 0 transparent,
+      inset 0 0 0 0 transparent;
+  }
+  35% {
+    box-shadow:
+      0 0 28px 8px var(--glow),
+      inset 0 0 40px 6px var(--glow);
+  }
+  100% {
+    box-shadow:
+      0 0 0 2px var(--glow),
+      inset 0 0 0 0 transparent;
+  }
+}
+
+.finish-confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  width: 100vw;
+  height: 100dvh;
+  pointer-events: none;
+}

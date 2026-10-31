@@ -2,10 +2,12 @@ import { Fragment, type ReactNode, useContext, useEffect, useMemo, useRef, useSt
 import { type Game, giveUp, reviewGame, type Trip } from "../engine/game";
 import { hintReveals } from "../engine/hints";
 import { resolveKommunName } from "../engine/kommunNames";
+import { guessedStops } from "../engine/routeStops";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
 import { SatelliteMap } from "../map/SatelliteMap";
 import type { Stats } from "../progress/stats";
 import type { KeyValueStorage } from "../progress/storage";
+import { REDUCED_MOTION_QUERY, WinEffect } from "./FinishEffect";
 import { GiveUp } from "./GiveUp";
 import { GuessCounter } from "./GuessCounter";
 import { GuessInput } from "./GuessInput";
@@ -112,14 +114,35 @@ export function TripBoard<T extends Trip>({
   const reveals = useMemo(() => hintReveals(graph, game), [graph, game]);
   const finished = review.status !== "playing";
   // A game finished just now keeps the board up for a moment, so the last guess is seen landing.
-  const { finishLingerMs } = useContext(PacingContext);
+  const { winLingerMs, lossLingerMs } = useContext(PacingContext);
+  const lingerMs = review.status === "won" ? winLingerMs : lossLingerMs;
   const [boardLingered, setBoardLingered] = useState(finished);
   useEffect(() => {
     if (!finished || boardLingered) return;
-    const timer = setTimeout(() => setBoardLingered(true), finishLingerMs);
+    const timer = setTimeout(() => setBoardLingered(true), lingerMs);
     return () => clearTimeout(timer);
-  }, [finished, boardLingered, finishLingerMs]);
+  }, [finished, boardLingered, lingerMs]);
   const settled = finished && boardLingered;
+  // Only that pause plays an effect, so a game reopened from its save, which has none, plays nothing.
+  const finishingNow = finished && !boardLingered;
+  const wonNow = finishingNow && review.status === "won";
+  const { perfect } = review;
+  const still = useMemo(
+    () => finishingNow && window.matchMedia(REDUCED_MOTION_QUERY).matches,
+    [finishingNow],
+  );
+  const sweep = useMemo(
+    () =>
+      wonNow
+        ? {
+            stops: guessedStops(trip, review.cheapestRoute ?? [], new Set(game.guesses)),
+            perfect,
+            holdMs: lingerMs,
+            still,
+          }
+        : undefined,
+    [wonNow, trip, review.cheapestRoute, game.guesses, perfect, lingerMs, still],
+  );
   // Focus follows the result view when it opens or closes by the player's hand, not on reload.
   const [resultToggled, setResultToggled] = useState(false);
   const [resultClosed, setResultClosed] = useState(initiallyClosed);
@@ -190,7 +213,11 @@ export function TripBoard<T extends Trip>({
       {!showResult && (
         <>
           {/* A rejected guess's toast floats over the map's bottom edge, so nothing moves for it. */}
-          <div className="map-frame">
+          <div
+            className={
+              finishingNow && review.status === "lost" ? "map-frame map-frame--dimmed" : "map-frame"
+            }
+          >
             <SatelliteMap
               graph={graph}
               trip={trip}
@@ -200,7 +227,9 @@ export function TripBoard<T extends Trip>({
               allOutlines={settled}
               onReady={onMapReady}
               concealed={concealed}
+              sweep={sweep}
             />
+            {wonNow && <WinEffect perfect={perfect} holdMs={lingerMs} still={still} />}
             <p role="alert" className="toast">
               {toast}
             </p>

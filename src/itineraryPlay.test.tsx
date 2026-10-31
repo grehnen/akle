@@ -108,7 +108,7 @@ const OPENED_AT = new Date(2026, 9, 24, 12, 0).getTime();
 let clockTime = OPENED_AT;
 
 /** Lingers and ticks shortened, so the tests wait on no real time to speak of. */
-const pacing = { finishLingerMs: 0, tickMs: 5 };
+const pacing = { winLingerMs: 0, lossLingerMs: 0, tickMs: 5 };
 /** Lets the shortened linger and a tick or two pass. */
 const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
 
