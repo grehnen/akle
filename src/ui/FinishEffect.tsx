@@ -14,7 +14,7 @@ export function FinishGlow({ perfect }: { perfect: boolean }) {
 }
 
 const COLORS = ["#fecc02", "#fecc02", "#ffe680", "#ffffff"];
-const PIECES = 1000;
+const PIECES = 500;
 /** Pieces leave their corners at random moments over this long, rather than in one burst. */
 const LAUNCH_SPREAD_SECONDS = 1.5;
 /** How fast air slows a piece down, per second. */
