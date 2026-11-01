@@ -365,10 +365,29 @@ a {
   outline: none;
 }
 
-/* While the on-screen keyboard is open, the map shrinks so the prompt stays in view. */
+/*
+ * While the on-screen keyboard is open, the map is scrolled to the top (`useBoardKeyboardScroll`)
+ * and keeps its shape unless that would take it behind the pinned guess input, the height held
+ * for which is --guess-input-room. It never gets too short for its three zoom buttons.
+ */
 [data-keyboard="open"] .satellite-map {
-  aspect-ratio: auto;
-  height: calc(var(--visible-height, 100dvh) * 0.3);
+  --guess-input-room: 5rem;
+
+  max-height: max(9rem, calc(var(--visible-height, 100dvh) - var(--guess-input-room)));
+}
+
+[data-keyboard="open"] .play-screen:has(.thinking-time) .satellite-map {
+  --guess-input-room: 7.25rem;
+}
+
+/* Room below the board, with the guess input pinned out of it, to scroll the map up to the top. */
+[data-keyboard="open"] .play-screen {
+  padding-bottom: var(--visible-height, 100dvh);
+}
+
+.map-frame,
+#trip-heading {
+  scroll-margin-top: 0.5rem;
 }
 
 .satellite-map .maplibregl-ctrl-attrib {

@@ -1,9 +1,10 @@
-import { afterAll, afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { JSDOM } from "jsdom";
 import { act, useState } from "react";
 import type { Root } from "react-dom/client";
 import { type Game, newGame, type Trip } from "../engine/game";
 import { buildGraphVersion } from "../graph/graphVersion";
+import { TOUCH_SCREEN_QUERY } from "../map/mapStyle";
 import { memoryStorage } from "../progress/storage";
 import { PacingContext } from "./pacing";
 import { TripBoard } from "./TripBoard";
@@ -11,8 +12,11 @@ import { TripBoard } from "./TripBoard";
 const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>');
 // The satellite map asks for the touch-screen media query; jsdom has no matchMedia.
 let reducedMotion = false;
+let touchScreen = false;
 const matchMedia = (query: string) => ({
-  matches: reducedMotion && query.includes("prefers-reduced-motion"),
+  matches:
+    (reducedMotion && query.includes("prefers-reduced-motion")) ||
+    (touchScreen && query === TOUCH_SCREEN_QUERY),
   addEventListener() {},
   removeEventListener() {},
 });
@@ -57,10 +61,16 @@ const graph = buildGraphVersion({
 const trip: Trip = { start: "0192", destination: "0488" };
 
 /** The board on its own, holding the game the way a screen around it would. */
-function BareBoard() {
+function BareBoard({ openedByPlayer = false }: { openedByPlayer?: boolean }) {
   const [game, setGame] = useState<Game>(() => newGame(trip));
   return (
-    <TripBoard graph={graph} game={game} onGameChange={setGame} sessionStorage={memoryStorage()} />
+    <TripBoard
+      graph={graph}
+      game={game}
+      onGameChange={setGame}
+      sessionStorage={memoryStorage()}
+      openedByPlayer={openedByPlayer}
+    />
   );
 }
 
@@ -68,6 +78,7 @@ let mounted: { root: Root; container: HTMLElement } | undefined;
 
 afterEach(() => {
   reducedMotion = false;
+  touchScreen = false;
   if (!mounted) return;
   const { root, container } = mounted;
   act(() => root.unmount());
@@ -182,6 +193,133 @@ describe("the board on its own", () => {
     expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(
       true,
     );
+  });
+});
+
+describe("a board the player opens", () => {
+  const inputHasFocus = (container: HTMLElement) =>
+    dom.window.document.activeElement === container.querySelector("input");
+
+  test("takes focus to the guess input where a keyboard is at hand", async () => {
+    const container = await mount(0, 0, <BareBoard openedByPlayer />);
+    expect(inputHasFocus(container)).toBe(true);
+  });
+
+  test("on a touch screen leaves the input for a tap, so no keyboard covers the map at first", async () => {
+    touchScreen = true;
+    const container = await mount(0, 0, <BareBoard openedByPlayer />);
+    expect(inputHasFocus(container)).toBe(false);
+  });
+});
+
+describe("the on-screen keyboard", () => {
+  const scrolledTo: { target: string; behavior?: ScrollBehavior }[] = [];
+  const viewport = Object.assign(new dom.window.EventTarget(), {
+    width: 390,
+    height: 800,
+    offsetTop: 0,
+    scale: 1,
+  });
+
+  beforeEach(() => {
+    scrolledTo.length = 0;
+    viewport.height = 800;
+    Object.assign(dom.window, { visualViewport: viewport });
+    // The keyboard check looks at what kind of element has focus.
+    Object.assign(globalThis, {
+      HTMLElement: dom.window.HTMLElement,
+      HTMLInputElement: dom.window.HTMLInputElement,
+      HTMLTextAreaElement: dom.window.HTMLTextAreaElement,
+    });
+    Object.assign(dom.window.Element.prototype, {
+      scrollIntoView(this: Element, options: ScrollIntoViewOptions) {
+        if (this.id === "trip-heading" || this.classList.contains("map-frame")) {
+          scrolledTo.push({
+            target: this.id || this.className,
+            behavior: options.behavior,
+          });
+        }
+      },
+    });
+  });
+
+  afterEach(() => {
+    Reflect.deleteProperty(dom.window, "visualViewport");
+    for (const name of ["HTMLElement", "HTMLInputElement", "HTMLTextAreaElement"]) {
+      Reflect.deleteProperty(globalThis, name);
+    }
+    Reflect.deleteProperty(dom.window.Element.prototype, "scrollIntoView");
+  });
+
+  async function openKeyboard(container: HTMLElement) {
+    await act(async () => {
+      container.querySelector("input")?.focus();
+      viewport.height = 400;
+      viewport.dispatchEvent(new dom.window.Event("resize"));
+    });
+  }
+
+  async function closeKeyboard() {
+    await act(async () => {
+      viewport.height = 800;
+      viewport.dispatchEvent(new dom.window.Event("resize"));
+    });
+  }
+
+  test("opening scrolls the map to the top, with quick motion", async () => {
+    const container = await mount();
+    await openKeyboard(container);
+    expect(scrolledTo).toEqual([{ target: "map-frame", behavior: "smooth" }]);
+  });
+
+  test("nothing scrolls until the keyboard opens, and typing alone moves nothing", async () => {
+    const container = await mount();
+    expect(scrolledTo).toEqual([]);
+    await openKeyboard(container);
+    scrolledTo.length = 0;
+    const input = container.querySelector("input") as HTMLInputElement;
+    const setValue = Object.getOwnPropertyDescriptor(
+      dom.window.HTMLInputElement.prototype,
+      "value",
+    );
+    await act(async () => {
+      setValue?.set?.call(input, "Han");
+      input.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+    });
+    expect(scrolledTo).toEqual([]);
+  });
+
+  test("a guess with it open brings the map back to the top", async () => {
+    const container = await mount();
+    await openKeyboard(container);
+    scrolledTo.length = 0;
+    await guess(container, "Haninge");
+    expect(scrolledTo).toEqual([{ target: "map-frame", behavior: "smooth" }]);
+  });
+
+  test("a guess with it closed moves nothing", async () => {
+    const container = await mount();
+    await guess(container, "Haninge");
+    expect(scrolledTo).toEqual([]);
+  });
+
+  test("closing brings the signs back into view, with quick motion", async () => {
+    const container = await mount();
+    await openKeyboard(container);
+    scrolledTo.length = 0;
+    await closeKeyboard();
+    expect(scrolledTo).toEqual([{ target: "trip-heading", behavior: "smooth" }]);
+  });
+
+  test("under reduced motion the scrolls are instant", async () => {
+    reducedMotion = true;
+    const container = await mount();
+    await openKeyboard(container);
+    await closeKeyboard();
+    expect(scrolledTo).toEqual([
+      { target: "map-frame", behavior: "auto" },
+      { target: "trip-heading", behavior: "auto" },
+    ]);
   });
 });
 

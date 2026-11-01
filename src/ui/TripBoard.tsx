@@ -13,6 +13,7 @@ import { hintReveals } from "../engine/hints";
 import { resolveKommunName } from "../engine/kommunNames";
 import { guessedStops } from "../engine/routeStops";
 import { type GraphVersion, kommunName } from "../graph/graphVersion";
+import { TOUCH_SCREEN_QUERY } from "../map/mapStyle";
 import { SatelliteMap } from "../map/SatelliteMap";
 import type { Stats } from "../progress/stats";
 import type { KeyValueStorage } from "../progress/storage";
@@ -21,6 +22,7 @@ import { GiveUp } from "./GiveUp";
 import { GuessCounter } from "./GuessCounter";
 import { GuessInput } from "./GuessInput";
 import { HintSection } from "./HintSection";
+import { useOnScreenKeyboard } from "./onScreenKeyboard";
 import { PacingContext } from "./pacing";
 import {
   applyGuessInput,
@@ -31,6 +33,7 @@ import {
 } from "./guessSession";
 import { guessCardText, timeoutRowTitle, timeoutsText } from "./messages";
 import { ResultStrip, type ResultScore, ResultView } from "./ResultView";
+import { useBoardKeyboardScroll } from "./useBoardKeyboardScroll";
 
 type TripBoardProps<T extends Trip> = {
   graph: GraphVersion;
@@ -177,8 +180,19 @@ export function TripBoard<T extends Trip>({
   useEffect(() => {
     if (!openedByPlayer || concealed || finished) return;
     window.scrollTo(0, 0);
+    // On a touch screen focus would open the keyboard over the board before it has been seen.
+    if (window.matchMedia(TOUCH_SCREEN_QUERY).matches) return;
     guessInput.current?.focus({ preventScroll: true });
   }, [openedByPlayer, concealed, finished]);
+  const keyboardOpen = useOnScreenKeyboard();
+  const mapFrame = useRef<HTMLDivElement>(null);
+  const signs = useRef<HTMLHeadingElement>(null);
+  useBoardKeyboardScroll({
+    keyboardOpen,
+    guessCount: review.cards.length,
+    map: mapFrame,
+    signs,
+  });
   const nameOf = (code: string) => kommunName(graph, code);
 
   return (
@@ -191,7 +205,7 @@ export function TripBoard<T extends Trip>({
       {/* Concealed, the board is its map alone, so the reveal keeps the same map, drawn. */}
       {!concealed && label}
       {!concealed && (
-        <h2 id="trip-heading">
+        <h2 id="trip-heading" ref={signs}>
           <span>Från:</span> <strong className="sign sign--start">{nameOf(trip.start)}</strong>{" "}
           <span>Till:</span>{" "}
           <strong className="sign sign--destination">{nameOf(trip.destination)}</strong>
@@ -228,6 +242,7 @@ export function TripBoard<T extends Trip>({
         <>
           {/* A rejected guess's toast floats over the map's bottom edge, so nothing moves for it. */}
           <div
+            ref={mapFrame}
             className={
               finishingNow && review.status === "lost" ? "map-frame map-frame--dimmed" : "map-frame"
             }
@@ -269,6 +284,7 @@ export function TripBoard<T extends Trip>({
               }
               onEvent={(event) => update((current) => applyGuessInput(graph, current, event))}
               inputRef={guessInput}
+              listOpensUpward={keyboardOpen}
               disabled={finished}
             />
           )}
