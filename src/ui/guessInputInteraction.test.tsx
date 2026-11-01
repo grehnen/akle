@@ -2,6 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { JSDOM } from "jsdom";
 import { act } from "react";
 import { GuessInput } from "./GuessInput";
+import type { GuessInputEvent } from "./guessSession";
 
 const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>');
 // The on-screen keyboard check asks for media queries; jsdom has no matchMedia.
@@ -54,6 +55,103 @@ describe("GuessInput suggestions", () => {
     });
     expect(listShown()).toBe(false);
 
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  async function renderFocused(text: string, onEvent: (event: GuessInputEvent) => void = () => {}) {
+    const container = dom.window.document.createElement("div");
+    dom.window.document.body.append(container);
+    const root = createRoot(container);
+    await act(async () =>
+      root.render(
+        <GuessInput
+          text={text}
+          suggestions={[
+            { code: "1880", name: "Örebro" },
+            { code: "1881", name: "Kumla", disabled: "redan gissad" },
+          ]}
+          counter="Gissa (1/5)"
+          onEvent={onEvent}
+        />,
+      ),
+    );
+    const input = container.querySelector("input");
+    await act(async () => input?.focus());
+    return {
+      container,
+      input,
+      listShown: () => container.querySelector('[role="listbox"]') !== null,
+      cleanUp: () => {
+        act(() => root.unmount());
+        container.remove();
+      },
+    };
+  }
+
+  test("close when one is clicked, keeping focus in the input", async () => {
+    const events: GuessInputEvent[] = [];
+    const { container, input, listShown, cleanUp } = await renderFocused("o", (event) =>
+      events.push(event),
+    );
+
+    await act(async () => {
+      container
+        .querySelector('[role="option"]')
+        ?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(events).toEqual([{ type: "pick", code: "1880" }]);
+    expect(listShown()).toBe(false);
+    expect(dom.window.document.activeElement).toBe(input);
+    cleanUp();
+  });
+
+  test("stay open when a disabled one is clicked", async () => {
+    const { container, listShown, cleanUp } = await renderFocused("o");
+
+    await act(async () => {
+      container
+        .querySelector('[aria-disabled="true"]')
+        ?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(listShown()).toBe(true);
+    cleanUp();
+  });
+
+  test("close when Gissa submits", async () => {
+    const events: GuessInputEvent[] = [];
+    const { container, listShown, cleanUp } = await renderFocused("o", (event) =>
+      events.push(event),
+    );
+
+    await act(async () => {
+      container
+        .querySelector("form")
+        ?.dispatchEvent(new dom.window.Event("submit", { bubbles: true, cancelable: true }));
+    });
+
+    expect(events).toEqual([{ type: "gissa" }]);
+    expect(listShown()).toBe(false);
+    cleanUp();
+  });
+});
+
+describe("GuessInput's Gissa button", () => {
+  test("doesn't take focus when pressed, which would unpin it from above the on-screen keyboard mid-tap", async () => {
+    const container = dom.window.document.createElement("div");
+    dom.window.document.body.append(container);
+    const root = createRoot(container);
+    await act(async () =>
+      root.render(<GuessInput text="" suggestions={[]} counter="Gissa (1/5)" onEvent={() => {}} />),
+    );
+
+    const pressAllowed = container
+      .querySelector("button")
+      ?.dispatchEvent(new dom.window.MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+
+    expect(pressAllowed).toBe(false);
     act(() => root.unmount());
     container.remove();
   });
