@@ -15,6 +15,13 @@ export function FinishGlow({ perfect }: { perfect: boolean }) {
 
 const COLORS = ["#fecc02", "#fecc02", "#ffe680", "#ffffff"];
 const PIECES = 500;
+const PHONE_PIECES = 250;
+/** A screen whose short side is at most this is a phone, even held sideways. */
+const PHONE_SHORT_SIDE_MAX = 576;
+/** From this width up a screen gets all the pieces; screens between it and a phone get a share. */
+const FULL_PIECES_WIDTH = 1024;
+/** A phone's canvas is drawn no sharper than this, to go easy on it with so many pixels to redraw. */
+const PHONE_PIXEL_RATIO_MAX = 1.5;
 /** Pieces leave their corners at random moments over this long, rather than in one burst. */
 const LAUNCH_SPREAD_SECONDS = 1.5;
 /** How fast air slows a piece down, per second. */
@@ -36,6 +43,12 @@ const PIECE_CLEARANCE = 12;
 
 const between = (low: number, high: number) => low + Math.random() * (high - low);
 
+function piecesFor(screenWidth: number, isPhone: boolean): number {
+  if (isPhone) return PHONE_PIECES;
+  const share = (screenWidth - PHONE_SHORT_SIDE_MAX) / (FULL_PIECES_WIDTH - PHONE_SHORT_SIDE_MAX);
+  return Math.round(PHONE_PIECES + (PIECES - PHONE_PIECES) * Math.min(share, 1));
+}
+
 /**
  * Gold and white confetti fired across the whole screen from both lower corners, which flutters
  * down until the last piece has left the bottom of the screen, and then says so.
@@ -48,7 +61,10 @@ export function Confetti({ onDone }: { onDone: () => void }) {
     const element = canvas.current;
     const context = element?.getContext("2d");
     if (!element || !context) return;
-    const scale = window.devicePixelRatio;
+    const isPhone = Math.min(window.innerWidth, window.innerHeight) <= PHONE_SHORT_SIDE_MAX;
+    const scale = isPhone
+      ? Math.min(window.devicePixelRatio, PHONE_PIXEL_RATIO_MAX)
+      : window.devicePixelRatio;
     let width = 0;
     let height = 0;
     // A phone's screen can change mid-flight, as its keyboard closes after the last guess.
@@ -62,7 +78,7 @@ export function Confetti({ onDone }: { onDone: () => void }) {
     };
     fitToScreen();
 
-    const pieces = Array.from({ length: PIECES }, (_, index) => {
+    const pieces = Array.from({ length: piecesFor(width, isPhone) }, (_, index) => {
       const flight = between(FLIGHT_SECONDS_MIN, FLIGHT_SECONDS_MAX);
       return {
         fromLeft: index % 2 === 0,
@@ -74,8 +90,8 @@ export function Confetti({ onDone }: { onDone: () => void }) {
         slowedByArrival: (1 - Math.exp(-DRAG * flight)) / DRAG,
         launchAfter: between(0, LAUNCH_SPREAD_SECONDS),
         fallSpeed: between(FALL_SPEED_MIN, FALL_SPEED_MAX),
-        width: between(6, 11),
-        height: between(4, 7),
+        width: isPhone ? between(5, 9) : between(6, 11),
+        height: isPhone ? between(3, 6) : between(4, 7),
         tilt: between(0, 2 * Math.PI),
         tiltSpeed: between(-1.5, 1.5),
         flip: between(0, 2 * Math.PI),
