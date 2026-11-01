@@ -119,3 +119,26 @@
   width: 1rem;
   height: 1rem;
 }
+
+/* A phone's whole screen is the effect, and its fingers need bigger targets. */
+.tuner > .tuner__actions:first-child {
+  position: sticky;
+  top: -0.5rem;
+  z-index: 1;
+  padding: 0.25rem 0;
+  background: #000;
+}
+
+@media (max-width: 40rem) {
+  .tuner {
+    overscroll-behavior: contain;
+  }
+
+  .tuner--flying {
+    visibility: hidden;
+  }
+
+  .tuner input[type="range"] {
+    height: 2rem;
+  }
+}

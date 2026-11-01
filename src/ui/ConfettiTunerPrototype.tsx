@@ -26,6 +26,13 @@ const GROUPS: { title: string; sliders: Slider[] }[] = [
     sliders: [
       { key: "pieces", label: "Antal bitar", max: 1500, step: 10 },
       { key: "launchSpread", label: "Utsläpp över tid (s)", max: 3, step: 0.1 },
+      {
+        key: "pixelRatioMax",
+        label: "Högsta pixeltäthet (lägre = lättare)",
+        min: 1,
+        max: 3,
+        step: 0.5,
+      },
     ],
   },
   {
@@ -113,7 +120,12 @@ export function ConfettiTunerPrototype({ daily }: { daily: DailyTripLoad | undef
 
 function Tuner({ graph, trip }: { graph: GraphVersion; trip: DailyTrip }) {
   const [params, setParams] = useState(paramsFromUrl);
-  const [fireOnChange, setFireOnChange] = useState(true);
+  // On a phone the panel hides during a shot, so firing at every touch of a slider would be in the way.
+  const [fireOnChange, setFireOnChange] = useState(
+    () => !window.matchMedia("(max-width: 40rem)").matches,
+  );
+  const [frames, setFrames] = useState<string>();
+  const reportField = useRef<HTMLTextAreaElement>(null);
   const [open, setOpen] = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -135,11 +147,33 @@ function Tuner({ graph, trip }: { graph: GraphVersion; trip: DailyTrip }) {
   const [play, setPlay] = useState(0);
   const playWin = () => {
     setFlying(false);
+    setOpen(false);
     setPlay((count) => count + 1);
   };
 
   const changed = useMemo(() => changedFrom(params), [params]);
-  const report = JSON.stringify(changed, null, 2);
+  const screen = `${window.innerWidth}×${window.innerHeight} @${window.devicePixelRatio}`;
+  const report = JSON.stringify({ skärm: screen, ...changed }, null, 2);
+
+  // How smoothly the phone itself draws the shot, which no desktop can stand in for.
+  useEffect(() => {
+    if (!flying) return;
+    const startedAt = performance.now();
+    let last = startedAt;
+    let count = 0;
+    let worstGap = 0;
+    let handle = requestAnimationFrame(function tick(now) {
+      count += 1;
+      worstGap = Math.max(worstGap, now - last);
+      last = now;
+      handle = requestAnimationFrame(tick);
+    });
+    return () => {
+      cancelAnimationFrame(handle);
+      const seconds = (last - startedAt) / 1000;
+      setFrames(`${Math.round(count / seconds)} bilder/s, värsta glapp ${Math.round(worstGap)} ms`);
+    };
+  }, [flying]);
 
   useEffect(() => {
     const query = new URLSearchParams({ konfetti: "1" });
@@ -158,7 +192,7 @@ function Tuner({ graph, trip }: { graph: GraphVersion; trip: DailyTrip }) {
     <ConfettiParamsContext value={params}>
       <WinRun key={play} graph={graph} trip={trip} playsWin={play > 0} />
       {flying && <Confetti key={shot} onDone={landed} />}
-      <aside className="tuner" aria-label="Konfetti-prototyp">
+      <aside className={flying ? "tuner tuner--flying" : "tuner"} aria-label="Konfetti-prototyp">
         <div className="tuner__actions">
           <button type="button" onClick={fire}>
             🎉 Bara konfetti
@@ -185,7 +219,9 @@ function Tuner({ graph, trip }: { graph: GraphVersion; trip: DailyTrip }) {
                 ? "Konfettin faller …"
                 : lastRunSeconds === undefined
                   ? "Redo."
-                  : `Senaste skottet tog ${lastRunSeconds.toFixed(1)} s.`}
+                  : `Senaste skottet tog ${lastRunSeconds.toFixed(1)} s, ${frames ?? ""}.`}
+              <br />
+              Skärm: {screen}
             </p>
             {GROUPS.map(({ title, sliders }) => (
               <fieldset key={title}>
@@ -216,12 +252,23 @@ function Tuner({ graph, trip }: { graph: GraphVersion; trip: DailyTrip }) {
             ))}
             <div className="tuner__report">
               <strong>Ändrade värden</strong>
-              <textarea readOnly rows={Math.min(10, report.split("\n").length)} value={report} />
+              <textarea
+                ref={reportField}
+                readOnly
+                rows={Math.min(10, report.split("\n").length)}
+                value={report}
+              />
               <div className="tuner__actions">
                 <button
                   type="button"
                   onClick={async () => {
-                    await navigator.clipboard.writeText(report);
+                    // The clipboard API only exists on https or localhost, not on a LAN address.
+                    if (navigator.clipboard) {
+                      await navigator.clipboard.writeText(report);
+                    } else {
+                      reportField.current?.select();
+                      document.execCommand("copy");
+                    }
                     setCopied(true);
                     setTimeout(() => setCopied(false), 1500);
                   }}
