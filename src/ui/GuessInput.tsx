@@ -36,7 +36,7 @@ export function GuessInput({
   inputRef,
   disabled = false,
 }: GuessInputProps) {
-  // Enter, Escape or leaving the input closes the list; coming back, typing or an arrow key opens it again.
+  // Picking, submitting, Enter, Escape or leaving the input closes the list; coming back, typing or an arrow key opens it again.
   const [dismissed, setDismissed] = useState(false);
   const expanded = !dismissed && suggestions.length > 0;
   // While the on-screen keyboard is open, the suggestions open upward (see GuessInput.css).
@@ -70,6 +70,7 @@ export function GuessInput({
       className="guess-input"
       onSubmit={(event) => {
         event.preventDefault();
+        setDismissed(true);
         onEvent({ type: "gissa" });
       }}
     >
@@ -119,7 +120,10 @@ export function GuessInput({
                 className="guess-input__option"
                 // Keeps focus in the input so the arrow keys and Enter keep working after a click.
                 onMouseDown={(event) => event.preventDefault()}
-                onClick={() => onEvent({ type: "pick", code: suggestion.code })}
+                onClick={() => {
+                  if (!suggestion.disabled) setDismissed(true);
+                  onEvent({ type: "pick", code: suggestion.code });
+                }}
               >
                 <span>
                   {matchedSegments(suggestion.name, text).map((segment, index) =>
@@ -140,7 +144,13 @@ export function GuessInput({
           </ul>
         )}
       </div>
-      <button type="submit" disabled={disabled}>
+      <button
+        type="submit"
+        disabled={disabled}
+        // Taking focus from the input would unpin the form from above the on-screen keyboard
+        // between press and release, so the release would miss the button and never click it.
+        onMouseDown={(event) => event.preventDefault()}
+      >
         {counter}
       </button>
     </form>
