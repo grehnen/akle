@@ -7,7 +7,6 @@ import {
   matchedSegments,
   type Suggestion,
 } from "./guessSession";
-import { useOnScreenKeyboard } from "./onScreenKeyboard";
 
 type GuessInputProps = {
   text: string;
@@ -21,6 +20,8 @@ type GuessInputProps = {
   inputRef?: Ref<HTMLInputElement>;
   /** Takes no guesses, as once the trip is over. */
   disabled?: boolean;
+  /** While the on-screen keyboard is open, the suggestions open upward (see GuessInput.css). */
+  listOpensUpward?: boolean;
 };
 
 const LISTBOX_ID = "guess-suggestions";
@@ -35,12 +36,11 @@ export function GuessInput({
   onEvent,
   inputRef,
   disabled = false,
+  listOpensUpward = false,
 }: GuessInputProps) {
   // Picking, submitting, Enter, Escape or leaving the input closes the list; coming back, typing or an arrow key opens it again.
   const [dismissed, setDismissed] = useState(false);
   const expanded = !dismissed && suggestions.length > 0;
-  // While the on-screen keyboard is open, the suggestions open upward (see GuessInput.css).
-  const listOpensUpward = useOnScreenKeyboard();
   const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {

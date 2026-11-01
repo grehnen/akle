@@ -17,6 +17,7 @@ import { type MapReadiness, mapReadiness } from "./mapReadiness";
 import { mapOptions, satelliteMapStyle, TOOLTIP_LAYER, TOUCH_SCREEN_QUERY } from "./mapStyle";
 import { playRouteSweep, type RouteSweep } from "./routeSweep";
 import { tooltipText } from "./tooltip";
+import { refitOnResize } from "./refitOnResize";
 import { animateToBounds, zoomResetControl } from "./zoomResetControl";
 
 type SatelliteMapProps = {
@@ -174,6 +175,7 @@ export function SatelliteMap({
       );
       resetControl.current = zoomResetControl(opening.resetBounds);
       created.addControl(resetControl.current, "top-right");
+      refitOnResize(created, opening.viewBounds);
       showTooltips(
         created,
         new maplibre.Popup({

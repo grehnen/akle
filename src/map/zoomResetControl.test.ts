@@ -69,11 +69,15 @@ describe("zoomResetControl", () => {
     fire("moveend");
     expect(container.hidden).toBe(false);
     button.click();
-    expect(map.fitBounds).toHaveBeenCalledWith(bounds, {
-      padding: fitPadding({ width: 864, height: 648 }),
-      duration: 500,
-      linear: true,
-    });
+    expect(map.fitBounds).toHaveBeenCalledWith(
+      bounds,
+      {
+        padding: fitPadding({ width: 864, height: 648 }),
+        duration: 500,
+        linear: true,
+      },
+      { fittedBounds: bounds },
+    );
     // MapLibre's non-essential animations respect prefers-reduced-motion.
     expect(map.fitBounds.mock.calls[0]?.[1]?.essential).not.toBe(true);
   });

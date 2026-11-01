@@ -1,6 +1,7 @@
 import type { IControl, Map as MapLibreMap } from "maplibre-gl";
 import type { Bounds } from "./mapFeatures";
 import { fitPadding, mapOptions } from "./mapStyle";
+import { FITTED_BOUNDS } from "./refitOnResize";
 
 type ResettableMap = Pick<
   MapLibreMap,
@@ -27,7 +28,13 @@ export function animateToBounds(
   map: Pick<MapLibreMap, "fitBounds" | "getContainer">,
   bounds: Bounds | undefined,
 ): void {
-  map.fitBounds(mapOptions(bounds).bounds, { ...fitOptions(map), duration: 500, linear: true });
+  const { bounds: framed } = mapOptions(bounds);
+  map.fitBounds(
+    framed,
+    { ...fitOptions(map), duration: 500, linear: true },
+    // Later resizes keep framing this.
+    { [FITTED_BOUNDS]: framed },
+  );
 }
 
 /**
