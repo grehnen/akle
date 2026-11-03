@@ -52,6 +52,21 @@ describe("suggestKommuner", () => {
     expect(names("orebro")).toEqual(["Örebro"]);
   });
 
+  test("every matching kommun is suggested, however many match", () => {
+    const manyKommuner = Array.from({ length: 20 }, (_, index) => ({
+      code: String(index).padStart(4, "0"),
+      name: `Bergby ${index}`,
+    }));
+    const largeGraph = buildGraphVersion({
+      id: "large",
+      startsAtTrip: 1,
+      kommuner: manyKommuner,
+      links: [],
+    });
+    const largeTrip = { number: 1, start: "0000", destination: "0001" };
+    expect(suggestKommuner(largeGraph, newGame(largeTrip), "berg")).toHaveLength(20);
+  });
+
   test("blank text suggests nothing", () => {
     expect(names("  ")).toEqual([]);
   });

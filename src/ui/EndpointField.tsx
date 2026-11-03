@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useState } from "react";
+import { type KeyboardEvent, useEffect, useState } from "react";
 import type { KommunCode } from "../graph/graphVersion";
 import "./GuessInput.css";
 import { matchedSegments, type Suggestion } from "./guessSession";
@@ -35,6 +35,13 @@ export function EndpointField({
   const active = pickable.find((s) => s.code === highlighted) ?? pickable[0];
   const listId = `${id}-suggestions`;
   const optionId = (code: KommunCode) => `${id}-option-${code}`;
+  const activeOptionId = expanded && active ? optionId(active.code) : undefined;
+
+  useEffect(() => {
+    if (!activeOptionId) return;
+    // jsdom has no scrollIntoView.
+    document.getElementById(activeOptionId)?.scrollIntoView?.({ block: "nearest" });
+  }, [activeOptionId]);
 
   const pick = (suggestion: Suggestion) => {
     setHighlighted(undefined);
@@ -79,7 +86,7 @@ export function EndpointField({
           aria-autocomplete="list"
           aria-controls={listId}
           aria-expanded={expanded}
-          aria-activedescendant={expanded && active ? optionId(active.code) : undefined}
+          aria-activedescendant={activeOptionId}
           value={text}
           onChange={(event) => {
             setDismissed(false);

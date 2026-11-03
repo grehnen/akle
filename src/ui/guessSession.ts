@@ -13,8 +13,6 @@ export type Suggestion = {
   disabled?: SuggestionTag;
 };
 
-const MAX_SUGGESTIONS = 8;
-
 /**
  * The play screen's input state: the game, the typed text, the arrow highlight, the toast and
  * what the live region last announced.
@@ -188,7 +186,6 @@ export function rankKommuner(
 
   return scored
     .sort((a, b) => b.score - a.score || a.suggestion.name.localeCompare(b.suggestion.name, "sv"))
-    .slice(0, MAX_SUGGESTIONS)
     .map(({ suggestion }) => suggestion);
 }
 
