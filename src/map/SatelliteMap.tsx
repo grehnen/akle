@@ -12,6 +12,7 @@ import {
   routeFeatures,
 } from "./mapFeatures";
 import { mapDescription } from "./mapDescription";
+import { type MapFraming, refitFor } from "./mapFraming";
 import { MapLibreLoaderContext } from "./mapLibreLoader";
 import { type MapReadiness, mapReadiness } from "./mapReadiness";
 import { mapOptions, satelliteMapStyle, TOOLTIP_LAYER, TOUCH_SCREEN_QUERY } from "./mapStyle";
@@ -27,8 +28,8 @@ type SatelliteMapProps = {
   /**
    * Draws this route instead, with the guessed and missed kommuner on it marked. The label names
    * the map, and the map is fitted to the kommuner in `frame`. Without a route, the map is fitted
-   * to `defaultBounds`, each new guess eases it to `guessViewBounds`, and each new hint outline
-   * to `hintViewBounds`.
+   * to `defaultBounds`, each new guess eases it to `guessViewBounds`, and hint 1's outline to
+   * `hintViewBounds`. Later hints leave it where it is.
    */
   route?: { kommuner: readonly KommunCode[]; label: string; frame: readonly KommunCode[] };
   /** Kommuner revealed by hints, drawn as unfilled outlines. */
@@ -112,11 +113,10 @@ export function SatelliteMap({
     () => (routeFrame ? resetBounds : hintViewBounds(graph, trip, cards, hintOutlines ?? [])),
     [graph, trip, routeFrame, cards, hintOutlines, resetBounds],
   );
-  // What the map is framed for: a new guess, trip or route eases the map to `viewBounds`, and a
-  // hint that adds an outline, with nothing else new, to `hintBounds`.
+  // What the map is framed for; `refitFor` says where a change eases it.
   const { start, destination } = trip;
   const hintCount = hintOutlines?.length ?? 0;
-  const framing = useMemo(
+  const framing = useMemo<MapFraming>(
     () => ({ start, destination, routeFrame, guessCount: cards.length, hintCount }),
     [start, destination, routeFrame, cards.length, hintCount],
   );
@@ -223,13 +223,9 @@ export function SatelliteMap({
     const last = fittedFor.current;
     if (!map || framing === last) return;
     fittedFor.current = framing;
-    const hintedOnly =
-      framing.start === last.start &&
-      framing.destination === last.destination &&
-      framing.routeFrame === last.routeFrame &&
-      framing.guessCount === last.guessCount;
-    if (!hintedOnly) animateToBounds(map, viewBounds);
-    else if (framing.hintCount > last.hintCount) animateToBounds(map, hintBounds);
+    const refit = refitFor(last, framing);
+    if (refit === "guess") animateToBounds(map, viewBounds);
+    else if (refit === "hint") animateToBounds(map, hintBounds);
   }, [map, framing, viewBounds, hintBounds]);
 
   useEffect(() => {
