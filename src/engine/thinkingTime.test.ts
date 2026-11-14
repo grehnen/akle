@@ -110,18 +110,38 @@ describe("a timeout", () => {
     expect(review.status).toBe("won");
     expect(review.cards.length).toBe(2);
     expect(review.timeouts).toBe(2);
-    expect(tripScore(review)).toBe(2);
+    // Perfect (−1) plus 2 timeouts.
+    expect(tripScore(review)).toBe(1);
   });
 
-  test("rules out Perfect", () => {
-    const perfect = reviewGame(
-      graph,
-      play(at(5, guessing("Kommun A")), at(9, guessing("Kommun B"))),
-    );
-    expect(perfect.perfect).toBe(true);
+  test("doesn't rule out Perfect, which then scores −1 plus one per timeout", () => {
+    const clean = reviewGame(graph, play(at(5, guessing("Kommun A")), at(9, guessing("Kommun B"))));
+    expect(clean.perfect).toBe(true);
+    expect(tripScore(clean)).toBe(-1);
     const late = reviewGame(graph, play(at(5, guessing("Kommun A")), at(15, guessing("Kommun B"))));
-    expect(late.perfect).toBe(false);
-    expect(tripScore(late)).toBe(1);
+    expect(late.perfect).toBe(true);
+    expect(late.timeouts).toBe(1);
+    expect(tripScore(late)).toBe(0);
+    const later = reviewGame(
+      graph,
+      play(at(25, guessing("Kommun A")), at(27, guessing("Kommun B"))),
+    );
+    expect(later.perfect).toBe(true);
+    expect(tripScore(later)).toBe(1);
+  });
+
+  test("a hint still rules out Perfect, timeouts or not", () => {
+    const hinted = reviewGame(
+      graph,
+      play(
+        at(15, (game) => takeHint(graph, game)),
+        at(16, guessing("Kommun A")),
+        at(17, guessing("Kommun B")),
+      ),
+    );
+    expect(hinted.perfect).toBe(false);
+    // Extra 0, one hint, one timeout.
+    expect(tripScore(hinted)).toBe(2);
   });
 
   test("adds to a give-up's score too", () => {

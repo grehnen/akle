@@ -121,19 +121,19 @@ describe("playing an itinerary", () => {
     // Perfect: −1.
     let play = guess(begun, 1, "Kommun 0101");
     expect(itineraryTotal(graph, play)).toBe(-1);
-    // Timed: the one winning guess comes 45 s in, two 20 s thinking times over: +0 and 2 ⏱.
+    // Timed: the one winning guess comes 45 s in, two 20 s thinking times over: Perfect (−1) and 2 ⏱.
     play = startTrip(trips, nextTrip(graph, trips, play, 0), 0);
     play = guess(play, 45_000, "Kommun 0103");
-    expect(itineraryTotal(graph, play)).toBe(-1 + 2);
+    expect(itineraryTotal(graph, play)).toBe(-1 + (-1 + 2));
     // Unlimited, given up with 0102 still missing: 2 guesses − distance 2 + 3·1 away = 3.
     play = nextTrip(graph, trips, play, 50_000);
     play = guess(play, 51_000, "Kommun 0104", "Kommun 0101");
     const stage = itineraryStage(graph, trips, play);
     if (stage.kind !== "trip") throw new Error("no trip");
     expect(stage.over).toBe(false);
-    expect(itineraryTotal(graph, play)).toBe(1);
+    expect(itineraryTotal(graph, play)).toBe(-1 + (-1 + 2));
     play = changeTripGame(graph, play, giveUp(graph, stage.game), 52_000);
-    expect(itineraryTotal(graph, play)).toBe(-1 + 2 + 3);
+    expect(itineraryTotal(graph, play)).toBe(-1 + (-1 + 2) + 3);
 
     play = nextTrip(graph, trips, play, 53_000);
     expect(itineraryStage(graph, trips, play)).toEqual({ kind: "finished" });

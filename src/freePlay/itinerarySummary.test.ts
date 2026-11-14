@@ -13,6 +13,7 @@ import {
 } from "./itineraryPlay";
 import { compareStandings, itinerarySummary } from "./itinerarySummary";
 import type { LinkedTrip } from "./linkPayload";
+import { tripOutcomeLabel } from "./shareText";
 
 // 0100 ── 0101 ── 0102 ── … ── 0109
 const graph = lanPathGraph(1, 10);
@@ -176,6 +177,19 @@ describe("an itinerary's summary", () => {
     // Given up after 1 guess on distance 1 with 0101 away: 1 − 1 + 3·1, then Perfect.
     expect(summary?.standing).toEqual({ score: 3 - 1, wonTieBreakers: 0, totalTime: 0 });
     expect(summary?.hasTieBreaker).toBe(true);
+  });
+
+  test("keeps a Perfect trip's timeouts in its label and its score", () => {
+    const trips: LinkedTrip[] = [
+      { start: "0104", destination: "0102", mode: { kind: "timed", thinkingTime: 20 } },
+    ];
+    // The one winning guess comes 45 s in, two 20 s thinking times over.
+    const play = played(trips, [{ startAt: 0, moves: [[45_000, guessing("Kommun 0103")]] }]);
+
+    const row = itinerarySummary(graph, trips, play)?.rows[0];
+
+    expect(row && tripOutcomeLabel(row.outcome)).toBe("+0 (Perfekt, 2 ⏱)");
+    expect(row?.score).toBe(-1 + 2);
   });
 
   test("exists only once the last trip is over", () => {

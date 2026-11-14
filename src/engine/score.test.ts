@@ -45,6 +45,10 @@ describe("a free-play trip's score", () => {
     expect(scoreOf(played(1, 2, 3))).toBe(-1);
   });
 
+  test("a trip with a hint isn't Perfect, and costs the hint", () => {
+    expect(scoreOf(played(1, "hint", 2, 3))).toBe(1);
+  });
+
   test("a loss at the guess limit scores guesses − distance + 2·away + hints", () => {
     // 7 guesses, 2 still away: 7 − 3 + 2·2.
     expect(scoreOf(played(1, 5, 6, 7, 8, 9, 10))).toBe(8);

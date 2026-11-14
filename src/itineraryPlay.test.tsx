@@ -440,19 +440,19 @@ describe("an itinerary from its link", () => {
     expect(container.querySelector(".start-gate a")).toBeNull();
     await click(button(container, "Starta"));
     expect(container.querySelector(".thinking-time")).not.toBeNull();
-    // 25 s on one guess: two timeouts, +0 and 2 ⏱ = 2.
+    // 25 s on one guess: two timeouts, so Perfect (−1) and 2 ⏱ = 1.
     clockTime += 25_000;
     await guess(container, "Salem");
     await settle();
-    expect(text(container, ".result-score")).toBe("2 poäng");
-    expect(seenText(query(container, ".result-score-detail"))).toBe("+0 (2 ⏱)");
-    expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt 1 poäng");
+    expect(text(container, ".result-score")).toBe("1 poäng");
+    expect(seenText(query(container, ".result-score-detail"))).toBe("+0 (Perfekt, 2 ⏱)");
+    expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt 0 poäng");
     await click(button(container, "Nästa resa"));
 
     // Trip 3: Tidtagning, its clock on the board, given up after a wrong guess: 1 − 1 + 3·1.
     expect(labelLines(container, ".start-gate .trip-number")).toEqual([
       "Fredagsresan",
-      "Resa 3 av 3 · Tidtagning · Totalt 1 poäng",
+      "Resa 3 av 3 · Tidtagning · Totalt 0 poäng",
     ]);
     expect(text(container, ".start-gate-rules")).toBe(
       "Tiden tas. Vid lika poäng vinner den snabbaste.",
@@ -467,7 +467,7 @@ describe("an itinerary from its link", () => {
     expect(text(container, "#result-heading")).toBe("Gav upp");
     expect(text(container, ".result-score")).toBe("3 poäng");
     expect(text(container, ".result-score-detail")).toBe("Gav upp (1 ifrån)");
-    expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt 4 poäng");
+    expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt 3 poäng");
     expect(container.querySelector(".share-button")).toBeNull();
     expect(button(container, "Nästa resa")).toBeUndefined();
     await click(button(container, "Visa sammanfattning →"));
@@ -491,9 +491,9 @@ describe("an itinerary from its link", () => {
       {
         pair: "Haninge → Trosa",
         mode: "Tidspress · 10 s",
-        outcome: "+0 (2 ⏱)",
+        outcome: "+0 (Perfekt, 2 ⏱)",
         time: undefined,
-        score: "2 poäng",
+        score: "1 poäng",
       },
       {
         pair: "Trosa → Haninge",
@@ -505,7 +505,7 @@ describe("an itinerary from its link", () => {
     ]);
     // A tie-breaker trip, lost: the total time is there.
     expect(summaryTotals(container)).toEqual([
-      ["Totalt", "4 poäng"],
+      ["Totalt", "3 poäng"],
       ["Total tid", "0:00,0"],
     ]);
     expect(container.querySelector(".itinerary-summary-totals .itinerary-summary-note")).toBeNull();
@@ -516,9 +516,9 @@ describe("an itinerary from its link", () => {
     expect(copied).toEqual([
       [
         "#åkle Resplan · Fredagsresan · 3 resor",
-        "Totalt 4 poäng · 0:00,0 (0 vunna)",
+        "Totalt 3 poäng · 0:00,0 (0 vunna)",
         "1. Standard · +0 (Perfekt) · −1 poäng",
-        "2. Tidspress · 10 s · +0 (2 ⏱) · 2 poäng",
+        "2. Tidspress · 10 s · +0 (Perfekt, 2 ⏱) · 1 poäng",
         "3. Tidtagning · Gav upp (1 ifrån) · 3 poäng",
         `https://akle.grehn.net${fridayLink}`,
       ].join("\n"),
@@ -870,8 +870,8 @@ describe("resuming an itinerary", () => {
     clockTime += 900_000;
     await guess(container, "Salem");
     await settle();
-    expect(text(container, ".result-score")).toBe("90 poäng");
-    expect(seenText(query(container, ".result-score-detail"))).toBe("+0 (90 ⏱)");
+    expect(text(container, ".result-score")).toBe("89 poäng");
+    expect(seenText(query(container, ".result-score-detail"))).toBe("+0 (Perfekt, 90 ⏱)");
   });
 });
 
