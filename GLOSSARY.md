@@ -117,7 +117,7 @@ How many more guesses a win took than the trip's distance, shown as `+extra`.
 _Avoid_: Penalty, over par
 
 **Perfect**:
-A win whose every guess lay on a shortest route connected to the start, with no hints used and no timeouts.
+A win whose every guess lay on a shortest route connected to the start, with no hints used; timeouts don't rule it out.
 _Avoid_: Flawless, optimal
 
 **Hint**:
@@ -177,7 +177,7 @@ An ordered list of free-play trips, each with its own mode, shared as a link.
 _Avoid_: Playlist, challenge, set, quiz, pack
 
 **Standing**:
-How well a finished itinerary went, compared first by more trips won, then by lower score, then by more won tie-breaker trips, then by lower total time.
+How well a finished itinerary went, compared first by more trips won, then by lower score, then by lower total time on its tie-breaker trips, a lost one counting as five minutes.
 _Avoid_: Result, ranking, total, placement
 
 **Draft**:
@@ -205,5 +205,5 @@ The whole seconds a player has for each guess in a timed-mode trip, set per trip
 _Avoid_: Clock, timer, time limit, shot clock
 
 **Timeout** (in the UI: _tiden ute_):
-The thinking time running out before a guess; it adds to the score and rules out Perfect but uses no guess, and the thinking time starts again.
+The thinking time running out before a guess; it adds to the score but uses no guess and doesn't rule out Perfect, and the thinking time starts again.
 _Avoid_: Penalty, strike, miss
