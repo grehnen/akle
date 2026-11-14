@@ -86,7 +86,7 @@ export type GameReview = {
   missing: KommunCode[];
   /** On a win, guesses beyond N. */
   extra?: number;
-  /** A win where every guess was ✅ and no hint was taken. */
+  /** A win where every guess was ✅ and no hint was taken; timeouts don't rule it out. */
   perfect: boolean;
   hintsUsed: number;
   /**
@@ -183,11 +183,7 @@ export function reviewGame(graph: GraphVersion, game: Game): GameReview {
         : shortestRoute(graph, start, destination, new Set(game.guesses)),
     missing,
     extra: status === "won" ? cards.length - n : undefined,
-    perfect:
-      status === "won" &&
-      hintsUsed === 0 &&
-      timeouts === 0 &&
-      cards.every((card) => card.feedback === "✅"),
+    perfect: status === "won" && hintsUsed === 0 && cards.every((card) => card.feedback === "✅"),
     hintsUsed,
     timeouts,
   };

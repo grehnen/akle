@@ -34,6 +34,18 @@ describe("a free-play trip's share text", () => {
     );
   });
 
+  test("a Perfect win with timeouts keeps them in the Perfekt bracket", () => {
+    expect(
+      freePlayShareText({
+        mode: { kind: "timed", thinkingTime: 10 },
+        outcome: { kind: "perfect", extra: 0, timeouts: 2 },
+        score: 1,
+        emojiLine: "✅✅",
+        link,
+      }).split("\n")[1],
+    ).toBe("+0 (Perfekt, 2 ⏱) · 1 poäng");
+  });
+
   test("a guess-limit loss says so, and how far away it ended", () => {
     expect(
       freePlayShareText({

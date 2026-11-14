@@ -3,7 +3,7 @@ import type { HistoryEntry } from "./history";
 
 /** `timeouts` counts a timed free-play trip's thinking times that ran out; absent when none. */
 type WonOutcome =
-  | { kind: "perfect"; extra: number }
+  | { kind: "perfect"; extra: number; timeouts?: number }
   | { kind: "won"; extra: number; hintsUsed: number; timeouts?: number };
 
 /** How a finished game went, as the result view and the share text tell it. */
@@ -54,6 +54,6 @@ function wonOutcome(
   hintsUsed: number,
   timeouts: number,
 ): WonOutcome {
-  if (perfect) return { kind: "perfect", extra };
+  if (perfect) return { kind: "perfect", extra, ...(timeouts > 0 && { timeouts }) };
   return { kind: "won", extra, hintsUsed, ...(timeouts > 0 && { timeouts }) };
 }

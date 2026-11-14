@@ -1918,7 +1918,7 @@ describe("Tidspress", () => {
     expect(guessNames(container)).toEqual(["1. Haninge ✅", "⏱ ×1"]);
   });
 
-  test("timeouts while away count on return, as one ⏱ ×n row, and score without Perfect", async () => {
+  test("timeouts while away count on return, as one ⏱ ×n row, and score as Perfect plus their cost", async () => {
     const link = timedLink("0192", "0488");
     const { container } = await startedTimedTrip();
     await guess(container, "Haninge");
@@ -1932,16 +1932,16 @@ describe("Tidspress", () => {
     expect(announced(container)).toBe("Tiden ute 5 gånger");
 
     await playToTheEnd(container, "Salem");
-    expect(query(container, "#result-heading").textContent).toBe("Framme!");
-    expect(query(container, ".result-score").textContent).toBe("5 poäng");
-    expect(seenText(query(container, ".result-score-detail"))).toBe("+0 (5 ⏱)");
+    expect(query(container, "#result-heading").textContent).toBe("Perfekt!");
+    expect(query(container, ".result-score").textContent).toBe("4 poäng");
+    expect(seenText(query(container, ".result-score-detail"))).toBe("+0 (Perfekt, 5 ⏱)");
     expect(query(container, ".result-score-detail .visually-hidden").textContent).toBe(
       "Tiden ute 5 gånger",
     );
     expect(container.querySelector(".result-time")).toBeNull();
     await click(query(container, ".share-button"));
     expect(copied).toEqual([
-      `#åkle Fri resa · Tidspress · 10 s\n+0 (5 ⏱) · 5 poäng\n✅✅\nhttps://akle.grehn.net${link}`,
+      `#åkle Fri resa · Tidspress · 10 s\n+0 (Perfekt, 5 ⏱) · 4 poäng\n✅✅\nhttps://akle.grehn.net${link}`,
     ]);
   });
 

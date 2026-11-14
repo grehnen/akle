@@ -1,5 +1,5 @@
 import { SITE_URL } from "../siteUrl";
-import { costsNoteParts, type LabelPart, labelText } from "../ui/messages";
+import { costsNoteParts, costsSuffixParts, type LabelPart, labelText } from "../ui/messages";
 import type { Outcome } from "./outcome";
 
 /** A finished game as the share text needs it. */
@@ -31,7 +31,7 @@ export function resultLabel(outcome: Outcome): string {
 export function resultLabelParts(outcome: Outcome): LabelPart[] {
   switch (outcome.kind) {
     case "perfect":
-      return [`+${outcome.extra} (Perfekt)`];
+      return [`+${outcome.extra} (Perfekt`, ...costsSuffixParts(0, outcome.timeouts), ")"];
     case "won":
       return [`+${outcome.extra}`, ...costsNoteParts(outcome.hintsUsed, outcome.timeouts)];
     case "lost":
