@@ -1,7 +1,13 @@
 import type { Feedback, GameReview, GameStatus, GuessCard, GuessResult } from "../engine/game";
 import type { HINT_COUNT } from "../engine/hints";
-import { AWAY_WEIGHT_AT_LIMIT, AWAY_WEIGHT_GIVEN_UP, TIMEOUT_COST } from "../engine/score";
+import {
+  AWAY_WEIGHT_AT_LIMIT,
+  AWAY_WEIGHT_GIVEN_UP,
+  PERFECT_SCORE,
+  TIMEOUT_COST,
+} from "../engine/score";
 import type { DistanceRange } from "../freePlay/draw";
+import { LOST_TIE_BREAKER_TIME } from "../freePlay/itinerarySummary";
 import { MODE_KINDS, type ModeKind, type ModeSetting } from "../freePlay/linkPayload";
 import { gameOutcome, type Outcome } from "../progress/outcome";
 
@@ -130,6 +136,11 @@ export const MODES: readonly {
   shortDescription: MODE_SHORT_DESCRIPTIONS[kind],
 }));
 
+/** An itinerary's wins, as its summary's headline: `4 av 6 vunna`. */
+export function tripsWonText(won: number, total: number): string {
+  return `${won} av ${total} vunna`;
+}
+
 /** How a mode plays. */
 export function modeDescription(kind: ModeKind): string {
   return MODE_DESCRIPTIONS[kind];
@@ -162,6 +173,9 @@ export function timeText(tenths: number): string {
   return `${hoursMinutesSeconds(Math.floor(tenths / 10))},${tenths % 10}`;
 }
 
+/** Why a lost Tidtagning trip shows a time: `En Tidtagnings-resa du inte vinner räknas som 5:00,0.` */
+export const LOST_TIE_BREAKER_TIME_EXPLANATION = `En Tidtagnings-resa du inte vinner räknas som ${timeText(LOST_TIE_BREAKER_TIME)}.`;
+
 /**
  * A free-play result's heading, which leaves the costs to its score line: `Perfekt!`, `Framme!`,
  * `Slut på gissningar` or `Gav upp`.
@@ -178,28 +192,17 @@ export function freePlayHeadline(outcome: Outcome): string {
 }
 
 /** What a free-play score means, in the score tooltip and wherever scoring is explained. */
-export const SCORE_EXPLANATION = `Lägre poäng är bättre. En perfekt resa ger −1; varje extra gissning, ledtråd och ⏱ kostar ${TIMEOUT_COST}.`;
+export const SCORE_EXPLANATION = `Lägre poäng är bättre. En perfekt resa ger ${scoreText(PERFECT_SCORE)}; varje extra gissning, ledtråd och ⏱ kostar ${TIMEOUT_COST}.`;
 
 /** How a lost free-play trip scores, given up or out of guesses. */
-export const LOSS_SCORE_EXPLANATION = `Kommer du inte fram får du ${AWAY_WEIGHT_AT_LIMIT} poäng för varje kommun du är ifrån målet, eller ${AWAY_WEIGHT_GIVEN_UP} om du gav upp, plus 1 för varje gissning utöver avståndet. Ledtrådar och ⏱ kostar som vanligt. Ger du upp 1 ifrån målet efter 5 gissningar på en resa med avstånd 3 blir det ${AWAY_WEIGHT_GIVEN_UP + 2} poäng: ${AWAY_WEIGHT_GIVEN_UP} för kommunen och 2 för gissningarna.`;
+export const LOSS_SCORE_EXPLANATION = `Kommer du inte fram får du ${AWAY_WEIGHT_AT_LIMIT} poäng för varje kommun du är ifrån målet, eller ${AWAY_WEIGHT_GIVEN_UP} om du gav upp, plus 1 för varje gissning utöver avståndet.`;
 
-/** That time never enters a score but only separates equal ones, as the glossary's Score says. */
-export const TIME_TIE_BREAK_EXPLANATION =
-  "Tiden räknas aldrig in i poängen. Den skiljer bara lika poäng åt: i en resplan vinner först den som vunnit flest resor i Tidtagning, sedan den med lägst total tid.";
+/** A worked {@link LOSS_SCORE_EXPLANATION}, shown on its own line after it. */
+export const LOSS_SCORE_EXAMPLE = `Exempel: Ger du upp 1 ifrån målet efter 5 gissningar på en resa med avstånd 3 blir det ${AWAY_WEIGHT_GIVEN_UP + 2} poäng: ${AWAY_WEIGHT_GIVEN_UP} för den saknade kommunen och 2 för gissningarna.`;
 
-/** An itinerary's total time and its won tie-breaker trips: `4:12,3 (2 vunna)`. */
-export function totalTimeText(tenths: number, won: number): string {
-  return `${timeText(tenths)} (${wonCountText(won)})`;
-}
-
-/** An itinerary's won tie-breaker trips, naming their mode: `2 vunna i Tidtagning`. */
-export function wonTieBreakersText(won: number): string {
-  return `${wonCountText(won)} i Tidtagning`;
-}
-
-function wonCountText(won: number): string {
-  return `${won} ${won === 1 ? "vunnen" : "vunna"}`;
-}
+/** How itineraries are ranked, as the glossary's Standing says. */
+export const STANDING_EXPLANATION =
+  "Resplaner rankas först efter flest vunna resor, sedan efter lägst poäng och till sist efter lägst sammanlagd tid på Tidtagnings-resorna.";
 
 function hoursMinutesSeconds(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
@@ -230,7 +233,6 @@ export function warningAnnouncement(seconds: number): string {
   return seconds === 1 ? "1 sekund kvar" : `${seconds} sekunder kvar`;
 }
 
-/** `1 ledtråd`, `2 ledtrådar`. */
 /** Hints taken, counted: `0 ledtrådar`, `1 ledtråd`. */
 export function hintCount(hints: number): string {
   return hints === 1 ? "1 ledtråd" : `${hints} ledtrådar`;

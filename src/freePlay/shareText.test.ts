@@ -204,24 +204,27 @@ describe("an itinerary's share text", () => {
   ];
   const summary = (
     summaryRows: ItinerarySummaryRow[],
-    standing: ItinerarySummary["standing"],
+    { tripsWon, score }: { tripsWon: number; score: number },
   ): ItinerarySummary => ({
     rows: summaryRows,
-    standing,
-    hasTieBreaker: summaryRows.some((summaryRow) => summaryRow.mode.kind === "tie-breaker"),
+    standing: {
+      tripsWon,
+      score,
+      tieBreakerTime: 0,
+    },
   });
 
-  test("has the title and count, the total with its time, a label row per trip and the link", () => {
+  test("has the title and count, the wins and total score, a label row per trip and the link", () => {
     expect(
       itineraryShareText({
         title: "Norrlandsturen",
-        summary: summary(rows, { score: 10, wonTieBreakers: 2, totalTime: 2523 }),
+        summary: summary(rows, { tripsWon: 4, score: 10 }),
         link: itineraryLink,
       }),
     ).toBe(
       [
         "#åkle Resplan · Norrlandsturen · 5 resor",
-        "Totalt 10 poäng · 4:12,3 (2 vunna)",
+        "4 av 5 vunna · Totalt 10 poäng · 2 i Tidtagning",
         "1. Standard · +1 · 1 poäng",
         "2. Tidspress · 10 s · Gav upp (2 ifrån) · 8 poäng",
         "3. Tidtagning · +0 (1 ledtråd) · 1 poäng · 2:03,4",
@@ -234,41 +237,41 @@ describe("an itinerary's share text", () => {
 
   test("without a title the header has only the count", () => {
     const text = itineraryShareText({
-      summary: summary(rows.slice(0, 2), { score: 9, wonTieBreakers: 0, totalTime: 0 }),
+      summary: summary(rows.slice(0, 2), { tripsWon: 1, score: 9 }),
       link: "/resplan?r=EIYFoKAAoAUMXhQwBgdq",
     });
     expect(text.split("\n")[0]).toBe("#åkle Resplan · 2 resor");
   });
 
-  test("without a tie-breaker trip the total has no time", () => {
+  test("without a won tie-breaker trip the header line has no Tidtagning part", () => {
     const text = itineraryShareText({
       title: "Fredag",
-      summary: summary(rows.slice(0, 2), { score: 9, wonTieBreakers: 0, totalTime: 0 }),
+      summary: summary(rows.slice(0, 2), { tripsWon: 1, score: 9 }),
       link: itineraryLink,
     });
-    expect(text.split("\n")[1]).toBe("Totalt 9 poäng");
+    expect(text.split("\n")[1]).toBe("1 av 2 vunna · Totalt 9 poäng");
   });
 
-  test("with tie-breaker trips but none won the total still counts them", () => {
+  test("with tie-breaker trips but none won it has no Tidtagning part, nor a time", () => {
     const text = itineraryShareText({
-      summary: summary([rows[0], rows[4]], { score: 2, wonTieBreakers: 0, totalTime: 0 }),
+      summary: summary([rows[0], rows[4]], { tripsWon: 1, score: 2 }),
       link: itineraryLink,
     });
-    expect(text.split("\n")[1]).toBe("Totalt 2 poäng · 0:00,0 (0 vunna)");
+    expect(text.split("\n")[1]).toBe("1 av 2 vunna · Totalt 2 poäng");
   });
 
-  test("one won tie-breaker trip reads vunnen", () => {
+  test("counts the won tie-breaker trips, with no summed time", () => {
     const text = itineraryShareText({
-      summary: summary([rows[0], rows[2]], { score: 2, wonTieBreakers: 1, totalTime: 1234 }),
+      summary: summary([rows[0], rows[2]], { tripsWon: 2, score: 2 }),
       link: itineraryLink,
     });
-    expect(text.split("\n")[1]).toBe("Totalt 2 poäng · 2:03,4 (1 vunnen)");
+    expect(text.split("\n")[1]).toBe("2 av 2 vunna · Totalt 2 poäng · 1 i Tidtagning");
   });
 
   test("never names the endpoints, has no emoji lines and never carries a trip number", () => {
     const text = itineraryShareText({
       title: "Norrlandsturen",
-      summary: summary(rows, { score: 10, wonTieBreakers: 2, totalTime: 2523 }),
+      summary: summary(rows, { tripsWon: 4, score: 10 }),
       link: itineraryLink,
     });
     expect(text).not.toContain("Kiruna");

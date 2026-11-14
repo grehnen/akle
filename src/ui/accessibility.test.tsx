@@ -327,9 +327,15 @@ describe("automated accessibility check", () => {
               score: -1,
               time: 834,
             },
+            {
+              ...row,
+              mode: { kind: "tie-breaker" },
+              outcome: { kind: "lost", away: 1, hintsUsed: 0, givenUp: true },
+              timeouts: 0,
+              score: 3,
+            },
           ],
-          standing: { score: 3, wonTieBreakers: 1, totalTime: 834 },
-          hasTieBreaker: true,
+          standing: { tripsWon: 2, score: 6, tieBreakerTime: 834 + 3000 },
         }}
         link="/resplan?namn=Fredagsresan&r=EIYFoKAAoAUMXhQwBgdq"
       />

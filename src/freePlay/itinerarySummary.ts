@@ -22,20 +22,24 @@ export type ItinerarySummaryRow = {
 };
 
 /**
- * What ranks a finished itinerary: its total score, then how many of its tie-breaker trips were
- * won, then their total time in tenths (only won tie-breaker trips add time).
+ * What ranks a finished itinerary (the glossary's Standing): how many trips were won, the summed
+ * score, and the summed time over its tie-breaker trips.
  */
 export type ItineraryStanding = {
+  tripsWon: number;
   score: number;
-  wonTieBreakers: number;
-  totalTime: number;
+  /** The tie-breaker trips' summed time in tenths of a second; a lost one counts as 5 minutes. */
+  tieBreakerTime: number;
 };
+
+/** What a lost tie-breaker trip counts as in a Standing's summed time. */
+export const LOST_TIE_BREAKER_TIME_MS = 5 * 60 * 1000;
+/** {@link LOST_TIE_BREAKER_TIME_MS} in tenths of a second, as a trip's time is kept. */
+export const LOST_TIE_BREAKER_TIME = LOST_TIE_BREAKER_TIME_MS / 100;
 
 export type ItinerarySummary = {
   rows: readonly ItinerarySummaryRow[];
   standing: ItineraryStanding;
-  /** Whether any trip is in tie-breaker mode, so the total time is worth showing. */
-  hasTieBreaker: boolean;
 };
 
 /**
@@ -66,22 +70,29 @@ export function itinerarySummary(
       ...(time !== undefined && { time }),
     };
   });
-  const timed = rows.flatMap((row) => (row.time === undefined ? [] : [row.time]));
+  const tripsLost = rows.filter((row) => row.outcome.kind === "lost").length;
   return {
     rows,
     standing: {
-      score: rows.reduce((total, row) => total + row.score, 0),
-      wonTieBreakers: timed.length,
-      totalTime: timed.reduce((total, time) => total + time, 0),
+      tripsWon: rows.length - tripsLost,
+      score: sum(rows.map((row) => row.score)),
+      tieBreakerTime: sum(
+        rows
+          .filter((row) => row.mode.kind === "tie-breaker")
+          .map((row) => row.time ?? LOST_TIE_BREAKER_TIME),
+      ),
     },
-    hasTieBreaker: trips.some((trip) => trip.mode.kind === "tie-breaker"),
   };
 }
 
+function sum(numbers: readonly number[]): number {
+  return numbers.reduce((total, number) => total + number, 0);
+}
+
 /**
- * Orders two itinerary results, the better first (negative when `a` ranks above `b`): the lower
- * score, then more won tie-breaker trips, then the lower total time.
+ * Orders two itinerary standings of the same itinerary, the better first (negative when `a` ranks
+ * above `b`): more trips won, then the lower summed score, then the lower summed tie-breaker time.
  */
 export function compareStandings(a: ItineraryStanding, b: ItineraryStanding): number {
-  return a.score - b.score || b.wonTieBreakers - a.wonTieBreakers || a.totalTime - b.totalTime;
+  return b.tripsWon - a.tripsWon || a.score - b.score || a.tieBreakerTime - b.tieBreakerTime;
 }

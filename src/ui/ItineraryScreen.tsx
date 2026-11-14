@@ -5,7 +5,7 @@ import {
   changeTripGame,
   type ItineraryPlay,
   itineraryStage,
-  itineraryTotal,
+  itineraryProgress,
   NEW_ITINERARY_PLAY,
   nextTrip,
   startTrip,
@@ -20,7 +20,15 @@ import { SITE_URL } from "../siteUrl";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { GatedBoard } from "./GatedBoard";
 import { ItinerarySummaryView } from "./ItinerarySummary";
-import { MODE_NAMES, modeDescription, modeName, SCORE_EXPLANATION, scoreText } from "./messages";
+import {
+  MODE_NAMES,
+  modeDescription,
+  LOSS_SCORE_EXAMPLE,
+  LOSS_SCORE_EXPLANATION,
+  modeName,
+  scoreText,
+} from "./messages";
+import { ScoreExplanation } from "./ScoreExplanation";
 import { ModeName } from "./ModeName";
 import { ScoreTooltip } from "./ScoreTooltip";
 import { useNavigation } from "./navigation";
@@ -70,7 +78,7 @@ export function ItineraryScreen({
   };
   useEffect(() => onPlayChange?.(play), [play, onPlayChange]);
   const stage = itineraryStage(graph, trips, play);
-  const total = itineraryTotal(graph, play);
+  const { total, tripsWon } = useMemo(() => itineraryProgress(graph, play), [graph, play]);
   // The board a trip's card loads behind its Starta, until the trip starts.
   const cardTrip = stage.kind === "card" ? trips[stage.index] : undefined;
   const cardGame = useMemo(() => cardTrip && unstartedGame(cardTrip), [cardTrip]);
@@ -98,7 +106,8 @@ export function ItineraryScreen({
       <span className="itinerary-progress-title">{title ?? "Resplan"}</span>{" "}
       <span className="itinerary-progress-detail">
         Resa {stage.index + 1} av {trips.length} ·{" "}
-        <ModeName kind={trip.mode.kind}>{modeName(trip.mode)}</ModeName> ·{" "}
+        <ModeName kind={trip.mode.kind}>{modeName(trip.mode)}</ModeName> · {tripsWon}{" "}
+        {tripsWon === 1 ? "vunnen" : "vunna"} ·{" "}
         <ScoreTooltip>Totalt {scoreText(total)}</ScoreTooltip>
       </span>
     </p>
@@ -177,7 +186,11 @@ function ItineraryIntro({
         <p className="itinerary-intro-note">
           Start och mål visas resa för resa. Varje resa spelas en gång, i tur och ordning.
         </p>
-        <p className="itinerary-intro-score">{SCORE_EXPLANATION}</p>
+        <p className="itinerary-intro-score">
+          <ScoreExplanation /> {LOSS_SCORE_EXPLANATION}
+          <br />
+          {LOSS_SCORE_EXAMPLE}
+        </p>
         <div className="itinerary-intro-actions">
           <div className="itinerary-intro-buttons">
             <CopyLinkButton url={url} fallbackTarget={fallbackTarget} />

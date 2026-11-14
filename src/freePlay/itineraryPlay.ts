@@ -119,7 +119,16 @@ export function nextTrip(
   return arriveAtTrip(trips, { ...play, current: play.current + 1 }, now);
 }
 
-/** The itinerary's running total: the sum of its finished trips' scores. */
-export function itineraryTotal(graph: GraphVersion, play: ItineraryPlay): number {
-  return play.games.reduce((total, game) => total + (tripScore(reviewGame(graph, game)) ?? 0), 0);
+/** How far an itinerary has got: its running total (the finished trips' scores) and the trips won so far. */
+export type ItineraryProgress = { total: number; tripsWon: number };
+
+export function itineraryProgress(graph: GraphVersion, play: ItineraryPlay): ItineraryProgress {
+  let total = 0;
+  let tripsWon = 0;
+  for (const game of play.games) {
+    const review = reviewGame(graph, game);
+    total += tripScore(review) ?? 0;
+    if (review.status === "won") tripsWon += 1;
+  }
+  return { total, tripsWon };
 }

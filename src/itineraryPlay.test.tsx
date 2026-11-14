@@ -9,6 +9,7 @@ import { encodeLinkPayload, type LinkedTrip } from "./freePlay/linkPayload";
 import { tripLinkPath } from "./freePlay/tripLink";
 import type { GraphVersionFiles } from "./graph/graphVersionFiles";
 import type { LoadMapLibre } from "./map/mapLibreLoader";
+import { LOSS_SCORE_EXAMPLE, LOSS_SCORE_EXPLANATION } from "./ui/messages";
 import { type KeyValueStorage, memoryStorage } from "./progress/storage";
 
 const dom = new JSDOM('<!doctype html><html lang="sv"><body></body></html>', {
@@ -342,8 +343,9 @@ describe("an itinerary from its link", () => {
       "tie-breaker",
     ]);
     expect(text(container, ".itinerary-intro-score")).toBe(
-      "Lägre poäng är bättre. En perfekt resa ger −1; varje extra gissning, ledtråd och ⏱ kostar 1.",
+      `Lägre poäng är bättre. En perfekt resa ger −1 poäng; varje extra gissning, ledtråd och ⏱ kostar 1. ${LOSS_SCORE_EXPLANATION}${LOSS_SCORE_EXAMPLE}`,
     );
+    expect(text(container, ".itinerary-intro-score em")).toBe("perfekt");
     expect(container.textContent).not.toContain("Nynäshamn");
     expect(container.querySelector("#guess-input")).toBeNull();
     expect(dom.window.document.activeElement).toBe(button(container, "Starta resplanen") ?? null);
@@ -400,7 +402,7 @@ describe("an itinerary from its link", () => {
     expect(container.querySelector(".start-gate")).toBeNull();
     expect(labelLines(container, ".trip-number")).toEqual([
       "Fredagsresan",
-      "Resa 1 av 3 · Standard · Totalt 0 poäng",
+      "Resa 1 av 3 · Standard · 0 vunna · Totalt 0 poäng",
     ]);
     expect(text(container, "#trip-heading")).toContain("Nynäshamn");
     expect(dom.window.document.activeElement?.id).toBe("guess-input");
@@ -418,7 +420,7 @@ describe("an itinerary from its link", () => {
     expect(text(container, ".itinerary-progress .tooltip")).toBe("Totalt −1 poäng");
     expect(labelLines(container, ".trip-number")).toEqual([
       "Fredagsresan",
-      "Resa 1 av 3 · Standard · Totalt −1 poäng",
+      "Resa 1 av 3 · Standard · 1 vunnen · Totalt −1 poäng",
     ]);
     expect(container.querySelector(".share-button")).toBeNull();
     expect(query(container, ".result-view .itinerary-next").textContent).toBe("Nästa resa");
@@ -427,7 +429,7 @@ describe("an itinerary from its link", () => {
     // Trip 2: Tidspress, on its card until Starta, its thinking time running from then.
     expect(labelLines(container, ".start-gate .trip-number")).toEqual([
       "Fredagsresan",
-      "Resa 2 av 3 · Tidspress · 10 s · Totalt −1 poäng",
+      "Resa 2 av 3 · Tidspress · 10 s · 1 vunnen · Totalt −1 poäng",
     ]);
     expect(container.textContent).not.toContain("Trosa");
     expect(container.textContent).toContain("Tiden går även om du lämnar sidan.");
@@ -452,7 +454,7 @@ describe("an itinerary from its link", () => {
     // Trip 3: Tidtagning, its clock on the board, given up after a wrong guess: 1 − 1 + 3·1.
     expect(labelLines(container, ".start-gate .trip-number")).toEqual([
       "Fredagsresan",
-      "Resa 3 av 3 · Tidtagning · Totalt 0 poäng",
+      "Resa 3 av 3 · Tidtagning · 2 vunna · Totalt 0 poäng",
     ]);
     expect(text(container, ".start-gate-rules")).toBe(
       "Tiden tas. Vid lika poäng vinner den snabbaste.",
@@ -499,16 +501,18 @@ describe("an itinerary from its link", () => {
         pair: "Trosa → Haninge",
         mode: "Tidtagning",
         outcome: "Gav upp (1 ifrån)",
-        time: undefined,
+        time: "5:00,0",
         score: "3 poäng",
       },
     ]);
-    // A tie-breaker trip, lost: the total time is there.
+    // Two of three trips won; the lost tie-breaker trip counts as 5 minutes, and no counts line.
+    expect(text(container, ".itinerary-summary-headline")).toBe("2 av 3 vunna");
     expect(summaryTotals(container)).toEqual([
       ["Totalt", "3 poäng"],
-      ["Total tid", "0:00,0"],
+      ["Total tid", "5:00,0"],
     ]);
-    expect(container.querySelector(".itinerary-summary-totals .itinerary-summary-note")).toBeNull();
+    expect(container.querySelector(".itinerary-summary-counts")).toBeNull();
+    expect(container.querySelectorAll(".itinerary-summary-time .tooltip")).toHaveLength(1);
     expect(button(container, "Nästa resa")).toBeUndefined();
     expect(button(container, "Spela igen")).toBeUndefined();
 
@@ -516,7 +520,7 @@ describe("an itinerary from its link", () => {
     expect(copied).toEqual([
       [
         "#åkle Resplan · Fredagsresan · 3 resor",
-        "Totalt 3 poäng · 0:00,0 (0 vunna)",
+        "2 av 3 vunna · Totalt 3 poäng",
         "1. Standard · +0 (Perfekt) · −1 poäng",
         "2. Tidspress · 10 s · +0 (Perfekt, 2 ⏱) · 1 poäng",
         "3. Tidtagning · Gav upp (1 ifrån) · 3 poäng",
@@ -541,14 +545,14 @@ describe("an itinerary from its link", () => {
     expect(button(container, "Nästa resa")).toBeDefined();
   });
 
-  test("sums the won tie-breaker trips' time, shows each one's time, and shares it all", async () => {
+  test("shows each won tie-breaker trip's time, sums it, and shares it all", async () => {
     const link = itineraryLinkPath(0, "", [trosaHaninge, nynashamnSalem]);
     const container = await mountApp(link);
     await click(button(container, "Starta resplanen"));
     // Untitled, it's named Resplan as on its intro.
     expect(labelLines(container, ".start-gate .trip-number")).toEqual([
       "Resplan",
-      "Resa 1 av 2 · Tidtagning · Totalt 0 poäng",
+      "Resa 1 av 2 · Tidtagning · 0 vunna · Totalt 0 poäng",
     ]);
     await click(button(container, "Starta"));
     clockTime += 12_340;
@@ -575,23 +579,19 @@ describe("an itinerary from its link", () => {
       { outcome: "+0 (Perfekt)", time: "0:12,3", score: "−1 poäng" },
       { outcome: "+0 (1 ledtråd)", time: undefined, score: "1 poäng" },
     ]);
+    expect(text(container, ".itinerary-summary-headline")).toBe("2 av 2 vunna");
     expect(summaryTotals(container)).toEqual([
       ["Totalt", "0 poäng"],
       ["Total tid", "0:12,3"],
     ]);
-    // The won count is behind Total tid, shown on focus.
-    const totalTime = button(container, "Total tid");
-    await act(async () => totalTime?.focus());
-    const wonCount = query(container, '[role="tooltip"]');
-    expect(totalTime?.getAttribute("aria-describedby")).toBe(wonCount.id);
-    expect(wonCount.textContent).toBe("1 vunnen i Tidtagning");
-    await act(async () => totalTime?.blur());
+    expect(container.querySelector(".itinerary-summary-counts")).toBeNull();
+    expect(container.querySelector(".itinerary-summary-time .tooltip")).toBeNull();
 
     await click(query(container, ".itinerary-summary .share-button"));
     expect(copied).toEqual([
       [
         "#åkle Resplan · 2 resor",
-        "Totalt 0 poäng · 0:12,3 (1 vunnen)",
+        "2 av 2 vunna · Totalt 0 poäng · 1 i Tidtagning",
         "1. Tidtagning · +0 (Perfekt) · −1 poäng · 0:12,3",
         "2. Standard · +0 (1 ledtråd) · 1 poäng",
         `https://akle.grehn.net${link}`,
@@ -599,7 +599,7 @@ describe("an itinerary from its link", () => {
     ]);
   });
 
-  test("the summary shows no total time without a tie-breaker trip, and leads to today's trip and free play", async () => {
+  test("the summary has no Total tid without a tie-breaker trip, and leads to today's trip and free play", async () => {
     const container = await mountApp(itineraryLinkPath(0, "", [nynashamnSalem, haningeTrosa]));
     await click(button(container, "Starta resplanen"));
     await guess(container, "Haninge");
@@ -611,6 +611,7 @@ describe("an itinerary from its link", () => {
     await click(button(container, "Visa sammanfattning →"));
 
     expect(summaryTotals(container)).toEqual([["Totalt", "−2 poäng"]]);
+    expect(container.textContent).not.toContain("Total tid");
     // Dela resultat first, as the primary, then the ways on stacked in a Vidare group below it.
     const share = query(container, ".itinerary-summary .share-button");
     expect(share.classList.contains("primary-button")).toBe(true);
@@ -634,7 +635,7 @@ describe("an itinerary from its link", () => {
 
   test("the label's total and the summary's scores explain the score when focused", async () => {
     const scoreExplanation =
-      "Lägre poäng är bättre. En perfekt resa ger −1; varje extra gissning, ledtråd och ⏱ kostar 1.";
+      "Lägre poäng är bättre. En perfekt resa ger −1 poäng; varje extra gissning, ledtråd och ⏱ kostar 1.";
     /** What focusing the score `trigger` shows, then hides on Escape. */
     async function explanationOn(trigger: HTMLButtonElement | undefined) {
       if (trigger === undefined) return undefined;
@@ -737,7 +738,7 @@ describe("resuming an itinerary", () => {
     container = await reopen(fridayLink, storage);
     expect(labelLines(container, ".trip-number")).toEqual([
       "Fredagsresan",
-      "Resa 2 av 3 · Tidspress · 10 s · Totalt −1 poäng",
+      "Resa 2 av 3 · Tidspress · 10 s · 1 vunnen · Totalt −1 poäng",
     ]);
     expect(text(container, "#trip-heading")).toContain("Haninge");
     expect(guessNames(container)).toEqual(["1. Nynäshamn 🟧"]);
@@ -759,7 +760,7 @@ describe("resuming an itinerary", () => {
     container = await reopen(fridayLink, storage);
     expect(labelLines(container, ".start-gate .trip-number")).toEqual([
       "Fredagsresan",
-      "Resa 2 av 3 · Tidspress · 10 s · Totalt −1 poäng",
+      "Resa 2 av 3 · Tidspress · 10 s · 1 vunnen · Totalt −1 poäng",
     ]);
     expect(button(container, "Starta resplanen")).toBeUndefined();
   });
@@ -806,7 +807,7 @@ describe("resuming an itinerary", () => {
     container = await reopen(other, storage);
     expect(labelLines(container, ".start-gate .trip-number")).toEqual([
       "Lördag",
-      "Resa 1 av 2 · Tidspress · 10 s · Totalt 0 poäng",
+      "Resa 1 av 2 · Tidspress · 10 s · 0 vunna · Totalt 0 poäng",
     ]);
   });
 
@@ -945,7 +946,7 @@ describe("the builder's banner", () => {
     expect(dom.window.location.pathname + dom.window.location.search).toBe(fridayLink);
     expect(labelLines(container, ".start-gate .trip-number")).toEqual([
       "Fredagsresan",
-      "Resa 2 av 3 · Tidspress · 10 s · Totalt −1 poäng",
+      "Resa 2 av 3 · Tidspress · 10 s · 1 vunnen · Totalt −1 poäng",
     ]);
   });
 

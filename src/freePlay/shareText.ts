@@ -8,7 +8,7 @@ import {
   modeName,
   scoreText,
   timeText,
-  totalTimeText,
+  tripsWonText,
 } from "../ui/messages";
 import type { ItinerarySummary } from "./itinerarySummary";
 import type { ModeSetting } from "./linkPayload";
@@ -61,7 +61,7 @@ function tripLabel({
 
 /**
  * How a free-play trip went, with its score's costs, worded one way in its result, the itinerary
- * summary and both share texts. A win reads as in the daily label (`+0 (Perfekt)`, `+1 (1 ledtråd)`);
+ * summary and both share texts. A win reads as in the daily label (`+0 (Perfekt)`, `+0 (Perfekt, 2 ⏱)`, `+1 (1 ledtråd)`);
  * a loss is labelled and keeps its hints and timeouts in one bracket with the away:
  * `Slut på gissningar (2 ifrån, 1 ledtråd)`, `Gav upp (1 ifrån, 2 ⏱)`.
  */
@@ -81,9 +81,9 @@ export function tripOutcomeLabelParts(outcome: Outcome): LabelPart[] {
 
 /**
  * What a player copies from a finished itinerary's summary: `#åkle Resplan · <title> · <n>
- * resor`, the total score (with the total time and how many tie-breaker trips were won, when it
- * has any), a `<i>. <mode> · <trip label>` row per trip and the itinerary's link. No emoji lines,
- * and never the endpoints.
+ * resor`, how many trips were won and the total score (with how many tie-breaker trips were won,
+ * when it has any), a `<i>. <mode> · <trip label>` row per trip and the itinerary's link. No emoji
+ * lines, and never the endpoints.
  */
 export function itineraryShareText({
   title,
@@ -95,10 +95,14 @@ export function itineraryShareText({
   /** The itinerary's link, from the site root: `/resplan?namn=…&r=…`. */
   link: string;
 }): string {
-  const { rows, standing, hasTieBreaker } = summary;
+  const { rows, standing } = summary;
   const header = ["#åkle Resplan", ...(title === undefined ? [] : [title]), `${rows.length} resor`];
-  const total = [`Totalt ${scoreText(standing.score)}`];
-  if (hasTieBreaker) total.push(totalTimeText(standing.totalTime, standing.wonTieBreakers));
+  const tieBreakersWon = rows.filter((row) => row.time !== undefined).length;
+  const total = [
+    tripsWonText(standing.tripsWon, rows.length),
+    `Totalt ${scoreText(standing.score)}`,
+  ];
+  if (tieBreakersWon > 0) total.push(`${tieBreakersWon} i Tidtagning`);
   return [
     header.join(" · "),
     total.join(" · "),

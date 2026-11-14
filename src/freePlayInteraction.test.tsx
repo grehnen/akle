@@ -1140,7 +1140,7 @@ describe("giving up", () => {
 
 describe("the score tooltip", () => {
   const SCORE_EXPLANATION =
-    "Lägre poäng är bättre. En perfekt resa ger −1; varje extra gissning, ledtråd och ⏱ kostar 1.";
+    "Lägre poäng är bättre. En perfekt resa ger −1 poäng; varje extra gissning, ledtråd och ⏱ kostar 1.";
   const tooltip = (container: HTMLElement) =>
     container.querySelector<HTMLElement>('[role="tooltip"]');
 
@@ -1162,6 +1162,7 @@ describe("the score tooltip", () => {
 
     await act(async () => resultScore(container).focus());
     expect(tooltip(container)?.textContent).toBe(SCORE_EXPLANATION);
+    expect(tooltip(container)?.querySelector("em")?.textContent).toBe("perfekt");
     expect(resultScore(container).getAttribute("aria-describedby")).toBe(
       tooltip(container)?.id ?? null,
     );
@@ -1233,7 +1234,7 @@ describe("the rules", () => {
     expect(titles.slice(-2)).toEqual(["Vad räknas som grannar?", "Poäng i fri resa"]);
   });
 
-  test("explain free-play scoring: the score tooltip's text, a loss's score and time as a tie-break", async () => {
+  test("explain free-play scoring: the score tooltip's text, a loss's score and how itineraries are ranked", async () => {
     const { container } = await mountApp("/fri");
     await click(query(container, 'header button[aria-label="Så spelar du"]'));
 
@@ -1241,11 +1242,15 @@ describe("the rules", () => {
       (details) => details.querySelector("summary")?.textContent === "Poäng i fri resa",
     );
     expect(
-      [...(section?.querySelectorAll(".rules-section-body p") ?? [])].map((p) => p.textContent),
+      [...(section?.querySelectorAll(".rules-section-body p") ?? [])].map((p) => {
+        const paragraph = p.cloneNode(true) as HTMLElement;
+        paragraph.querySelectorAll("br").forEach((lineBreak) => lineBreak.replaceWith("\n"));
+        return paragraph.textContent;
+      }),
     ).toEqual([
-      "Lägre poäng är bättre. En perfekt resa ger −1; varje extra gissning, ledtråd och ⏱ kostar 1.",
-      "Kommer du inte fram får du 2 poäng för varje kommun du är ifrån målet, eller 3 om du gav upp, plus 1 för varje gissning utöver avståndet. Ledtrådar och ⏱ kostar som vanligt. Ger du upp 1 ifrån målet efter 5 gissningar på en resa med avstånd 3 blir det 5 poäng: 3 för kommunen och 2 för gissningarna.",
-      "Tiden räknas aldrig in i poängen. Den skiljer bara lika poäng åt: i en resplan vinner först den som vunnit flest resor i Tidtagning, sedan den med lägst total tid.",
+      "Lägre poäng är bättre. En perfekt resa ger −1 poäng; varje extra gissning, ledtråd och ⏱ kostar 1.",
+      "Kommer du inte fram får du 2 poäng för varje kommun du är ifrån målet, eller 3 om du gav upp, plus 1 för varje gissning utöver avståndet.\nExempel: Ger du upp 1 ifrån målet efter 5 gissningar på en resa med avstånd 3 blir det 5 poäng: 3 för den saknade kommunen och 2 för gissningarna.",
+      "Resplaner rankas först efter flest vunna resor, sedan efter lägst poäng och till sist efter lägst sammanlagd tid på Tidtagnings-resorna.",
     ]);
   });
 });

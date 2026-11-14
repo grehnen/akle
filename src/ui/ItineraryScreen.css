@@ -36,6 +36,7 @@
 .itinerary-intro-note,
 .itinerary-intro-score {
   color: var(--muted);
+  text-align: left;
   /* Never ends on a lone word. */
   text-wrap: pretty;
 }
