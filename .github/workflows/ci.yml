@@ -218,6 +218,6 @@ jobs:
           PREVIEW_NAME: pr-${{ github.event.pull_request.number }}
         run: |
           set -o pipefail
-          result="$(bunx cf previews deploy "$PREVIEW_NAME")"
+          result="$(bunx cf previews deploy --preview-name "$PREVIEW_NAME")"
           printf '%s\n' "$result"
           echo "url=$(printf '%s' "$result" | jq -er '.preview_urls[0]')" >> "$GITHUB_OUTPUT"
