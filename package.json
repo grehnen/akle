@@ -41,7 +41,7 @@
     "flatbush": "4.7.0",
     "jsdom": "31.0.0",
     "mapshaper": "0.7.101",
-    "oxfmt": "0.75.0",
+    "oxfmt": "0.78.0",
     "oxlint": "1.92.0",
     "typescript": "7.0.2",
     "vite": "8.3.5"
