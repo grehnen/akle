@@ -1,6 +1,13 @@
 import type { ReactNode } from "react";
-import { LOSS_SCORE_EXPLANATION, SCORE_EXPLANATION, TIME_TIE_BREAK_EXPLANATION } from "./messages";
+import { TIMEOUT_COST } from "../engine/score";
+import {
+  LOSS_SCORE_EXAMPLE,
+  LOSS_SCORE_EXPLANATION,
+  scoreText,
+  STANDING_EXPLANATION,
+} from "./messages";
 import { Modal } from "./Modal";
+import { ScoreExplanation } from "./ScoreExplanation";
 import "./RulesDialog.css";
 
 const REPOSITORY_URL = "https://github.com/grehnen/akle";
@@ -49,7 +56,8 @@ export function RulesDialog({ onClose }: RulesDialogProps) {
           <p>
             Kört fast? Det finns tre ledtrådar: konturen av nästa kommun på en kortaste rutt,
             konturerna av alla kommuner och sedan deras initialer. Ledtrådar kostar inga gissningar,
-            men ett spel med ledtrådar kan inte bli Perfekt.
+            men ett spel med ledtrådar kan inte bli Perfekt. I fri resa kostar varje ledtråd
+            dessutom {scoreText(TIMEOUT_COST)}.
           </p>
         </RulesSection>
         <RulesSection title="Vad räknas som grannar?">
@@ -79,9 +87,15 @@ export function RulesDialog({ onClose }: RulesDialogProps) {
           </p>
         </RulesSection>
         <RulesSection title="Poäng i fri resa">
-          <p>{SCORE_EXPLANATION}</p>
-          <p>{LOSS_SCORE_EXPLANATION}</p>
-          <p>{TIME_TIE_BREAK_EXPLANATION}</p>
+          <p>
+            <ScoreExplanation />
+          </p>
+          <p>
+            {LOSS_SCORE_EXPLANATION}
+            <br />
+            {LOSS_SCORE_EXAMPLE}
+          </p>
+          <p>{STANDING_EXPLANATION}</p>
         </RulesSection>
       </div>
       <p className="rules-source">

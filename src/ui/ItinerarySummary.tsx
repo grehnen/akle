@@ -1,10 +1,20 @@
-import type { ItinerarySummary, ItinerarySummaryRow } from "../freePlay/itinerarySummary";
+import {
+  type ItinerarySummary,
+  type ItinerarySummaryRow,
+  LOST_TIE_BREAKER_TIME,
+} from "../freePlay/itinerarySummary";
 import { ITINERARY_PATH } from "../freePlay/itineraryLink";
 import { itineraryShareText } from "../freePlay/shareText";
 import { FREE_PLAY_PATH } from "../freePlay/tripLink";
 import { AppLink } from "./AppLink";
 import { ButtonGroup } from "./ButtonGroup";
-import { modeName, scoreText, timeText, wonTieBreakersText } from "./messages";
+import {
+  LOST_TIE_BREAKER_TIME_EXPLANATION,
+  modeName,
+  scoreText,
+  timeText,
+  tripsWonText,
+} from "./messages";
 import { ScoreLabel } from "./ScoreLabel";
 import { ScoreTooltip } from "./ScoreTooltip";
 import { ShareButton } from "./ShareButton";
@@ -12,11 +22,11 @@ import { Tooltip } from "./Tooltip";
 import "./ItinerarySummary.css";
 
 /**
- * A finished itinerary's summary: its title, a row per trip (its ends, mode, outcome label as the
- * share text words it, a won tie-breaker trip's time and its score), and the list's footer of
- * totals in its score column: the total score, and the total time when it
- * has a tie-breaker trip, with the won count in a tooltip on Total tid. Then share, the primary, over
- * a Vidare group: the builder, today's trip and free play.
+ * A finished itinerary's summary: its title, how many trips were won, a row per trip (its ends,
+ * mode, outcome label as the share text words it, a tie-breaker trip's time and its score), and
+ * the list's footer with the total score in its score column, and under it the total time when
+ * there is a tie-breaker trip. A lost tie-breaker trip shows the time it counts as, explained.
+ * Then share, the primary, over a Vidare group: the builder, today's trip and free play.
  */
 export function ItinerarySummaryView({
   title,
@@ -28,11 +38,13 @@ export function ItinerarySummaryView({
   /** The itinerary's link, shared with the summary: `/resplan?namn=…&r=…`. */
   link: string;
 }) {
-  const { rows, standing, hasTieBreaker } = summary;
+  const { rows, standing } = summary;
+  const hasTieBreakerTrip = rows.some((row) => row.mode.kind === "tie-breaker");
   return (
     <section className="itinerary-summary" aria-labelledby="itinerary-summary-heading">
       <h2 id="itinerary-summary-heading">{title ?? "Resplan"}</h2>
       <p className="itinerary-summary-subtitle">Sammanfattning</p>
+      <p className="itinerary-summary-headline">{tripsWonText(standing.tripsWon, rows.length)}</p>
       <ol className="itinerary-summary-trips" aria-label="Resorna">
         {rows.map((row, index) => (
           // oxlint-disable-next-line react/no-array-index-key -- the order is fixed: a trip is its place.
@@ -46,12 +58,10 @@ export function ItinerarySummaryView({
             <ScoreTooltip>{scoreText(standing.score)}</ScoreTooltip>
           </dd>
         </div>
-        {hasTieBreaker && (
+        {hasTieBreakerTrip && (
           <div className="itinerary-summary-totals-row">
-            <dt>
-              <Tooltip text={wonTieBreakersText(standing.wonTieBreakers)}>Total tid</Tooltip>
-            </dt>
-            <dd className="itinerary-summary-total-time">{timeText(standing.totalTime)}</dd>
+            <dt>Total tid</dt>
+            <dd className="itinerary-summary-total">{timeText(standing.tieBreakerTime)}</dd>
           </div>
         )}
       </dl>
@@ -78,6 +88,13 @@ function SummaryRow({ row }: { row: ItinerarySummaryRow }) {
         </span>
         {row.time !== undefined && (
           <span className="itinerary-summary-time">{timeText(row.time)}</span>
+        )}
+        {row.time === undefined && row.mode.kind === "tie-breaker" && (
+          <span className="itinerary-summary-time">
+            <Tooltip text={LOST_TIE_BREAKER_TIME_EXPLANATION}>
+              {timeText(LOST_TIE_BREAKER_TIME)}
+            </Tooltip>
+          </span>
         )}
       </p>
       <p className="itinerary-summary-score">

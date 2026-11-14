@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { PERFECT_SCORE, TIMEOUT_COST } from "../engine/score";
 import {
+  SCORE_EXPLANATION,
   clockText,
   freePlayHeadline,
   guessesSoFar,
@@ -8,6 +10,7 @@ import {
   scoreText,
   timeoutRowTitle,
   timeText,
+  tripsWonText,
 } from "./messages";
 
 describe("scoreText", () => {
@@ -143,5 +146,20 @@ describe("timeText, a win's time to tenths", () => {
     [72_012, "2:00:01,2"],
   ])("%p tenths → %p", (tenths, text) => {
     expect(timeText(tenths)).toBe(text);
+  });
+});
+
+describe("tripsWonText", () => {
+  test("reads `X av Y vunna`", () => {
+    expect(tripsWonText(4, 6)).toBe("4 av 6 vunna");
+    expect(tripsWonText(1, 1)).toBe("1 av 1 vunna");
+  });
+});
+
+describe("SCORE_EXPLANATION", () => {
+  test("works Perfect and the costs out from the scoring constants", () => {
+    expect(SCORE_EXPLANATION).toBe(
+      `Lägre poäng är bättre. En perfekt resa ger ${scoreText(PERFECT_SCORE)}; varje extra gissning, ledtråd och ⏱ kostar ${TIMEOUT_COST}.`,
+    );
   });
 });

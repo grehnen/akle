@@ -10,7 +10,7 @@ const EDGE_GAP = 8;
  * description to screen readers too. Tapping it again, a tap elsewhere, Escape, or the pointer or
  * focus leaving it hides it.
  */
-export function Tooltip({ text, children }: { text: string; children: ReactNode }) {
+export function Tooltip({ text, children }: { text: ReactNode; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const tooltipId = useId();
   const wrapper = useRef<HTMLSpanElement>(null);

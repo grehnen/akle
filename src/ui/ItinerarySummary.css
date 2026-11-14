@@ -18,6 +18,11 @@
   color: var(--muted);
 }
 
+.itinerary-summary-headline {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
 .itinerary-summary-trips {
   width: 100%;
   margin: 0;
@@ -105,8 +110,7 @@
   margin: 0;
 }
 
-.itinerary-summary-total,
-.itinerary-summary-total-time {
+.itinerary-summary-total {
   grid-column: 2;
   grid-row: 1;
   font-weight: 700;

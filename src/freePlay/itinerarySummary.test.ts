@@ -116,11 +116,14 @@ describe("an itinerary's summary", () => {
         score: 3,
       },
     ]);
-    expect(summary?.standing).toEqual({ score: 6, wonTieBreakers: 0, totalTime: 0 });
-    expect(summary?.hasTieBreaker).toBe(false);
+    expect(summary?.standing).toEqual({
+      tripsWon: 2,
+      score: 6,
+      tieBreakerTime: 0,
+    });
   });
 
-  test("adds only won tie-breaker trips' times, a lost one adding none", () => {
+  test("keeps each won tie-breaker trip's time, a lost one having none, and sums them, a loss as 5 minutes", () => {
     const trips: LinkedTrip[] = [
       { start: "0100", destination: "0102", mode: tieBreaker },
       { start: "0100", destination: "0102", mode: tieBreaker },
@@ -148,15 +151,15 @@ describe("an itinerary's summary", () => {
     expect(summary?.rows.map((row) => row.time)).toEqual([123, undefined, 36_000, undefined]);
     expect(summary?.rows[1]?.outcome).toEqual({ kind: "lost", away: 1, hintsUsed: 0 });
     expect(summary?.standing).toEqual({
+      tripsWon: 3,
       // Perfect, then 5 guesses − distance 1 + 2·1 away, Perfect and Perfect.
       score: -1 + (5 - 1 + 2 * 1) - 1 - 1,
-      wonTieBreakers: 2,
-      totalTime: 36_123,
+      // 12.3 s and an hour, the lost trip counting as 5 minutes (3000 tenths).
+      tieBreakerTime: 123 + 3000 + 36_000,
     });
-    expect(summary?.hasTieBreaker).toBe(true);
   });
 
-  test("with every tie-breaker trip lost, has a tie-breaker but no time", () => {
+  test("counts a given-up tie-breaker trip as 5 minutes", () => {
     const trips: LinkedTrip[] = [
       { start: "0100", destination: "0102", mode: tieBreaker },
       { start: "0100", destination: "0102", mode: standard },
@@ -175,8 +178,19 @@ describe("an itinerary's summary", () => {
     const summary = itinerarySummary(graph, trips, play);
 
     // Given up after 1 guess on distance 1 with 0101 away: 1 − 1 + 3·1, then Perfect.
-    expect(summary?.standing).toEqual({ score: 3 - 1, wonTieBreakers: 0, totalTime: 0 });
-    expect(summary?.hasTieBreaker).toBe(true);
+    expect(summary?.standing).toEqual({
+      tripsWon: 1,
+      score: 3 - 1,
+      tieBreakerTime: 3000,
+    });
+  });
+
+  test("counts a slow tie-breaker win at its real time, uncapped", () => {
+    const trips: LinkedTrip[] = [{ start: "0100", destination: "0102", mode: tieBreaker }];
+    // Won 10 minutes in: 6000 tenths, over the 5 minutes a loss counts as.
+    const play = played(trips, [{ startAt: 0, moves: [[600_000, guessing("Kommun 0101")]] }]);
+
+    expect(itinerarySummary(graph, trips, play)?.standing.tieBreakerTime).toBe(6000);
   });
 
   test("keeps a Perfect trip's timeouts in its label and its score", () => {
@@ -216,37 +230,38 @@ describe("an itinerary's summary", () => {
   });
 });
 
-describe("ranking two itinerary results", () => {
-  const standing = (score: number, wonTieBreakers = 0, totalTime = 0) => ({
+describe("ranking two itineraries' standings", () => {
+  const standing = (tripsWon: number, score: number, tieBreakerTime = 0) => ({
+    tripsWon,
     score,
-    wonTieBreakers,
-    totalTime,
+    tieBreakerTime,
   });
   const ranked = (...standings: ReturnType<typeof standing>[]) =>
     [...standings].sort(compareStandings);
 
-  test("puts the lower score first, whatever the time", () => {
-    expect(ranked(standing(5, 2, 100), standing(4, 0, 0))).toEqual([
-      standing(4, 0, 0),
-      standing(5, 2, 100),
+  test("puts more trips won first, whatever the score or time", () => {
+    expect(ranked(standing(2, -5, 100), standing(3, 9, 900))).toEqual([
+      standing(3, 9, 900),
+      standing(2, -5, 100),
     ]);
   });
 
-  test("separates equal scores by more won tie-breaker trips, even with more time", () => {
-    expect(ranked(standing(4, 1, 100), standing(4, 2, 900))).toEqual([
-      standing(4, 2, 900),
-      standing(4, 1, 100),
+  test("separates equal trips won by the lower summed score, whatever the time", () => {
+    expect(ranked(standing(3, 5, 100), standing(3, 4, 900))).toEqual([
+      standing(3, 4, 900),
+      standing(3, 5, 100),
     ]);
   });
 
-  test("then by lower total time", () => {
-    expect(ranked(standing(4, 2, 901), standing(4, 2, 900))).toEqual([
-      standing(4, 2, 900),
-      standing(4, 2, 901),
+  test("then by the lower summed tie-breaker time", () => {
+    expect(ranked(standing(3, 4, 901), standing(3, 4, 900))).toEqual([
+      standing(3, 4, 900),
+      standing(3, 4, 901),
     ]);
   });
 
-  test("ties when score, won tie-breaker trips and total time are all equal", () => {
-    expect(compareStandings(standing(4, 2, 900), standing(4, 2, 900))).toBe(0);
+  test("ties when the summed tie-breaker time is equal, as with no tie-breaker trips", () => {
+    expect(compareStandings(standing(3, 4, 900), standing(3, 4, 900))).toBe(0);
+    expect(compareStandings(standing(3, 4), standing(3, 4))).toBe(0);
   });
 });
