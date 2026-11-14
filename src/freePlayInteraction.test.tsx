@@ -352,6 +352,8 @@ describe("playing a picked trip", () => {
     await click(resButton(container));
     expect(query(container, "#trip-heading").textContent).toBe("Från: Nynäshamn Till: Trosa");
     expect(container.textContent).toContain("Fri resa · Standard");
+    const report = new URL(query<HTMLAnchorElement>(container, ".credits a").href);
+    expect(report.searchParams.get("title")).toBe("Fel i Akle");
 
     for (const name of ["Haninge", "Salem"]) {
       await type(query<HTMLInputElement>(container, "#guess-input"), name);

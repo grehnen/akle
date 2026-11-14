@@ -20,3 +20,15 @@ describe("reportIssueUrl", () => {
     expect(body).toContain("namn");
   });
 });
+
+describe("reportIssueUrl without a trip number", () => {
+  const url = new URL(reportIssueUrl({ graphVersion: "2026-01" }));
+
+  test("prefills a generic title and the graph version, naming no trip", () => {
+    expect(url.searchParams.get("title")).toBe("Fel i Akle");
+    const body = url.searchParams.get("body") ?? "";
+    expect(body).toContain("Grafversion: 2026-01");
+    expect(body).not.toContain("Resa:");
+    expect(body).toContain("grannar");
+  });
+});

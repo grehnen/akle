@@ -11,6 +11,7 @@ import { emojiLine } from "../progress/history";
 import { gameOutcome } from "../progress/outcome";
 import type { KeyValueStorage } from "../progress/storage";
 import { freePlayHeadline, scoreText, timeText } from "./messages";
+import { reportIssueUrl } from "./reportIssue";
 import type { ResultScore } from "./ResultView";
 import { ScoreLabel } from "./ScoreLabel";
 import { ScoreTooltip } from "./ScoreTooltip";
@@ -44,6 +45,7 @@ export type FreePlayBoardProps = {
  * the result its headline, its score (explained in a tooltip) over its outcome label as the share
  * text words it and a won tie-breaker's time, and a share button when it has a `link` to share.
  * `resultActions` come before that button in the result view, `stripActions` after it in the strip.
+ * Its footer links Rapportera fel to a generic issue, as the trip has no number.
  */
 export function FreePlayBoard({
   graph,
@@ -130,6 +132,7 @@ export function FreePlayBoard({
           {stripActions}
         </>
       }
+      footerLinks={<a href={reportIssueUrl({ graphVersion: graph.id })}>Rapportera fel</a>}
     />
   );
 }
