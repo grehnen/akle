@@ -125,7 +125,7 @@ One of three optional reveals a player can take during a trip (in the UI: _ledtr
 _Avoid_: Clue, help, tip
 
 **Score**:
-The number a finished free-play trip earns, lower being better: a win's extra, or for a loss its guesses beyond the distance (none when fewer) plus a multiple of its away, larger for a give-up than for reaching the guess limit, then a cost for each hint and each timeout and a bonus for Perfect; an itinerary's score is the sum of its trips' scores. Time never enters it: equal scores are separated first by more won tie-breaker trips, then by lower total time.
+The number a finished free-play trip earns, lower being better: a win's extra, or for a loss its guesses beyond the distance (none when fewer) plus a multiple of its away, larger for a give-up than for reaching the guess limit, then a cost for each hint and each timeout and a bonus for Perfect; an itinerary's score is the sum of its trips' scores. Time never enters it.
 _Avoid_: Points, result, total
 
 **Give up** (in the UI: _ge upp_):
@@ -175,6 +175,10 @@ _Avoid_: Difficulty, span, interval
 **Itinerary** (in the UI: _resplan_):
 An ordered list of free-play trips, each with its own mode, shared as a link.
 _Avoid_: Playlist, challenge, set, quiz, pack
+
+**Standing**:
+How well a finished itinerary went, compared first by more trips won, then by lower score, then by more won tie-breaker trips, then by lower total time.
+_Avoid_: Result, ranking, total, placement
 
 **Draft**:
 The itinerary being built in the builder, its title and trips kept on this device until its trips are all removed; removing them all keeps the title, and one made on an older version is dropped.
