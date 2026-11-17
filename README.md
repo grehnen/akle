@@ -28,7 +28,7 @@ Two kommuner are neighbors when you could get from one to the other:
 - **over land**, by a shared border, even if they only touch at a single point;
 - **over a bridge or through a tunnel**, by a public road, path or railway.
 
-Borders along a river count too, as long as they are at least a kilometer long. Tiny islets, short river borders and detached bits of a kommun (exclaves) don't.
+Borders in a river count too, however short, even where kommuner meet at a single point in the river. Tiny islets in the sea or a lake, and detached bits of a kommun (exclaves), don't.
 
 Gotland and Öckerö have no bridge or land border, so they are linked by ferry. They are dead ends: a route can start or end there, but never pass through.
 

@@ -9,7 +9,13 @@ import { reportBuild } from "./buildReport";
 import { exclaveParts, exclavePartsJson } from "./exclaveParts";
 import { crossesABorder, findFixedLinks, type LinkWay } from "./fixedLinks";
 import { graphVersionFileContents } from "./graphVersionWriter";
-import { lineProximity, measureLandBorders, pointOnLand, roundedPoint } from "./landBorders";
+import {
+  lineProximity,
+  measureLandBorders,
+  pointInRiver,
+  pointOnLand,
+  roundedPoint,
+} from "./landBorders";
 import { readNeighborOverrides } from "./neighborOverrides";
 import { reviewNeighborGraph, type BuildEvidence } from "./neighborReview";
 import {
@@ -100,9 +106,10 @@ await Bun.write(
   `a,b,landLength\n${measured.map((border) => `${border.between.join(",")},${border.landLength}`).join("\n")}\n`,
 );
 const isOnLand = pointOnLand(mask);
+const isInRiver = pointInRiver(mask);
 const pointTouches = touchCandidates.flatMap((pair) => {
-  const onLand = pair.points.find(isOnLand);
-  return onLand ? [{ between: pair.between, at: roundedPoint(onLand) }] : [];
+  const counted = pair.points.find(isOnLand) ?? pair.points.find(isInRiver);
+  return counted ? [{ between: pair.between, at: roundedPoint(counted) }] : [];
 });
 const landLinks: NeighborLink[] = measured
   .filter((border) => border.landLength > 0)

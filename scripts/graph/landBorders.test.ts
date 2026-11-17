@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { measureLandBorders, pointOnLand } from "./landBorders";
+import { measureLandBorders, pointInRiver, pointOnLand } from "./landBorders";
 import type { AreaGeometry, SharedBorder } from "./sharedBorders";
 
 const box = (west: number, south: number, east: number, north: number): AreaGeometry => ({
@@ -258,5 +258,37 @@ describe("measureLandBorders", () => {
     });
     expect(isOnLand([0.552, 0])).toBe(false);
     expect(isOnLand([0.25, 0])).toBe(true);
+  });
+
+  test("a point is in a river inside a river area or on an islet in it, not in a lake or the sea", () => {
+    const river: AreaGeometry = {
+      type: "Polygon",
+      coordinates: [
+        [
+          [0.2, -1],
+          [0.3, -1],
+          [0.3, 1],
+          [0.2, 1],
+          [0.2, -1],
+        ],
+        [
+          [0.249, -0.001],
+          [0.251, -0.001],
+          [0.251, 0.001],
+          [0.249, 0.001],
+          [0.249, -0.001],
+        ],
+      ],
+    };
+    const isInRiver = pointInRiver({
+      land: [box(-1, -1, 1, 1)],
+      lakes: [river, box(0.4, -1, 0.5, 1)],
+      rivers: [river],
+    });
+    expect(isInRiver([0.21, 0.5])).toBe(true);
+    expect(isInRiver([0.25, 0])).toBe(true);
+    expect(isInRiver([0.45, 0])).toBe(false);
+    expect(isInRiver([0, 0])).toBe(false);
+    expect(isInRiver([2, 0])).toBe(false);
   });
 });

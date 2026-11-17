@@ -280,33 +280,14 @@ describe("reviewNeighborGraph", () => {
         ...changes,
       });
 
-    test("drops and flags a pair whose only border is under 1000 m in river water", () => {
-      const review = reviewNeighborGraph(withRiverBorder(999), noOverrides);
+    test("a border in river water makes a land neighbor at any length, flagged when it is the only link", () => {
+      const review = reviewNeighborGraph(withRiverBorder(12), noOverrides);
       expect(review.flaggedPairs).toEqual([
         {
           between: ["0001", "0004"],
           kinds: ["river-border"],
           landLength: 0,
-          riverLength: 999,
-          at: [18.3, 59],
-          built: [],
-        },
-      ]);
-      expect(review.links.map((link) => link.between.join("-"))).toEqual([
-        "0001-0002",
-        "0002-0003",
-        "0003-0004",
-      ]);
-    });
-
-    test("a border of 1000 m or more in river water makes a land neighbor, still flagged", () => {
-      const review = reviewNeighborGraph(withRiverBorder(1000), noOverrides);
-      expect(review.flaggedPairs).toEqual([
-        {
-          between: ["0001", "0004"],
-          kinds: ["river-border"],
-          landLength: 0,
-          riverLength: 1000,
+          riverLength: 12,
           at: [18.3, 59],
           built: ["land"],
         },
@@ -314,32 +295,21 @@ describe("reviewNeighborGraph", () => {
       expect(review.links).toContainEqual({ between: ["0001", "0004"], kind: "land" });
     });
 
-    test("flags a river border that a qualifying fixed link keeps as neighbors", () => {
+    test("a river border isn't flagged when a qualifying fixed link joins the pair", () => {
       const review = reviewNeighborGraph(
         withRiverBorder(400, {
           fixedLinks: [{ between: ["0001", "0004"], ways: [5], failures: [] }],
         }),
         noOverrides,
       );
-      expect(
-        review.flaggedPairs.map(({ between, kinds, built }) => ({ between, kinds, built })),
-      ).toEqual([{ between: ["0001", "0004"], kinds: ["river-border"], built: ["fixed"] }]);
-    });
-
-    test("a river border of 1000 m or more isn't flagged when a qualifying fixed link joins the pair", () => {
-      const review = reviewNeighborGraph(
-        withRiverBorder(1000, {
-          fixedLinks: [{ between: ["0001", "0004"], ways: [5], failures: [] }],
-        }),
-        noOverrides,
-      );
       expect(review.flaggedPairs).toEqual([]);
       expect(review.links).toContainEqual({ between: ["0001", "0004"], kind: "land" });
+      expect(review.links).toContainEqual({ between: ["0001", "0004"], kind: "fixed" });
     });
 
-    test("a river border of 1000 m or more is flagged when the only fixed link doesn't qualify", () => {
+    test("a river border is flagged when the only fixed link doesn't qualify", () => {
       const review = reviewNeighborGraph(
-        withRiverBorder(1000, {
+        withRiverBorder(400, {
           fixedLinks: [
             {
               between: ["0001", "0004"],
