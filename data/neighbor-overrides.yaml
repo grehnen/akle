@@ -19,9 +19,9 @@ ferries:
 # pairs" in data/README.md.
 # Every flagged pair needs exactly one, and bun run graph:check fails on stale ones. Run
 # bun run graph:review after editing. The build drops an exclave-border pair, and an island-border
-# or river-border pair under 1000 m, unless a qualifying fixed link keeps it; a keep leaves that as
-# it is, and an add puts it back. An island-border or river-border pair of 1000 m or more is a land
-# neighbor, flagged because that border is its only valid link.
+# pair under 1000 m, unless a qualifying fixed link keeps it; a keep leaves that as it is, and an
+# add puts it back. An island-border pair of 1000 m or more, or a river-border pair at any length,
+# is a land neighbor, flagged because that border is its only valid link.
 #
 # overrides change the generated graph, with a reason and an http(s) evidence link:
 #   - remove: ["<code>", "<code>"]   # or add: ["<code>", "<code>"] with link: land | fixed
@@ -40,6 +40,10 @@ reviewed:
     names: [Håbo, Knivsta]
     kinds: [non-qualifying-link]
     reason: Linked only by way 956692672, a short unpaved private driveway bridge to an islet under 1 km²; not a public link to meaningful land, so they aren't neighbors.
+  - keep: ["0331", "2084"]
+    names: [Heby, Avesta]
+    kinds: [point-touch]
+    reason: The OSM boundaries meet at a single point in Dalälven's river area (relation 370760), on the islet Tjuvholmen where Heby, Avesta, Sala and Sandviken meet; a point touch in river water counts, so they are land neighbors.
   - keep: ["0381", "0486"]
     names: [Enköping, Strängnäs]
     kinds: [island-border]
@@ -60,6 +64,10 @@ reviewed:
     names: [Storfors, Degerfors]
     kinds: [short-border]
     reason: The OSM boundaries share a 64 m land border on the mainland, so they are land neighbors; a qualifying fixed link, way 1201771779, also crosses it.
+  - keep: ["1981", "2181"]
+    names: [Sala, Sandviken]
+    kinds: [point-touch]
+    reason: The OSM boundaries meet at a single point in Dalälven's river area (relation 370760), on the islet Tjuvholmen where Heby, Avesta, Sala and Sandviken meet; a point touch in river water counts, so they are land neighbors.
   - keep: ["2061", "2081"]
     names: [Smedjebacken, Borlänge]
     kinds: [exclave-border]
@@ -75,4 +83,4 @@ reviewed:
   - keep: ["2422", "2505"]
     names: [Sorsele, Arvidsjaur]
     kinds: [river-border]
-    reason: Their OSM boundaries share no land, only a 7264 m border in the river area of relation 2343268, so the build makes them land neighbors.
+    reason: Their OSM boundaries share no land, only a 7450 m border in the river area of relation 2343268, so the build makes them land neighbors.

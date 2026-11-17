@@ -11,7 +11,10 @@ import type { AreaGeometry, Line, Position, SharedBorder } from "./sharedBorders
 export type LandWaterMask = {
   land: readonly AreaGeometry[];
   lakes: readonly AreaGeometry[];
-  /** The river areas among the lakes, where a border's length in water is measured apart. */
+  /**
+   * The river areas among the lakes, where a border's length in water, islets in them included,
+   * is measured apart.
+   */
   rivers?: readonly AreaGeometry[];
 };
 
@@ -108,6 +111,11 @@ export function pointOnLand(mask: LandWaterMask): (point: Position) => boolean {
   return landIndexes(mask).isOnLand;
 }
 
+/** Whether a point is in a river area or on an islet in one: where a point touch still counts. */
+export function pointInRiver(mask: LandWaterMask): (point: Position) => boolean {
+  return landIndexes(mask).inRiver;
+}
+
 function landIndexes(mask: LandWaterMask): {
   indexes: PolygonIndex[];
   isOnLand: (point: Position) => boolean;
@@ -115,7 +123,8 @@ function landIndexes(mask: LandWaterMask): {
   inRiver: (point: Position) => boolean;
 } {
   const land = new PolygonIndex(mask.land);
-  const rivers = new PolygonIndex(mask.rivers ?? []);
+  // Islets in a river are river too; its bigger islands are land, which is checked first.
+  const rivers = new PolygonIndex(asPolygons((mask.rivers ?? []).flatMap(outerRings)));
   const lakes = new PolygonIndex(mask.lakes);
   const islets = new PolygonIndex(smallIslands(mask));
   const isOnLand = (point: Position) =>
@@ -144,6 +153,10 @@ function landIndexes(mask: LandWaterMask): {
 function smallIslands(mask: LandWaterMask): AreaGeometry[] {
   const inSea = mask.land.flatMap(polygonsOf).map(([outer]) => outer);
   return asPolygons([...inSea, ...lakeHoles(mask)].filter((ring) => !isBigIsland(ring)));
+}
+
+function outerRings(geometry: AreaGeometry): Position[][] {
+  return polygonsOf(geometry).map(([outer]) => outer);
 }
 
 function lakeHoles(mask: LandWaterMask): Position[][] {
